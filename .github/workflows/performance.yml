@@ -98,8 +98,8 @@ jobs:
         with:
           name: qgc-binary
           path: |
-            build/QGroundControl
-            build/Release/QGroundControl
+            build/TitanGroundControl
+            build/Release/TitanGroundControl
           if-no-files-found: error
           retention-days: 1
           compression-level: 0  # Binary already compressed
@@ -133,7 +133,7 @@ jobs:
           path: build
 
       - name: Make binary executable
-        run: chmod +x build/QGroundControl build/Release/QGroundControl 2>/dev/null || true
+        run: chmod +x build/TitanGroundControl build/Release/TitanGroundControl 2>/dev/null || true
 
       - name: Analyze binary size
         id: analyze
@@ -229,7 +229,7 @@ jobs:
           path: build
 
       - name: Make binary executable
-        run: chmod +x build/QGroundControl build/Release/QGroundControl 2>/dev/null || true
+        run: chmod +x build/TitanGroundControl build/Release/TitanGroundControl 2>/dev/null || true
 
       - name: Run benchmarks
         id: bench

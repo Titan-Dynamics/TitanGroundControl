@@ -5,9 +5,7 @@
 #include <QtCore/QTextStream>
 #include <QtTest/QSignalSpy>
 
-#define private public
 #include "FirmwareUpgradeController.h"
-#undef private
 
 void FirmwareUpgradeControllerTest::_manifestCompleteErrorClearsDownloadingState()
 {

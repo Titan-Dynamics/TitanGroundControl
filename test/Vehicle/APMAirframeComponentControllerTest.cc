@@ -4,9 +4,7 @@
 #include <QtCore/QTemporaryDir>
 #include <QtGui/QGuiApplication>
 
-#define private public
 #include "APMAirframeComponentController.h"
-#undef private
 
 APMAirframeComponentControllerTest::APMAirframeComponentControllerTest()
 {

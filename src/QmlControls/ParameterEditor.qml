@@ -135,11 +135,14 @@ Item {
             QGCTextField {
                 id:                     searchText
                 placeholderText:        qsTr("Search")
+                Layout.preferredWidth:  ScreenTools.defaultFontPixelWidth * 30
+                Layout.preferredHeight: toolsButton.height
                 onDisplayTextChanged:   controller.searchText = displayText
             }
 
             QGCButton {
                 text: qsTr("Clear")
+                Layout.preferredHeight: toolsButton.height
                 onClicked: {
                     if(ScreenTools.isMobile) {
                         Qt.inputMethod.hide();
@@ -157,9 +160,11 @@ Item {
         }
 
         QGCButton {
-            Layout.alignment:   Qt.AlignRight
-            text:               qsTr("Tools")
-            onClicked:          toolsMenu.popup()
+            id:                     toolsButton
+            Layout.alignment:       Qt.AlignRight
+            Layout.rightMargin:     ScreenTools.defaultFontPixelWidth * 2
+            text:                   qsTr("Tools")
+            onClicked:              toolsMenu.popup()
         }
     }
 
@@ -225,79 +230,165 @@ Item {
         }
     }
 
-    TableView {
-        id:                 tableView
-        anchors.leftMargin: ScreenTools.defaultFontPixelWidth
+    Item {
+        id:                 tableContainer
+        anchors.leftMargin: ScreenTools.defaultFontPixelWidth * 2
+        anchors.topMargin:  ScreenTools.defaultFontPixelHeight
         anchors.top:        header.bottom
         anchors.bottom:     parent.bottom
         anchors.left:       _searchFilter ? parent.left : groupScroll.right
         anchors.right:      parent.right
-        columnSpacing:      ScreenTools.defaultFontPixelWidth
-        rowSpacing:         ScreenTools.defaultFontPixelHeight / 4
-        model:              controller.parameters
-        contentWidth:       width
         clip:               true
 
-        // Qt is supposed to adjust column widths automatically when larger widths come into view.
-        // But it doesn't work. So we have to do it force a layout manually when we scroll.
-        Timer {
-            id:             forceLayoutTimer
-            interval:       500
-            repeat:         false
-            onTriggered:    tableView.forceLayout()
-        }
+        property real _colParamWidth:  width * 0.25
+        property real _colValueWidth:  width * 0.20
+        property real _colDescWidth:   width * 0.55
 
-        onTopRowChanged: forceLayoutTimer.start()
-        onModelChanged: {
-            positionViewAtRow(0, TableView.AlignLeft | TableView.AlignTop)
-            forceLayoutTimer.start()
-        }
+        // Column headers
+        Rectangle {
+            id:             tableHeader
+            anchors.left:   parent.left
+            anchors.right:  parent.right
+            height:         ScreenTools.defaultFontPixelHeight * 1.75
+            color:          qgcPal.toolbarBackground
+            radius:         ScreenTools.defaultFontPixelHeight * 0.25
 
-        delegate: Item {
-            implicitWidth:  label.contentWidth
-            implicitHeight: label.contentHeight
-            clip:           true
+            Row {
+                anchors.fill:           parent
+                anchors.leftMargin:     ScreenTools.defaultFontPixelWidth * 1.5
+                anchors.rightMargin:    ScreenTools.defaultFontPixelWidth * 1.5
 
-            QGCLabel {
-                id:                 label
-                width:              column == 1 ? ScreenTools.defaultFontPixelWidth * 15 : contentWidth
-                text:               column == 1 ? col1String() : display
-                color:              column == 1 ? col1Color() : qgcPal.text
-                maximumLineCount:   1
-                elide:              column == 1 ? Text.ElideRight : Text.ElideNone
-
-                Component.onCompleted: {
-                    return
-                    if (tableView.columnWidth(column) < width) {
-                        console.log("setColumnWidth", column, width)
-                        tableView.setColumnWidth(column, width)
+                Item {
+                    width:  tableContainer._colParamWidth
+                    height: parent.height
+                    QGCLabel {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text:                   qsTr("Parameter")
+                        font.bold:              true
+                        font.pointSize:         ScreenTools.defaultFontPointSize
+                        color:                  qgcPal.buttonHighlightText
                     }
                 }
-
-                function col1String() {
-                    if (fact.enumStrings.length === 0) {
-                        return fact.valueString + " " + fact.units
+                Item {
+                    width:  tableContainer._colValueWidth
+                    height: parent.height
+                    QGCLabel {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text:                   qsTr("Value")
+                        font.bold:              true
+                        font.pointSize:         ScreenTools.defaultFontPointSize
+                        color:                  qgcPal.buttonHighlightText
                     }
-                    if (fact.bitmaskStrings.length != 0) {
-                        return fact.selectedBitmaskStrings.join(',')
-                    }
-                    return fact.enumStringValue
                 }
-
-                function col1Color() {
-                    if (fact.defaultValueAvailable) {
-                        return fact.valueEqualsDefault ? qgcPal.text : qgcPal.warningText
-                    } else {
-                        return qgcPal.text
+                Item {
+                    width:  tableContainer._colDescWidth
+                    height: parent.height
+                    QGCLabel {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text:                   qsTr("Description")
+                        font.bold:              true
+                        font.pointSize:         ScreenTools.defaultFontPointSize
+                        color:                  qgcPal.buttonHighlightText
                     }
                 }
             }
+        }
 
-            QGCMouseArea {
-                anchors.fill: parent
-                onClicked: mouse => {
-                    _editorDialogFact = fact
-                    editorDialogComponent.createObject(mainWindow).open()
+        // Parameter rows
+        ListView {
+            id:             paramListView
+            anchors.top:    tableHeader.bottom
+            anchors.topMargin: ScreenTools.defaultFontPixelHeight * 0.25
+            anchors.left:   parent.left
+            anchors.right:  parent.right
+            anchors.bottom: parent.bottom
+            clip:           true
+            model:          controller.parameters
+
+            delegate: Rectangle {
+                width:      paramListView.width
+                height:     ScreenTools.defaultFontPixelHeight * 1.75
+                color:      mouseArea.containsMouse
+                                ? Qt.rgba(qgcPal.buttonHighlight.r, qgcPal.buttonHighlight.g, qgcPal.buttonHighlight.b, 0.15)
+                                : (index % 2 === 0 ? "transparent" : Qt.rgba(qgcPal.text.r, qgcPal.text.g, qgcPal.text.b, 0.04))
+                radius:     ScreenTools.defaultFontPixelHeight * 0.15
+
+                property var rowFact: model.fact
+
+                Row {
+                    anchors.fill:           parent
+                    anchors.leftMargin:     ScreenTools.defaultFontPixelWidth * 1.5
+                    anchors.rightMargin:    ScreenTools.defaultFontPixelWidth * 1.5
+
+                    // Parameter name
+                    Item {
+                        width:  tableContainer._colParamWidth
+                        height: parent.height
+                        QGCLabel {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width:                  parent.width - ScreenTools.defaultFontPixelWidth
+                            text:                   model.display
+                            font.family:            ScreenTools.fixedFontFamily
+                            font.pointSize:         ScreenTools.defaultFontPointSize
+                            elide:                  Text.ElideRight
+                            maximumLineCount:       1
+                        }
+                    }
+
+                    // Value
+                    Item {
+                        width:  tableContainer._colValueWidth
+                        height: parent.height
+                        QGCLabel {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width:                  parent.width - ScreenTools.defaultFontPixelWidth
+                            text:                   valueString()
+                            color:                  valueColor()
+                            font.pointSize:         ScreenTools.defaultFontPointSize
+                            elide:                  Text.ElideRight
+                            maximumLineCount:       1
+
+                            function valueString() {
+                                if (rowFact.enumStrings.length === 0)
+                                    return rowFact.valueString + " " + rowFact.units
+                                if (rowFact.bitmaskStrings.length !== 0)
+                                    return rowFact.selectedBitmaskStrings.join(', ')
+                                return rowFact.enumStringValue
+                            }
+
+                            function valueColor() {
+                                if (rowFact.defaultValueAvailable)
+                                    return rowFact.valueEqualsDefault ? qgcPal.text : qgcPal.warningText
+                                return qgcPal.text
+                            }
+                        }
+                    }
+
+                    // Description
+                    Item {
+                        width:  tableContainer._colDescWidth
+                        height: parent.height
+                        QGCLabel {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width:                  parent.width - ScreenTools.defaultFontPixelWidth
+                            text:                   rowFact.shortDescription
+                            font.pointSize:         ScreenTools.smallFontPointSize
+                            color:                  Qt.rgba(qgcPal.text.r, qgcPal.text.g, qgcPal.text.b, 0.7)
+                            elide:                  Text.ElideRight
+                            maximumLineCount:       1
+                        }
+                    }
+                }
+
+                MouseArea {
+                    id:             mouseArea
+                    anchors.fill:   parent
+                    hoverEnabled:   true
+                    cursorShape:    Qt.PointingHandCursor
+                    onClicked: {
+                        _editorDialogFact = rowFact
+                        editorDialogComponent.createObject(mainWindow).open()
+                    }
                 }
             }
         }

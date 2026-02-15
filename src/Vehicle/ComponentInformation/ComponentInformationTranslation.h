@@ -13,6 +13,7 @@ class QGCCachedFileDownload;
 class ComponentInformationTranslation : public QObject
 {
     Q_OBJECT
+    friend class ComponentInformationTranslationTest;
 
 public:
     ComponentInformationTranslation(QObject* parent, QGCCachedFileDownload* cachedFileDownload);
