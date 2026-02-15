@@ -57,6 +57,7 @@ ApplicationWindow {
     }
 
     readonly property real      _topBottomMargins:          ScreenTools.defaultFontPixelHeight * 0.5
+    property bool               _splitExpanded:             false
 
     //-------------------------------------------------------------------------
     //-- Global Scope Variables
@@ -257,7 +258,7 @@ ApplicationWindow {
         anchors.left:           parent.left
         anchors.top:            parent.top
         anchors.bottom:         parent.bottom
-        width:                  toolDrawer.visible ? parent.width / 2 : parent.width
+        width:                  toolDrawer.visible ? (_splitExpanded ? 0 : parent.width / 2) : parent.width
 
         Behavior on width {
             NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
@@ -269,11 +270,49 @@ ApplicationWindow {
         anchors.left:   parent.left
         anchors.top:    parent.top
         anchors.bottom: parent.bottom
-        width:          toolDrawer.visible ? parent.width / 2 : parent.width
+        width:          toolDrawer.visible ? (_splitExpanded ? 0 : parent.width / 2) : parent.width
         visible:        false
 
         Behavior on width {
             NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+        }
+    }
+
+    Rectangle {
+        id:                     splitToggle
+        visible:                toolDrawer.visible
+        anchors.verticalCenter: parent.verticalCenter
+        x:                      toolDrawer.visible ? (_splitExpanded ? -width * 0.25 : parent.width / 2 - width / 2) : parent.width
+        z:                      100
+        width:                  ScreenTools.defaultFontPixelHeight * 1.5
+        height:                 width
+        radius:                 width / 2
+        color:                  splitToggleMouseArea.containsMouse ? qgcPal.buttonHighlight : qgcPal.button
+        border.color:           qgcPal.buttonText
+        border.width:           1
+        opacity:                splitToggleMouseArea.containsMouse ? 1.0 : 0.7
+
+        Behavior on x {
+            NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+        }
+
+        QGCColoredImage {
+            anchors.centerIn:   parent
+            width:              parent.width * 0.5
+            height:             width
+            sourceSize.width:   width
+            color:              qgcPal.buttonText
+            source:             "/res/wind-rose-arrow.svg"
+            mirror:             !_splitExpanded
+        }
+
+        MouseArea {
+            id:             splitToggleMouseArea
+            anchors.fill:   parent
+            anchors.margins: -ScreenTools.defaultFontPixelWidth
+            hoverEnabled:   true
+            cursorShape:    Qt.PointingHandCursor
+            onClicked:      _splitExpanded = !_splitExpanded
         }
     }
 
@@ -330,7 +369,7 @@ ApplicationWindow {
         anchors.right:  parent.right
         anchors.top:    parent.top
         anchors.bottom: parent.bottom
-        width:          visible ? parent.width / 2 : 0
+        width:          visible ? (_splitExpanded ? parent.width : parent.width / 2) : 0
         visible:        false
         color:          qgcPal.window
         clip:           true
