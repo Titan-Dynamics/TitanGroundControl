@@ -27,7 +27,7 @@
     "name":             "showAdditionalIndicatorsCompass",
     "shortDesc": "Show additional heading indicators on Compass",
     "type":             "bool",
-    "default":     false
+    "default":     true
 },
 {
     "name":             "lockNoseUpCompass",
