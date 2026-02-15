@@ -24,12 +24,12 @@ jobs:
       - name: Build Flatpak
         uses: bilelmoussaoui/flatpak-github-actions/flatpak-builder@v6
         with:
-          bundle: QGroundControl.flatpak
+          bundle: TitanGroundControl.flatpak
           manifest-path: deploy/linux/org.mavlink.qgroundcontrol.flatpak.yml
           cache-key: flatpak-builder-${{ github.sha }}
 
       - name: Upload Flatpak
         uses: actions/upload-artifact@v6
         with:
-          name: QGroundControl-flatpak
-          path: QGroundControl.flatpak
+          name: TitanGroundControl-flatpak
+          path: TitanGroundControl.flatpak

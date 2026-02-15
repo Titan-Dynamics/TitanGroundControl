@@ -58,13 +58,13 @@ jobs:
             os: windows-2022
             host: windows
             arch: win64_msvc2022_64
-            package: QGroundControl-installer-AMD64
+            package: TitanGroundControl-installer-AMD64
 
           - variant: arm64
             os: windows-11-arm
             host: windows_arm64
             arch: win64_msvc2022_arm64
-            package: QGroundControl-installer-ARM64
+            package: TitanGroundControl-installer-ARM64
 
           # TODO: Remove qt_version override once aqtinstall supports Qt 6.10.1+ for cross-compiled ARM64
           # Workaround: Pin to Qt 6.10.0 until aqtinstall fix is released
@@ -73,7 +73,7 @@ jobs:
             os: windows-2022
             host: windows
             arch: win64_msvc2022_arm64_cross_compiled
-            package: QGroundControl-installer-AMD64-ARM64
+            package: TitanGroundControl-installer-AMD64-ARM64
             qt_version: '6.10.0'
 
     defaults:
@@ -146,7 +146,7 @@ jobs:
       - name: Verify Executable
         if: matrix.build_type == 'Release' && matrix.arch != 'win64_msvc2022_arm64_cross_compiled'
         working-directory: ${{ runner.temp }}\build\${{ matrix.build_type }}
-        run: QGroundControl.exe --simple-boot-test
+        run: TitanGroundControl.exe --simple-boot-test
 
       - name: Create Installer
         working-directory: ${{ runner.temp }}\build
