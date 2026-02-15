@@ -170,7 +170,8 @@ ApplicationWindow {
         }
     }
 
-    property bool _forceClose: false
+    property bool _forceClose:          false
+    property bool _closeDialogShowing:  false
 
     function finishCloseProcess() {
         _forceClose = true
@@ -204,12 +205,18 @@ ApplicationWindow {
 
     property string closeDialogTitle: qsTr("Close %1").arg(QGroundControl.appName)
 
+    function _showCloseCheckDialog(text, acceptFunction) {
+        _closeDialogShowing = true
+        showMessageDialog(closeDialogTitle, text, Dialog.Yes | Dialog.No,
+            function() { _closeDialogShowing = false; acceptFunction() },
+            function() { _closeDialogShowing = false })
+    }
+
     function checkForUnsavedMission() {
         if (planView._planMasterController.dirty) {
-            showMessageDialog(closeDialogTitle,
-                              qsTr("You have a mission edit in progress which has not been saved/sent. If you close you will lose changes. Are you sure you want to close?"),
-                              Dialog.Yes | Dialog.No,
-                              function() { _closeChecksToSkip |= _skipUnsavedMissionCheckMask; performCloseChecks() })
+            _showCloseCheckDialog(
+                qsTr("You have a mission edit in progress which has not been saved/sent. If you close you will lose changes. Are you sure you want to close?"),
+                function() { _closeChecksToSkip |= _skipUnsavedMissionCheckMask; performCloseChecks() })
             return false
         } else {
             return true
@@ -219,9 +226,8 @@ ApplicationWindow {
     function checkForPendingParameterWrites() {
         for (var index=0; index<QGroundControl.multiVehicleManager.vehicles.count; index++) {
             if (QGroundControl.multiVehicleManager.vehicles.get(index).parameterManager.pendingWrites) {
-                mainWindow.showMessageDialog(closeDialogTitle,
+                _showCloseCheckDialog(
                     qsTr("You have pending parameter updates to a vehicle. If you close you will lose changes. Are you sure you want to close?"),
-                    Dialog.Yes | Dialog.No,
                     function() { _closeChecksToSkip |= _skipPendingParameterWritesCheckMask; performCloseChecks() })
                 return false
             }
@@ -231,9 +237,8 @@ ApplicationWindow {
 
     function checkForActiveConnections() {
         if (QGroundControl.multiVehicleManager.activeVehicle) {
-            mainWindow.showMessageDialog(closeDialogTitle,
+            _showCloseCheckDialog(
                 qsTr("There are still active connections to vehicles. Are you sure you want to exit?"),
-                Dialog.Yes | Dialog.No,
                 function() { _closeChecksToSkip |= _skipActiveConnectionsCheckMask; performCloseChecks() })
             return false
         } else {
@@ -243,6 +248,10 @@ ApplicationWindow {
 
     onClosing: (close) => {
         if (!_forceClose) {
+            if (_closeDialogShowing) {
+                close.accepted = false
+                return
+            }
             _closeChecksToSkip = 0
             close.accepted = performCloseChecks()
         }
