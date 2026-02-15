@@ -21,7 +21,7 @@ Rectangle {
     readonly property real      _defaultTextWidth:  ScreenTools.defaultFontPixelWidth
     readonly property real      _horizontalMargin:  _defaultTextWidth / 2
     readonly property real      _verticalMargin:    _defaultTextHeight / 2
-    readonly property real      _buttonWidth:       _defaultTextWidth * 18
+    readonly property real      _buttonWidth:       _defaultTextWidth * 27
     readonly property string    _armedVehicleText:  qsTr("This operation cannot be performed while the vehicle is armed.")
 
     property var    _activeVehicle:                 QGroundControl.multiVehicleManager.activeVehicle
@@ -181,7 +181,7 @@ Rectangle {
 
     QGCFlickable {
         id:                 buttonScroll
-        width:              buttonColumn.width
+        width:              _buttonWidth
         anchors.topMargin:  _defaultTextHeight / 2
         anchors.top:        parent.top
         anchors.bottom:     parent.bottom
@@ -193,6 +193,7 @@ Rectangle {
 
         ColumnLayout {
             id:         buttonColumn
+            width:      parent.width
             spacing:    ScreenTools.defaultFontPixelHeight / 4
 
             ConfigButton {
