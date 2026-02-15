@@ -19,6 +19,8 @@ Item {
     property color  _mainStatusBGColor: qgcPal.brandingPurple
     property real   _leftRightMargin:   ScreenTools.defaultFontPixelWidth * 0.75
     property var    _guidedController:  globals.guidedControllerFlyView
+    property bool   _armed:             _activeVehicle ? _activeVehicle.armed : false
+    property bool   _healthAndArmingChecksSupported: _activeVehicle ? _activeVehicle.healthAndArmingCheckReport.supported : false
 
     function dropMainStatusIndicatorTool() {
         mainStatusIndicator.dropMainStatusIndicator();
@@ -85,6 +87,65 @@ Item {
                         MainStatusIndicator {
                             id:                 mainStatusIndicator
                             Layout.fillHeight:  true
+                        }
+                    }
+
+                    QGCDelayButton {
+                        id:                     armButton
+                        Layout.alignment:       Qt.AlignVCenter
+                        Layout.preferredWidth:  Math.max(armTextMetrics.width, disarmTextMetrics.width) + _horizontalPadding * 2
+                        text:                   _armed ? qsTr("Disarm") : qsTr("Arm")
+                        enabled:                _armed || !_healthAndArmingChecksSupported || _activeVehicle.healthAndArmingCheckReport.canArm
+                        visible:                _activeVehicle
+                        onActivated: {
+                            if (_armed) {
+                                _activeVehicle.armed = false
+                            } else {
+                                _activeVehicle.armed = true
+                            }
+                            armResetTimer.start()
+                        }
+
+                        Timer {
+                            id:         armResetTimer
+                            interval:   150
+                            onTriggered: armButton.progress = 0
+                        }
+
+                        TextMetrics {
+                            id:     armTextMetrics
+                            font:   armButton.font
+                            text:   qsTr("Arm")
+                        }
+                        TextMetrics {
+                            id:     disarmTextMetrics
+                            font:   armButton.font
+                            text:   qsTr("Disarm")
+                        }
+                    }
+
+                    QGCColoredImage {
+                        id:                     toolbarMessagesIcon
+                        Layout.alignment:       Qt.AlignVCenter
+                        height:                 ScreenTools.defaultFontPixelHeight * 1.5
+                        width:                  height
+                        source:                 "/res/VehicleMessages.png"
+                        sourceSize.width:       width
+                        fillMode:               Image.PreserveAspectFit
+                        color:                  getMessageIconColor()
+                        visible:                _activeVehicle
+
+                        function getMessageIconColor() {
+                            if (_activeVehicle) {
+                                if (_activeVehicle.messageTypeError) return qgcPal.colorRed
+                                if (_activeVehicle.messageTypeWarning) return qgcPal.colorOrange
+                            }
+                            return qgcPal.text
+                        }
+
+                        QGCMouseArea {
+                            anchors.fill:   parent
+                            onClicked:      mainWindow.showIndicatorDrawer(vehicleMessagesIndicatorPage, toolbarMessagesIcon)
                         }
                     }
 
@@ -180,5 +241,27 @@ Item {
 
     ParameterDownloadProgress {
         anchors.fill: parent
+    }
+
+    Component {
+        id: vehicleMessagesIndicatorPage
+
+        ToolIndicatorPage {
+            contentComponent: vehicleMessagesContentComponent
+        }
+    }
+
+    Component {
+        id: vehicleMessagesContentComponent
+
+        ColumnLayout {
+            spacing: ScreenTools.defaultFontPixelWidth / 2
+
+            SettingsGroupLayout {
+                heading: qsTr("Vehicle Messages")
+
+                VehicleMessageList { }
+            }
+        }
     }
 }

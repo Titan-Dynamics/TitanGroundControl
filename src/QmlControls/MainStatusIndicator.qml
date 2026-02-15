@@ -9,12 +9,9 @@ RowLayout {
     spacing:    ScreenTools.defaultFontPixelWidth
 
     property var    _activeVehicle:     QGroundControl.multiVehicleManager.activeVehicle
-    property bool   _armed:             _activeVehicle ? _activeVehicle.armed : false
     property real   _margins:           ScreenTools.defaultFontPixelWidth
     property real   _spacing:           ScreenTools.defaultFontPixelWidth / 2
-    property bool   _allowForceArm:      false
     property bool   _healthAndArmingChecksSupported: _activeVehicle ? _activeVehicle.healthAndArmingCheckReport.supported : false
-    property bool   _vehicleFlies:      _activeVehicle ? _activeVehicle.airShip || _activeVehicle.fixedWing || _activeVehicle.vtol || _activeVehicle.multiRotor : false
     property var    _vehicleInAir:      _activeVehicle ? _activeVehicle.flying || _activeVehicle.landing : false
     property bool   _vtolInFWDFlight:   _activeVehicle ? _activeVehicle.vtolInFwdFlight : false
 
@@ -28,7 +25,7 @@ RowLayout {
     QGCLabel {
         id:                 mainStatusLabel
         Layout.fillHeight:  true
-        Layout.preferredWidth: contentWidth + (vehicleMessagesIcon.visible ? vehicleMessagesIcon.width + control.spacing : 0)
+        Layout.preferredWidth: contentWidth
         verticalAlignment:  Text.AlignVCenter
         text:               mainStatusText()
         color:              qgcPal.windowTransparentText
@@ -107,31 +104,6 @@ RowLayout {
             }
         }
 
-        QGCColoredImage {
-            id:                     vehicleMessagesIcon
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.right:          parent.right
-            width:                  ScreenTools.defaultFontPixelWidth * 2
-            height:                 width
-            source:                 "/res/VehicleMessages.png"
-            color:                  getIconColor()
-            sourceSize.width:       width
-            fillMode:               Image.PreserveAspectFit
-            visible:                _activeVehicle && _activeVehicle.messageCount > 0
-
-            function getIconColor() {
-                let iconColor = qgcPal.windowTransparentText
-                if (_activeVehicle) {
-                    if (_activeVehicle.messageTypeWarning) {
-                        iconColor = qgcPal.colorOrange
-                    } else if (_activeVehicle.messageTypeError) {
-                        iconColor = qgcPal.colorRed
-                    }
-                }
-                return iconColor
-            }
-        }
-
         QGCMouseArea {
             anchors.fill:   parent
             onClicked:      dropMainStatusIndicator()
@@ -180,70 +152,6 @@ RowLayout {
         ColumnLayout {
             id:         mainLayout
             spacing:    _spacing
-
-            RowLayout {
-                spacing: ScreenTools.defaultFontPixelWidth
-
-                QGCDelayButton {
-                    enabled:    _armed || !_healthAndArmingChecksSupported || _activeVehicle.healthAndArmingCheckReport.canArm
-                    text:       _armed ? qsTr("Disarm") : (control._allowForceArm ? qsTr("Force Arm") : qsTr("Arm"))
-
-                    onActivated: {
-                        if (_armed) {
-                            _activeVehicle.armed = false
-                        } else {
-                            if (_allowForceArm) {
-                                _allowForceArm = false
-                                _activeVehicle.forceArm()
-                            } else {
-                                _activeVehicle.armed = true
-                            }
-                        }
-                        mainWindow.closeIndicatorDrawer()
-                    }
-                }
-
-                LabelledComboBox {
-                    id:                 primaryLinkCombo
-                    Layout.alignment:   Qt.AlignTop
-                    label:              qsTr("Primary Link")
-                    alternateText:      _primaryLinkName
-                    visible:            _activeVehicle && _activeVehicle.vehicleLinkManager.linkNames.length > 1
-
-                    property var    _rgLinkNames:       _activeVehicle ? _activeVehicle.vehicleLinkManager.linkNames : [ ]
-                    property var    _rgLinkStatus:      _activeVehicle ? _activeVehicle.vehicleLinkManager.linkStatuses : [ ]
-                    property string _primaryLinkName:   _activeVehicle ? _activeVehicle.vehicleLinkManager.primaryLinkName : ""
-
-                    function updateComboModel() {
-                        let linkModel = []
-                        for (let i = 0; i < _rgLinkNames.length; i++) {
-                            let linkStatus = _rgLinkStatus[i]
-                            linkModel.push(_rgLinkNames[i] + (linkStatus === "" ? "" : " " + _rgLinkStatus[i]))
-                        }
-                        primaryLinkCombo.model = linkModel
-                        primaryLinkCombo.currentIndex = -1
-                    }
-
-                    Component.onCompleted:  updateComboModel()
-                    on_RgLinkNamesChanged:  updateComboModel()
-                    on_RgLinkStatusChanged: updateComboModel()
-
-                    onActivated:    (index) => {
-                        _activeVehicle.vehicleLinkManager.primaryLinkName = _rgLinkNames[index]; currentIndex = -1
-                        mainWindow.closeIndicatorDrawer()
-                    }
-                }
-            }
-
-            SettingsGroupLayout {
-                //Layout.fillWidth:   true
-                heading:            qsTr("Vehicle Messages")
-                visible:            !vehicleMessageList.noMessages
-
-                VehicleMessageList {
-                    id: vehicleMessageList
-                }
-            }
 
             SettingsGroupLayout {
                 //Layout.fillWidth:   true
@@ -368,20 +276,6 @@ RowLayout {
             Loader {
                 Layout.fillWidth:   true
                 source:             _activeVehicle.expandedToolbarIndicatorSource("MainStatus")
-            }
-
-            SettingsGroupLayout {
-                Layout.fillWidth:   true
-                heading:            qsTr("Force Arm")
-                headingDescription: qsTr("Force arming bypasses pre-arm checks. Use with caution.")
-                visible:            _activeVehicle && !_armed
-
-                QGCCheckBoxSlider {
-                    Layout.fillWidth:   true
-                    text:               qsTr("Allow Force Arm")
-                    checked:            false
-                    onClicked:          _allowForceArm = true
-                }
             }
 
             SettingsGroupLayout {
