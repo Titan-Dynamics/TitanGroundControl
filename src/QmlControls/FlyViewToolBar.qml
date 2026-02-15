@@ -59,186 +59,171 @@ Item {
 
     Component { id: factControllerComponent; FactPanelController {} }
 
+    // Full-width toolbar background
+    Rectangle {
+        anchors.fill:   parent
+        color:          qgcPal.windowTransparent
+    }
+
+    // Right panel docked to the right edge, outside the flickable
+    Item {
+        id:             rightPanel
+        anchors.right:  parent.right
+        anchors.top:    parent.top
+        width:          flyViewIndicators.width
+        height:         parent.height
+
+        FlyViewToolBarIndicators {
+            id:     flyViewIndicators
+            height: parent.height
+        }
+    }
+
+    // Scrollable area for everything else
     QGCFlickable {
-        anchors.fill:       parent
-        contentWidth:       toolBarLayout.width
-        flickableDirection: Flickable.HorizontalFlick
+        anchors.left:       parent.left
+        anchors.right:      rightPanel.left
+        anchors.top:        parent.top
+        anchors.bottom:     parent.bottom
+        contentWidth:       leftPanel.width
+        flickableDirection:  Flickable.HorizontalFlick
 
-        Row {
-            id:         toolBarLayout
-            height:     parent.height
-            spacing:    0
+        Item {
+            id:     leftPanel
+            width:  leftPanelLayout.implicitWidth
+            height: parent.height
 
-            Item {
-                id:     leftPanel
-                width:  leftPanelLayout.implicitWidth
-                height: parent.height
+            // Gradient background behind Q button and main status indicator
+            Rectangle {
+                id:         gradientBackground
+                height:     parent.height
+                width:      mainStatusLayout.width
+                opacity:    qgcPal.windowTransparent.a
 
-                // Gradient background behind Q button and main status indicator
-                Rectangle {
-                    id:         gradientBackground
-                    height:     parent.height
-                    width:      mainStatusLayout.width
-                    opacity:    qgcPal.windowTransparent.a
-
-                    gradient: Gradient {
-                        orientation: Gradient.Horizontal
-                        GradientStop { position: 0; color: _mainStatusBGColor }
-                        //GradientStop { position: qgcButton.x + qgcButton.width; color: _mainStatusBGColor }
-                        GradientStop { position: 1; color: qgcPal.window }
-                    }
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0; color: _mainStatusBGColor }
+                    GradientStop { position: 1; color: qgcPal.window }
                 }
+            }
 
-                // Standard toolbar background to the right of the gradient
-                Rectangle {
-                    anchors.left:   gradientBackground.right
-                    anchors.right:  parent.right
-                    height:         parent.height
-                    color:          qgcPal.windowTransparent
-                }
+
+
+            RowLayout {
+                id:         leftPanelLayout
+                height:     parent.height
+                spacing:    ScreenTools.defaultFontPixelWidth * 2
 
                 RowLayout {
-                    id:         leftPanelLayout
+                    id:         mainStatusLayout
                     height:     parent.height
-                    spacing:    ScreenTools.defaultFontPixelWidth * 2
+                    spacing:    0
 
-                    RowLayout {
-                        id:         mainStatusLayout
-                        height:     parent.height
-                        spacing:    0
-
-                        QGCToolBarButton {
-                            id:                 qgcButton
-                            Layout.fillHeight:  true
-                            icon.source:        "/res/QGCLogoFull.png"
-                            logo:               true
-                            onClicked:          mainWindow.showToolSelectDialog()
-                        }
-
-                        MainStatusIndicator {
-                            id:                 mainStatusIndicator
-                            Layout.fillHeight:  true
-                        }
+                    QGCToolBarButton {
+                        id:                 qgcButton
+                        Layout.fillHeight:  true
+                        icon.source:        "/res/QGCLogoFull.png"
+                        logo:               true
+                        onClicked:          mainWindow.showToolSelectDialog()
                     }
 
+                    MainStatusIndicator {
+                        id:                 mainStatusIndicator
+                        Layout.fillHeight:  true
+                    }
+                }
+
+                QGCDelayButton {
+                    id:                     armButton
+                    Layout.alignment:       Qt.AlignVCenter
+                    Layout.preferredWidth:  Math.max(armTextMetrics.width, disarmTextMetrics.width) + _horizontalPadding * 2
+                    text:                   _armed ? qsTr("Disarm") : qsTr("Arm")
+                    enabled:                _armed || !_healthAndArmingChecksSupported || _activeVehicle.healthAndArmingCheckReport.canArm
+                    visible:                _activeVehicle
+                    backgroundColor:        enabled ? "#b33" : qgcPal.button
+                    textColor:              enabled ? "white" : qgcPal.buttonText
+                    onActivated: {
+                        if (_armed) {
+                            _activeVehicle.armed = false
+                        } else {
+                            _activeVehicle.armed = true
+                        }
+                        armResetTimer.start()
+                    }
+
+                    Timer {
+                        id:         armResetTimer
+                        interval:   150
+                        onTriggered: armButton.progress = 0
+                    }
+
+                    TextMetrics {
+                        id:     armTextMetrics
+                        font:   armButton.font
+                        text:   qsTr("Arm")
+                    }
+                    TextMetrics {
+                        id:     disarmTextMetrics
+                        font:   armButton.font
+                        text:   qsTr("Disarm")
+                    }
+                }
+
+                QGCColoredImage {
+                    id:                     toolbarMessagesIcon
+                    Layout.alignment:       Qt.AlignVCenter
+                    height:                 ScreenTools.defaultFontPixelHeight * 1.5
+                    width:                  height
+                    source:                 "/res/VehicleMessages.png"
+                    sourceSize.width:       width
+                    fillMode:               Image.PreserveAspectFit
+                    color:                  getMessageIconColor()
+                    visible:                _activeVehicle
+
+                    function getMessageIconColor() {
+                        if (_activeVehicle) {
+                            if (_activeVehicle.messageTypeError) return qgcPal.colorRed
+                            if (_activeVehicle.messageTypeWarning) return qgcPal.colorOrange
+                        }
+                        return qgcPal.text
+                    }
+
+                    QGCMouseArea {
+                        anchors.fill:   parent
+                        onClicked:      mainWindow.showIndicatorDrawer(vehicleMessagesIndicatorPage, toolbarMessagesIcon)
+                    }
+                }
+
+                QGCButton {
+                    id:         disconnectButton
+                    text:       qsTr("Disconnect")
+                    onClicked:  _activeVehicle.closeVehicle()
+                    visible:    _activeVehicle && _communicationLost
+                }
+
+                FlightModeIndicator {
+                    Layout.fillHeight:  true
+                    visible:            _activeVehicle
+                }
+
+                Repeater {
+                    model: _fltmodeNames
+
                     QGCDelayButton {
-                        id:                     armButton
-                        Layout.alignment:       Qt.AlignVCenter
-                        Layout.preferredWidth:  Math.max(armTextMetrics.width, disarmTextMetrics.width) + _horizontalPadding * 2
-                        text:                   _armed ? qsTr("Disarm") : qsTr("Arm")
-                        enabled:                _armed || !_healthAndArmingChecksSupported || _activeVehicle.healthAndArmingCheckReport.canArm
-                        visible:                _activeVehicle
-                        backgroundColor:        enabled ? "#b33" : qgcPal.button
-                        textColor:              enabled ? "white" : qgcPal.buttonText
+                        Layout.alignment:   Qt.AlignVCenter
+                        text:               modelData
+                        visible:            _activeVehicle
                         onActivated: {
-                            if (_armed) {
-                                _activeVehicle.armed = false
-                            } else {
-                                _activeVehicle.armed = true
-                            }
-                            armResetTimer.start()
+                            _activeVehicle.flightMode = modelData
+                            fltmodeResetTimer.start()
                         }
 
                         Timer {
-                            id:         armResetTimer
+                            id:         fltmodeResetTimer
                             interval:   150
-                            onTriggered: armButton.progress = 0
-                        }
-
-                        TextMetrics {
-                            id:     armTextMetrics
-                            font:   armButton.font
-                            text:   qsTr("Arm")
-                        }
-                        TextMetrics {
-                            id:     disarmTextMetrics
-                            font:   armButton.font
-                            text:   qsTr("Disarm")
+                            onTriggered: parent.progress = 0
                         }
                     }
-
-                    QGCColoredImage {
-                        id:                     toolbarMessagesIcon
-                        Layout.alignment:       Qt.AlignVCenter
-                        height:                 ScreenTools.defaultFontPixelHeight * 1.5
-                        width:                  height
-                        source:                 "/res/VehicleMessages.png"
-                        sourceSize.width:       width
-                        fillMode:               Image.PreserveAspectFit
-                        color:                  getMessageIconColor()
-                        visible:                _activeVehicle
-
-                        function getMessageIconColor() {
-                            if (_activeVehicle) {
-                                if (_activeVehicle.messageTypeError) return qgcPal.colorRed
-                                if (_activeVehicle.messageTypeWarning) return qgcPal.colorOrange
-                            }
-                            return qgcPal.text
-                        }
-
-                        QGCMouseArea {
-                            anchors.fill:   parent
-                            onClicked:      mainWindow.showIndicatorDrawer(vehicleMessagesIndicatorPage, toolbarMessagesIcon)
-                        }
-                    }
-
-                    QGCButton {
-                        id:         disconnectButton
-                        text:       qsTr("Disconnect")
-                        onClicked:  _activeVehicle.closeVehicle()
-                        visible:    _activeVehicle && _communicationLost
-                    }
-
-                    FlightModeIndicator {
-                        Layout.fillHeight:  true
-                        visible:            _activeVehicle
-                    }
-
-                    Repeater {
-                        model: _fltmodeNames
-
-                        QGCDelayButton {
-                            Layout.alignment:   Qt.AlignVCenter
-                            text:               modelData
-                            visible:            _activeVehicle
-                            onActivated: {
-                                _activeVehicle.flightMode = modelData
-                                fltmodeResetTimer.start()
-                            }
-
-                            Timer {
-                                id:         fltmodeResetTimer
-                                interval:   150
-                                onTriggered: parent.progress = 0
-                            }
-                        }
-                    }
-                }
-            }
-            Item {
-                id:     centerPanel
-                width:  control.width - (leftPanel.width + rightPanel.width)
-                height: parent.height
-
-                Rectangle {
-                    anchors.fill:   parent
-                    color:          qgcPal.windowTransparent
-                }
-            }
-
-            Item {
-                id:     rightPanel
-                width:  flyViewIndicators.width
-                height: parent.height
-
-                Rectangle {
-                    anchors.fill:   parent
-                    color:          qgcPal.windowTransparent
-                }
-
-                FlyViewToolBarIndicators {
-                    id:     flyViewIndicators
-                    height: parent.height
                 }
             }
         }
