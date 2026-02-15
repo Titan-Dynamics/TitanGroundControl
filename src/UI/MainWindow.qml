@@ -255,18 +255,26 @@ ApplicationWindow {
     FlyView {
         id:                     flyView
         anchors.left:           parent.left
-        anchors.right:          toolDrawer.visible ? parent.horizontalCenter : parent.right
         anchors.top:            parent.top
         anchors.bottom:         parent.bottom
+        width:                  toolDrawer.visible ? parent.width / 2 : parent.width
+
+        Behavior on width {
+            NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+        }
     }
 
     PlanView {
         id:             planView
         anchors.left:   parent.left
-        anchors.right:  toolDrawer.visible ? parent.horizontalCenter : parent.right
         anchors.top:    parent.top
         anchors.bottom: parent.bottom
+        width:          toolDrawer.visible ? parent.width / 2 : parent.width
         visible:        false
+
+        Behavior on width {
+            NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+        }
     }
 
     footer: LogReplayStatusBar {
@@ -319,12 +327,17 @@ ApplicationWindow {
 
     Rectangle {
         id:             toolDrawer
-        anchors.left:   parent.horizontalCenter
         anchors.right:  parent.right
         anchors.top:    parent.top
         anchors.bottom: parent.bottom
+        width:          visible ? parent.width / 2 : 0
         visible:        false
         color:          qgcPal.window
+        clip:           true
+
+        Behavior on width {
+            NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+        }
 
         property var backIcon
         property string toolTitle
