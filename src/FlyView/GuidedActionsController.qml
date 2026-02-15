@@ -110,6 +110,8 @@ Item {
 
     readonly property int customActionStart:                10000 // Custom actions ids should start here so that they don't collide with the built in actions
 
+    property var    _skipConfirmActions:         ({})
+
     property var    _activeVehicle:             QGroundControl.multiVehicleManager.activeVehicle
     property var    _flyViewSettings:           QGroundControl.settingsManager.flyViewSettings
     property var    _unitsConversion:           QGroundControl.unitsConversion
@@ -368,8 +370,12 @@ Item {
     }
 
     function closeAll() {
-        confirmDialog.visible = false
+        confirmDialog.close()
         guidedValueSlider.visible = false
+    }
+
+    function skipFutureConfirmations(actionCode) {
+        _skipConfirmActions[actionCode] = true
     }
 
     // Called when an action is about to be executed in order to confirm
@@ -381,6 +387,7 @@ Item {
         confirmDialog.hideTrigger = true
         confirmDialog.mapIndicator = mapIndicator
         confirmDialog.optionText = ""
+        confirmDialog.requiresInteraction = false
         _actionData = actionData
 
         setupSlider(actionCode)
@@ -478,6 +485,7 @@ Item {
             confirmDialog.message = changeLoiterRadiusMessage
             confirmDialog.hideTrigger = Qt.binding(function() { return !showChangeLoiterRadius })
             confirmDialog.mapIndicator = fwdFlightGotoMapCircle
+            confirmDialog.requiresInteraction = true
             fwdFlightGotoMapCircle.startLoiterRadiusEdit()
             break
         case actionGoto:
@@ -545,6 +553,17 @@ Item {
                 return
             }
         }
+
+        if (_skipConfirmActions[actionCode]) {
+            var sliderOutputValue = 0
+            if (guidedValueSlider.visible) {
+                sliderOutputValue = guidedValueSlider.getOutputValue()
+                guidedValueSlider.visible = false
+            }
+            executeAction(actionCode, actionData, sliderOutputValue, false)
+            return
+        }
+
         confirmDialog.show(showImmediate)
     }
 

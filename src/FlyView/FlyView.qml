@@ -141,7 +141,15 @@ Item {
         GuidedActionsController {
             id:                 guidedActionsController
             missionController:  _missionController
-            guidedValueSlider:     _guidedValueSlider
+            guidedValueSlider:  _guidedValueSlider
+        }
+
+        GuidedActionConfirm {
+            id:                 guidedActionConfirm
+            anchors.centerIn:   parent
+            guidedController:   _guidedController
+            guidedValueSlider:  _guidedValueSlider
+            z:                  _fullItemZorder + 3
         }
 
         //-- Guided value slider (e.g. altitude)
@@ -172,7 +180,6 @@ Item {
 
     FlyViewToolBar {
         id:                 toolbar
-        guidedValueSlider:  _guidedValueSlider
         visible:            !QGroundControl.videoManager.fullScreen
     }
 }

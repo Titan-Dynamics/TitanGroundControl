@@ -5,25 +5,28 @@ import QtQuick.Layouts
 import QGroundControl
 import QGroundControl.Controls
 
-Item {
-    id:         control
-    width:      mainLayout.width
-    visible:    false
+Popup {
+    id:             control
+    modal:          !_requiresInteraction
+    focus:          true
+    closePolicy:    _requiresInteraction ? Popup.CloseOnEscape : (Popup.CloseOnEscape | Popup.CloseOnPressOutside)
+    anchors.centerIn: parent
+    padding:        ScreenTools.defaultFontPixelWidth * 2
 
     property var    guidedController
     property var    guidedValueSlider
-    property var    messageDisplay
     property string title
     property string message
     property int    action
     property var    actionData
     property bool   hideTrigger:        false
+    property bool   requiresInteraction: false
     property var    mapIndicator
     property alias  optionText:         optionCheckBox.text
     property alias  optionChecked:      optionCheckBox.checked
 
-    property real _margins:         2
-    property bool _emergencyAction: action === guidedController.actionEmergencyStop
+    property bool _emergencyAction:      action === guidedController.actionEmergencyStop
+    property bool _requiresInteraction:  requiresInteraction || guidedValueSlider.visible
 
     Component.onCompleted: guidedController.confirmDialog = this
 
@@ -37,20 +40,15 @@ Item {
         if (immediate) {
             _reallyShow()
         } else {
-            // We delay showing the confirmation for a small amount in order for any other state
-            // changes to propogate through the system. This way only the final state shows up.
             visibleTimer.restart()
         }
     }
 
     function confirmCancelled() {
         guidedValueSlider.visible = false
-        visible = false
+        close()
         hideTrigger = false
         visibleTimer.stop()
-        messageDisplay.opacity = 1.0
-        messageFadeTimer.stop()
-        messageOpacityAnimation.stop()
         if (mapIndicator) {
             mapIndicator.actionCancelled()
             mapIndicator = undefined
@@ -58,9 +56,8 @@ Item {
     }
 
     function _reallyShow() {
-        visible = true
-        messageDisplay.opacity = 1.0
-        messageFadeTimer.start()
+        dontAskAgainCheckBox.checked = false
+        open()
     }
 
     Timer {
@@ -72,48 +69,72 @@ Item {
 
     QGCPalette { id: qgcPal }
 
-    RowLayout {
-        id:         mainLayout
-        y:          2
-        height:     parent.height - 4
-        spacing:    ScreenTools.defaultFontPixelWidth
+    background: Rectangle {
+        color:          qgcPal.window
+        radius:         ScreenTools.defaultFontPixelHeight / 2
+        border.color:   qgcPal.buttonText
+        border.width:   1
+        opacity:        0.95
+    }
 
-        QGCDelayButton {
+    contentItem: ColumnLayout {
+        spacing: ScreenTools.defaultFontPixelHeight / 2
+
+        QGCLabel {
             text:               control.title
-            enabled:            true
+            font.pointSize:     ScreenTools.largeFontPointSize
+            font.bold:          true
+            Layout.fillWidth:   true
+        }
 
-            onActivated: {
-                control.visible = false
-                var sliderOutputValue = 0
-                if (guidedValueSlider.visible) {
-                    sliderOutputValue = guidedValueSlider.getOutputValue()
-                    guidedValueSlider.visible = false
-                }
-                hideTrigger = false
-                guidedController.executeAction(control.action, control.actionData, sliderOutputValue, control.optionChecked)
-                if (mapIndicator) {
-                    mapIndicator.actionConfirmed()
-                    mapIndicator = undefined
-                }
-            }
+        QGCLabel {
+            text:                   control.message
+            wrapMode:               Text.WordWrap
+            Layout.fillWidth:       true
+            Layout.preferredWidth:  ScreenTools.defaultFontPixelWidth * 40
+            visible:                control.message !== ""
         }
 
         QGCCheckBox {
-            id:                 optionCheckBox
-            visible:            text !== ""
+            id:         optionCheckBox
+            visible:    text !== ""
         }
 
-        QGCColoredImage {
-            id:                 closeButton
-            Layout.alignment:   Qt.AlignTop
-            width:              height
-            height:             ScreenTools.defaultFontPixelHeight * 0.5
-            source:             "/res/XDelete.svg"
-            fillMode:           Image.PreserveAspectFit
-            color:              qgcPal.text
+        QGCCheckBox {
+            id:         dontAskAgainCheckBox
+            text:       qsTr("Don't show again")
+            visible:    !_emergencyAction && !_requiresInteraction
+        }
 
-            QGCMouseArea {
-                fillItem:   parent
+        RowLayout {
+            Layout.fillWidth:   true
+            spacing:            ScreenTools.defaultFontPixelWidth
+
+            QGCDelayButton {
+                text:       control.title
+                enabled:    true
+
+                onActivated: {
+                    if (dontAskAgainCheckBox.checked) {
+                        guidedController.skipFutureConfirmations(control.action)
+                    }
+                    control.close()
+                    var sliderOutputValue = 0
+                    if (guidedValueSlider.visible) {
+                        sliderOutputValue = guidedValueSlider.getOutputValue()
+                        guidedValueSlider.visible = false
+                    }
+                    hideTrigger = false
+                    guidedController.executeAction(control.action, control.actionData, sliderOutputValue, control.optionChecked)
+                    if (mapIndicator) {
+                        mapIndicator.actionConfirmed()
+                        mapIndicator = undefined
+                    }
+                }
+            }
+
+            QGCButton {
+                text:       qsTr("Cancel")
                 onClicked:  confirmCancelled()
             }
         }
