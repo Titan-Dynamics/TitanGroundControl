@@ -407,6 +407,34 @@ Item {
                     }
 
                     LabelledLabel {
+                        label:      qsTr("Current")
+                        labelText:  object.current.valueString + " " + object.current.units
+                        visible:    batteryValuesAvailable.currentAvailable
+                    }
+
+                    LabelledLabel {
+                        label:      qsTr("Power")
+                        labelText:  (object.voltage.rawValue * object.current.rawValue).toFixed(1) + " W"
+                        visible:    !isNaN(object.voltage.rawValue) && batteryValuesAvailable.currentAvailable
+                    }
+
+                    LabelledLabel {
+                        label:      qsTr("mAh/km")
+                        labelText:  (_activeVehicle.groundSpeed.rawValue > 0.5
+                                        ? (object.current.rawValue * 1000 / (_activeVehicle.groundSpeed.rawValue * 3.6)).toFixed(0)
+                                        : "---")
+                        visible:    batteryValuesAvailable.currentAvailable && _activeVehicle && !isNaN(_activeVehicle.groundSpeed.rawValue)
+                    }
+
+                    LabelledLabel {
+                        label:      qsTr("Wh/km")
+                        labelText:  (_activeVehicle.groundSpeed.rawValue > 0.5
+                                        ? (object.voltage.rawValue * object.current.rawValue / (_activeVehicle.groundSpeed.rawValue * 3.6)).toFixed(1)
+                                        : "---")
+                        visible:    !isNaN(object.voltage.rawValue) && batteryValuesAvailable.currentAvailable && _activeVehicle && !isNaN(_activeVehicle.groundSpeed.rawValue)
+                    }
+
+                    LabelledLabel {
                         label:      qsTr("Consumed")
                         labelText:  object.mahConsumed.valueString + " " + object.mahConsumed.units
                         visible:    batteryValuesAvailable.mahConsumedAvailable
