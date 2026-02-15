@@ -206,20 +206,29 @@ Item {
             Layout.fillHeight:  true
             spacing:            ScreenTools.defaultFontPixelWidth / 4
 
+            function _colorFromPercentage() {
+                if (battery.percentRemaining.rawValue > threshold1)       return qgcPal.colorGreen
+                if (battery.percentRemaining.rawValue > threshold2)       return qgcPal.colorYellowGreen
+                if (battery.percentRemaining.rawValue > threshold2 / 2)   return qgcPal.colorYellow
+                if (battery.percentRemaining.rawValue > 10)               return qgcPal.colorOrange
+                return qgcPal.colorRed
+            }
+
+            function _svgFromPercentage() {
+                if (battery.percentRemaining.rawValue > threshold1)       return "/qmlimages/BatteryGreen.svg"
+                if (battery.percentRemaining.rawValue > threshold2)       return "/qmlimages/BatteryYellowGreen.svg"
+                if (battery.percentRemaining.rawValue > threshold2 / 2)   return "/qmlimages/BatteryYellow.svg"
+                if (battery.percentRemaining.rawValue > 10)               return "/qmlimages/BatteryOrange.svg"
+                return "/qmlimages/BatteryCritical.svg"
+            }
+
             function getBatteryColor() {
                 switch (battery.chargeState.rawValue) {
                     case MAVLink.MAV_BATTERY_CHARGE_STATE_OK:
                         if (!isNaN(battery.percentRemaining.rawValue)) {
-                            if (battery.percentRemaining.rawValue > threshold1) {
-                                return qgcPal.colorGreen
-                            } else if (battery.percentRemaining.rawValue > threshold2) {
-                                return qgcPal.colorYellowGreen
-                            } else {
-                                return qgcPal.colorYellow
-                            }
-                        } else {
-                            return qgcPal.text
+                            return _colorFromPercentage()
                         }
+                        return qgcPal.text
                     case MAVLink.MAV_BATTERY_CHARGE_STATE_LOW:
                         return qgcPal.colorOrange
                     case MAVLink.MAV_BATTERY_CHARGE_STATE_CRITICAL:
@@ -228,6 +237,9 @@ Item {
                     case MAVLink.MAV_BATTERY_CHARGE_STATE_UNHEALTHY:
                         return qgcPal.colorRed
                     default:
+                        if (!isNaN(battery.percentRemaining.rawValue)) {
+                            return _colorFromPercentage()
+                        }
                         return qgcPal.text
                 }
             }
@@ -236,24 +248,22 @@ Item {
                 switch (battery.chargeState.rawValue) {
                     case MAVLink.MAV_BATTERY_CHARGE_STATE_OK:
                         if (!isNaN(battery.percentRemaining.rawValue)) {
-                            if (battery.percentRemaining.rawValue > threshold1) {
-                                return "/qmlimages/BatteryGreen.svg"
-                            } else if (battery.percentRemaining.rawValue > threshold2) {
-                                return "/qmlimages/BatteryYellowGreen.svg"
-                            } else {
-                                return "/qmlimages/BatteryYellow.svg"
-                            }
+                            return _svgFromPercentage()
                         }
+                        return "/qmlimages/Battery.svg"
                     case MAVLink.MAV_BATTERY_CHARGE_STATE_LOW:
-                        return "/qmlimages/BatteryOrange.svg" // Low with orange svg
+                        return "/qmlimages/BatteryOrange.svg"
                     case MAVLink.MAV_BATTERY_CHARGE_STATE_CRITICAL:
-                        return "/qmlimages/BatteryCritical.svg" // Critical with red svg
+                        return "/qmlimages/BatteryCritical.svg"
                     case MAVLink.MAV_BATTERY_CHARGE_STATE_EMERGENCY:
                     case MAVLink.MAV_BATTERY_CHARGE_STATE_FAILED:
                     case MAVLink.MAV_BATTERY_CHARGE_STATE_UNHEALTHY:
-                        return "/qmlimages/BatteryEMERGENCY.svg" // Exclamation mark
+                        return "/qmlimages/BatteryEMERGENCY.svg"
                     default:
-                        return "/qmlimages/Battery.svg" // Fallback if percentage is unavailable
+                        if (!isNaN(battery.percentRemaining.rawValue)) {
+                            return _svgFromPercentage()
+                        }
+                        return "/qmlimages/Battery.svg"
                 }
             }
 
