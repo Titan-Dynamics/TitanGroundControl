@@ -5,6 +5,7 @@ import QtQuick.Dialogs
 
 import QGroundControl
 import QGroundControl.Controls
+import QGroundControl.FactControls
 import QGroundControl.FlyView
 
 Item {
@@ -21,12 +22,48 @@ Item {
     property var    _guidedController:  globals.guidedControllerFlyView
     property bool   _armed:             _activeVehicle ? _activeVehicle.armed : false
     property bool   _healthAndArmingChecksSupported: _activeVehicle ? _activeVehicle.healthAndArmingCheckReport.supported : false
+    property bool   _parametersReady: QGroundControl.multiVehicleManager.parameterReadyVehicleAvailable
+    property var    _fltmodeNames:   (_activeVehicle && _activeVehicle.apmFirmware && _parametersReady) ? _buildFltmodeList() : []
 
     function dropMainStatusIndicatorTool() {
         mainStatusIndicator.dropMainStatusIndicator();
     }
 
+    function _buildFltmodeList() {
+        var controller = factControllerComponent.createObject(control)
+        if (!controller) return []
+
+        var isRover = controller.parameterExists(-1, "MODE1")
+        var prefix = isRover ? "MODE" : "FLTMODE"
+
+        if (!controller.parameterExists(-1, prefix + "1")) {
+            controller.destroy()
+            return []
+        }
+
+        var modes = []
+        var seen = {}
+        for (var i = 1; i <= 6; i++) {
+            var paramName = prefix + i
+            if (controller.parameterExists(-1, paramName)) {
+                var fact = controller.getParameterFact(-1, paramName, false)
+                if (fact) {
+                    var name = fact.enumStringValue
+                    if (name && name !== "" && !seen[name]) {
+                        seen[name] = true
+                        modes.push(name)
+                    }
+                }
+            }
+        }
+
+        controller.destroy()
+        return modes
+    }
+
     QGCPalette { id: qgcPal }
+
+    Component { id: factControllerComponent; FactPanelController {} }
 
     QGCFlickable {
         anchors.fill:       parent
@@ -159,6 +196,26 @@ Item {
                     FlightModeIndicator {
                         Layout.fillHeight:  true
                         visible:            _activeVehicle
+                    }
+
+                    Repeater {
+                        model: _fltmodeNames
+
+                        QGCDelayButton {
+                            Layout.alignment:   Qt.AlignVCenter
+                            text:               modelData
+                            visible:            _activeVehicle
+                            onActivated: {
+                                _activeVehicle.flightMode = modelData
+                                fltmodeResetTimer.start()
+                            }
+
+                            Timer {
+                                id:         fltmodeResetTimer
+                                interval:   150
+                                onTriggered: parent.progress = 0
+                            }
+                        }
                     }
                 }
             }
