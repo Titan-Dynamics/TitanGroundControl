@@ -7,9 +7,7 @@
 #include <QtCore/QTextStream>
 #include <QtTest/QSignalSpy>
 
-#define private public
 #include "ComponentInformationTranslation.h"
-#undef private
 
 void ComponentInformationTranslationTest::_basic_test()
 {

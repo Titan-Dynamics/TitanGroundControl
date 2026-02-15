@@ -20,6 +20,7 @@ class FirmwareUpgradeController : public QObject
 {
     Q_OBJECT
     QML_ELEMENT
+    friend class FirmwareUpgradeControllerTest;
 public:
         typedef enum {
             AutoPilotStackPX4 = 0,
