@@ -128,6 +128,8 @@ Item {
                         text:                   _armed ? qsTr("Disarm") : qsTr("Arm")
                         enabled:                _armed || !_healthAndArmingChecksSupported || _activeVehicle.healthAndArmingCheckReport.canArm
                         visible:                _activeVehicle
+                        backgroundColor:        enabled ? "#b33" : qgcPal.button
+                        textColor:              enabled ? "white" : qgcPal.buttonText
                         onActivated: {
                             if (_armed) {
                                 _activeVehicle.armed = false
