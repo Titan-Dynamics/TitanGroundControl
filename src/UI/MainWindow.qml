@@ -254,12 +254,18 @@ ApplicationWindow {
 
     FlyView {
         id:                     flyView
-        anchors.fill:           parent
+        anchors.left:           parent.left
+        anchors.right:          toolDrawer.visible ? parent.horizontalCenter : parent.right
+        anchors.top:            parent.top
+        anchors.bottom:         parent.bottom
     }
 
     PlanView {
         id:             planView
-        anchors.fill:   parent
+        anchors.left:   parent.left
+        anchors.right:  toolDrawer.visible ? parent.horizontalCenter : parent.right
+        anchors.top:    parent.top
+        anchors.bottom: parent.bottom
         visible:        false
     }
 
@@ -313,7 +319,10 @@ ApplicationWindow {
 
     Rectangle {
         id:             toolDrawer
-        anchors.fill:   parent
+        anchors.left:   parent.horizontalCenter
+        anchors.right:  parent.right
+        anchors.top:    parent.top
+        anchors.bottom: parent.bottom
         visible:        false
         color:          qgcPal.window
 
@@ -328,11 +337,6 @@ ApplicationWindow {
             }
         }
 
-        // This need to block click event leakage to underlying map.
-        DeadMouseArea {
-            anchors.fill: parent
-        }
-
         Rectangle {
             id:             toolDrawerToolbar
             anchors.left:   parent.left
@@ -343,24 +347,36 @@ ApplicationWindow {
 
             RowLayout {
                 id:                 toolDrawerToolbarLayout
-                anchors.leftMargin: ScreenTools.defaultFontPixelWidth
+                anchors.leftMargin: ScreenTools.defaultFontPixelWidth * 3
                 anchors.left:       parent.left
+                anchors.right:      closeButton.left
                 anchors.top:        parent.top
                 anchors.bottom:     parent.bottom
                 spacing:            ScreenTools.defaultFontPixelWidth
-
-                QGCToolBarButton {
-                    id: qgcButton
-                    height: parent.height
-                    icon.source: "/res/QGCLogoFull.png"
-                    logo: true
-                    onClicked: mainWindow.showToolSelectDialog()
-                }
 
                 QGCLabel {
                     id:             toolbarDrawerText
                     text:           toolDrawer.toolTitle
                     font.pointSize: ScreenTools.largeFontPointSize
+                }
+            }
+
+            QGCColoredImage {
+                id:                     closeButton
+                anchors.right:          parent.right
+                anchors.rightMargin:    ScreenTools.defaultFontPixelWidth * 2
+                anchors.verticalCenter: parent.verticalCenter
+                height:                 ScreenTools.defaultFontPixelHeight
+                width:                  height
+                sourceSize.height:      height
+                fillMode:               Image.PreserveAspectFit
+                color:                  qgcPal.buttonText
+                source:                 "/res/XDelete.svg"
+
+                MouseArea {
+                    anchors.fill:       parent
+                    anchors.margins:    -ScreenTools.defaultFontPixelWidth
+                    onClicked:          toolDrawer.visible = false
                 }
             }
         }
