@@ -7,7 +7,7 @@ import QGroundControl.Controls
 Item {
     id:         _root
     width:      _pipSize
-    height:     _pipSize * (9/16)
+    height:     _pipSize / QGroundControl.settingsManager.videoSettings.aspectRatio.rawValue
     visible:    item2 && item2.pipState !== item2.pipState.window && show
 
     property var    item1:                  null    // Required

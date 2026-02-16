@@ -73,7 +73,7 @@ SettingsPage {
         heading:            qsTr("Settings")
         visible:            !_videoSourceDisabled
 
-        LabelledFactTextField {
+        LabelledFactComboBox {
             Layout.fillWidth:   true
             label:              qsTr("Aspect Ratio")
             fact:               _videoSettings.aspectRatio
