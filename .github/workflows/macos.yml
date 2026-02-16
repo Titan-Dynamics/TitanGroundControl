@@ -46,6 +46,9 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 120
 
+    env:
+      HAS_SIGNING_SECRETS: ${{ secrets.MACOS_CERT_P12_BASE64 != '' }}
+
     strategy:
       matrix:
         build_type: ${{ inputs.build_type && fromJSON(format('["{0}"]', inputs.build_type)) || fromJSON('["Release"]') }}
@@ -120,14 +123,14 @@ jobs:
         run: ./TitanGroundControl --simple-boot-test
 
       - name: Import Code Signing Certificate
-        if: github.event_name != 'pull_request' && secrets.MACOS_CERT_P12_BASE64 != ''
+        if: github.event_name != 'pull_request' && env.HAS_SIGNING_SECRETS == 'true'
         uses: apple-actions/import-codesign-certs@v6
         with:
           p12-file-base64: ${{ secrets.MACOS_CERT_P12_BASE64 }}
           p12-password: ${{ secrets.MACOS_CERT_P12_PASSWORD }}
 
       - name: Create signed/notarized/stapled app bundle
-        if: secrets.MACOS_CERT_P12_BASE64 != ''
+        if: env.HAS_SIGNING_SECRETS == 'true'
         working-directory: ${{ runner.temp }}/build
         run: cmake --install . --config ${{ matrix.build_type }}
         env:
@@ -137,7 +140,7 @@ jobs:
           QGC_MACOS_NOTARIZATION_TEAM_ID: ${{ secrets.MACOS_NOTARIZATION_TEAM_ID }}
 
       - name: Create unsigned app bundle
-        if: secrets.MACOS_CERT_P12_BASE64 == ''
+        if: env.HAS_SIGNING_SECRETS != 'true'
         working-directory: ${{ runner.temp }}/build
         run: cmake --install . --config ${{ matrix.build_type }}
 
