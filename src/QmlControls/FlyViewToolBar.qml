@@ -103,7 +103,7 @@ Item {
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
                     GradientStop { position: 0; color: _mainStatusBGColor }
-                    GradientStop { position: 1; color: qgcPal.window }
+                    GradientStop { position: 1; color: "transparent" }
                 }
             }
 
