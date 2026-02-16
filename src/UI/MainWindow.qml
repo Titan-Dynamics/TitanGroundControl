@@ -154,13 +154,22 @@ ApplicationWindow {
     //-------------------------------------------------------------------------
     //-- Global simple message dialog
 
-    function showMessageDialog(dialogTitle, dialogText, buttons = Dialog.Ok, acceptFunction = null, closeFunction = null) {
-        simpleMessageDialogComponent.createObject(mainWindow, { title: dialogTitle, text: dialogText, buttons: buttons, acceptFunction: acceptFunction, closeFunction: closeFunction }).open()
+    function _showMessageDialogWorker(owner, dialogTitle, dialogText, buttons = Dialog.Ok, acceptFunction = null, closeFunction = null) {
+        let dialog = simpleMessageDialogComponent.createObject(owner, { title: dialogTitle, text: dialogText, buttons: buttons, acceptFunction: acceptFunction, closeFunction: closeFunction })
+        dialog.open()
     }
 
     // This variant is only meant to be called by QGCApplication
     function _showMessageDialog(dialogTitle, dialogText) {
-        showMessageDialog(dialogTitle, dialogText)
+        _showMessageDialogWorker(mainWindow, dialogTitle, dialogText)
+    }
+
+    Connections {
+        target: QGroundControl
+
+        function onShowMessageDialogRequested(owner, title, text, buttons, acceptFunction, closeFunction) {
+            _showMessageDialogWorker(owner, title, text, buttons, acceptFunction, closeFunction)
+        }
     }
 
     Component {
@@ -207,7 +216,7 @@ ApplicationWindow {
 
     function _showCloseCheckDialog(text, acceptFunction) {
         _closeDialogShowing = true
-        showMessageDialog(closeDialogTitle, text, Dialog.Yes | Dialog.No,
+        QGroundControl.showMessageDialog(mainWindow, closeDialogTitle, text, Dialog.Yes | Dialog.No,
             function() { _closeDialogShowing = false; acceptFunction() },
             function() { _closeDialogShowing = false })
     }
@@ -631,7 +640,7 @@ ApplicationWindow {
                 radius:                     width / 2
                 color:                      QGroundControl.globalPalette.button
                 border.color:               QGroundControl.globalPalette.buttonText
-                visible:                    indicatorDrawerLoader.item && indicatorDrawerLoader.item.showExpand && !indicatorDrawer._expanded
+                visible:                    indicatorDrawerLoader.item && indicatorDrawerLoader.item._showExpand && !indicatorDrawer._expanded
 
                 QGCLabel {
                     anchors.centerIn:   parent

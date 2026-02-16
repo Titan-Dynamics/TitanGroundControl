@@ -139,10 +139,11 @@ RowLayout {
         id: overallStatusIndicatorPage
 
         ToolIndicatorPage {
-            showExpand:         true
-            waitForParameters:  true
-            contentComponent:   mainStatusContentComponent
-            expandedComponent:  mainStatusExpandedComponent
+            showExpand:                         true
+            waitForParameters:                  false
+            expandedComponentWaitForParameters: true
+            contentComponent:                   mainStatusContentComponent
+            expandedComponent:                  mainStatusExpandedComponent
         }
     }
 
@@ -153,10 +154,82 @@ RowLayout {
             id:         mainLayout
             spacing:    _spacing
 
+            property bool parametersReady: QGroundControl.multiVehicleManager.parameterReadyVehicleAvailable
+
+            RowLayout {
+                spacing: ScreenTools.defaultFontPixelWidth
+                visible: parametersReady
+
+                QGCDelayButton {
+                    enabled:    _armed || !_healthAndArmingChecksSupported || _activeVehicle.healthAndArmingCheckReport.canArm
+                    text:       _armed ? qsTr("Disarm") : (control._allowForceArm ? qsTr("Force Arm") : qsTr("Arm"))
+
+                    onActivated: {
+                        if (_armed) {
+                            _activeVehicle.armed = false
+                        } else {
+                            if (_allowForceArm) {
+                                _allowForceArm = false
+                                _activeVehicle.forceArm()
+                            } else {
+                                _activeVehicle.armed = true
+                            }
+                        }
+                        mainWindow.closeIndicatorDrawer()
+                    }
+                }
+
+                LabelledComboBox {
+                    id:                 primaryLinkCombo
+                    Layout.alignment:   Qt.AlignTop
+                    label:              qsTr("Primary Link")
+                    alternateText:      _primaryLinkName
+                    visible:            _activeVehicle && _activeVehicle.vehicleLinkManager.linkNames.length > 1
+
+                    property var    _rgLinkNames:       _activeVehicle ? _activeVehicle.vehicleLinkManager.linkNames : [ ]
+                    property var    _rgLinkStatus:      _activeVehicle ? _activeVehicle.vehicleLinkManager.linkStatuses : [ ]
+                    property string _primaryLinkName:   _activeVehicle ? _activeVehicle.vehicleLinkManager.primaryLinkName : ""
+
+                    function updateComboModel() {
+                        let linkModel = []
+                        for (let i = 0; i < _rgLinkNames.length; i++) {
+                            let linkStatus = _rgLinkStatus[i]
+                            linkModel.push(_rgLinkNames[i] + (linkStatus === "" ? "" : " " + _rgLinkStatus[i]))
+                        }
+                        primaryLinkCombo.model = linkModel
+                        primaryLinkCombo.currentIndex = -1
+                    }
+
+                    Component.onCompleted:  updateComboModel()
+                    on_RgLinkNamesChanged:  updateComboModel()
+                    on_RgLinkStatusChanged: updateComboModel()
+
+                    onActivated:    (index) => {
+                        _activeVehicle.vehicleLinkManager.primaryLinkName = _rgLinkNames[index]; currentIndex = -1
+                        mainWindow.closeIndicatorDrawer()
+                    }
+                }
+            }
+
+            SettingsGroupLayout {
+                //Layout.fillWidth:   true
+                heading:            qsTr("Vehicle Messages")
+
+                VehicleMessageList {
+                    id: vehicleMessageList
+                    visible: !noMessages
+                }
+
+                QGCLabel {
+                    text: qsTr("No new vehicle messages")
+                    visible: vehicleMessageList.noMessages
+                }
+            }
+
             SettingsGroupLayout {
                 //Layout.fillWidth:   true
                 heading:            qsTr("Sensor Status")
-                visible:            !_healthAndArmingChecksSupported
+                visible:            parametersReady && !_healthAndArmingChecksSupported
 
                 GridLayout {
                     rowSpacing:     _spacing
@@ -179,7 +252,7 @@ RowLayout {
             SettingsGroupLayout {
                 //Layout.fillWidth:   true
                 heading:            qsTr("Overall Status")
-                visible:            _healthAndArmingChecksSupported && _activeVehicle.healthAndArmingCheckReport.problemsForCurrentMode.count > 0
+                visible:            parametersReady && _healthAndArmingChecksSupported && _activeVehicle.healthAndArmingCheckReport.problemsForCurrentMode.count > 0
 
                 // List health and arming checks
                 Repeater {
@@ -238,7 +311,7 @@ RowLayout {
                                 var paramName = link.substr(8);
                                 fact = controller.getParameterFact(-1, paramName, true)
                                 if (fact != null) {
-                                    paramEditorDialogComponent.createObject(mainWindow).open()
+                                    paramEditorDialogFactory.open()
                                 }
                             } else {
                                 Qt.openUrlExternally(link);
@@ -247,6 +320,12 @@ RowLayout {
 
                         FactPanelController {
                             id: controller
+                        }
+
+                        QGCPopupDialogFactory {
+                            id: paramEditorDialogFactory
+
+                            dialogComponent: paramEditorDialogComponent
                         }
 
                         Component {
