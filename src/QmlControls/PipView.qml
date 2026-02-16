@@ -26,7 +26,7 @@ Item {
     property real   _pipSize:           parent.width * 0.35
     property real   _maxSize:           0.75                // Percentage of parent control size
     property real   _minSize:           0.10
-    property real   _minAbsoluteWidth:  ScreenTools.defaultFontPixelWidth * 20
+    property real   _minAbsoluteWidth:  ScreenTools.defaultFontPixelWidth * 30
     property real   _iconSize:          ScreenTools.defaultFontPixelHeight * 2
     property bool   _componentComplete: false
     property real   _margin:            ScreenTools.defaultFontPixelWidth * 0.75
