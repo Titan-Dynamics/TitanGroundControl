@@ -6,6 +6,7 @@ import QtQuick.Layouts
 import QtLocation
 import QtPositioning
 import QtQuick.Window
+import QtQuick.Effects
 import QtQml.Models
 
 import QGroundControl
@@ -173,6 +174,33 @@ Item {
 )
                 }
             }
+        }
+    }
+
+    // Frosted glass blur behind the toolbar
+    Item {
+        id:             toolbarBlur
+        anchors.left:   parent.left
+        anchors.right:  parent.right
+        anchors.top:    parent.top
+        height:         toolbar.height
+        clip:           true
+        visible:        toolbar.visible
+
+        ShaderEffectSource {
+            id:             blurSource
+            sourceItem:     mapHolder
+            anchors.fill:   parent
+            sourceRect:     Qt.rect(0, 0, toolbarBlur.width, toolbarBlur.height)
+            visible:        false
+        }
+
+        MultiEffect {
+            anchors.fill:   parent
+            source:         blurSource
+            blurEnabled:    true
+            blur:           0.6
+            blurMax:        48
         }
     }
 
