@@ -343,6 +343,26 @@ Item {
         }
     }
 
+    // Settings icon — bottom corner on the opposite side from hide
+    Image {
+        id:             settingsIcon
+        source:         "/res/gear-white.svg"
+        mipmap:         true
+        fillMode:       Image.PreserveAspectFit
+        anchors.right:  parent.right
+        anchors.bottom: parent.bottom
+        anchors.rightMargin:  _iconSize * 0.15
+        anchors.bottomMargin: _iconSize * 0.15
+        visible:        _isExpanded && (ScreenTools.isMobile || pipMouseArea.containsMouse)
+        height:         _iconSize * 0.7
+        width:          _iconSize * 0.7
+        sourceSize.height:  height
+        MouseArea {
+            anchors.fill:   parent
+            onClicked:      mainWindow.showSettingsTool(qsTr("Video"))
+        }
+    }
+
     Rectangle {
         id:                     showPip
         anchors.left:           parent.left
@@ -388,6 +408,11 @@ Item {
             target: hidePIP
             anchors.left: undefined
             anchors.right: _root.right
+        }
+        AnchorChanges {
+            target: settingsIcon
+            anchors.right: undefined
+            anchors.left: _root.left
         }
         AnchorChanges {
             target: showPip
