@@ -109,7 +109,7 @@ jobs:
         run: ${{ env.QT_ROOT_DIR }}/bin/qt-cmake -S ${{ github.workspace }} -B . -G Ninja
               -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
               -DQGC_STABLE_BUILD=${{ (github.ref_type == 'tag' || contains(github.ref, 'Stable')) && 'ON' || 'OFF' }}
-              -DQGC_MACOS_SIGN_WITH_IDENTITY=${{ github.event_name != 'pull_request' && 'ON' || 'OFF' }}
+              -DQGC_MACOS_SIGN_WITH_IDENTITY=${{ github.event_name != 'pull_request' && secrets.MACOS_CERT_P12_BASE64 != '' && 'ON' || 'OFF' }}
 
       - name: Build
         working-directory: ${{ runner.temp }}/build
@@ -120,13 +120,14 @@ jobs:
         run: ./TitanGroundControl --simple-boot-test
 
       - name: Import Code Signing Certificate
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && secrets.MACOS_CERT_P12_BASE64 != ''
         uses: apple-actions/import-codesign-certs@v6
         with:
           p12-file-base64: ${{ secrets.MACOS_CERT_P12_BASE64 }}
           p12-password: ${{ secrets.MACOS_CERT_P12_PASSWORD }}
 
       - name: Create signed/notarized/stapled app bundle
+        if: secrets.MACOS_CERT_P12_BASE64 != ''
         working-directory: ${{ runner.temp }}/build
         run: cmake --install . --config ${{ matrix.build_type }}
         env:
@@ -134,6 +135,11 @@ jobs:
           QGC_MACOS_NOTARIZATION_USERNAME: ${{ secrets.MACOS_NOTARIZATION_USERNAME }}
           QGC_MACOS_NOTARIZATION_PASSWORD: ${{ secrets.MACOS_NOTARIZATION_PASSWORD }}
           QGC_MACOS_NOTARIZATION_TEAM_ID: ${{ secrets.MACOS_NOTARIZATION_TEAM_ID }}
+
+      - name: Create unsigned app bundle
+        if: secrets.MACOS_CERT_P12_BASE64 == ''
+        working-directory: ${{ runner.temp }}/build
+        run: cmake --install . --config ${{ matrix.build_type }}
 
       - name: Mount DMG
         working-directory: ${{ runner.temp }}/build
