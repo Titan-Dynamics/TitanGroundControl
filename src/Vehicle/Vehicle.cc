@@ -1540,6 +1540,11 @@ QString Vehicle::flightMode() const
     return _firmwarePlugin->flightMode(_base_mode, _custom_mode);
 }
 
+QString Vehicle::flightModeFromCustomMode(uint32_t customMode) const
+{
+    return _firmwarePlugin->flightMode(MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, customMode);
+}
+
 bool Vehicle::setFlightModeCustom(const QString& flightMode, uint8_t* base_mode, uint32_t* custom_mode)
 {
     return _firmwarePlugin->setFlightMode(flightMode, base_mode, custom_mode);

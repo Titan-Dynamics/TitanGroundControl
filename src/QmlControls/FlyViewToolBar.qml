@@ -42,8 +42,11 @@ Item {
             if (controller.parameterExists(-1, paramName)) {
                 var fact = controller.getParameterFact(-1, paramName, false)
                 if (fact) {
-                    var name = fact.enumStringValue
-                    if (name && name !== "" && !seen[name]) {
+                    // Use the firmware plugin's canonical name (e.g. "FBW A")
+                    // instead of the parameter metadata name (e.g. "FBWA")
+                    var modeNum = fact.rawValue
+                    var name = _activeVehicle.flightModeFromCustomMode(modeNum)
+                    if (name && name !== "" && name !== "Unknown" && !seen[name]) {
                         seen[name] = true
                         modes.push(name)
                     }
@@ -103,7 +106,7 @@ Item {
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
                     GradientStop { position: 0; color: _mainStatusBGColor }
-                    GradientStop { position: 1; color: qgcPal.window }
+                    GradientStop { position: 1; color: "transparent" }
                 }
             }
 

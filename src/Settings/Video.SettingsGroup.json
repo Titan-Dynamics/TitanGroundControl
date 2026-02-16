@@ -41,10 +41,12 @@
 {
     "name":             "aspectRatio",
     "shortDesc": "Video Aspect Ratio",
-    "longDesc":  "Video Aspect Ratio (width / height). Use 0.0 to ignore it.",
+    "longDesc":  "Video Aspect Ratio (width / height).",
     "type":             "float",
     "decimalPlaces":    6,
-    "default":     1.777777
+    "enumStrings":      "16:9,4:3,21:9,1:1,3:2,16:10",
+    "enumValues":       "1.777778,1.333333,2.333333,1.0,1.5,1.6",
+    "default":     1.777778
 },
 {
     "name":         "gridLines",

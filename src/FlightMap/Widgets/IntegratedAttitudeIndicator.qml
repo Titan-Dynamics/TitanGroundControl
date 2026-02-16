@@ -17,7 +17,7 @@ Item {
 
     property real _totalRadius:             compassRadius + attitudeSpacing + attitudeSize
     property real _attitudeRadius:          (width / 2) - (attitudeSize / 2)
-    property real _maxAngleDegrees:         30
+    property real _maxAngleDegrees:         40
     property real _maxRadians:              _maxAngleDegrees * Math.PI / 180
     property real _zeroAttitudeRadians:     Math.PI * 1.5
     property real _clampedAngleDegrees:     Math.min(Math.max(attitudeAngleDegrees, -_maxAngleDegrees), _maxAngleDegrees)

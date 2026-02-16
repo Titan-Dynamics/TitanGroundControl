@@ -7,7 +7,7 @@ import QGroundControl.Controls
 Item {
     id:         _root
     width:      _pipSize
-    height:     _pipSize * (9/16)
+    height:     _pipSize / QGroundControl.settingsManager.videoSettings.aspectRatio.rawValue
     visible:    item2 && item2.pipState !== item2.pipState.window && show
 
     property var    item1:                  null    // Required
@@ -26,7 +26,7 @@ Item {
     property real   _pipSize:           parent.width * 0.35
     property real   _maxSize:           0.75                // Percentage of parent control size
     property real   _minSize:           0.10
-    property real   _minAbsoluteWidth:  ScreenTools.defaultFontPixelWidth * 20
+    property real   _minAbsoluteWidth:  ScreenTools.defaultFontPixelWidth * 30
     property real   _iconSize:          ScreenTools.defaultFontPixelHeight * 2
     property bool   _componentComplete: false
     property real   _margin:            ScreenTools.defaultFontPixelWidth * 0.75
@@ -343,6 +343,26 @@ Item {
         }
     }
 
+    // Settings icon — bottom corner on the opposite side from hide
+    Image {
+        id:             settingsIcon
+        source:         "/res/gear-white.svg"
+        mipmap:         true
+        fillMode:       Image.PreserveAspectFit
+        anchors.right:  parent.right
+        anchors.bottom: parent.bottom
+        anchors.rightMargin:  _iconSize * 0.15
+        anchors.bottomMargin: _iconSize * 0.15
+        visible:        _isExpanded && (ScreenTools.isMobile || pipMouseArea.containsMouse)
+        height:         _iconSize * 0.7
+        width:          _iconSize * 0.7
+        sourceSize.height:  height
+        MouseArea {
+            anchors.fill:   parent
+            onClicked:      mainWindow.showSettingsTool(qsTr("Video"))
+        }
+    }
+
     Rectangle {
         id:                     showPip
         anchors.left:           parent.left
@@ -388,6 +408,11 @@ Item {
             target: hidePIP
             anchors.left: undefined
             anchors.right: _root.right
+        }
+        AnchorChanges {
+            target: settingsIcon
+            anchors.right: undefined
+            anchors.left: _root.left
         }
         AnchorChanges {
             target: showPip
