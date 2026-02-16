@@ -92,9 +92,8 @@ ToolIndicatorPage {
                 text: qsTr("Close")
                 imageResource: "/res/OpenDoor.svg"
                 onClicked: {
-                    if (mainWindow.allowViewSwitch()) {
-                        mainWindow.finishCloseProcess()
-                    }
+                    mainWindow.closeIndicatorDrawer()
+                    mainWindow.close()
                 }
             }
 

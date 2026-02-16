@@ -57,6 +57,7 @@ ApplicationWindow {
     }
 
     readonly property real      _topBottomMargins:          ScreenTools.defaultFontPixelHeight * 0.5
+    property bool               _splitExpanded:             false
 
     //-------------------------------------------------------------------------
     //-- Global Scope Variables
@@ -169,7 +170,8 @@ ApplicationWindow {
         }
     }
 
-    property bool _forceClose: false
+    property bool _forceClose:          false
+    property bool _closeDialogShowing:  false
 
     function finishCloseProcess() {
         _forceClose = true
@@ -203,12 +205,18 @@ ApplicationWindow {
 
     property string closeDialogTitle: qsTr("Close %1").arg(QGroundControl.appName)
 
+    function _showCloseCheckDialog(text, acceptFunction) {
+        _closeDialogShowing = true
+        showMessageDialog(closeDialogTitle, text, Dialog.Yes | Dialog.No,
+            function() { _closeDialogShowing = false; acceptFunction() },
+            function() { _closeDialogShowing = false })
+    }
+
     function checkForUnsavedMission() {
         if (planView._planMasterController.dirty) {
-            showMessageDialog(closeDialogTitle,
-                              qsTr("You have a mission edit in progress which has not been saved/sent. If you close you will lose changes. Are you sure you want to close?"),
-                              Dialog.Yes | Dialog.No,
-                              function() { _closeChecksToSkip |= _skipUnsavedMissionCheckMask; performCloseChecks() })
+            _showCloseCheckDialog(
+                qsTr("You have a mission edit in progress which has not been saved/sent. If you close you will lose changes. Are you sure you want to close?"),
+                function() { _closeChecksToSkip |= _skipUnsavedMissionCheckMask; performCloseChecks() })
             return false
         } else {
             return true
@@ -218,9 +226,8 @@ ApplicationWindow {
     function checkForPendingParameterWrites() {
         for (var index=0; index<QGroundControl.multiVehicleManager.vehicles.count; index++) {
             if (QGroundControl.multiVehicleManager.vehicles.get(index).parameterManager.pendingWrites) {
-                mainWindow.showMessageDialog(closeDialogTitle,
+                _showCloseCheckDialog(
                     qsTr("You have pending parameter updates to a vehicle. If you close you will lose changes. Are you sure you want to close?"),
-                    Dialog.Yes | Dialog.No,
                     function() { _closeChecksToSkip |= _skipPendingParameterWritesCheckMask; performCloseChecks() })
                 return false
             }
@@ -230,9 +237,8 @@ ApplicationWindow {
 
     function checkForActiveConnections() {
         if (QGroundControl.multiVehicleManager.activeVehicle) {
-            mainWindow.showMessageDialog(closeDialogTitle,
+            _showCloseCheckDialog(
                 qsTr("There are still active connections to vehicles. Are you sure you want to exit?"),
-                Dialog.Yes | Dialog.No,
                 function() { _closeChecksToSkip |= _skipActiveConnectionsCheckMask; performCloseChecks() })
             return false
         } else {
@@ -242,6 +248,10 @@ ApplicationWindow {
 
     onClosing: (close) => {
         if (!_forceClose) {
+            if (_closeDialogShowing) {
+                close.accepted = false
+                return
+            }
             _closeChecksToSkip = 0
             close.accepted = performCloseChecks()
         }
@@ -257,7 +267,7 @@ ApplicationWindow {
         anchors.left:           parent.left
         anchors.top:            parent.top
         anchors.bottom:         parent.bottom
-        width:                  toolDrawer.visible ? parent.width / 2 : parent.width
+        width:                  toolDrawer.visible ? (_splitExpanded ? 0 : parent.width / 2) : parent.width
 
         Behavior on width {
             NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
@@ -269,11 +279,49 @@ ApplicationWindow {
         anchors.left:   parent.left
         anchors.top:    parent.top
         anchors.bottom: parent.bottom
-        width:          toolDrawer.visible ? parent.width / 2 : parent.width
+        width:          toolDrawer.visible ? (_splitExpanded ? 0 : parent.width / 2) : parent.width
         visible:        false
 
         Behavior on width {
             NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+        }
+    }
+
+    Rectangle {
+        id:                     splitToggle
+        visible:                toolDrawer.visible
+        anchors.verticalCenter: parent.verticalCenter
+        x:                      toolDrawer.visible ? (_splitExpanded ? -width * 0.25 : parent.width / 2 - width / 2) : parent.width
+        z:                      100
+        width:                  ScreenTools.defaultFontPixelHeight * 1.5
+        height:                 width
+        radius:                 width / 2
+        color:                  splitToggleMouseArea.containsMouse ? qgcPal.buttonHighlight : qgcPal.button
+        border.color:           qgcPal.buttonText
+        border.width:           1
+        opacity:                splitToggleMouseArea.containsMouse ? 1.0 : 0.7
+
+        Behavior on x {
+            NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+        }
+
+        QGCColoredImage {
+            anchors.centerIn:   parent
+            width:              parent.width * 0.5
+            height:             width
+            sourceSize.width:   width
+            color:              qgcPal.buttonText
+            source:             "/res/wind-rose-arrow.svg"
+            mirror:             !_splitExpanded
+        }
+
+        MouseArea {
+            id:             splitToggleMouseArea
+            anchors.fill:   parent
+            anchors.margins: -ScreenTools.defaultFontPixelWidth
+            hoverEnabled:   true
+            cursorShape:    Qt.PointingHandCursor
+            onClicked:      _splitExpanded = !_splitExpanded
         }
     }
 
@@ -330,7 +378,7 @@ ApplicationWindow {
         anchors.right:  parent.right
         anchors.top:    parent.top
         anchors.bottom: parent.bottom
-        width:          visible ? parent.width / 2 : 0
+        width:          visible ? (_splitExpanded ? parent.width : parent.width / 2) : 0
         visible:        false
         color:          qgcPal.window
         clip:           true
