@@ -464,6 +464,7 @@ public:
     QStringList flightModes                 ();
     QString flightMode                      () const;
     void setFlightMode                      (const QString& flightMode);
+    Q_INVOKABLE QString flightModeFromCustomMode(uint32_t customMode) const;
 
     bool airship() const;
 
