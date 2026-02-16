@@ -23,7 +23,7 @@ Item {
     property alias  _windowContentItem: window.contentItem
     property alias  _pipContentItem:    pipContent
     property bool   _isExpanded:        true
-    property real   _pipSize:           parent.width * 0.3
+    property real   _pipSize:           parent.width * 0.35
     property real   _maxSize:           0.75                // Percentage of parent control size
     property real   _minSize:           0.10
     property real   _minAbsoluteWidth:  ScreenTools.defaultFontPixelWidth * 20
@@ -32,6 +32,7 @@ Item {
     property real   _margin:            ScreenTools.defaultFontPixelWidth * 0.75
     property bool   _isOnRight:         parent ? (x + width / 2 > parent.width / 2) : false
     property real   _prevHeight:        0
+    property real   _prevParentHeight:  0
 
     Component.onCompleted: {
         _initForItems()
@@ -46,6 +47,7 @@ Item {
             _root.x = _margin
             _root.y = _root.parent.height - _root.height - _margin
             _prevHeight = _root.height
+            _prevParentHeight = _root.parent.height
             _componentComplete = true
         }
     }
@@ -281,12 +283,26 @@ Item {
             } else if (_root.width < minWidth) {
                 _pipSize = minWidth
             }
-            _snapToEdge()
+            // Keep snapped to the same edge during parent resize
+            if (_isOnRight) {
+                _root.x = parentWidth - _root.width - _margin
+            } else {
+                _root.x = _margin
+            }
         }
 
         function onHeightChanged() {
             if (!_componentComplete) return
-            _snapToEdge()
+            var parentHeight = _root.parent.height
+            // If PiP was at the bottom, keep it there
+            var wasAtBottom = (_prevParentHeight > 0) &&
+                (_root.y + _root.height + _margin * 3 >= _prevParentHeight)
+            if (wasAtBottom) {
+                _root.y = parentHeight - _root.height - _margin
+            } else {
+                _root.y = Math.max(topBound + _margin, Math.min(_root.y, parentHeight - _root.height - _margin))
+            }
+            _prevParentHeight = parentHeight
         }
     }
 
