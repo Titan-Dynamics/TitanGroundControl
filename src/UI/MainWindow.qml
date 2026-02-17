@@ -57,7 +57,8 @@ ApplicationWindow {
     }
 
     readonly property real      _topBottomMargins:          ScreenTools.defaultFontPixelHeight * 0.5
-    property bool               _splitExpanded:             ScreenTools.isMobile
+    property bool               _splitExpanded:             ScreenTools.isMobile || QGroundControl.settingsManager.flyViewSettings.toolDrawerFullWidth.rawValue
+    on_SplitExpandedChanged:    QGroundControl.settingsManager.flyViewSettings.toolDrawerFullWidth.rawValue = _splitExpanded
 
     //-------------------------------------------------------------------------
     //-- Global Scope Variables
