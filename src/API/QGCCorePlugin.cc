@@ -107,13 +107,7 @@ void QGCCorePlugin::adjustSettingMetaData(const QString &settingsGroup, FactMeta
 
     if (settingsGroup == AppSettings::settingsGroup) {
         if (metaData.name() == AppSettings::indoorPaletteName) {
-            QVariant outdoorPalette;
-#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
-            outdoorPalette = 0;
-#else
-            outdoorPalette = 1;
-#endif
-            metaData.setRawDefaultValue(outdoorPalette);
+            metaData.setRawDefaultValue(1);
             return;
         }
 #if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)

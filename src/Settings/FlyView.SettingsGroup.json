@@ -108,6 +108,12 @@
     "shortDesc":    "Enable automatic mission start/resume popups",
     "type":         "bool",
     "default":      true
+},
+{
+    "name":         "toolDrawerFullWidth",
+    "shortDesc":    "Show tool drawer (settings, configure, etc.) at full width instead of split view",
+    "type":         "bool",
+    "default":      false
 }
 ]
 }
