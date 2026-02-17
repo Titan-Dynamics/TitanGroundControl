@@ -181,7 +181,7 @@ Item {
         anchors.fill:   parent
         color:          "black"
         opacity:        pipMouseArea.containsMouse ? 0.35 : 0.0
-        visible:        _isExpanded
+        visible:        _isExpanded && !ScreenTools.isMobile
 
         Behavior on opacity {
             NumberAnimation { duration: 250; easing.type: Easing.InOutQuad }

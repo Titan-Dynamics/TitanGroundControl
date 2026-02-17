@@ -57,7 +57,7 @@ ApplicationWindow {
     }
 
     readonly property real      _topBottomMargins:          ScreenTools.defaultFontPixelHeight * 0.5
-    property bool               _splitExpanded:             false
+    property bool               _splitExpanded:             ScreenTools.isMobile
 
     //-------------------------------------------------------------------------
     //-- Global Scope Variables
