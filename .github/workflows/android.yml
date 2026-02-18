@@ -1,26 +1,6 @@
 name: Android
 
 on:
-  push:
-    branches:
-      - master
-      - 'Stable*'
-    tags:
-      - 'v*'
-    paths-ignore:
-      - 'docs/**'
-  pull_request:
-    paths:
-      - '.github/workflows/android.yml'
-      - '.github/actions/**'
-      - 'deploy/android/**'
-      - 'src/**'
-      - 'test/**'
-      - 'android/**'
-      - 'CMakeLists.txt'
-      - 'cmake/**'
-      - 'translations/*'
-  merge_group:
   workflow_dispatch:
     inputs:
       build_type:

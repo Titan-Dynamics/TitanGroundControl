@@ -1,25 +1,6 @@
 name: Windows
 
 on:
-  push:
-    branches:
-      - master
-      - 'Stable*'
-    tags:
-      - 'v*'
-    paths-ignore:
-      - 'docs/**'
-  pull_request:
-    paths:
-      - '.github/workflows/windows.yml'
-      - '.github/actions/**'
-      - 'deploy/windows/**'
-      - 'src/**'
-      - 'test/**'
-      - 'CMakeLists.txt'
-      - 'cmake/**'
-      - 'tools/setup/*windows*'
-  merge_group:
   workflow_dispatch:
     inputs:
       build_type:

@@ -1,24 +1,6 @@
 name: MacOS
 
 on:
-  push:
-    branches:
-      - master
-      - 'Stable*'
-    tags:
-      - 'v*'
-    paths-ignore:
-      - 'docs/**'
-  pull_request:
-    paths:
-      - '.github/workflows/macos.yml'
-      - '.github/actions/**'
-      - 'deploy/macos/**'
-      - 'src/**'
-      - 'test/**'
-      - 'CMakeLists.txt'
-      - 'cmake/**'
-  merge_group:
   workflow_dispatch:
     inputs:
       build_type:
