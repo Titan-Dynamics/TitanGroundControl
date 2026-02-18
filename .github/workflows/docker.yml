@@ -1,17 +1,6 @@
 name: Docker
 
 on:
-  push:
-    branches:
-      - master
-      - 'Stable*'
-    tags:
-      - 'v*'
-    paths-ignore:
-      - 'docs/**'
-  pull_request:
-    paths-ignore:
-      - 'docs/**'
   workflow_dispatch:
 
 concurrency:
