@@ -214,7 +214,7 @@ Item {
 
                     QGCDelayButton {
                         Layout.alignment:   Qt.AlignVCenter
-                        text:               modelData
+                        text:               TDHelpers.displayModeName(modelData)
                         visible:            _activeVehicle
                         onActivated: {
                             _activeVehicle.flightMode = modelData
