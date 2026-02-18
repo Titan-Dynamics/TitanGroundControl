@@ -41,11 +41,8 @@ jobs:
       - name: Compute next version
         id: version
         run: |
-          # Get latest v* tag (strict semver only, no RC/pre-release)
-          LATEST_TAG=$(git tag -l 'v*' \
-            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
-            | sort -V \
-            | tail -1)
+          # Get latest tag reachable from HEAD on this branch (not upstream tags)
+          LATEST_TAG=$(git describe --tags --abbrev=0 --match 'v*' HEAD)
           if [ -z "$LATEST_TAG" ]; then
             echo "::error::No v* semver tags found"
             exit 1

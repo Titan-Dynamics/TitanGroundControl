@@ -138,12 +138,12 @@ public:
 #ifdef QGC_CUSTOM_BUILD
     virtual QString stableVersionCheckFileUrl() const { return QString(); }
 #else
-    virtual QString stableVersionCheckFileUrl() const { return QStringLiteral("https://s3-us-west-2.amazonaws.com/qgroundcontrol/latest/QGC.version.txt"); }
+    virtual QString stableVersionCheckFileUrl() const { return QStringLiteral("https://raw.githubusercontent.com/Titan-Dynamics/TitanGroundControl/master/.version.txt"); }
 #endif
 
     /// Returns the user visible url to show user where to download new stable builds from.
     /// Custom builds must override to provide their own location.
-    virtual QString stableDownloadLocation() const { return QStringLiteral("qgroundcontrol.com"); }
+    virtual QString stableDownloadLocation() const { return QStringLiteral("github.com/Titan-Dynamics/TitanGroundControl/releases"); }
 
     /// Returns the complex mission items to display in the Plan UI
     /// @param complexMissionItemNames Default set of complex items
