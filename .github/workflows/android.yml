@@ -86,7 +86,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
-          submodules: recursive
           fetch-depth: 0
           fetch-tags: true
 
@@ -120,7 +119,7 @@ jobs:
           save-cache: ${{ github.event_name != 'pull_request' }}
 
       - name: Create Debug Keystore
-        if: ${{ env.QT_ANDROID_KEYSTORE_STORE_PASS == '' }}
+        if: ${{ env.QT_ANDROID_KEYSTORE_STORE_PASS == '' || !matrix.primary }}
         shell: bash
         run: |
           keytool -genkey -v \
@@ -136,26 +135,23 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Configure
-        shell: bash
-        working-directory: ${{ runner.temp }}/build
-        run: |
-          QT_DIR="${QT_ROOT_DIR//\\//}"        # Convert backslashes for Windows
-          WORKSPACE="${GITHUB_WORKSPACE//\\//}"
-          "${QT_DIR}/bin/qt-cmake" \
-            -S "${WORKSPACE}" \
-            -B . -G Ninja \
-            -DCMAKE_BUILD_TYPE=${{ inputs.build_type || 'Release' }} \
-            -DCMAKE_WARN_DEPRECATED=FALSE \
-            -DQT_ANDROID_ABIS="${{ env.QT_ANDROID_ABIS }}" \
-            -DQT_HOST_PATH="${QT_DIR}/../${{ matrix.qt_host_path }}" \
-            -DQT_ANDROID_SIGN_APK=ON \
-            -DQGC_STABLE_BUILD=${{ (github.ref_type == 'tag' || contains(github.ref, 'Stable')) && 'ON' || 'OFF' }} \
-            ${{ matrix.emulator && '-DQT_ANDROID_APPLICATION_ARGUMENTS="--simple-boot-test"' || '' }}
+        uses: ./.github/actions/cmake-configure
+        with:
+          build-dir: ${{ runner.temp }}/build
+          build-type: ${{ inputs.build_type || 'Release' }}
+          stable: ${{ (github.ref_type == 'tag' || contains(github.ref, 'Stable')) && 'true' || 'false' }}
+          extra-args: >-
+            -DCMAKE_WARN_DEPRECATED=FALSE
+            -DQT_ANDROID_ABIS=${{ env.QT_ANDROID_ABIS }}
+            -DQT_HOST_PATH=${{ env.QT_ROOT_DIR }}/../${{ matrix.qt_host_path }}
+            -DQT_ANDROID_SIGN_APK=ON
+            ${{ matrix.emulator && '-DQT_ANDROID_APPLICATION_ARGUMENTS=--simple-boot-test' || '' }}
 
       - name: Build
-        shell: bash
-        working-directory: ${{ runner.temp }}/build
-        run: cmake --build . --target all --config ${{ inputs.build_type || 'Release' }} --parallel
+        uses: ./.github/actions/cmake-build
+        with:
+          build-dir: ${{ runner.temp }}/build
+          build-type: ${{ inputs.build_type || 'Release' }}
 
       - name: Prepare Artifact
         shell: bash
@@ -227,7 +223,7 @@ jobs:
           script: |
             timeout 20s adb start-server >/dev/null 2>&1 || true
             timeout 180s adb wait-for-device || (echo "::error::adb wait-for-device timed out before boot test." && exit 1)
-            python3 .github/scripts/android_boot_test.py --apk "${{ runner.temp }}/build/${{ env.PACKAGE }}.apk" --package org.mavlink.qgroundcontrol --timeout 120 --stability-window 20 --adb-ready-timeout 180 --install-retries 4 --install-retry-delay 5 --log-output /tmp/qgc_emulator_boot.log
+            python3 .github/scripts/android_boot_test.py --apk "${{ runner.temp }}/build/${{ env.PACKAGE }}.apk" --package org.mavlink.qgroundcontrol --timeout 120 --stability-window 20 --adb-ready-timeout 180 --install-retries 4 --install-retry-delay 5 --launch-retries 2 --log-output /tmp/qgc_emulator_boot.log
 
       - name: Collect Emulator Diagnostics
         if: ${{ failure() && matrix.emulator }}
@@ -270,11 +266,13 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Attest Build Provenance
-        if: ${{ !matrix.emulator && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-        uses: actions/attest-build-provenance@v3
+      - name: Attest Build with SBOM
+        if: ${{ !matrix.emulator }}
+        uses: ./.github/actions/attest-sbom
         with:
-          subject-path: '${{ runner.temp }}/build/${{ env.PACKAGE }}.apk'
+          subject-path: ${{ runner.temp }}/build/${{ env.PACKAGE }}.apk
+          subject-name: ${{ env.PACKAGE }}-${{ matrix.host }}
+          scan-path: ${{ runner.temp }}/build
 
       - name: Upload Build File
         if: ${{ !matrix.emulator }}

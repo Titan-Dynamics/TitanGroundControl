@@ -466,7 +466,8 @@ void GeoTest::_qbenchmarkGeodesicDistance()
     const QGeoCoordinate coord(47.364869, 8.594398, 100.0);
     double dist = 0;
 
-    QBENCHMARK {
+    QBENCHMARK
+    {
         dist = QGCGeo::geodesicDistance(m_origin, coord);
         QT_BENCHMARK_KEEP(dist);
     }

@@ -9,7 +9,6 @@ tools/
 ├── analyze.py               # Static analysis (clang-tidy, cppcheck)
 ├── check-deps.sh            # Check for outdated dependencies
 ├── clean.sh                 # Clean build artifacts and caches
-├── common.sh                # Shared shell functions
 ├── coverage.sh              # Code coverage reports
 ├── format-check.sh          # Check/apply clang-format
 ├── generate-docs.sh         # Generate API docs (Doxygen)
@@ -194,12 +193,13 @@ Scripts in `setup/` help configure development environments. They read configura
 |--------|----------|-------------|
 | `install_dependencies.py --platform debian` | Linux | Install build dependencies via apt |
 | `install_dependencies.py --platform macos` | macOS | Install dependencies via Homebrew + GStreamer |
-| `install-dependencies-windows.ps1` | Windows | Install GStreamer (Vulkan SDK optional) |
+| `install_dependencies.py --platform windows` | Windows | Install GStreamer (Vulkan SDK optional) |
 | `install-qt-debian.sh` | Linux | Install Qt via aqtinstall |
 | `install-qt-macos.sh` | macOS | Install Qt via aqtinstall |
 | `install-qt-windows.ps1` | Windows | Install Qt via aqtinstall |
-| `build-gstreamer.sh` | Linux | Build GStreamer from source (optional) |
-| `read-config.sh` | All | Helper to read `.github/build-config.json` |
+| `build-gstreamer.py` | All | Build GStreamer from source (optional) |
+| `read_config.py` | All | Read `.github/build-config.json` (Python, cross-platform) |
+| `read-config.sh` | All | Shell wrapper for `read_config.py` |
 
 ### Usage Examples
 
@@ -212,12 +212,12 @@ python3 ./tools/setup/install_dependencies.py --platform debian
 python3 ./tools/setup/install_dependencies.py --platform macos
 ./tools/setup/install-qt-macos.sh
 
-# Windows (PowerShell as Admin):
-.\tools\setup\install-dependencies-windows.ps1
+# Windows (as Admin):
+python .\tools\setup\install_dependencies.py --platform windows
 .\tools\setup\install-qt-windows.ps1
 
 # Build GStreamer from source (Linux, optional)
-./tools/setup/build-gstreamer.sh -p /opt/gstreamer
+python3 ./tools/setup/build-gstreamer.py --platform linux --prefix /opt/gstreamer
 ```
 
 ## Static Analyzers

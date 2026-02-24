@@ -37,7 +37,9 @@ class QGCCameraManager : public QObject
     Q_PROPERTY(int currentCamera READ currentCamera WRITE setCurrentCamera NOTIFY currentCameraChanged)
     Q_PROPERTY(int currentZoomLevel READ currentZoomLevel NOTIFY currentZoomLevelChanged)
 
+#ifdef QGC_UNITTEST_BUILD
     friend class QGCCameraManagerTest;
+#endif
 
 public:
     explicit QGCCameraManager(Vehicle* vehicle);
@@ -106,6 +108,7 @@ protected slots:
     void _toggleVideoRecording();
 
 private slots:
+    void _initialConnectCompleted();
     void _setCurrentZoomLevel(int level);
 
 private:
@@ -138,6 +141,7 @@ private:
     QTimer _camerasLostHeartbeatTimer;
     QMap<QString, CameraStruct*> _cameraInfoRequest;
     static QVariantList _cameraList;
+    bool _initialConnectComplete = false;
 
     QHash<int, double> _aspectByCompId;
 };

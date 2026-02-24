@@ -44,6 +44,8 @@ class QGroundControlQmlGlobal : public QObject
     QML_SINGLETON
 
 public:
+    static constexpr int kDefaultMessageDialogButtons = 0x00000400; // Dialog.Ok (Qt 6 StandardButton::Ok)
+
     explicit QGroundControlQmlGlobal(QObject *parent = nullptr);
     ~QGroundControlQmlGlobal();
 
@@ -111,12 +113,12 @@ public:
     Q_INVOKABLE static void deleteAllSettingsNextBoot();
     Q_INVOKABLE static void clearDeleteAllSettingsNextBoot();
 
-    Q_INVOKABLE void    startPX4MockLink            (bool sendStatusText, bool enableCamera);
-    Q_INVOKABLE void    startGenericMockLink        (bool sendStatusText, bool enableCamera);
-    Q_INVOKABLE void    startAPMArduCopterMockLink  (bool sendStatusText, bool enableCamera);
-    Q_INVOKABLE void    startAPMArduPlaneMockLink   (bool sendStatusText, bool enableCamera);
-    Q_INVOKABLE void    startAPMArduSubMockLink     (bool sendStatusText, bool enableCamera);
-    Q_INVOKABLE void    startAPMArduRoverMockLink   (bool sendStatusText, bool enableCamera);
+    Q_INVOKABLE void    startPX4MockLink            (bool sendStatusText, bool enableCamera, bool enableGimbal);
+    Q_INVOKABLE void    startGenericMockLink        (bool sendStatusText, bool enableCamera, bool enableGimbal);
+    Q_INVOKABLE void    startAPMArduCopterMockLink  (bool sendStatusText, bool enableCamera, bool enableGimbal);
+    Q_INVOKABLE void    startAPMArduPlaneMockLink   (bool sendStatusText, bool enableCamera, bool enableGimbal);
+    Q_INVOKABLE void    startAPMArduSubMockLink     (bool sendStatusText, bool enableCamera, bool enableGimbal);
+    Q_INVOKABLE void    startAPMArduRoverMockLink   (bool sendStatusText, bool enableCamera, bool enableGimbal);
     Q_INVOKABLE void    stopOneMockLink             (void);
 
     /// Returns the hierarchical list of available logging category names.
@@ -152,7 +154,7 @@ public:
         QObject* owner,
         const QString& title,
         const QString& text,
-        int buttons = 1,
+        int buttons = kDefaultMessageDialogButtons,
         QJSValue acceptFunction = QJSValue(),
         QJSValue closeFunction = QJSValue());
 

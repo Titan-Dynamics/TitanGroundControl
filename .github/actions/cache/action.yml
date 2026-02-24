@@ -20,93 +20,153 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Setup Python 3.12
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.12"
+
+    - name: Resolve Python command
+      id: python
+      shell: bash
+      run: |
+        if command -v python3 >/dev/null 2>&1; then
+          echo "cmd=python3" >> "${GITHUB_OUTPUT}"
+        elif command -v python >/dev/null 2>&1; then
+          echo "cmd=python" >> "${GITHUB_OUTPUT}"
+        else
+          echo "Error: Python not found in PATH" >&2
+          exit 1
+        fi
+
     - name: Get ccache config
       id: ccache-config
       shell: bash
+      env:
+        INPUT_TARGET: ${{ inputs.target }}
+        PY_CMD: ${{ steps.python.outputs.cmd }}
+        WORKSPACE: ${{ github.workspace }}
       run: |
         # Pin ccache version for reproducibility and to avoid API calls
         # Update periodically via Dependabot or manually
-        CCACHE_VERSION="4.10.2"
+        CCACHE_VERSION="4.12.3"
 
         # Validate version format (defense in depth)
         if [[ ! "$CCACHE_VERSION" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
           echo "Error: Invalid ccache version format: $CCACHE_VERSION" >&2
           exit 1
         fi
-        echo "version=${CCACHE_VERSION}" >> "$GITHUB_OUTPUT"
 
-        # Read max_size from tools/configs/ccache.conf (single source of truth)
-        CCACHE_CONF_PATH="${{ github.workspace }}/tools/configs/ccache.conf"
-        CCACHE_MAX_SIZE="2G"  # Default
-        if [[ -f "$CCACHE_CONF_PATH" ]]; then
-          # Single awk pass to extract value (more robust than grep|sed)
-          CCACHE_MAX_SIZE=$(awk -F'=' '/^max_size[[:space:]]*=/{gsub(/[[:space:]]/,"",$2); print $2; exit}' "$CCACHE_CONF_PATH")
-          CCACHE_MAX_SIZE="${CCACHE_MAX_SIZE:-2G}"
+        if [[ "${INPUT_TARGET}" == "linux_gcc_arm64" ]]; then
+          arch="aarch64"
         else
-          echo "Warning: ccache config not found at $CCACHE_CONF_PATH, using default max_size" >&2
+          arch="x86_64"
         fi
-        echo "max_size=${CCACHE_MAX_SIZE}" >> "$GITHUB_OUTPUT"
+
+        "${PY_CMD}" "${WORKSPACE}/.github/scripts/install_ccache.py" \
+          --version "${CCACHE_VERSION}" \
+          --arch "${arch}" \
+          --config "${WORKSPACE}/tools/configs/ccache.conf" \
+          --output-only
 
     - name: Cache ccache binary (Linux)
-      if: runner.os == 'Linux' && inputs.target != 'linux_gcc_arm64'
+      if: runner.os == 'Linux'
       id: ccache-binary
       uses: actions/cache@v5
       with:
         path: /usr/local/bin/ccache
-        key: ccache-binary-${{ steps.ccache-config.outputs.version }}-linux-x86_64
+        key: ccache-binary-${{ steps.ccache-config.outputs.version }}-linux-${{ steps.ccache-config.outputs.arch }}
 
     - name: Install ccache (Linux)
-      if: runner.os == 'Linux' && inputs.target != 'linux_gcc_arm64' && steps.ccache-binary.outputs.cache-hit != 'true'
+      if: runner.os == 'Linux' && steps.ccache-binary.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        PY_CMD: ${{ steps.python.outputs.cmd }}
+        WORKSPACE: ${{ github.workspace }}
+        CCACHE_VER: ${{ steps.ccache-config.outputs.version }}
+        CCACHE_ARCH: ${{ steps.ccache-config.outputs.arch }}
+      run: |
+        "${PY_CMD}" "${WORKSPACE}/.github/scripts/install_ccache.py" \
+          --version "${CCACHE_VER}" \
+          --arch "${CCACHE_ARCH}" \
+          --install
+
+    - name: Setup sccache (Windows x64)
+      if: runner.os == 'Windows' && inputs.target != 'android' && inputs.host != 'windows_arm64'
+      uses: mozilla-actions/sccache-action@v0.0.9
+
+    - name: Enable sccache GHA cache backend
+      if: runner.os == 'Windows' && inputs.target != 'android' && inputs.host != 'windows_arm64'
+      shell: bash
+      run: echo "SCCACHE_GHA_ENABLED=true" >> "$GITHUB_ENV"
+
+    - name: Install ccache (Windows ARM64)
+      if: runner.os == 'Windows' && inputs.host == 'windows_arm64'
       shell: bash
       env:
         CCACHE_VERSION: ${{ steps.ccache-config.outputs.version }}
       run: |
-        set -e
-        # Download pre-built binary (not source tarball)
-        wget --quiet --tries=3 --waitretry=5 "https://github.com/ccache/ccache/releases/download/v${CCACHE_VERSION}/ccache-${CCACHE_VERSION}-linux-x86_64.tar.xz"
-        tar -xf "ccache-${CCACHE_VERSION}-linux-x86_64.tar.xz"
-        # Copy pre-built binary directly (no compilation needed)
-        sudo cp "ccache-${CCACHE_VERSION}-linux-x86_64/ccache" /usr/local/bin/ccache
-        sudo chmod +x /usr/local/bin/ccache
+        set -euo pipefail
+        ccache_url="https://github.com/ccache/ccache/releases/download/v${CCACHE_VERSION}/ccache-${CCACHE_VERSION}-windows-aarch64.zip"
+        temp_dir="$(mktemp -d)"
+        temp_root="${RUNNER_TEMP//\\//}"
+        install_dir="${temp_root}/ccache-${CCACHE_VERSION}-windows-aarch64"
 
-    - name: Setup sccache (Windows x64 only)
-      if: runner.os == 'Windows' && inputs.target != 'android' && inputs.host != 'windows_arm64'
-      uses: mozilla-actions/sccache-action@v0.0.9
+        curl --fail --location --silent --show-error "$ccache_url" -o "${temp_dir}/ccache.zip"
+        unzip -q "${temp_dir}/ccache.zip" -d "$temp_dir"
+        mkdir -p "$install_dir"
+        cp "${temp_dir}/ccache-${CCACHE_VERSION}-windows-aarch64/ccache.exe" "${install_dir}/ccache.exe"
 
-    - run: echo "SCCACHE_GHA_ENABLED=${{ inputs.save-cache == 'true' && 'true' || 'false' }}" >> "$GITHUB_ENV"
-      if: runner.os == 'Windows' && inputs.target != 'android' && inputs.host != 'windows_arm64'
+        echo "$install_dir" >> "$GITHUB_PATH"
+        "${install_dir}/ccache.exe" --version
+
+    - name: Configure ccache environment (non-Windows)
+      if: runner.os != 'Windows'
       shell: bash
+      run: |
+        workspace_path="${GITHUB_WORKSPACE//\\//}"
+        echo "CCACHE_DIR=${workspace_path}/.ccache" >> "$GITHUB_ENV"
+        echo "CCACHE_BASEDIR=${workspace_path}" >> "$GITHUB_ENV"
+        echo "CCACHE_CONFIGPATH=${workspace_path}/tools/configs/ccache.conf" >> "$GITHUB_ENV"
+        mkdir -p "${workspace_path}/.ccache"
 
-    - name: Setup Build Cache
+    - name: Configure CPM source cache
+      if: inputs.cpm-modules != ''
+      id: cpm-cache
+      shell: bash
+      env:
+        CPM_MODULES_INPUT: ${{ inputs.cpm-modules }}
+      run: |
+        cpm_cache_path="${CPM_MODULES_INPUT//\\//}"
+        mkdir -p "${cpm_cache_path}"
+        echo "CPM_SOURCE_CACHE=${cpm_cache_path}" >> "$GITHUB_ENV"
+        echo "path=${cpm_cache_path}" >> "$GITHUB_OUTPUT"
+
+    - name: Setup Build Cache (ccache)
+      if: "!(runner.os == 'Windows' && inputs.target != 'android' && inputs.host != 'windows_arm64')"
       uses: hendrikmuhs/ccache-action@v1.2
       with:
-        variant: ${{ runner.os == 'Windows' && inputs.target != 'android' && inputs.host != 'windows_arm64' && 'sccache' || 'ccache' }}
-        key: ${{ inputs.host }}-${{ inputs.target }}-${{ inputs.build-type }}
+        key: ${{ inputs.host }}-${{ inputs.target }}-${{ inputs.build-type }}-${{ hashFiles('.github/build-config.json', 'tools/configs/ccache.conf') }}
         restore-keys: |
-          ${{ inputs.host }}-${{ inputs.target }}
+          ${{ inputs.host }}-${{ inputs.target }}-${{ inputs.build-type }}-
+          ${{ inputs.host }}-${{ inputs.target }}-
           ${{ inputs.host }}-
         max-size: ${{ steps.ccache-config.outputs.max_size }}
         verbose: 2
         evict-old-files: job
         save: ${{ inputs.save-cache == 'true' }}
 
-    - name: Ensure cpm-modules directory exists
-      if: inputs.cpm-modules != ''
-      run: mkdir -p "${{ inputs.cpm-modules }}"
-      shell: bash
-
     - name: Cache CPM Modules (restore and save)
       if: inputs.cpm-modules != '' && inputs.save-cache == 'true'
       uses: actions/cache@v5
       with:
-        path: ${{ inputs.cpm-modules }}
-        key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
-        restore-keys: ${{ github.workflow }}-cpm-modules-
+        path: ${{ steps.cpm-cache.outputs.path }}
+        key: cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+        restore-keys: cpm-modules-
 
     - name: Cache CPM Modules (restore only)
       if: inputs.cpm-modules != '' && inputs.save-cache != 'true'
       uses: actions/cache/restore@v5
       with:
-        path: ${{ inputs.cpm-modules }}
-        key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
-        restore-keys: ${{ github.workflow }}-cpm-modules-
+        path: ${{ steps.cpm-cache.outputs.path }}
+        key: cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+        restore-keys: cpm-modules-

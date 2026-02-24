@@ -182,6 +182,7 @@ NTRIPTCPLink::NTRIPTCPLink(const QString& hostAddress,
                            const QString& mountpoint,
                            const QString& whitelist,
                            bool useSpartn,
+                           bool autoStart,
                            QObject* parent)
     : QObject(parent)
     , _hostAddress(hostAddress)
@@ -225,8 +226,10 @@ NTRIPTCPLink::NTRIPTCPLink(const QString& hostAddress,
 
     _state = NTRIPState::uninitialised;
 
-    // Start the thread only after all members are initialized to avoid races
-    start();
+    // Start only when requested so unit tests can exercise parser behavior without sockets.
+    if (autoStart) {
+        start();
+    }
 }
 
 NTRIPTCPLink::~NTRIPTCPLink()
@@ -571,11 +574,16 @@ void NTRIPTCPLink::_readBytes()
                 qCWarning(NTRIPLog) << "NTRIP: Server error response:" << trimmed;
                 emit error(QString("NTRIP HTTP error: %1").arg(trimmed));
 
-                _socket->disconnectFromHost();
-                _socket->close();
-                delete _socket;
+                // Null out _socket before disconnectFromHost() so the
+                // synchronous 'disconnected' handler bails via !_socket guard.
+                QTcpSocket* sock = _socket;
                 _socket = nullptr;
                 _state = NTRIPState::uninitialised;
+
+                QObject::disconnect(_readyReadConn);
+                sock->disconnectFromHost();
+                sock->close();
+                sock->deleteLater();
 
                 if (!_stopping.load()) {
                     QTimer::singleShot(3000, this, [this]() {
