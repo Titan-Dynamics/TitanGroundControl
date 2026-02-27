@@ -360,11 +360,9 @@ jobs:
 
       - name: Install GStreamer
         if: matrix.gstreamer
-        shell: pwsh
-        run: |
-          ./tools/setup/install-dependencies-windows.ps1 `
-            -GStreamerVersion ${{ steps.config.outputs.gstreamer_windows_version }} `
-            -SkipVulkan
+        uses: ./.github/actions/install-dependencies
+        with:
+          gstreamer-version: ${{ steps.config.outputs.gstreamer_windows_version }}
 
       - name: Setup cache
         uses: ./.github/actions/cache
