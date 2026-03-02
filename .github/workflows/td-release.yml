@@ -340,6 +340,7 @@ jobs:
 
     steps:
       - name: Harden Runner
+        if: matrix.variant != 'arm64'
         uses: step-security/harden-runner@v2
         with:
           egress-policy: audit
