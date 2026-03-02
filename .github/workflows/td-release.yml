@@ -385,6 +385,19 @@ jobs:
         with:
           arch: ${{ matrix.msvc_arch }}
 
+      - name: Fix Rust linker resolution (ARM64 native)
+        if: matrix.variant == 'arm64'
+        shell: bash
+        run: |
+          # Git for Windows ships /usr/bin/link (GNU coreutils) which shadows
+          # MSVC's link.exe on PATH, causing Rust/cargo builds to fail.
+          # Rename the conflicting binary so MSVC's linker is found instead.
+          git_link="/c/Program Files/Git/usr/bin/link.exe"
+          if [ -f "$git_link" ]; then
+            mv "$git_link" "${git_link}.bak"
+            echo "Renamed Git link.exe to prevent Rust linker conflict"
+          fi
+
       - name: Configure
         working-directory: ${{ runner.temp }}\build
         run: |
