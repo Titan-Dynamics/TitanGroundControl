@@ -1,0 +1,28 @@
+{
+    "version":      1,
+    "fileType":  "FactMetaData",
+    "QGC.MetaData.Facts":
+[
+{
+    "name":         "claudeApiKey",
+    "shortDesc":    "Claude API Key for AI command processing",
+    "longDesc":     "Your Anthropic Claude API key. Get one at console.anthropic.com",
+    "type":         "string",
+    "default":      ""
+},
+{
+    "name":         "confirmDangerousCommands",
+    "shortDesc":    "Require confirmation for dangerous commands",
+    "longDesc":     "Always require manual confirmation for commands like arm, takeoff, emergency stop, etc.",
+    "type":         "bool",
+    "default":      true
+},
+{
+    "name":         "includeVehicleState",
+    "shortDesc":    "Include vehicle state in AI context",
+    "longDesc":     "Send current vehicle position, altitude, speed, and status to AI for context-aware responses",
+    "type":         "bool",
+    "default":      true
+}
+]
+}

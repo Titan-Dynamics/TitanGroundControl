@@ -1,6 +1,7 @@
 #include "SettingsManager.h"
 #include "QGCLoggingCategory.h"
 #include "ADSBVehicleManagerSettings.h"
+#include "AISettings.h"
 #ifndef QGC_NO_ARDUPILOT_DIALECT
 #include "APMMavlinkStreamRateSettings.h"
 #endif
@@ -87,12 +88,14 @@ void SettingsManager::init()
     _joystickManagerSettings = new JoystickManagerSettings(this);
     _viewer3DSettings = new Viewer3DSettings(this);
     _adsbVehicleManagerSettings = new ADSBVehicleManagerSettings(this);
+    _aiSettings = new AISettings(this);
 #ifndef QGC_NO_ARDUPILOT_DIALECT
     _apmMavlinkStreamRateSettings = new APMMavlinkStreamRateSettings(this);
 #endif
 }
 
 ADSBVehicleManagerSettings *SettingsManager::adsbVehicleManagerSettings() const { return _adsbVehicleManagerSettings; }
+AISettings *SettingsManager::aiSettings() const { return _aiSettings; }
 #ifndef QGC_NO_ARDUPILOT_DIALECT
 APMMavlinkStreamRateSettings *SettingsManager::apmMavlinkStreamRateSettings() const { return _apmMavlinkStreamRateSettings; }
 #endif

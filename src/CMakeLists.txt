@@ -29,6 +29,7 @@ qt_add_qml_module(QGroundControlModule
 
 # Core subsystems
 add_subdirectory(ADSB)
+add_subdirectory(AI)
 add_subdirectory(AnalyzeView)
 add_subdirectory(API)
 add_subdirectory(AutoPilotPlugins)

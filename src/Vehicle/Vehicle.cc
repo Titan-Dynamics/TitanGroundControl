@@ -1,6 +1,7 @@
 #include "Vehicle.h"
 #include "Actuators.h"
 #include "ADSBVehicleManager.h"
+#include "AIChatController.h"
 #include "AudioOutput.h"
 #include "AutoPilotPlugin.h"
 #include "ComponentInformationManager.h"
@@ -342,6 +343,7 @@ void Vehicle::_commonInit(LinkInterface* link)
     }
 
     _gimbalController = new GimbalController(this);
+    _aiChatController = new AIChatController(this, this);
 
     _createCameraManager();
 }
@@ -385,6 +387,15 @@ void Vehicle::_deleteGimbalController()
         _gimbalController->disconnect();
         delete _gimbalController;
         _gimbalController = nullptr;
+    }
+}
+
+void Vehicle::_deleteAIChatController()
+{
+    if (_aiChatController) {
+        _aiChatController->disconnect();
+        delete _aiChatController;
+        _aiChatController = nullptr;
     }
 }
 

@@ -42,6 +42,7 @@
 #include "EscStatusFactGroupListModel.h"
 
 class Actuators;
+class AIChatController;
 class AutoPilotPlugin;
 class Autotune;
 class ComponentInformationManager;
@@ -82,6 +83,7 @@ class Vehicle : public VehicleFactGroup
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("")
+    Q_MOC_INCLUDE("AIChatController.h")
     Q_MOC_INCLUDE("AutoPilotPlugin.h")
     Q_MOC_INCLUDE("TrajectoryPoints.h")
     Q_MOC_INCLUDE("ParameterManager.h")
@@ -207,6 +209,7 @@ public:
     Q_PROPERTY(quint64              mavlinkLossCount            READ mavlinkLossCount                                               NOTIFY mavlinkStatusChanged)
     Q_PROPERTY(float                mavlinkLossPercent          READ mavlinkLossPercent                                             NOTIFY mavlinkStatusChanged)
     Q_PROPERTY(GimbalController*    gimbalController            READ gimbalController                                               CONSTANT)
+    Q_PROPERTY(AIChatController*    aiChatController            READ aiChatController                                               CONSTANT)
     Q_PROPERTY(bool                 hasGripper                  READ hasGripper                                                     NOTIFY hasGripperChanged)
     Q_PROPERTY(bool                 isROIEnabled                READ isROIEnabled                                                   NOTIFY isROIEnabledChanged)
     Q_PROPERTY(CheckList            checkListState              READ checkListState             WRITE setCheckListState             NOTIFY checkListStateChanged)
@@ -796,6 +799,7 @@ public:
     HealthAndArmingCheckReport* healthAndArmingCheckReport() { return &_healthAndArmingCheckReport; }
 
     GimbalController* gimbalController  () { return _gimbalController; }
+    AIChatController* aiChatController  () { return _aiChatController; }
 
 public slots:
     void setVtolInFwdFlight                 (bool vtolInFwdFlight);
@@ -979,6 +983,7 @@ void _activeVehicleChanged          (Vehicle* newActiveVehicle);
 
     // The following methods should only be called by unit tests
     void _deleteGimbalController();
+    void _deleteAIChatController();
     void _deleteCameraManager();
 
     /// Called by VehicleLinkManager when all links are removed.
@@ -1051,6 +1056,7 @@ void _activeVehicleChanged          (Vehicle* newActiveVehicle);
     VehicleObjectAvoidance*         _objectAvoidance                = nullptr;
     Autotune*                       _autotune                       = nullptr;
     GimbalController*               _gimbalController               = nullptr;
+    AIChatController*               _aiChatController               = nullptr;
 
     bool    _armed = false;         ///< true: vehicle is armed
     uint8_t _base_mode = 0;     ///< base_mode from HEARTBEAT

@@ -48,6 +48,13 @@
     "default":      false
 },
 {
+    "name":         "showAIChatWidget",
+    "shortDesc":    "Show Titan AI Command Chat in Fly View",
+    "longDesc":     "Enable a chat interface to control the vehicle using natural language commands powered by Titan AI.",
+    "type":         "bool",
+    "default":      false
+},
+{
     "name":         "showObstacleDistanceOverlay",
     "shortDesc":    "Show obstacle distance overlay on map and video.",
     "type":         "bool",
