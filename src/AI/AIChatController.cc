@@ -205,16 +205,22 @@ void AIChatController::executeCommand(int messageIndex, bool userInitiated)
     message->setCommandStatus(CommandStatus::Pending);
     message->setExecutedActionCount(0);
 
-    qCDebug(AIChatControllerLog) << "========== QUEUEING" << actions.count() << "ACTIONS ==========";
+    qCDebug(AIChatControllerLog) << "==========================================================";
+    qCDebug(AIChatControllerLog) << "EXECUTE COMMAND - Message index:" << messageIndex;
+    qCDebug(AIChatControllerLog) << "  Message content:" << message->content();
+    qCDebug(AIChatControllerLog) << "  Total actions:" << actions.count();
+    qCDebug(AIChatControllerLog) << "  User initiated:" << userInitiated;
+    qCDebug(AIChatControllerLog) << "==========================================================";
 
-    for (const QVariant& actionVar : actions) {
-        QVariantMap actionMap = actionVar.toMap();
+    for (int i = 0; i < actions.count(); ++i) {
+        QVariantMap actionMap = actions[i].toMap();
         QueuedAction queuedAction;
         queuedAction.action = actionMap["action"].toString();
         queuedAction.parameters = actionMap["parameters"].toMap();
         _actionQueue.append(queuedAction);
 
-        qCDebug(AIChatControllerLog) << "  Queued:" << queuedAction.action;
+        qCDebug(AIChatControllerLog) << "  [" << (i + 1) << "/" << actions.count() << "] Queued:"
+                                      << queuedAction.action << "params:" << queuedAction.parameters;
     }
 
     // Start executing the queue
@@ -235,7 +241,9 @@ void AIChatController::_clearActionQueue()
 void AIChatController::_executeNextAction()
 {
     if (_actionQueue.isEmpty()) {
-        qCDebug(AIChatControllerLog) << "========== ALL ACTIONS COMPLETE ==========";
+        qCDebug(AIChatControllerLog) << "==========================================================";
+        qCDebug(AIChatControllerLog) << "ALL ACTIONS COMPLETE";
+        qCDebug(AIChatControllerLog) << "==========================================================";
         _actionQueueTimer->stop();
         _isExecutingQueue = false;
 
@@ -244,6 +252,7 @@ void AIChatController::_executeNextAction()
             auto* message = qobject_cast<AIChatMessage*>(_messages->get(_currentMessageIndex));
             if (message) {
                 message->setCommandStatus(CommandStatus::Executed);
+                qCDebug(AIChatControllerLog) << "  Executed" << message->executedActionCount() << "actions successfully";
             }
         }
         _currentMessageIndex = -1;
@@ -253,9 +262,21 @@ void AIChatController::_executeNextAction()
     _isExecutingQueue = true;
     QueuedAction& currentAction = _actionQueue.first();
 
-    qCDebug(AIChatControllerLog) << "EXECUTING ACTION:" << currentAction.action
-                                  << "(" << _actionQueue.count() << "remaining in queue)";
+    // Get current message for context
+    int totalActions = 0;
+    int currentActionNum = 0;
+    if (_currentMessageIndex >= 0 && _currentMessageIndex < _messages->count()) {
+        auto* message = qobject_cast<AIChatMessage*>(_messages->get(_currentMessageIndex));
+        if (message) {
+            totalActions = message->actionCount();
+            currentActionNum = message->executedActionCount() + 1;
+        }
+    }
+
+    qCDebug(AIChatControllerLog) << "----------------------------------------------------------";
+    qCDebug(AIChatControllerLog) << "EXECUTING ACTION [" << currentActionNum << "/" << totalActions << "]:" << currentAction.action;
     qCDebug(AIChatControllerLog) << "  Parameters:" << currentAction.parameters;
+    qCDebug(AIChatControllerLog) << "  Remaining in queue:" << _actionQueue.count();
 
     // Store target position/altitude for completion checking
     if (currentAction.action == "fly_heading" || currentAction.action == "goto") {
@@ -296,7 +317,8 @@ void AIChatController::_executeNextAction()
     bool success = _executeVehicleCommand(currentAction.action, currentAction.parameters);
 
     if (!success) {
-        qCWarning(AIChatControllerLog) << "Action failed:" << currentAction.action;
+        qCWarning(AIChatControllerLog) << "  [RESULT] ACTION FAILED:" << currentAction.action;
+        qCWarning(AIChatControllerLog) << "  Clearing remaining action queue";
         _clearActionQueue();
 
         // Mark message as failed
@@ -308,6 +330,8 @@ void AIChatController::_executeNextAction()
         }
         return;
     }
+
+    qCDebug(AIChatControllerLog) << "  [RESULT] Command sent successfully";
 
     // Check if this action completes immediately or needs monitoring
     bool completesImmediately = (currentAction.action == "set_speed" ||
@@ -328,7 +352,7 @@ void AIChatController::_executeNextAction()
                                   currentAction.action == "stop_roi");
 
     if (completesImmediately) {
-        qCDebug(AIChatControllerLog) << "  Action completes immediately, moving to next";
+        qCDebug(AIChatControllerLog) << "  -> Action completes immediately (fire-and-forget)";
         _actionQueue.removeFirst();
 
         // Update executed count in UI
@@ -336,13 +360,25 @@ void AIChatController::_executeNextAction()
             auto* message = qobject_cast<AIChatMessage*>(_messages->get(_currentMessageIndex));
             if (message) {
                 message->setExecutedActionCount(message->executedActionCount() + 1);
+                qCDebug(AIChatControllerLog) << "  -> Executed count:" << message->executedActionCount() << "/" << message->actionCount();
             }
         }
 
-        _executeNextAction();
+        // Add small delay before next action to allow MAVLink ACKs to be processed
+        // This prevents "Waiting on previous response to same command" errors
+        qCDebug(AIChatControllerLog) << "  -> Waiting 200ms before next action (MAVLink ACK delay)";
+        QTimer::singleShot(200, this, &AIChatController::_executeNextAction);
     } else {
         // Start monitoring for completion
-        qCDebug(AIChatControllerLog) << "  Monitoring for completion...";
+        qCDebug(AIChatControllerLog) << "  -> Monitoring for completion (polling every 250ms)...";
+        if (_vehicle) {
+            qCDebug(AIChatControllerLog) << "     Current vehicle state:";
+            qCDebug(AIChatControllerLog) << "       Armed:" << _vehicle->armed();
+            qCDebug(AIChatControllerLog) << "       Position:" << _vehicle->coordinate();
+            if (_vehicle->altitudeRelative()) {
+                qCDebug(AIChatControllerLog) << "       Altitude:" << _vehicle->altitudeRelative()->rawValue().toDouble() << "m";
+            }
+        }
         _actionQueueTimer->start();
     }
 }
@@ -355,7 +391,8 @@ void AIChatController::_processActionQueue()
     }
 
     if (_isCurrentActionComplete()) {
-        qCDebug(AIChatControllerLog) << "  Action complete!";
+        const QueuedAction& completed = _actionQueue.first();
+        qCDebug(AIChatControllerLog) << "  -> Action COMPLETE:" << completed.action;
         _actionQueue.removeFirst();
         _actionQueueTimer->stop();
 
@@ -364,6 +401,7 @@ void AIChatController::_processActionQueue()
             auto* message = qobject_cast<AIChatMessage*>(_messages->get(_currentMessageIndex));
             if (message) {
                 message->setExecutedActionCount(message->executedActionCount() + 1);
+                qCDebug(AIChatControllerLog) << "  -> Executed count:" << message->executedActionCount() << "/" << message->actionCount();
             }
         }
 
@@ -845,11 +883,12 @@ void AIChatController::_speakMessage(const QString& text)
 bool AIChatController::_executeVehicleCommand(const QString& action, const QVariantMap& parameters)
 {
     if (!_vehicle) {
-        qCWarning(AIChatControllerLog) << "No vehicle to execute command on";
+        qCWarning(AIChatControllerLog) << "  [VEHICLE CMD] FAILED - No vehicle connected";
         return false;
     }
 
-    qCDebug(AIChatControllerLog) << "Executing command:" << action << "with params:" << parameters;
+    qCDebug(AIChatControllerLog) << "  [VEHICLE CMD] Sending:" << action;
+    qCDebug(AIChatControllerLog) << "    Parameters:" << parameters;
 
     if (action == "arm") {
         _vehicle->setArmed(true, true);
@@ -1079,7 +1118,8 @@ bool AIChatController::_executeVehicleCommand(const QString& action, const QVari
 
         // MAV_CMD_DO_SET_SERVO = 183
         // param1 = servo channel, param2 = PWM value
-        _vehicle->sendCommand(MAV_COMP_ID_AUTOPILOT1, MAV_CMD_DO_SET_SERVO, true,
+        // showError=false to avoid dialog popups for AI-initiated commands
+        _vehicle->sendCommand(MAV_COMP_ID_AUTOPILOT1, MAV_CMD_DO_SET_SERVO, false,
                                static_cast<double>(channel), static_cast<double>(pwm));
         return true;
     }
@@ -1120,7 +1160,7 @@ bool AIChatController::_executeVehicleCommand(const QString& action, const QVari
         return true;
     }
 
-    qCWarning(AIChatControllerLog) << "Unknown action:" << action;
+    qCWarning(AIChatControllerLog) << "  [VEHICLE CMD] FAILED - Unknown action:" << action;
     return false;
 }
 
