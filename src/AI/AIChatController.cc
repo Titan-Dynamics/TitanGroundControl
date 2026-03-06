@@ -322,7 +322,10 @@ void AIChatController::_executeNextAction()
                                   currentAction.action == "goto_waypoint" ||
                                   currentAction.action == "set_parameter" ||
                                   currentAction.action == "get_parameter" ||
-                                  currentAction.action == "set_servo");
+                                  currentAction.action == "set_servo" ||
+                                  currentAction.action == "change_heading" ||
+                                  currentAction.action == "set_roi" ||
+                                  currentAction.action == "stop_roi");
 
     if (completesImmediately) {
         qCDebug(AIChatControllerLog) << "  Action completes immediately, moving to next";
@@ -509,7 +512,7 @@ Flight Control:
 - set_flight_mode: Change flight mode. Parameters: mode_name (string)
 - fly_heading: Fly in a compass direction. Parameters: heading_deg (number, 0=North, 90=East, 180=South, 270=West), distance_m (number), altitude_m (number, optional - use this instead of separate change_altitude)
 - set_speed: Set flight speed. Parameters: speed_mps (number, meters per second)
-- orbit: Circle around current position or a point. Parameters: radius_m (number), direction (string: "cw" or "ccw"), optional latitude/longitude to orbit around
+- orbit: Circle around current position or a point (PX4 only). Parameters: radius_m (number), direction (string: "cw" or "ccw"), optional latitude/longitude to orbit around
 
 Mission Control:
 - start_mission: Start the loaded mission from the beginning. Parameters: none
@@ -522,6 +525,11 @@ Parameters:
 
 Hardware:
 - set_servo: Set a servo to a specific PWM value. Parameters: channel (number, 1-16), pwm (number, typically 1000-2000)
+
+Camera/Gimbal:
+- change_heading: Rotate the vehicle to face a specific compass direction. Parameters: heading_deg (number, 0=North, 90=East, 180=South, 270=West)
+- set_roi: Set Region of Interest - vehicle/gimbal will point at this location. Parameters: latitude (number), longitude (number), altitude_m (number, optional)
+- stop_roi: Cancel ROI tracking, return camera to normal. Parameters: none
 
 RESPONSE FORMAT (always respond with valid JSON):
 {
@@ -545,11 +553,15 @@ For single actions, you can still use the simpler format:
 
 MODE REQUIREMENTS:
 - Mission commands (start_mission, goto_waypoint) require AUTO mode. If not in AUTO, add set_flight_mode with mode_name="Auto" BEFORE the mission command.
-- Manual flight commands (goto, fly_heading, change_altitude, orbit, pause) require GUIDED mode. If not in GUIDED, add set_flight_mode with mode_name="Guided" BEFORE the command.
+- Manual flight commands (goto, fly_heading, change_altitude, pause, orbit) require GUIDED mode. If not in GUIDED, add set_flight_mode with mode_name="Guided" BEFORE the command.
 - takeoff requires GUIDED mode. Add set_flight_mode if needed.
 - rtl and land work from any mode.
 - set_parameter, get_parameter, set_servo work from any mode.
 - Always check the current Flight Mode in the vehicle state and prepend mode changes as needed.
+
+CAPABILITY CHECK:
+- Check "Supported Capabilities" in vehicle state before using: orbit, change_heading, ROI commands.
+- If a capability is not listed, do NOT use that command - explain to user it's not supported by their firmware/vehicle.
 
 RULES:
 - If you cannot understand the request or it's just a question, set action/actions to null/empty
@@ -582,6 +594,12 @@ QString AIChatController::_getVehicleStateContext() const
     }
 
     QString state;
+
+    // Firmware and vehicle type
+    state += QString("- Firmware: %1\n").arg(_vehicle->firmwareTypeString());
+    state += QString("- Vehicle Type: %1\n").arg(_vehicle->vehicleTypeString());
+
+    // Basic state
     state += QString("- Armed: %1\n").arg(_vehicle->armed() ? "Yes" : "No");
     state += QString("- Flying: %1\n").arg(_vehicle->flying() ? "Yes" : "No");
     state += QString("- Flight Mode: %1\n").arg(_vehicle->flightMode());
@@ -597,6 +615,18 @@ QString AIChatController::_getVehicleStateContext() const
     if (coord.isValid()) {
         state += QString("- Position: %1, %2\n").arg(coord.latitude(), 0, 'f', 6).arg(coord.longitude(), 0, 'f', 6);
     }
+
+    state += QString("- ROI Active: %1\n").arg(_vehicle->isROIEnabled() ? "Yes" : "No");
+
+    // Supported capabilities (so AI knows what commands will work)
+    QStringList capabilities;
+    if (_vehicle->orbitModeSupported()) capabilities << "orbit";
+    if (_vehicle->roiModeSupported()) capabilities << "ROI";
+    if (_vehicle->changeHeadingSupported()) capabilities << "change_heading";
+    if (_vehicle->pauseVehicleSupported()) capabilities << "pause";
+    if (_vehicle->guidedModeSupported()) capabilities << "guided_mode";
+
+    state += QString("- Supported Capabilities: %1\n").arg(capabilities.isEmpty() ? "none" : capabilities.join(", "));
 
     return state;
 }
@@ -928,6 +958,11 @@ bool AIChatController::_executeVehicleCommand(const QString& action, const QVari
         return true;
     }
     else if (action == "orbit") {
+        if (!_vehicle->orbitModeSupported()) {
+            qCWarning(AIChatControllerLog) << "orbit: not supported by this vehicle/firmware";
+            return false;
+        }
+
         double radius = parameters.value("radius_m", 20).toDouble();
         QString direction = parameters.value("direction", "cw").toString();
 
@@ -941,7 +976,7 @@ bool AIChatController::_executeVehicleCommand(const QString& action, const QVari
         }
 
         if (!center.isValid()) {
-            qCWarning(AIChatControllerLog) << "Cannot orbit - no valid center position";
+            qCWarning(AIChatControllerLog) << "orbit: no valid center position";
             return false;
         }
 
@@ -963,9 +998,8 @@ bool AIChatController::_executeVehicleCommand(const QString& action, const QVari
         return true;
     }
     else if (action == "goto_waypoint") {
-        // User sees waypoints as 1, 2, 3... but mission sequence includes home at 0 and takeoff at 1
-        // So user's waypoint "1" = sequence 2, waypoint "2" = sequence 3, etc.
-        int waypointIndex = parameters.value("waypoint_index", 0).toInt() + 1;
+        // User sees waypoints as 1, 2, 3... which matches the mission sequence directly
+        int waypointIndex = parameters.value("waypoint_index", 0).toInt();
         _vehicle->setCurrentMissionSequence(waypointIndex);
         return true;
     }
@@ -1047,6 +1081,42 @@ bool AIChatController::_executeVehicleCommand(const QString& action, const QVari
         // param1 = servo channel, param2 = PWM value
         _vehicle->sendCommand(MAV_COMP_ID_AUTOPILOT1, MAV_CMD_DO_SET_SERVO, true,
                                static_cast<double>(channel), static_cast<double>(pwm));
+        return true;
+    }
+    else if (action == "change_heading") {
+        double headingDeg = parameters.value("heading_deg", 0).toDouble();
+
+        QGeoCoordinate currentPos = _vehicle->coordinate();
+        if (!currentPos.isValid()) {
+            qCWarning(AIChatControllerLog) << "change_heading: no valid position";
+            return false;
+        }
+
+        // Calculate a point 1000m away in the desired heading direction
+        QGeoCoordinate headingCoord = currentPos.atDistanceAndAzimuth(1000, headingDeg);
+
+        qCDebug(AIChatControllerLog) << "  change_heading:" << headingDeg << "deg -> coord:" << headingCoord;
+        _vehicle->guidedModeChangeHeading(headingCoord);
+        return true;
+    }
+    else if (action == "set_roi") {
+        double lat = parameters.value("latitude").toDouble();
+        double lon = parameters.value("longitude").toDouble();
+        double alt = parameters.value("altitude_m", 0).toDouble();
+
+        QGeoCoordinate roiCoord(lat, lon, alt);
+        if (!roiCoord.isValid()) {
+            qCWarning(AIChatControllerLog) << "set_roi: invalid coordinates:" << lat << lon;
+            return false;
+        }
+
+        qCDebug(AIChatControllerLog) << "  set_roi:" << roiCoord;
+        _vehicle->guidedModeROI(roiCoord);
+        return true;
+    }
+    else if (action == "stop_roi") {
+        qCDebug(AIChatControllerLog) << "  stop_roi";
+        _vehicle->stopGuidedModeROI();
         return true;
     }
 

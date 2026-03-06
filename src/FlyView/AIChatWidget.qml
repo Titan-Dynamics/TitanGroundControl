@@ -220,7 +220,7 @@ Rectangle {
 
                                 QGCLabel {
                                     text: messageDelegate.safeActionCount > 1
-                                        ? qsTr("Executing: %1 of %2").arg(messageDelegate.safeExecutedCount).arg(messageDelegate.safeActionCount)
+                                        ? qsTr("Executing: %1 of %2").arg(messageDelegate.safeExecutedCount + 1).arg(messageDelegate.safeActionCount)
                                         : qsTr("Executing...")
                                     font.pointSize: ScreenTools.smallFontPointSize
                                     color: qgcPal.text
