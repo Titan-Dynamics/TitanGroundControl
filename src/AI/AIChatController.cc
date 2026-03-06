@@ -135,7 +135,7 @@ void AIChatController::sendMessage(const QString& userMessage)
     _sendToClaudeAPI(userMessage);
 }
 
-void AIChatController::executeCommand(int messageIndex)
+void AIChatController::executeCommand(int messageIndex, bool userInitiated)
 {
     if (messageIndex < 0 || messageIndex >= _messages->count()) {
         qCWarning(AIChatControllerLog) << "Invalid message index:" << messageIndex;
@@ -146,6 +146,14 @@ void AIChatController::executeCommand(int messageIndex)
     if (!message || message->action().isEmpty()) {
         qCWarning(AIChatControllerLog) << "No command to execute at index:" << messageIndex;
         return;
+    }
+
+    // Announce execution if TTS is enabled and user clicked the button
+    if (userInitiated) {
+        auto* aiSettings = SettingsManager::instance()->aiSettings();
+        if (aiSettings->enableTextToSpeech()->rawValue().toBool()) {
+            AudioOutput::instance()->say(tr("Executing action"), AudioOutput::TextMod::None, true, 0.05);
+        }
     }
 
     bool success = _executeVehicleCommand(message->action(), message->parameters());
@@ -253,7 +261,8 @@ RULES:
 - Never execute disarm while the vehicle is flying
 - Validate altitude requests are reasonable (typically 2-400m)
 - If unsure about the user's intent, ask for clarification in the message field
-- Be concise but helpful in your message responses)";
+- Be concise but helpful in your message responses. Dont do more than 2 or 3 sentences.
+- Never mention latitude/longitude coordinates in your message responses)";
 
     if (includeState && _vehicle) {
         prompt += "\n\nCURRENT VEHICLE STATE:\n" + _getVehicleStateContext();
@@ -421,7 +430,7 @@ void AIChatController::_processAIResponse(const QByteArray& responseData)
     // Auto-execute if no confirmation needed and we have an action
     if (!action.isEmpty() && !confirmationNeeded) {
         int lastIndex = _messages->count() - 1;
-        executeCommand(lastIndex);
+        executeCommand(lastIndex, false);  // false = not user initiated, no voice feedback
     }
 }
 

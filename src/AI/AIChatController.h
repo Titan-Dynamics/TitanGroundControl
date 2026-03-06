@@ -65,7 +65,8 @@ public:
     Q_INVOKABLE void sendMessage(const QString& userMessage);
 
     /// Execute a command from a specific message index
-    Q_INVOKABLE void executeCommand(int messageIndex);
+    /// @param userInitiated true if user clicked the execute button (plays voice feedback)
+    Q_INVOKABLE void executeCommand(int messageIndex, bool userInitiated = true);
 
     /// Clear all chat history
     Q_INVOKABLE void clearHistory();
