@@ -376,6 +376,10 @@ Item {
 
     function skipFutureConfirmations(actionCode) {
         _skipConfirmActions[actionCode] = true
+        // Persist "Don't show again" for Start Mission by disabling automatic popups
+        if (actionCode === actionStartMission || actionCode === actionContinueMission || actionCode === actionResumeMission) {
+            _flyViewSettings.enableAutomaticMissionPopups.rawValue = false
+        }
     }
 
     // Called when an action is about to be executed in order to confirm
