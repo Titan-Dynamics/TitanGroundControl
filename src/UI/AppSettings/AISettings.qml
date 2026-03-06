@@ -16,6 +16,7 @@ SettingsPage {
     property Fact _enableTextToSpeech:      _aiSettings.enableTextToSpeech
     property Fact _confirmDangerousCommands: _aiSettings.confirmDangerousCommands
     property Fact _includeVehicleState:     _aiSettings.includeVehicleState
+    property Fact _customContext:           _aiSettings.customContext
 
     SettingsGroupLayout {
         Layout.fillWidth: true
@@ -131,9 +132,63 @@ SettingsPage {
 
         QGCLabel {
             Layout.fillWidth:   true
-            text:               qsTr("- \"Arm the vehicle\"\n- \"Take off to 15 meters\"\n- \"Go to latitude 37.7749, longitude -122.4194\"\n- \"Return to launch\"\n- \"Land now\"\n- \"Change altitude by +10 meters\"")
+            text:               qsTr("- \"Arm the vehicle\"\n- \"Take off to 15 meters\"\n- \"Head north for 100 meters\"\n- \"Return to launch\"\n- \"Set speed to 10 m/s\"\n- \"Orbit here with 20m radius\"")
             wrapMode:           Text.WordWrap
             font.pointSize:     ScreenTools.smallFontPointSize
+        }
+    }
+
+    SettingsGroupLayout {
+        Layout.fillWidth: true
+        heading: qsTr("Custom AI Context")
+
+        QGCLabel {
+            Layout.fillWidth:   true
+            text:               qsTr("Provide additional context to the AI such as ArduPilot parameter documentation, MAVLink references, or custom instructions. This will be included in every AI request.")
+            wrapMode:           Text.WordWrap
+            font.pointSize:     ScreenTools.smallFontPointSize
+            color:              qgcPal.text
+        }
+
+        Rectangle {
+            Layout.fillWidth:   true
+            Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 15
+            color:              qgcPal.windowShade
+            radius:             ScreenTools.defaultFontPixelWidth / 4
+            border.color:       customContextArea.activeFocus ? qgcPal.text : "transparent"
+            border.width:       1
+
+            ScrollView {
+                anchors.fill:       parent
+                anchors.margins:    ScreenTools.defaultFontPixelWidth / 2
+
+                TextArea {
+                    id:                 customContextArea
+                    text:               _customContext.rawValue
+                    wrapMode:           TextEdit.Wrap
+                    color:              qgcPal.text
+                    selectionColor:     qgcPal.textHighlight
+                    selectedTextColor:  qgcPal.textHighlightForeground
+                    font.family:        ScreenTools.fixedFontFamily
+                    font.pointSize:     ScreenTools.smallFontPointSize
+                    placeholderText:    qsTr("Paste ArduPilot documentation, parameter lists, or custom instructions here...")
+                    placeholderTextColor: Qt.rgba(qgcPal.text.r, qgcPal.text.g, qgcPal.text.b, 0.5)
+                    background:         null
+
+                    onTextChanged: {
+                        if (text !== _customContext.rawValue) {
+                            _customContext.rawValue = text
+                        }
+                    }
+                }
+            }
+        }
+
+        QGCLabel {
+            Layout.fillWidth:   true
+            text:               qsTr("Character count: %1").arg(_customContext.rawValue.length)
+            font.pointSize:     ScreenTools.smallFontPointSize
+            color:              qgcPal.text
         }
     }
 }

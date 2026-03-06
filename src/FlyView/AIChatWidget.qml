@@ -141,6 +141,8 @@ Rectangle {
                     property string safeContent: object ? (object.content || "") : ""
                     property string safeAction: object ? (object.action || "") : ""
                     property int safeStatus: object ? (object.commandStatus || 0) : 0
+                    property int safeActionCount: object ? (object.actionCount || 0) : 0
+                    property int safeExecutedCount: object ? (object.executedActionCount || 0) : 0
 
                     Rectangle {
                         id: messageBg
@@ -186,11 +188,13 @@ Rectangle {
                             // Command execution button
                             RowLayout {
                                 Layout.fillWidth: true
-                                visible: messageDelegate.safeAction.length > 0 && messageDelegate.safeStatus === 2
+                                visible: messageDelegate.safeActionCount > 0 && messageDelegate.safeStatus === 2
                                 spacing: aiChatWidget._margins / 2
 
                                 QGCButton {
-                                    text: qsTr("Execute: %1").arg(messageDelegate.safeAction)
+                                    text: messageDelegate.safeActionCount > 1
+                                        ? qsTr("Execute %1 actions").arg(messageDelegate.safeActionCount)
+                                        : qsTr("Execute: %1").arg(messageDelegate.safeAction)
                                     highlighted: true
                                     onClicked: _chatController.executeCommand(index)
                                 }
@@ -202,10 +206,33 @@ Rectangle {
                                 }
                             }
 
-                            // Command status
+                            // Execution progress (status 1 = Pending/Executing)
+                            RowLayout {
+                                Layout.fillWidth: true
+                                visible: messageDelegate.safeActionCount > 0 && messageDelegate.safeStatus === 1
+                                spacing: aiChatWidget._margins / 2
+
+                                BusyIndicator {
+                                    Layout.preferredWidth: ScreenTools.defaultFontPixelHeight
+                                    Layout.preferredHeight: ScreenTools.defaultFontPixelHeight
+                                    running: parent.visible
+                                }
+
+                                QGCLabel {
+                                    text: messageDelegate.safeActionCount > 1
+                                        ? qsTr("Executing: %1 of %2").arg(messageDelegate.safeExecutedCount).arg(messageDelegate.safeActionCount)
+                                        : qsTr("Executing...")
+                                    font.pointSize: ScreenTools.smallFontPointSize
+                                    color: qgcPal.text
+                                }
+                            }
+
+                            // Command status (completed)
                             QGCLabel {
                                 visible: messageDelegate.safeStatus === 3
-                                text: qsTr("Command executed")
+                                text: messageDelegate.safeActionCount > 1
+                                    ? qsTr("%1 commands executed").arg(messageDelegate.safeActionCount)
+                                    : qsTr("Command executed")
                                 font.pointSize: ScreenTools.smallFontPointSize
                                 color: qgcPal.colorGreen
                             }

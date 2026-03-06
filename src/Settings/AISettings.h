@@ -19,4 +19,5 @@ public:
     DEFINE_SETTINGFACT(enableTextToSpeech)
     DEFINE_SETTINGFACT(confirmDangerousCommands)
     DEFINE_SETTINGFACT(includeVehicleState)
+    DEFINE_SETTINGFACT(customContext)
 };

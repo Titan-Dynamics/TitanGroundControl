@@ -37,6 +37,13 @@
     "longDesc":     "Send current vehicle position, altitude, speed, and status to AI for context-aware responses",
     "type":         "bool",
     "default":      true
+},
+{
+    "name":         "customContext",
+    "shortDesc":    "Custom AI Context",
+    "longDesc":     "Additional context to provide to the AI, such as ArduPilot parameter documentation, MAVLink command references, or custom instructions.",
+    "type":         "string",
+    "default":      ""
 }
 ]
 }

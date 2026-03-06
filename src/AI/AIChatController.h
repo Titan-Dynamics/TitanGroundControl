@@ -5,6 +5,7 @@
 #include <QtCore/QString>
 #include <QtCore/QVariantMap>
 #include <QtNetwork/QNetworkReply>
+#include <QtPositioning/QGeoCoordinate>
 #include <QtQmlIntegration/QtQmlIntegration>
 
 Q_DECLARE_LOGGING_CATEGORY(AIChatControllerLog)
@@ -15,6 +16,7 @@ class QMediaCaptureSession;
 class QMediaRecorder;
 class QNetworkAccessManager;
 class QmlObjectListModel;
+class QTimer;
 class Vehicle;
 
 /// Controller for AI-powered chat interface that allows natural language vehicle control
@@ -96,6 +98,8 @@ private:
     void _processAIResponse(const QByteArray& responseData);
     void _addMessage(MessageRole role, const QString& content, const QString& action = QString(),
                      const QVariantMap& parameters = QVariantMap(), bool requiresConfirmation = false);
+    void _addMessage(MessageRole role, const QString& content, const QVariantList& actions,
+                     bool requiresConfirmation = false);
     bool _executeVehicleCommand(const QString& action, const QVariantMap& parameters);
 
     // Dangerous commands that require confirmation
@@ -113,6 +117,23 @@ private:
     QString _errorMessage;
     QString _recognizedText;
     bool _lastMessageWasVoice = false;
+
+    // Action queue for sequential execution
+    struct QueuedAction {
+        QString action;
+        QVariantMap parameters;
+        QGeoCoordinate targetPosition;  // For position-based completion
+        double targetAltitude = 0;       // For altitude-based completion
+    };
+    QList<QueuedAction> _actionQueue;
+    QTimer* _actionQueueTimer = nullptr;
+    int _currentMessageIndex = -1;      // Track which message owns the current queue
+    bool _isExecutingQueue = false;
+
+    void _processActionQueue();
+    void _executeNextAction();
+    bool _isCurrentActionComplete();
+    void _clearActionQueue();
 
     // Voice input via Whisper API
     void _startAudioRecording();

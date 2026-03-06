@@ -8,6 +8,7 @@
 #include "AudioOutput.h"
 #include "Fact.h"
 #include "Vehicle.h"
+#include "ParameterManager.h"
 #include "QGCNetworkHelper.h"
 
 #include <QtCore/QDir>
@@ -16,6 +17,7 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QStandardPaths>
 #include <QtCore/QTemporaryFile>
+#include <QtCore/QTimer>
 #include <QtMultimedia/QAudioDevice>
 #include <QtMultimedia/QAudioInput>
 #include <QtMultimedia/QMediaCaptureSession>
@@ -39,6 +41,8 @@ class AIChatMessage : public QObject
     Q_PROPERTY(QVariantMap parameters READ parameters CONSTANT)
     Q_PROPERTY(bool requiresConfirmation READ requiresConfirmation CONSTANT)
     Q_PROPERTY(int commandStatus READ commandStatus NOTIFY commandStatusChanged)
+    Q_PROPERTY(int actionCount READ actionCount CONSTANT)
+    Q_PROPERTY(int executedActionCount READ executedActionCount NOTIFY executedActionCountChanged)
 
 public:
     AIChatMessage(AIChatController::MessageRole role, const QString& content,
@@ -47,35 +51,72 @@ public:
         : QObject(parent)
         , _role(role)
         , _content(content)
-        , _action(action)
-        , _parameters(parameters)
         , _requiresConfirmation(requiresConfirmation)
         , _commandStatus(action.isEmpty() ? AIChatController::CommandStatus::None
+                         : (requiresConfirmation ? AIChatController::CommandStatus::RequiresConfirmation
+                                                 : AIChatController::CommandStatus::Pending))
+    {
+        // Store single action in the actions list
+        if (!action.isEmpty()) {
+            QVariantMap actionEntry;
+            actionEntry["action"] = action;
+            actionEntry["parameters"] = parameters;
+            _actions.append(actionEntry);
+        }
+    }
+
+    // Constructor for multiple actions
+    AIChatMessage(AIChatController::MessageRole role, const QString& content,
+                  const QVariantList& actions, bool requiresConfirmation = false, QObject* parent = nullptr)
+        : QObject(parent)
+        , _role(role)
+        , _content(content)
+        , _actions(actions)
+        , _requiresConfirmation(requiresConfirmation)
+        , _commandStatus(actions.isEmpty() ? AIChatController::CommandStatus::None
                          : (requiresConfirmation ? AIChatController::CommandStatus::RequiresConfirmation
                                                  : AIChatController::CommandStatus::Pending))
     {}
 
     int role() const { return static_cast<int>(_role); }
     QString content() const { return _content; }
-    QString action() const { return _action; }
-    QVariantMap parameters() const { return _parameters; }
+
+    // For backwards compatibility, return first action name
+    QString action() const {
+        if (_actions.isEmpty()) return QString();
+        QVariantMap first = _actions.first().toMap();
+        return first["action"].toString();
+    }
+
+    // For backwards compatibility, return first action's parameters
+    QVariantMap parameters() const {
+        if (_actions.isEmpty()) return QVariantMap();
+        QVariantMap first = _actions.first().toMap();
+        return first["parameters"].toMap();
+    }
+
     bool requiresConfirmation() const { return _requiresConfirmation; }
     int commandStatus() const { return static_cast<int>(_commandStatus); }
+    int actionCount() const { return _actions.count(); }
+    int executedActionCount() const { return _executedActionCount; }
+    QVariantList actions() const { return _actions; }
 
     void setContent(const QString& content) { _content = content; emit contentChanged(); }
     void setCommandStatus(AIChatController::CommandStatus status) { _commandStatus = status; emit commandStatusChanged(); }
+    void setExecutedActionCount(int count) { _executedActionCount = count; emit executedActionCountChanged(); }
 
 signals:
     void contentChanged();
     void commandStatusChanged();
+    void executedActionCountChanged();
 
 private:
     AIChatController::MessageRole _role;
     QString _content;
-    QString _action;
-    QVariantMap _parameters;
+    QVariantList _actions;  // List of {action: string, parameters: map}
     bool _requiresConfirmation;
     AIChatController::CommandStatus _commandStatus;
+    int _executedActionCount = 0;
 };
 
 AIChatController::AIChatController(Vehicle* vehicle, QObject* parent)
@@ -92,6 +133,11 @@ AIChatController::AIChatController(Vehicle* vehicle, QObject* parent)
     // Update voice input availability when Groq API key changes
     auto* aiSettings = SettingsManager::instance()->aiSettings();
     connect(aiSettings->groqApiKey(), &Fact::rawValueChanged, this, &AIChatController::voiceInputAvailableChanged);
+
+    // Initialize action queue timer for sequential command execution
+    _actionQueueTimer = new QTimer(this);
+    _actionQueueTimer->setInterval(250);  // Check every 250ms
+    connect(_actionQueueTimer, &QTimer::timeout, this, &AIChatController::_processActionQueue);
 }
 
 AIChatController::~AIChatController()
@@ -143,21 +189,235 @@ void AIChatController::executeCommand(int messageIndex, bool userInitiated)
     }
 
     auto* message = qobject_cast<AIChatMessage*>(_messages->get(messageIndex));
-    if (!message || message->action().isEmpty()) {
-        qCWarning(AIChatControllerLog) << "No command to execute at index:" << messageIndex;
+    if (!message || message->actions().isEmpty()) {
+        qCWarning(AIChatControllerLog) << "No commands to execute at index:" << messageIndex;
         return;
     }
 
-    // Announce execution if TTS is enabled and user clicked the button
-    if (userInitiated) {
-        auto* aiSettings = SettingsManager::instance()->aiSettings();
-        if (aiSettings->enableTextToSpeech()->rawValue().toBool()) {
-            AudioOutput::instance()->say(tr("Executing action"), AudioOutput::TextMod::None, true, 0.05);
-        }
+    // Clear any existing queue (new command takes priority)
+    _clearActionQueue();
+
+    // Queue all actions for sequential execution
+    QVariantList actions = message->actions();
+    _currentMessageIndex = messageIndex;
+
+    // Immediately update UI to show execution is starting
+    message->setCommandStatus(CommandStatus::Pending);
+    message->setExecutedActionCount(0);
+
+    qCDebug(AIChatControllerLog) << "========== QUEUEING" << actions.count() << "ACTIONS ==========";
+
+    for (const QVariant& actionVar : actions) {
+        QVariantMap actionMap = actionVar.toMap();
+        QueuedAction queuedAction;
+        queuedAction.action = actionMap["action"].toString();
+        queuedAction.parameters = actionMap["parameters"].toMap();
+        _actionQueue.append(queuedAction);
+
+        qCDebug(AIChatControllerLog) << "  Queued:" << queuedAction.action;
     }
 
-    bool success = _executeVehicleCommand(message->action(), message->parameters());
-    message->setCommandStatus(success ? CommandStatus::Executed : CommandStatus::Failed);
+    // Start executing the queue
+    _executeNextAction();
+}
+
+void AIChatController::_clearActionQueue()
+{
+    if (_isExecutingQueue) {
+        qCDebug(AIChatControllerLog) << "Clearing action queue (had" << _actionQueue.count() << "pending actions)";
+    }
+    _actionQueue.clear();
+    _actionQueueTimer->stop();
+    _isExecutingQueue = false;
+    _currentMessageIndex = -1;
+}
+
+void AIChatController::_executeNextAction()
+{
+    if (_actionQueue.isEmpty()) {
+        qCDebug(AIChatControllerLog) << "========== ALL ACTIONS COMPLETE ==========";
+        _actionQueueTimer->stop();
+        _isExecutingQueue = false;
+
+        // Mark message as executed
+        if (_currentMessageIndex >= 0 && _currentMessageIndex < _messages->count()) {
+            auto* message = qobject_cast<AIChatMessage*>(_messages->get(_currentMessageIndex));
+            if (message) {
+                message->setCommandStatus(CommandStatus::Executed);
+            }
+        }
+        _currentMessageIndex = -1;
+        return;
+    }
+
+    _isExecutingQueue = true;
+    QueuedAction& currentAction = _actionQueue.first();
+
+    qCDebug(AIChatControllerLog) << "EXECUTING ACTION:" << currentAction.action
+                                  << "(" << _actionQueue.count() << "remaining in queue)";
+    qCDebug(AIChatControllerLog) << "  Parameters:" << currentAction.parameters;
+
+    // Store target position/altitude for completion checking
+    if (currentAction.action == "fly_heading" || currentAction.action == "goto") {
+        if (currentAction.action == "fly_heading") {
+            double headingDeg = currentAction.parameters.value("heading_deg", 0).toDouble();
+            double distanceM = currentAction.parameters.value("distance_m", 50).toDouble();
+            QGeoCoordinate currentPos = _vehicle->coordinate();
+            if (currentPos.isValid()) {
+                currentAction.targetPosition = currentPos.atDistanceAndAzimuth(distanceM, headingDeg);
+            }
+        } else {
+            double lat = currentAction.parameters.value("latitude").toDouble();
+            double lon = currentAction.parameters.value("longitude").toDouble();
+            currentAction.targetPosition = QGeoCoordinate(lat, lon);
+        }
+        if (currentAction.parameters.contains("altitude_m")) {
+            currentAction.targetAltitude = currentAction.parameters.value("altitude_m").toDouble();
+        } else if (_vehicle->altitudeRelative()) {
+            currentAction.targetAltitude = _vehicle->altitudeRelative()->rawValue().toDouble();
+        }
+        qCDebug(AIChatControllerLog) << "  Target position:" << currentAction.targetPosition
+                                      << "altitude:" << currentAction.targetAltitude << "m";
+    } else if (currentAction.action == "change_altitude") {
+        if (currentAction.parameters.contains("altitude_m")) {
+            currentAction.targetAltitude = currentAction.parameters.value("altitude_m").toDouble();
+        } else {
+            double change = currentAction.parameters.value("change_m", 0).toDouble();
+            double currentAlt = _vehicle->altitudeRelative() ? _vehicle->altitudeRelative()->rawValue().toDouble() : 0;
+            currentAction.targetAltitude = currentAlt + change;
+        }
+        qCDebug(AIChatControllerLog) << "  Target altitude:" << currentAction.targetAltitude << "m";
+    } else if (currentAction.action == "takeoff") {
+        currentAction.targetAltitude = currentAction.parameters.value("altitude_m", 10).toDouble();
+        qCDebug(AIChatControllerLog) << "  Target altitude:" << currentAction.targetAltitude << "m";
+    }
+
+    // Execute the command
+    bool success = _executeVehicleCommand(currentAction.action, currentAction.parameters);
+
+    if (!success) {
+        qCWarning(AIChatControllerLog) << "Action failed:" << currentAction.action;
+        _clearActionQueue();
+
+        // Mark message as failed
+        if (_currentMessageIndex >= 0 && _currentMessageIndex < _messages->count()) {
+            auto* message = qobject_cast<AIChatMessage*>(_messages->get(_currentMessageIndex));
+            if (message) {
+                message->setCommandStatus(CommandStatus::Failed);
+            }
+        }
+        return;
+    }
+
+    // Check if this action completes immediately or needs monitoring
+    bool completesImmediately = (currentAction.action == "set_speed" ||
+                                  currentAction.action == "pause" ||
+                                  currentAction.action == "set_flight_mode" ||
+                                  currentAction.action == "orbit" ||
+                                  currentAction.action == "rtl" ||
+                                  currentAction.action == "land" ||
+                                  currentAction.action == "emergency_stop" ||
+                                  currentAction.action == "start_mission" ||
+                                  currentAction.action == "pause_mission" ||
+                                  currentAction.action == "goto_waypoint" ||
+                                  currentAction.action == "set_parameter" ||
+                                  currentAction.action == "get_parameter" ||
+                                  currentAction.action == "set_servo");
+
+    if (completesImmediately) {
+        qCDebug(AIChatControllerLog) << "  Action completes immediately, moving to next";
+        _actionQueue.removeFirst();
+
+        // Update executed count in UI
+        if (_currentMessageIndex >= 0 && _currentMessageIndex < _messages->count()) {
+            auto* message = qobject_cast<AIChatMessage*>(_messages->get(_currentMessageIndex));
+            if (message) {
+                message->setExecutedActionCount(message->executedActionCount() + 1);
+            }
+        }
+
+        _executeNextAction();
+    } else {
+        // Start monitoring for completion
+        qCDebug(AIChatControllerLog) << "  Monitoring for completion...";
+        _actionQueueTimer->start();
+    }
+}
+
+void AIChatController::_processActionQueue()
+{
+    if (_actionQueue.isEmpty() || !_isExecutingQueue) {
+        _actionQueueTimer->stop();
+        return;
+    }
+
+    if (_isCurrentActionComplete()) {
+        qCDebug(AIChatControllerLog) << "  Action complete!";
+        _actionQueue.removeFirst();
+        _actionQueueTimer->stop();
+
+        // Update executed count in UI
+        if (_currentMessageIndex >= 0 && _currentMessageIndex < _messages->count()) {
+            auto* message = qobject_cast<AIChatMessage*>(_messages->get(_currentMessageIndex));
+            if (message) {
+                message->setExecutedActionCount(message->executedActionCount() + 1);
+            }
+        }
+
+        _executeNextAction();
+    }
+}
+
+bool AIChatController::_isCurrentActionComplete()
+{
+    if (_actionQueue.isEmpty() || !_vehicle) {
+        return true;
+    }
+
+    const QueuedAction& current = _actionQueue.first();
+    const double positionThreshold = 2.0;  // meters
+    const double altitudeThreshold = 1.0;  // meters
+
+    if (current.action == "arm") {
+        return _vehicle->armed();
+    }
+    else if (current.action == "disarm") {
+        return !_vehicle->armed();
+    }
+    else if (current.action == "takeoff") {
+        double currentAlt = _vehicle->altitudeRelative() ? _vehicle->altitudeRelative()->rawValue().toDouble() : 0;
+        bool complete = currentAlt >= (current.targetAltitude * 0.9);  // 90% of target
+        if (complete) {
+            qCDebug(AIChatControllerLog) << "  Takeoff complete: alt=" << currentAlt << "target=" << current.targetAltitude;
+        }
+        return complete;
+    }
+    else if (current.action == "change_altitude") {
+        double currentAlt = _vehicle->altitudeRelative() ? _vehicle->altitudeRelative()->rawValue().toDouble() : 0;
+        bool complete = qAbs(currentAlt - current.targetAltitude) < altitudeThreshold;
+        if (complete) {
+            qCDebug(AIChatControllerLog) << "  Altitude change complete: alt=" << currentAlt << "target=" << current.targetAltitude;
+        }
+        return complete;
+    }
+    else if (current.action == "fly_heading" || current.action == "goto") {
+        if (!current.targetPosition.isValid()) {
+            return true;  // No valid target, consider complete
+        }
+        QGeoCoordinate currentPos = _vehicle->coordinate();
+        if (!currentPos.isValid()) {
+            return false;
+        }
+        double distance = currentPos.distanceTo(current.targetPosition);
+        bool complete = distance < positionThreshold;
+        if (complete) {
+            qCDebug(AIChatControllerLog) << "  Position reached: distance=" << distance << "m";
+        }
+        return complete;
+    }
+
+    // Default: consider complete
+    return true;
 }
 
 void AIChatController::clearHistory()
@@ -235,6 +495,8 @@ QString AIChatController::_buildSystemPrompt() const
 You can issue commands to control the vehicle. Always respond with a JSON object.
 
 AVAILABLE COMMANDS:
+
+Flight Control:
 - arm: Arm the vehicle motors. Parameters: none
 - disarm: Disarm the vehicle motors (only when not flying). Parameters: none
 - takeoff: Take off to specified altitude. Parameters: altitude_m (number, required)
@@ -242,30 +504,72 @@ AVAILABLE COMMANDS:
 - rtl: Return to launch/home position. Parameters: smart_rtl (boolean, optional, default false)
 - goto: Go to specified location. Parameters: latitude (number), longitude (number), altitude_m (number, optional)
 - pause: Pause/hold current position. Parameters: none
-- change_altitude: Change altitude relative to current. Parameters: altitude_change_m (number, can be negative)
+- change_altitude: Change altitude to specific value OR relative change. Parameters: altitude_m (number, absolute altitude) OR change_m (number, relative change, can be negative)
 - emergency_stop: EMERGENCY - Kill all motors immediately. Parameters: none
 - set_flight_mode: Change flight mode. Parameters: mode_name (string)
+- fly_heading: Fly in a compass direction. Parameters: heading_deg (number, 0=North, 90=East, 180=South, 270=West), distance_m (number), altitude_m (number, optional - use this instead of separate change_altitude)
+- set_speed: Set flight speed. Parameters: speed_mps (number, meters per second)
+- orbit: Circle around current position or a point. Parameters: radius_m (number), direction (string: "cw" or "ccw"), optional latitude/longitude to orbit around
+
+Mission Control:
+- start_mission: Start the loaded mission from the beginning. Parameters: none
+- pause_mission: Pause the current mission (same as pause). Parameters: none
+- goto_waypoint: Jump to a specific waypoint in the mission. Parameters: waypoint_index (number, 1-based as user sees them)
+
+Parameters:
+- set_parameter: Set a vehicle parameter. Parameters: name (string, e.g. "WP_RADIUS"), value (number or string)
+- get_parameter: Get a vehicle parameter value. Parameters: name (string, e.g. "WP_RADIUS")
+
+Hardware:
+- set_servo: Set a servo to a specific PWM value. Parameters: channel (number, 1-16), pwm (number, typically 1000-2000)
 
 RESPONSE FORMAT (always respond with valid JSON):
 {
     "understood": true,
-    "action": "command_name_or_null",
-    "parameters": {},
+    "actions": [
+        {"action": "command_name", "parameters": {...}},
+        {"action": "another_command", "parameters": {...}}
+    ],
     "message": "Human-readable response to user",
     "confirmation_needed": false
 }
 
+For single actions, you can still use the simpler format:
+{
+    "understood": true,
+    "action": "command_name",
+    "parameters": {},
+    "message": "...",
+    "confirmation_needed": false
+}
+
+MODE REQUIREMENTS:
+- Mission commands (start_mission, goto_waypoint) require AUTO mode. If not in AUTO, add set_flight_mode with mode_name="Auto" BEFORE the mission command.
+- Manual flight commands (goto, fly_heading, change_altitude, orbit, pause) require GUIDED mode. If not in GUIDED, add set_flight_mode with mode_name="Guided" BEFORE the command.
+- takeoff requires GUIDED mode. Add set_flight_mode if needed.
+- rtl and land work from any mode.
+- set_parameter, get_parameter, set_servo work from any mode.
+- Always check the current Flight Mode in the vehicle state and prepend mode changes as needed.
+
 RULES:
-- If you cannot understand the request or it's just a question, set action to null
+- If you cannot understand the request or it's just a question, set action/actions to null/empty
 - Always set confirmation_needed=true for: arm, takeoff, emergency_stop, disarm
 - Never execute disarm while the vehicle is flying
 - Validate altitude requests are reasonable (typically 2-400m)
 - If unsure about the user's intent, ask for clarification in the message field
-- Be concise but helpful in your message responses. Dont do more than 2 or 3 sentences.
-- Never mention latitude/longitude coordinates in your message responses)";
+- Be concise - keep messages to 1 sentence
+- Never mention latitude/longitude coordinates in your message responses
+- Multiple actions are executed sequentially - each waits for the previous to complete
+- For complex maneuvers, you can chain multiple actions (e.g., change_altitude then fly_heading))";
 
     if (includeState && _vehicle) {
         prompt += "\n\nCURRENT VEHICLE STATE:\n" + _getVehicleStateContext();
+    }
+
+    // Add custom context if provided
+    QString customContext = aiSettings->customContext()->rawValue().toString().trimmed();
+    if (!customContext.isEmpty()) {
+        prompt += "\n\nADDITIONAL CONTEXT:\n" + customContext;
     }
 
     return prompt;
@@ -401,34 +705,65 @@ void AIChatController::_processAIResponse(const QByteArray& responseData)
 
     QJsonObject aiResponse = aiDoc.object();
     QString message = aiResponse["message"].toString();
-    QString action = aiResponse["action"].toString();
-    QVariantMap parameters = aiResponse["parameters"].toObject().toVariantMap();
     bool confirmationNeeded = aiResponse["confirmation_needed"].toBool();
 
-    qCDebug(AIChatControllerLog) << "Parsed - message:" << message << "action:" << action;
+    // Parse actions - support both single "action" and multiple "actions" array
+    QVariantList actionsList;
+
+    if (aiResponse.contains("actions") && aiResponse["actions"].isArray()) {
+        // Multiple actions format
+        QJsonArray actionsArray = aiResponse["actions"].toArray();
+        for (const QJsonValue& actionVal : actionsArray) {
+            QJsonObject actionObj = actionVal.toObject();
+            QVariantMap actionEntry;
+            actionEntry["action"] = actionObj["action"].toString();
+            actionEntry["parameters"] = actionObj["parameters"].toObject().toVariantMap();
+            if (!actionEntry["action"].toString().isEmpty()) {
+                actionsList.append(actionEntry);
+            }
+        }
+        qCDebug(AIChatControllerLog) << "Parsed" << actionsList.count() << "actions";
+    } else if (aiResponse.contains("action") && !aiResponse["action"].toString().isEmpty()) {
+        // Single action format (backwards compatible)
+        QVariantMap actionEntry;
+        actionEntry["action"] = aiResponse["action"].toString();
+        actionEntry["parameters"] = aiResponse["parameters"].toObject().toVariantMap();
+        actionsList.append(actionEntry);
+        qCDebug(AIChatControllerLog) << "Parsed single action:" << actionEntry["action"].toString();
+    }
 
     // If message is empty but we have valid JSON, create a default message
     if (message.isEmpty()) {
-        if (!action.isEmpty()) {
-            message = tr("Command: %1").arg(action);
+        if (!actionsList.isEmpty()) {
+            if (actionsList.count() == 1) {
+                message = tr("Command: %1").arg(actionsList.first().toMap()["action"].toString());
+            } else {
+                message = tr("%1 commands queued").arg(actionsList.count());
+            }
         } else {
             message = tr("(No response message)");
         }
     }
 
-    // Check if dangerous command requires confirmation
+    // Check if any action is dangerous and requires confirmation
     auto* aiSettings = SettingsManager::instance()->aiSettings();
     bool forceConfirm = aiSettings->confirmDangerousCommands()->rawValue().toBool();
 
-    if (forceConfirm && _isDangerousCommand(action)) {
-        confirmationNeeded = true;
+    if (forceConfirm) {
+        for (const QVariant& actionVar : actionsList) {
+            QString actionName = actionVar.toMap()["action"].toString();
+            if (_isDangerousCommand(actionName)) {
+                confirmationNeeded = true;
+                break;
+            }
+        }
     }
 
-    // Add the AI's message
-    _addMessage(MessageRole::Assistant, message, action, parameters, confirmationNeeded);
+    // Add the AI's message with all actions
+    _addMessage(MessageRole::Assistant, message, actionsList, confirmationNeeded);
 
-    // Auto-execute if no confirmation needed and we have an action
-    if (!action.isEmpty() && !confirmationNeeded) {
+    // Auto-execute if no confirmation needed and we have actions
+    if (!actionsList.isEmpty() && !confirmationNeeded) {
         int lastIndex = _messages->count() - 1;
         executeCommand(lastIndex, false);  // false = not user initiated, no voice feedback
     }
@@ -438,6 +773,18 @@ void AIChatController::_addMessage(MessageRole role, const QString& content, con
                                     const QVariantMap& parameters, bool requiresConfirmation)
 {
     auto* message = new AIChatMessage(role, content, action, parameters, requiresConfirmation, this);
+    _messages->append(message);
+
+    // Speak assistant messages using TTS if not muted
+    if (role == MessageRole::Assistant) {
+        _speakMessage(content);
+    }
+}
+
+void AIChatController::_addMessage(MessageRole role, const QString& content, const QVariantList& actions,
+                                    bool requiresConfirmation)
+{
+    auto* message = new AIChatMessage(role, content, actions, requiresConfirmation, this);
     _messages->append(message);
 
     // Speak assistant messages using TTS if not muted
@@ -523,8 +870,18 @@ bool AIChatController::_executeVehicleCommand(const QString& action, const QVari
         return true;
     }
     else if (action == "change_altitude") {
-        double change = parameters.value("altitude_change_m", 0).toDouble();
-        _vehicle->guidedModeChangeAltitude(change, true);
+        // Support both absolute altitude_m and relative change_m
+        if (parameters.contains("altitude_m")) {
+            double targetAlt = parameters.value("altitude_m").toDouble();
+            double currentAlt = _vehicle->altitudeRelative() ? _vehicle->altitudeRelative()->rawValue().toDouble() : 0;
+            double change = targetAlt - currentAlt;
+            qCDebug(AIChatControllerLog) << "  change_altitude: target=" << targetAlt << "m, current=" << currentAlt << "m, change=" << change << "m";
+            _vehicle->guidedModeChangeAltitude(change, true);
+        } else {
+            double change = parameters.value("change_m", 0).toDouble();
+            qCDebug(AIChatControllerLog) << "  change_altitude: relative change=" << change << "m";
+            _vehicle->guidedModeChangeAltitude(change, true);
+        }
         return true;
     }
     else if (action == "emergency_stop") {
@@ -538,6 +895,159 @@ bool AIChatController::_executeVehicleCommand(const QString& action, const QVari
             return true;
         }
         return false;
+    }
+    else if (action == "fly_heading") {
+        // Fly in a compass direction for a given distance
+        double headingDeg = parameters.value("heading_deg", 0).toDouble();
+        double distanceM = parameters.value("distance_m", 50).toDouble();
+
+        QGeoCoordinate currentPos = _vehicle->coordinate();
+        if (!currentPos.isValid()) {
+            qCWarning(AIChatControllerLog) << "Cannot fly heading - no valid position";
+            return false;
+        }
+
+        // Calculate destination coordinate using heading and distance
+        QGeoCoordinate destination = currentPos.atDistanceAndAzimuth(distanceM, headingDeg);
+
+        // Check if there's a target altitude specified, otherwise preserve current
+        double targetAlt = _vehicle->altitudeRelative() ? _vehicle->altitudeRelative()->rawValue().toDouble() : 0;
+        if (parameters.contains("altitude_m")) {
+            targetAlt = parameters.value("altitude_m").toDouble();
+        }
+        destination.setAltitude(targetAlt);
+
+        qCDebug(AIChatControllerLog) << "  fly_heading: heading=" << headingDeg << "deg, distance=" << distanceM << "m";
+        qCDebug(AIChatControllerLog) << "  fly_heading: from=" << currentPos << "to=" << destination << "alt=" << targetAlt << "m";
+        _vehicle->guidedModeGotoLocation(destination);
+        return true;
+    }
+    else if (action == "set_speed") {
+        double speedMps = parameters.value("speed_mps", 5).toDouble();
+        _vehicle->guidedModeChangeGroundSpeedMetersSecond(speedMps);
+        return true;
+    }
+    else if (action == "orbit") {
+        double radius = parameters.value("radius_m", 20).toDouble();
+        QString direction = parameters.value("direction", "cw").toString();
+
+        // Use current position if no center specified
+        QGeoCoordinate center;
+        if (parameters.contains("latitude") && parameters.contains("longitude")) {
+            center = QGeoCoordinate(parameters.value("latitude").toDouble(),
+                                     parameters.value("longitude").toDouble());
+        } else {
+            center = _vehicle->coordinate();
+        }
+
+        if (!center.isValid()) {
+            qCWarning(AIChatControllerLog) << "Cannot orbit - no valid center position";
+            return false;
+        }
+
+        // Get current altitude
+        double altitude = _vehicle->altitudeAMSL() ? _vehicle->altitudeAMSL()->rawValue().toDouble() : 0;
+
+        // Negative radius for counter-clockwise
+        double signedRadius = (direction == "ccw") ? -radius : radius;
+
+        _vehicle->guidedModeOrbit(center, signedRadius, altitude);
+        return true;
+    }
+    else if (action == "start_mission") {
+        _vehicle->startMission();
+        return true;
+    }
+    else if (action == "pause_mission") {
+        _vehicle->pauseVehicle();
+        return true;
+    }
+    else if (action == "goto_waypoint") {
+        // User sees waypoints as 1, 2, 3... but mission sequence includes home at 0 and takeoff at 1
+        // So user's waypoint "1" = sequence 2, waypoint "2" = sequence 3, etc.
+        int waypointIndex = parameters.value("waypoint_index", 0).toInt() + 1;
+        _vehicle->setCurrentMissionSequence(waypointIndex);
+        return true;
+    }
+    else if (action == "set_parameter") {
+        QString paramName = parameters.value("name").toString();
+        QVariant paramValue = parameters.value("value");
+
+        if (paramName.isEmpty()) {
+            qCWarning(AIChatControllerLog) << "set_parameter: missing parameter name";
+            return false;
+        }
+
+        ParameterManager* paramMgr = _vehicle->parameterManager();
+        if (!paramMgr) {
+            qCWarning(AIChatControllerLog) << "set_parameter: no parameter manager";
+            return false;
+        }
+
+        // Use default component ID
+        int compId = ParameterManager::defaultComponentId;
+        if (!paramMgr->parameterExists(compId, paramName)) {
+            qCWarning(AIChatControllerLog) << "set_parameter: parameter does not exist:" << paramName;
+            return false;
+        }
+
+        Fact* param = paramMgr->getParameter(compId, paramName);
+        if (!param) {
+            qCWarning(AIChatControllerLog) << "set_parameter: failed to get parameter:" << paramName;
+            return false;
+        }
+
+        qCDebug(AIChatControllerLog) << "  set_parameter:" << paramName << "=" << paramValue;
+        param->setRawValue(paramValue);
+        return true;
+    }
+    else if (action == "get_parameter") {
+        QString paramName = parameters.value("name").toString();
+
+        if (paramName.isEmpty()) {
+            qCWarning(AIChatControllerLog) << "get_parameter: missing parameter name";
+            return false;
+        }
+
+        ParameterManager* paramMgr = _vehicle->parameterManager();
+        if (!paramMgr) {
+            qCWarning(AIChatControllerLog) << "get_parameter: no parameter manager";
+            return false;
+        }
+
+        int compId = ParameterManager::defaultComponentId;
+        if (!paramMgr->parameterExists(compId, paramName)) {
+            qCWarning(AIChatControllerLog) << "get_parameter: parameter does not exist:" << paramName;
+            return false;
+        }
+
+        Fact* param = paramMgr->getParameter(compId, paramName);
+        if (!param) {
+            qCWarning(AIChatControllerLog) << "get_parameter: failed to get parameter:" << paramName;
+            return false;
+        }
+
+        qCDebug(AIChatControllerLog) << "  get_parameter:" << paramName << "=" << param->rawValue();
+        // For get_parameter, the value is logged but doesn't need any action
+        // The AI will need to respond to the user with the value
+        return true;
+    }
+    else if (action == "set_servo") {
+        int channel = parameters.value("channel", 1).toInt();
+        int pwm = parameters.value("pwm", 1500).toInt();
+
+        if (channel < 1 || channel > 16) {
+            qCWarning(AIChatControllerLog) << "set_servo: invalid channel:" << channel;
+            return false;
+        }
+
+        qCDebug(AIChatControllerLog) << "  set_servo: channel=" << channel << "pwm=" << pwm;
+
+        // MAV_CMD_DO_SET_SERVO = 183
+        // param1 = servo channel, param2 = PWM value
+        _vehicle->sendCommand(MAV_COMP_ID_AUTOPILOT1, MAV_CMD_DO_SET_SERVO, true,
+                               static_cast<double>(channel), static_cast<double>(pwm));
+        return true;
     }
 
     qCWarning(AIChatControllerLog) << "Unknown action:" << action;
