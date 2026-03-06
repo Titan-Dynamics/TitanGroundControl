@@ -88,10 +88,19 @@ void AudioOutput::init(Fact *mutedFact)
         setMuted(value.toBool());
     });
 
+    // Restore mute state when speech finishes (for ignoreMute calls)
+    (void) connect(_engine, &QTextToSpeech::stateChanged, this, [this](QTextToSpeech::State state) {
+        qCDebug(AudioOutputLog) << "TTS State changed to:" << state;
+        if (state == QTextToSpeech::Ready && _pendingMuteRestore) {
+            _pendingMuteRestore = false;
+            if (_muted) {
+                (void) QMetaObject::invokeMethod(_engine, "setVolume", Qt::AutoConnection, 0.0);
+                qCDebug(AudioOutputLog) << "Restored muted volume after ignoreMute speech";
+            }
+        }
+    });
+
     if (AudioOutputLog().isDebugEnabled()) {
-        (void) connect(_engine, &QTextToSpeech::stateChanged, this, [](QTextToSpeech::State state) {
-            qCDebug(AudioOutputLog) << "TTS State changed to:" << state;
-        });
         (void) connect(_engine, &QTextToSpeech::errorOccurred, this, [](QTextToSpeech::ErrorReason reason, const QString &errorString) {
             qCDebug(AudioOutputLog) << "TTS Error occurred. Reason:" << reason << ", Message:" << errorString;
         });
@@ -120,7 +129,7 @@ void AudioOutput::setMuted(bool muted)
     }
 }
 
-void AudioOutput::say(const QString &text, TextMods textMods)
+void AudioOutput::say(const QString &text, TextMods textMods, bool ignoreMute, double rate)
 {
     if (!_initialized) {
         if (!qgcApp()->runningUnitTests()) {
@@ -129,7 +138,7 @@ void AudioOutput::say(const QString &text, TextMods textMods)
         return;
     }
 
-    if (_muted) {
+    if (_muted && !ignoreMute) {
         return;
     }
 
@@ -138,10 +147,21 @@ void AudioOutput::say(const QString &text, TextMods textMods)
         return;
     }
 
-    if (_textQueueSize >= kMaxTextQueueSize) {
+    // If muted but ignoreMute is true, temporarily restore volume for this utterance
+    if (_muted && ignoreMute) {
+        (void) QMetaObject::invokeMethod(_engine, "setVolume", Qt::AutoConnection, 1.0);
+        _pendingMuteRestore = true;  // Will be restored when speech finishes
+    }
+
+    // Set speech rate (clamped to valid range)
+    double clampedRate = qBound(-1.0, rate, 1.0);
+    (void) QMetaObject::invokeMethod(_engine, "setRate", Qt::AutoConnection, clampedRate);
+
+    // Stop any currently playing speech to start the new one immediately
+    if (_textQueueSize > 0) {
         (void) QMetaObject::invokeMethod(_engine, "stop", Qt::AutoConnection, QTextToSpeech::BoundaryHint::Default);
         _textQueueSize = 0;
-        qCWarning(AudioOutputLog) << "Text queue exceeded maximum size. Stopped current speech.";
+        qCDebug(AudioOutputLog) << "Stopped current speech to play new audio";
     }
 
     QString outText = _fixTextMessageForAudio(text);

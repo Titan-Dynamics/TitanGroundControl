@@ -266,8 +266,8 @@ Rectangle {
                 id: inputField
                 Layout.fillWidth: true
                 Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2.5
-                placeholderText: qsTr("Type a command...")
-                enabled: _chatController && !_chatController.isProcessing
+                placeholderText: _chatController && _chatController.isListening ? qsTr("Listening...") : qsTr("Type a command...")
+                enabled: _chatController && !_chatController.isProcessing && !_chatController.isListening
                 color: qgcPal.text
                 placeholderTextColor: Qt.rgba(qgcPal.text.r, qgcPal.text.g, qgcPal.text.b, 0.5)
                 onAccepted: sendMessage()
@@ -276,14 +276,44 @@ Rectangle {
                     radius: ScreenTools.defaultFontPixelWidth / 4
                     color: qgcPal.windowShade
                     border.width: inputField.activeFocus ? 1 : 0
-                    border.color: qgcPal.text
+                    border.color: _chatController && _chatController.isListening ? qgcPal.colorRed : qgcPal.text
+                }
+            }
+
+            // Microphone button for voice input
+            Rectangle {
+                id: micButton
+                Layout.preferredWidth: ScreenTools.defaultFontPixelHeight * 2.5
+                Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2.5
+                radius: ScreenTools.defaultFontPixelWidth / 4
+                color: _chatController && _chatController.isListening ? qgcPal.colorRed : qgcPal.buttonHighlight
+                visible: _chatController && _chatController.voiceInputAvailable
+
+                QGCColoredImage {
+                    anchors.centerIn: parent
+                    width: ScreenTools.defaultFontPixelHeight * 1.1
+                    height: width
+                    source: "/res/mic.png"
+                    color: qgcPal.text
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    enabled: _chatController && !_chatController.isProcessing
+                    onClicked: {
+                        if (_chatController.isListening) {
+                            _chatController.stopListening()
+                        } else {
+                            _chatController.startListening()
+                        }
+                    }
                 }
             }
 
             QGCButton {
                 text: qsTr("Send")
                 Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2.5
-                enabled: inputField.text.trim().length > 0 && _chatController && !_chatController.isProcessing
+                enabled: inputField.text.trim().length > 0 && _chatController && !_chatController.isProcessing && !_chatController.isListening
                 onClicked: sendMessage()
             }
         }

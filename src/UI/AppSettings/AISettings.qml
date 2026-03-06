@@ -12,6 +12,8 @@ SettingsPage {
     property var _settingsManager:          QGroundControl.settingsManager
     property var _aiSettings:               _settingsManager.aiSettings
     property Fact _claudeApiKey:            _aiSettings.claudeApiKey
+    property Fact _groqApiKey:              _aiSettings.groqApiKey
+    property Fact _enableTextToSpeech:      _aiSettings.enableTextToSpeech
     property Fact _confirmDangerousCommands: _aiSettings.confirmDangerousCommands
     property Fact _includeVehicleState:     _aiSettings.includeVehicleState
 
@@ -32,6 +34,44 @@ SettingsPage {
         QGCLabel {
             Layout.fillWidth:   true
             text:               qsTr("Get your API key from console.anthropic.com")
+            wrapMode:           Text.WordWrap
+            font.pointSize:     ScreenTools.smallFontPointSize
+            color:              qgcPal.text
+        }
+    }
+
+    SettingsGroupLayout {
+        Layout.fillWidth: true
+        heading: qsTr("Voice Input (Whisper)")
+
+        LabelledFactTextField {
+            Layout.fillWidth:   true
+            label:              qsTr("Groq API Key")
+            fact:               _groqApiKey
+            visible:            _groqApiKey.visible
+            textField.echoMode: TextInput.Password
+            textField.placeholderText: qsTr("Enter your Groq API key for voice input")
+            textFieldPreferredWidth: ScreenTools.defaultFontPixelWidth * 40
+        }
+
+        QGCLabel {
+            Layout.fillWidth:   true
+            text:               qsTr("Get your free API key from console.groq.com. Required for voice commands.")
+            wrapMode:           Text.WordWrap
+            font.pointSize:     ScreenTools.smallFontPointSize
+            color:              qgcPal.text
+        }
+
+        FactCheckBoxSlider {
+            Layout.fillWidth:   true
+            text:               qsTr("Enable Text-to-Speech response")
+            fact:               _enableTextToSpeech
+            visible:            _enableTextToSpeech.visible
+        }
+
+        QGCLabel {
+            Layout.fillWidth:   true
+            text:               qsTr("When enabled, Titan AI will speak responses aloud.")
             wrapMode:           Text.WordWrap
             font.pointSize:     ScreenTools.smallFontPointSize
             color:              qgcPal.text

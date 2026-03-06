@@ -15,6 +15,8 @@ public:
     DEFINE_SETTING_NAME_GROUP()
 
     DEFINE_SETTINGFACT(claudeApiKey)
+    DEFINE_SETTINGFACT(groqApiKey)
+    DEFINE_SETTINGFACT(enableTextToSpeech)
     DEFINE_SETTINGFACT(confirmDangerousCommands)
     DEFINE_SETTINGFACT(includeVehicleState)
 };

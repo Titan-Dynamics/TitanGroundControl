@@ -4,12 +4,25 @@
 #include "QmlObjectListModel.h"
 #include "SettingsManager.h"
 #include "AISettings.h"
+#include "AppSettings.h"
+#include "AudioOutput.h"
+#include "Fact.h"
 #include "Vehicle.h"
 #include "QGCNetworkHelper.h"
 
+#include <QtCore/QDir>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
+#include <QtCore/QStandardPaths>
+#include <QtCore/QTemporaryFile>
+#include <QtMultimedia/QAudioDevice>
+#include <QtMultimedia/QAudioInput>
+#include <QtMultimedia/QMediaCaptureSession>
+#include <QtMultimedia/QMediaDevices>
+#include <QtMultimedia/QMediaFormat>
+#include <QtMultimedia/QMediaRecorder>
+#include <QtNetwork/QHttpMultiPart>
 #include <QtNetwork/QNetworkAccessManager>
 #include <QtNetwork/QNetworkRequest>
 #include <QtPositioning/QGeoCoordinate>
@@ -72,12 +85,31 @@ AIChatController::AIChatController(Vehicle* vehicle, QObject* parent)
     , _messages(new QmlObjectListModel(this))
 {
     qCDebug(AIChatControllerLog) << "Created for vehicle:" << (vehicle ? vehicle->id() : -1);
+
+    // Connect voice input signal to handler
+    connect(this, &AIChatController::voiceInputReceived, this, &AIChatController::_onVoiceInputReceived);
+
+    // Update voice input availability when Groq API key changes
+    auto* aiSettings = SettingsManager::instance()->aiSettings();
+    connect(aiSettings->groqApiKey(), &Fact::rawValueChanged, this, &AIChatController::voiceInputAvailableChanged);
 }
 
 AIChatController::~AIChatController()
 {
     if (_pendingReply) {
         _pendingReply->abort();
+    }
+    if (_whisperReply) {
+        _whisperReply->abort();
+    }
+    if (_mediaRecorder) {
+        _mediaRecorder->stop();
+        delete _mediaRecorder;
+        _mediaRecorder = nullptr;
+    }
+    if (_captureSession) {
+        delete _captureSession;
+        _captureSession = nullptr;
     }
     qCDebug(AIChatControllerLog) << "Destroyed";
 }
@@ -92,6 +124,9 @@ void AIChatController::sendMessage(const QString& userMessage)
         qCWarning(AIChatControllerLog) << "Already processing a request";
         return;
     }
+
+    // Track that this was a typed message (not voice)
+    _lastMessageWasVoice = false;
 
     // Add user message to chat
     _addMessage(MessageRole::User, userMessage);
@@ -395,6 +430,30 @@ void AIChatController::_addMessage(MessageRole role, const QString& content, con
 {
     auto* message = new AIChatMessage(role, content, action, parameters, requiresConfirmation, this);
     _messages->append(message);
+
+    // Speak assistant messages using TTS if not muted
+    if (role == MessageRole::Assistant) {
+        _speakMessage(content);
+    }
+}
+
+void AIChatController::_speakMessage(const QString& text)
+{
+    // Only speak responses to voice messages
+    if (!_lastMessageWasVoice) {
+        return;
+    }
+
+    auto* aiSettings = SettingsManager::instance()->aiSettings();
+
+    // Check if TTS is enabled in AI settings
+    if (!aiSettings->enableTextToSpeech()->rawValue().toBool()) {
+        return;
+    }
+
+    // Speak the message (ignores global mute - Titan AI TTS is independent)
+    // Speech rate: -1.0 slowest to 1.0 fastest, 0.0 is normal
+    AudioOutput::instance()->say(text, AudioOutput::TextMod::None, true, 0.05);
 }
 
 bool AIChatController::_executeVehicleCommand(const QString& action, const QVariantMap& parameters)
@@ -482,6 +541,224 @@ bool AIChatController::_isDangerousCommand(const QString& action)
         "arm", "disarm", "takeoff", "emergency_stop"
     };
     return dangerousCommands.contains(action);
+}
+
+bool AIChatController::voiceInputAvailable() const
+{
+    // Voice input is available if we have an audio input device and Groq API key
+    auto* aiSettings = SettingsManager::instance()->aiSettings();
+    QString apiKey = aiSettings->groqApiKey()->rawValue().toString();
+
+    return !QMediaDevices::audioInputs().isEmpty() && !apiKey.isEmpty();
+}
+
+void AIChatController::startListening()
+{
+    if (_isListening || _isProcessing) {
+        return;
+    }
+
+    auto* aiSettings = SettingsManager::instance()->aiSettings();
+    QString apiKey = aiSettings->groqApiKey()->rawValue().toString();
+    if (apiKey.isEmpty()) {
+        qCWarning(AIChatControllerLog) << "Groq API key not configured for voice input";
+        return;
+    }
+
+    qCDebug(AIChatControllerLog) << "Starting voice input";
+    _isListening = true;
+    emit isListeningChanged();
+
+    _startAudioRecording();
+}
+
+void AIChatController::stopListening()
+{
+    if (!_isListening) {
+        return;
+    }
+
+    qCDebug(AIChatControllerLog) << "Stopping voice input";
+
+    // Stop recording - the actual send happens when recorder state changes to StoppedState
+    if (_mediaRecorder) {
+        _mediaRecorder->stop();
+    } else {
+        _isListening = false;
+        emit isListeningChanged();
+    }
+}
+
+void AIChatController::_onVoiceInputReceived(const QString& text)
+{
+    qCDebug(AIChatControllerLog) << "Voice input received:" << text;
+
+    _isListening = false;
+    emit isListeningChanged();
+
+    _recognizedText = text;
+    emit recognizedTextChanged();
+
+    if (!text.isEmpty()) {
+        // Send the recognized text as a message
+        sendMessage(text);
+        // Mark as voice message after sendMessage (which resets to false)
+        // This will be checked when the async API response arrives
+        _lastMessageWasVoice = true;
+    }
+}
+
+void AIChatController::_startAudioRecording()
+{
+    // Create a temporary file for the audio recording
+    QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    _audioFilePath = QDir(tempDir).filePath("titan_voice_input.wav");
+
+    qCDebug(AIChatControllerLog) << "Recording audio to:" << _audioFilePath;
+
+    // Set up capture session
+    _captureSession = new QMediaCaptureSession(this);
+
+    // Set up audio input
+    QAudioInput* audioInput = new QAudioInput(this);
+    audioInput->setDevice(QMediaDevices::defaultAudioInput());
+    _captureSession->setAudioInput(audioInput);
+
+    // Set up media recorder
+    _mediaRecorder = new QMediaRecorder(this);
+    _captureSession->setRecorder(_mediaRecorder);
+
+    // Configure recording format - WAV is well supported by Whisper
+    _mediaRecorder->setOutputLocation(QUrl::fromLocalFile(_audioFilePath));
+    _mediaRecorder->setMediaFormat(QMediaFormat::Wave);
+    _mediaRecorder->setAudioSampleRate(16000);  // Whisper works well with 16kHz
+    _mediaRecorder->setAudioChannelCount(1);    // Mono
+
+    // Connect to recorder state changes - send audio when recording stops
+    connect(_mediaRecorder, &QMediaRecorder::recorderStateChanged, this, [this](QMediaRecorder::RecorderState state) {
+        qCDebug(AIChatControllerLog) << "Recorder state changed:" << state;
+        if (state == QMediaRecorder::StoppedState && _isListening) {
+            // Recording finished, now send to Whisper
+            _stopAudioRecording();
+            _sendAudioToWhisper();
+        }
+    });
+
+    connect(_mediaRecorder, &QMediaRecorder::errorOccurred, this, [this](QMediaRecorder::Error error, const QString& errorString) {
+        qCWarning(AIChatControllerLog) << "Recording error:" << error << errorString;
+        _stopAudioRecording();
+        _isListening = false;
+        emit isListeningChanged();
+    });
+
+    // Start recording
+    _mediaRecorder->record();
+    qCDebug(AIChatControllerLog) << "Audio recording started - speak now";
+}
+
+void AIChatController::_stopAudioRecording()
+{
+    if (_mediaRecorder) {
+        _mediaRecorder->deleteLater();
+        _mediaRecorder = nullptr;
+    }
+
+    if (_captureSession) {
+        _captureSession->deleteLater();
+        _captureSession = nullptr;
+    }
+}
+
+void AIChatController::_sendAudioToWhisper()
+{
+    auto* aiSettings = SettingsManager::instance()->aiSettings();
+    QString apiKey = aiSettings->groqApiKey()->rawValue().toString();
+
+    if (apiKey.isEmpty()) {
+        qCWarning(AIChatControllerLog) << "Groq API key not configured";
+        _isListening = false;
+        emit isListeningChanged();
+        return;
+    }
+
+    QFile* audioFile = new QFile(_audioFilePath);
+    if (!audioFile->open(QIODevice::ReadOnly)) {
+        qCWarning(AIChatControllerLog) << "Failed to open audio file:" << _audioFilePath;
+        delete audioFile;
+        _isListening = false;
+        emit isListeningChanged();
+        return;
+    }
+
+    qCDebug(AIChatControllerLog) << "Sending audio to Groq Whisper API, file size:" << audioFile->size();
+
+    // Create multipart request
+    QHttpMultiPart* multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
+
+    // Add the audio file
+    QHttpPart audioPart;
+    audioPart.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("audio/wav"));
+    audioPart.setHeader(QNetworkRequest::ContentDispositionHeader,
+                        QVariant("form-data; name=\"file\"; filename=\"audio.wav\""));
+    audioPart.setBodyDevice(audioFile);
+    audioFile->setParent(multiPart);  // Ensure file is deleted with multipart
+    multiPart->append(audioPart);
+
+    // Add the model parameter - Groq uses whisper-large-v3-turbo
+    QHttpPart modelPart;
+    modelPart.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant("form-data; name=\"model\""));
+    modelPart.setBody("whisper-large-v3-turbo");
+    multiPart->append(modelPart);
+
+    // Create request - Groq's OpenAI-compatible endpoint
+    QUrl url("https://api.groq.com/openai/v1/audio/transcriptions");
+    QNetworkRequest request(url);
+    request.setRawHeader("Authorization", ("Bearer " + apiKey).toUtf8());
+
+    // Send request
+    _whisperReply = _networkManager->post(request, multiPart);
+    multiPart->setParent(_whisperReply);  // Ensure multipart is deleted with reply
+
+    connect(_whisperReply, &QNetworkReply::finished, this, &AIChatController::_onWhisperReplyFinished);
+}
+
+void AIChatController::_onWhisperReplyFinished()
+{
+    _isListening = false;
+    emit isListeningChanged();
+
+    if (!_whisperReply) {
+        return;
+    }
+
+    QNetworkReply* reply = _whisperReply;
+    _whisperReply = nullptr;
+
+    if (reply->error() != QNetworkReply::NoError) {
+        QString error = reply->errorString();
+        qCWarning(AIChatControllerLog) << "Groq Whisper API request failed:" << error;
+
+        QByteArray responseData = reply->readAll();
+        qCWarning(AIChatControllerLog) << "Groq API response:" << responseData;
+    } else {
+        QByteArray responseData = reply->readAll();
+        qCDebug(AIChatControllerLog) << "Groq Whisper API response:" << responseData;
+
+        QJsonParseError parseError;
+        QJsonDocument doc = QJsonDocument::fromJson(responseData, &parseError);
+        if (parseError.error == QJsonParseError::NoError && doc.isObject()) {
+            QString text = doc.object()["text"].toString().trimmed();
+            if (!text.isEmpty()) {
+                qCDebug(AIChatControllerLog) << "Transcribed text:" << text;
+                emit voiceInputReceived(text);
+            }
+        }
+    }
+
+    reply->deleteLater();
+
+    // Clean up the temp audio file
+    QFile::remove(_audioFilePath);
 }
 
 #include "AIChatController.moc"

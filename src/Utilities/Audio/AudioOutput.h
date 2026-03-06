@@ -50,13 +50,16 @@ public:
     /// Reads the specified text with optional text modifications.
     ///     @param text The text to be read.
     ///     @param textMods The text modifications to apply.
-    void say(const QString &text, TextMods textMods = TextMod::None);
+    ///     @param ignoreMute If true, speaks even when globally muted (for Titan AI voice responses).
+    ///     @param rate Speech rate from -1.0 (slowest) to 1.0 (fastest), 0.0 is normal.
+    void say(const QString &text, TextMods textMods = TextMod::None, bool ignoreMute = false, double rate = 0.0);
 
 private:
     QTextToSpeech *_engine = nullptr;
     QAtomicInteger<qsizetype> _textQueueSize = 0;
     bool _initialized = false;
     std::atomic_bool _muted = false;
+    std::atomic_bool _pendingMuteRestore = false;
 
     static const QHash<QString, QString> _textHash;
 

@@ -11,6 +11,20 @@
     "default":      ""
 },
 {
+    "name":         "groqApiKey",
+    "shortDesc":    "Groq API Key for voice input (Whisper)",
+    "longDesc":     "Your Groq API key for Whisper speech-to-text. Get one free at console.groq.com",
+    "type":         "string",
+    "default":      ""
+},
+{
+    "name":         "enableTextToSpeech",
+    "shortDesc":    "Enable Text-to-Speech response",
+    "longDesc":     "When enabled, Titan AI will speak responses aloud using text-to-speech",
+    "type":         "bool",
+    "default":      true
+},
+{
     "name":         "confirmDangerousCommands",
     "shortDesc":    "Require confirmation for dangerous commands",
     "longDesc":     "Always require manual confirmation for commands like arm, takeoff, emergency stop, etc.",
