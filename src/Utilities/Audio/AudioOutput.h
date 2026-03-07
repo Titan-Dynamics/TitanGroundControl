@@ -47,6 +47,9 @@ public:
     ///     @param enable True to mute, false to unmute.
     void setMuted(bool muted);
 
+    /// Stops any currently playing speech.
+    void stop();
+
     /// Reads the specified text with optional text modifications.
     ///     @param text The text to be read.
     ///     @param textMods The text modifications to apply.

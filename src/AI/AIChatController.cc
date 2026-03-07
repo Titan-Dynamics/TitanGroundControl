@@ -313,17 +313,38 @@ void AIChatController::_executeNextAction()
         qCDebug(AIChatControllerLog) << "  Target altitude:" << currentAction.targetAltitude << "m";
     }
 
+    // Handle wait/delay action - no vehicle command, just a timed delay
+    if (currentAction.action == "wait") {
+        int durationMs = qRound(currentAction.parameters.value("duration_s", 5).toDouble() * 1000);
+        qCDebug(AIChatControllerLog) << "  -> Waiting for" << durationMs << "ms before next action";
+        _actionQueue.removeFirst();
+
+        // Update executed count in UI
+        if (_currentMessageIndex >= 0 && _currentMessageIndex < _messages->count()) {
+            auto* message = qobject_cast<AIChatMessage*>(_messages->get(_currentMessageIndex));
+            if (message) {
+                message->setExecutedActionCount(message->executedActionCount() + 1);
+            }
+        }
+
+        QTimer::singleShot(durationMs, this, &AIChatController::_executeNextAction);
+        return;
+    }
+
     // Execute the command
     bool success = _executeVehicleCommand(currentAction.action, currentAction.parameters);
 
     if (!success) {
         qCWarning(AIChatControllerLog) << "  [RESULT] ACTION FAILED:" << currentAction.action;
         qCWarning(AIChatControllerLog) << "  Clearing remaining action queue";
+
+        // Save message index before clearing queue (which resets _currentMessageIndex to -1)
+        int failedMessageIndex = _currentMessageIndex;
         _clearActionQueue();
 
         // Mark message as failed
-        if (_currentMessageIndex >= 0 && _currentMessageIndex < _messages->count()) {
-            auto* message = qobject_cast<AIChatMessage*>(_messages->get(_currentMessageIndex));
+        if (failedMessageIndex >= 0 && failedMessageIndex < _messages->count()) {
+            auto* message = qobject_cast<AIChatMessage*>(_messages->get(failedMessageIndex));
             if (message) {
                 message->setCommandStatus(CommandStatus::Failed);
             }
@@ -541,15 +562,18 @@ Flight Control:
 - arm: Arm the vehicle motors. Parameters: none
 - disarm: Disarm the vehicle motors (only when not flying). Parameters: none
 - takeoff: Take off to specified altitude. Parameters: altitude_m (number, required)
-- land: Land at current position. Parameters: none
-- rtl: Return to launch/home position. Parameters: smart_rtl (boolean, optional, default false)
+- land: Land immediately at the current position. Does NOT fly back home. Parameters: none
+- rtl: Return to launch/home position AND land there. This flies the vehicle back home and lands automatically. Use this when the user wants to come back, come home, or return and land. Parameters: smart_rtl (boolean, optional, default false)
 - goto: Go to specified location. Parameters: latitude (number), longitude (number), altitude_m (number, optional)
 - pause: Pause/hold current position. Parameters: none
 - change_altitude: Change altitude to specific value OR relative change. Parameters: altitude_m (number, absolute altitude) OR change_m (number, relative change, can be negative)
 - emergency_stop: EMERGENCY - Kill all motors immediately. Parameters: none
 - set_flight_mode: Change flight mode. Parameters: mode_name (string)
-- fly_heading: Fly in a compass direction. Parameters: heading_deg (number, 0=North, 90=East, 180=South, 270=West), distance_m (number), altitude_m (number, optional - use this instead of separate change_altitude)
+- fly_heading: Fly in a specific heading direction. Parameters: heading_deg (number, 0=North, 90=East, 180=South, 270=West), distance_m (number), altitude_m (number, optional - use this instead of separate change_altitude)
+  IMPORTANT: When the user says "fly towards home" or "fly towards X", use the Bearing to Home/X from vehicle state as heading_deg. Do NOT approximate with cardinal directions like "west" - always use the exact bearing.
+  When the user says relative directions like "left", "right", "forward", "backward", these are relative to the vehicle's current Heading (provided in vehicle state), NOT compass directions. Calculate: forward = heading, backward = heading + 180, left = heading - 90, right = heading + 90. Always normalize to 0-360.
 - set_speed: Set flight speed. Parameters: speed_mps (number, meters per second)
+- wait: Wait/delay for a specified duration before executing the next action. Use this for timed maneuvers like "hover for 20 seconds then RTL". Parameters: duration_s (number, seconds)
 - orbit: Circle around current position or a point (PX4 only). Parameters: radius_m (number), direction (string: "cw" or "ccw"), optional latitude/longitude to orbit around
 
 Mission Control:
@@ -569,7 +593,7 @@ Camera/Gimbal:
 - set_roi: Set Region of Interest - vehicle/gimbal will point at this location. Parameters: latitude (number), longitude (number), altitude_m (number, optional)
 - stop_roi: Cancel ROI tracking, return camera to normal. Parameters: none
 
-RESPONSE FORMAT (always respond with valid JSON):
+RESPONSE FORMAT (always respond with ONLY valid JSON, no extra text before or after):
 {
     "understood": true,
     "actions": [
@@ -648,10 +672,22 @@ QString AIChatController::_getVehicleStateContext() const
     if (_vehicle->groundSpeed()) {
         state += QString("- Ground Speed: %1 m/s\n").arg(_vehicle->groundSpeed()->rawValue().toDouble(), 0, 'f', 1);
     }
+    if (_vehicle->heading()) {
+        state += QString("- Heading: %1 deg\n").arg(_vehicle->heading()->rawValue().toDouble(), 0, 'f', 1);
+    }
 
     QGeoCoordinate coord = _vehicle->coordinate();
     if (coord.isValid()) {
         state += QString("- Position: %1, %2\n").arg(coord.latitude(), 0, 'f', 6).arg(coord.longitude(), 0, 'f', 6);
+    }
+
+    QGeoCoordinate home = _vehicle->homePosition();
+    if (home.isValid()) {
+        state += QString("- Home Position: %1, %2\n").arg(home.latitude(), 0, 'f', 6).arg(home.longitude(), 0, 'f', 6);
+        if (coord.isValid()) {
+            state += QString("- Distance to Home: %1 m\n").arg(coord.distanceTo(home), 0, 'f', 1);
+            state += QString("- Bearing to Home: %1 deg\n").arg(coord.azimuthTo(home), 0, 'f', 1);
+        }
     }
 
     state += QString("- ROI Active: %1\n").arg(_vehicle->isROIEnabled() ? "Yes" : "No");
@@ -757,10 +793,33 @@ void AIChatController::_processAIResponse(const QByteArray& responseData)
     } else if (cleanedContent.startsWith("```")) {
         cleanedContent = cleanedContent.mid(3);
     }
-    if (cleanedContent.endsWith("```")) {
-        cleanedContent.chop(3);
+    // Remove closing ``` and anything after it (AI sometimes adds notes after the code block)
+    int closingBackticks = cleanedContent.indexOf("```");
+    if (closingBackticks >= 0) {
+        cleanedContent = cleanedContent.left(closingBackticks);
     }
     cleanedContent = cleanedContent.trimmed();
+
+    // If the AI added extra text after the JSON object, extract just the JSON
+    // Find the matching closing brace for the outermost JSON object
+    if (cleanedContent.startsWith("{")) {
+        int braceDepth = 0;
+        int jsonEnd = -1;
+        for (int i = 0; i < cleanedContent.length(); ++i) {
+            if (cleanedContent[i] == '{') braceDepth++;
+            else if (cleanedContent[i] == '}') {
+                braceDepth--;
+                if (braceDepth == 0) {
+                    jsonEnd = i;
+                    break;
+                }
+            }
+        }
+        if (jsonEnd >= 0 && jsonEnd < cleanedContent.length() - 1) {
+            qCDebug(AIChatControllerLog) << "Trimming extra text after JSON object";
+            cleanedContent = cleanedContent.left(jsonEnd + 1);
+        }
+    }
 
     // Parse the AI's JSON response
     QJsonDocument aiDoc = QJsonDocument::fromJson(cleanedContent.toUtf8(), &parseError);
@@ -1059,9 +1118,15 @@ bool AIChatController::_executeVehicleCommand(const QString& action, const QVari
 
         // Use default component ID
         int compId = ParameterManager::defaultComponentId;
+        // Try exact name first, then uppercase (firmware params are typically uppercase)
         if (!paramMgr->parameterExists(compId, paramName)) {
-            qCWarning(AIChatControllerLog) << "set_parameter: parameter does not exist:" << paramName;
-            return false;
+            QString upperName = paramName.toUpper();
+            if (paramMgr->parameterExists(compId, upperName)) {
+                paramName = upperName;
+            } else {
+                qCWarning(AIChatControllerLog) << "set_parameter: parameter does not exist:" << paramName;
+                return false;
+            }
         }
 
         Fact* param = paramMgr->getParameter(compId, paramName);
@@ -1090,8 +1155,13 @@ bool AIChatController::_executeVehicleCommand(const QString& action, const QVari
 
         int compId = ParameterManager::defaultComponentId;
         if (!paramMgr->parameterExists(compId, paramName)) {
-            qCWarning(AIChatControllerLog) << "get_parameter: parameter does not exist:" << paramName;
-            return false;
+            QString upperName = paramName.toUpper();
+            if (paramMgr->parameterExists(compId, upperName)) {
+                paramName = upperName;
+            } else {
+                qCWarning(AIChatControllerLog) << "get_parameter: parameter does not exist:" << paramName;
+                return false;
+            }
         }
 
         Fact* param = paramMgr->getParameter(compId, paramName);
@@ -1193,6 +1263,9 @@ void AIChatController::startListening()
         qCWarning(AIChatControllerLog) << "Groq API key not configured for voice input";
         return;
     }
+
+    // Stop any active TTS so it doesn't interfere with voice input
+    AudioOutput::instance()->stop();
 
     qCDebug(AIChatControllerLog) << "Starting voice input";
     _isListening = true;

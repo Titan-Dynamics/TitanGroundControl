@@ -8,15 +8,12 @@ import QGroundControl.Controls
 Rectangle {
     id: aiChatWidget
     width: ScreenTools.defaultFontPixelWidth * 50
-    height: _userHeight
+    height: ScreenTools.defaultFontPixelHeight * 22
     color: Qt.rgba(qgcPal.window.r, qgcPal.window.g, qgcPal.window.b, 0.9)
     radius: ScreenTools.defaultFontPixelWidth / 2
     visible: _showWidget && _activeVehicle
 
     property real _margins: ScreenTools.defaultFontPixelHeight / 2
-    property real _minHeight: ScreenTools.defaultFontPixelHeight * 18
-    property real _maxHeight: ScreenTools.defaultFontPixelHeight * 45
-    property real _userHeight: ScreenTools.defaultFontPixelHeight * 22  // Default height
     property var _activeVehicle: globals.activeVehicle
     property var _flyViewSettings: QGroundControl.settingsManager.flyViewSettings
     property var _aiSettings: QGroundControl.settingsManager.aiSettings
@@ -29,51 +26,13 @@ Rectangle {
 
     DeadMouseArea { anchors.fill: parent }
 
-    // Resize handle at bottom
-    Rectangle {
-        id: resizeHandle
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: _margins / 2
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: ScreenTools.defaultFontPixelWidth * 8
-        height: ScreenTools.defaultFontPixelHeight * 0.5
-        radius: height / 2
-        color: resizeMouseArea.containsMouse || resizeMouseArea.pressed ? qgcPal.text : Qt.rgba(qgcPal.text.r, qgcPal.text.g, qgcPal.text.b, 0.4)
-
-        MouseArea {
-            id: resizeMouseArea
-            anchors.fill: parent
-            anchors.margins: -ScreenTools.defaultFontPixelHeight / 2  // Larger hit area
-            hoverEnabled: true
-            cursorShape: Qt.SizeVerCursor
-
-            property real startMouseY
-            property real startHeight
-
-            onPressed: function(mouse) {
-                var globalPos = mapToItem(aiChatWidget.parent, mouse.x, mouse.y)
-                startMouseY = globalPos.y
-                startHeight = aiChatWidget._userHeight
-            }
-
-            onPositionChanged: function(mouse) {
-                if (pressed) {
-                    var globalPos = mapToItem(aiChatWidget.parent, mouse.x, mouse.y)
-                    var delta = globalPos.y - startMouseY
-                    var newHeight = startHeight + delta
-                    aiChatWidget._userHeight = Math.max(aiChatWidget._minHeight, Math.min(aiChatWidget._maxHeight, newHeight))
-                }
-            }
-        }
-    }
-
     ColumnLayout {
         id: contentColumn
         anchors.fill: parent
         anchors.leftMargin: _margins
         anchors.topMargin: _margins / 3
         anchors.rightMargin: _margins
-        anchors.bottomMargin: _margins + resizeHandle.height + _margins
+        anchors.bottomMargin: _margins
         spacing: _margins / 2
 
         // Header

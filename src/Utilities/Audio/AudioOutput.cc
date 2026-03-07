@@ -129,6 +129,19 @@ void AudioOutput::setMuted(bool muted)
     }
 }
 
+void AudioOutput::stop()
+{
+    if (!_initialized) {
+        return;
+    }
+
+    if (_textQueueSize > 0) {
+        (void) QMetaObject::invokeMethod(_engine, "stop", Qt::AutoConnection, QTextToSpeech::BoundaryHint::Default);
+        _textQueueSize = 0;
+        qCDebug(AudioOutputLog) << "Stopped current speech";
+    }
+}
+
 void AudioOutput::say(const QString &text, TextMods textMods, bool ignoreMute, double rate)
 {
     if (!_initialized) {
