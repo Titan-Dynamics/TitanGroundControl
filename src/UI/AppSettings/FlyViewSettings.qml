@@ -125,7 +125,7 @@ SettingsPage {
 
         LabelledFactTextField {
             Layout.fillWidth:   true
-            label:              qsTr("Go To Location Max Distance")
+            label:              qsTr("Location Max Distance (0 = no limit)")
             fact:               _maxGoToLocationDistance
             visible:            fact.visible
         }

@@ -15,7 +15,7 @@
     "shortDesc": "Maximum altitude for guided actions altitude slider.",
     "type":             "double",
     "units":            "m",
-    "default":     121.92
+    "default":     10000
 },
 {
     "name":             "showLogReplayStatusBar",
@@ -62,11 +62,11 @@
 },
 {
     "name":             "maxGoToLocationDistance",
-    "shortDesc": "Maximum distance allowed for Go To Location.",
+    "shortDesc": "Location Max Distance (0 = no limit)",
     "type":             "double",
     "units":            "m",
-    "default":     1000,
-    "min":              1
+    "default":     0,
+    "min":              0
 },
 {
     "name":         "forwardFlightGoToLocationLoiterRad",

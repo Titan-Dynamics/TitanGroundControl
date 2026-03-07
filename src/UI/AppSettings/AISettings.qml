@@ -132,7 +132,7 @@ SettingsPage {
 
         QGCLabel {
             Layout.fillWidth:   true
-            text:               qsTr("- \"Arm the vehicle\"\n- \"Take off to 15 meters\"\n- \"Head north for 100 meters\"\n- \"Return to launch\"\n- \"Set speed to 10 m/s\"\n- \"Orbit here with 20m radius\"")
+            text:               qsTr("- \"Arm the vehicle\"\n- \"Take off to 15 meters\"\n- \"Head north for 100 meters\"\n- \"Return to launch\"\n- \"Set speed to 10 m/s\"")
             wrapMode:           Text.WordWrap
             font.pointSize:     ScreenTools.smallFontPointSize
         }
