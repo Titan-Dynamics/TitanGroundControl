@@ -32,6 +32,7 @@ class AIChatController : public QObject
     Q_PROPERTY(bool isListening READ isListening NOTIFY isListeningChanged)
     Q_PROPERTY(bool voiceInputAvailable READ voiceInputAvailable NOTIFY voiceInputAvailableChanged)
     Q_PROPERTY(QString recognizedText READ recognizedText NOTIFY recognizedTextChanged)
+    Q_PROPERTY(QmlObjectListModel* pois READ pois CONSTANT)
 
 public:
     explicit AIChatController(Vehicle* vehicle, QObject* parent = nullptr);
@@ -57,6 +58,7 @@ public:
 
     // Property accessors
     QmlObjectListModel* messages() const { return _messages; }
+    QmlObjectListModel* pois() const { return _pois; }
     bool isProcessing() const { return _isProcessing; }
     QString errorMessage() const { return _errorMessage; }
     bool isListening() const { return _isListening; }
@@ -78,6 +80,12 @@ public:
 
     /// Stop listening for voice input
     Q_INVOKABLE void stopListening();
+
+    /// Add a POI at the given coordinate
+    Q_INVOKABLE void addPOI(double latitude, double longitude);
+
+    /// Remove a POI by its index in the list
+    Q_INVOKABLE void removePOI(int index);
 
 signals:
     void isProcessingChanged();
@@ -112,6 +120,7 @@ private:
     QNetworkAccessManager* _networkManager = nullptr;
     QNetworkReply* _pendingReply = nullptr;
     QmlObjectListModel* _messages = nullptr;
+    QmlObjectListModel* _pois = nullptr;
     bool _isProcessing = false;
     bool _isListening = false;
     QString _errorMessage;
@@ -136,6 +145,7 @@ private:
     bool _isCurrentActionComplete();
     void _clearActionQueue();
     void _onAsyncWaitComplete();
+
 
     // Voice input via Whisper API
     void _startAudioRecording();

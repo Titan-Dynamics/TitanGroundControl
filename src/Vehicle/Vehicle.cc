@@ -2083,6 +2083,7 @@ void Vehicle::guidedModeGotoLocation(const QGeoCoordinate& gotoCoord, double for
         return;
     }
     _firmwarePlugin->guidedModeGotoLocation(this, gotoCoord, forwardFlightLoiterRadius);
+    emit guidedModeGotoLocationSent(gotoCoord);
 }
 
 void Vehicle::guidedModeChangeAltitude(double altitudeChange, bool pauseVehicle)

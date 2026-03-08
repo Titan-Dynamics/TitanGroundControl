@@ -7,12 +7,14 @@
 #include "AppSettings.h"
 #include "AISystemPrompt.h"
 #include "AudioOutput.h"
+#include "POIItem.h"
 #include "Fact.h"
 #include "Vehicle.h"
 #include "ParameterManager.h"
 #include "QGCNetworkHelper.h"
 
 #include <QtCore/QDir>
+#include <QtCore/QFile>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
@@ -125,6 +127,7 @@ AIChatController::AIChatController(Vehicle* vehicle, QObject* parent)
     , _vehicle(vehicle)
     , _networkManager(QGCNetworkHelper::createNetworkManager(this))
     , _messages(new QmlObjectListModel(this))
+    , _pois(new QmlObjectListModel(this))
 {
     qCDebug(AIChatControllerLog) << "Created for vehicle:" << (vehicle ? vehicle->id() : -1);
 
@@ -143,6 +146,7 @@ AIChatController::AIChatController(Vehicle* vehicle, QObject* parent)
     _asyncWaitTimer = new QTimer(this);
     _asyncWaitTimer->setSingleShot(true);
     connect(_asyncWaitTimer, &QTimer::timeout, this, &AIChatController::_onAsyncWaitComplete);
+
 }
 
 AIChatController::~AIChatController()
@@ -493,7 +497,34 @@ bool AIChatController::_isCurrentActionComplete()
     const double altitudeThreshold = 1.0;  // meters
 
     if (current.action == "arm") {
-        return _vehicle->armed();
+        if (!_vehicle->armed()) {
+            return false;
+        }
+        // For planes in Takeoff mode, wait until reaching 90% of TKOFF_ALT
+        if (_vehicle->fixedWing() &&
+            _vehicle->flightMode().contains("Takeoff", Qt::CaseInsensitive)) {
+            double currentAlt = _vehicle->altitudeRelative() ? _vehicle->altitudeRelative()->rawValue().toDouble() : 0;
+            double tkoffAlt = 0;
+
+            // Read TKOFF_ALT parameter for target altitude
+            ParameterManager* paramMgr = _vehicle->parameterManager();
+            int compId = ParameterManager::defaultComponentId;
+            if (paramMgr->parameterExists(compId, "TKOFF_ALT")) {
+                tkoffAlt = paramMgr->getParameter(compId, "TKOFF_ALT")->rawValue().toDouble();
+            }
+
+            // Fall back to 30m if parameter not available
+            if (tkoffAlt <= 0) {
+                tkoffAlt = 30;
+            }
+
+            bool complete = currentAlt >= (tkoffAlt * 0.9);
+            if (complete) {
+                qCDebug(AIChatControllerLog) << "  Plane takeoff complete: alt=" << currentAlt << "target=" << tkoffAlt;
+            }
+            return complete;
+        }
+        return true;
     }
     else if (current.action == "disarm") {
         return !_vehicle->armed();
@@ -628,6 +659,21 @@ QString AIChatController::_buildDynamicContext() const
 
     if (includeState && _vehicle) {
         context += "CURRENT VEHICLE STATE:\n" + _getVehicleStateContext();
+    }
+
+    // Add POIs if any exist
+    if (_pois->count() > 0) {
+        if (!context.isEmpty()) context += "\n";
+        context += "POINTS OF INTEREST (POIs):\n";
+        for (int i = 0; i < _pois->count(); ++i) {
+            auto* poi = qobject_cast<POIItem*>(_pois->get(i));
+            if (poi) {
+                context += QString("- POI %1: %2, %3\n")
+                    .arg(poi->number())
+                    .arg(poi->coordinate().latitude(), 0, 'f', 10)
+                    .arg(poi->coordinate().longitude(), 0, 'f', 10);
+            }
+        }
     }
 
     // Add custom context if provided
@@ -1006,18 +1052,21 @@ bool AIChatController::_executeVehicleCommand(const QString& action, const QVari
         return true;
     }
     else if (action == "change_altitude") {
-        // Support both absolute altitude_m and relative change_m
+        double currentAlt = _vehicle->altitudeRelative() ? _vehicle->altitudeRelative()->rawValue().toDouble() : 0;
+        double targetAlt;
+
         if (parameters.contains("altitude_m")) {
-            double targetAlt = parameters.value("altitude_m").toDouble();
-            double currentAlt = _vehicle->altitudeRelative() ? _vehicle->altitudeRelative()->rawValue().toDouble() : 0;
-            double change = targetAlt - currentAlt;
-            qCDebug(AIChatControllerLog) << "  change_altitude: target=" << targetAlt << "m, current=" << currentAlt << "m, change=" << change << "m";
-            _vehicle->guidedModeChangeAltitude(change, true);
+            targetAlt = parameters.value("altitude_m").toDouble();
         } else {
             double change = parameters.value("change_m", 0).toDouble();
-            qCDebug(AIChatControllerLog) << "  change_altitude: relative change=" << change << "m";
-            _vehicle->guidedModeChangeAltitude(change, true);
+            targetAlt = currentAlt + change;
         }
+
+        double change = targetAlt - currentAlt;
+        bool immediate = parameters.value("immediate", true).toBool();
+        qCDebug(AIChatControllerLog) << "  change_altitude: target=" << targetAlt << "m, current=" << currentAlt << "m, change=" << change << "m, immediate=" << immediate;
+
+        _vehicle->guidedModeChangeAltitude(change, immediate);
         return true;
     }
     else if (action == "emergency_stop") {
@@ -1294,6 +1343,32 @@ void AIChatController::_onVoiceInputReceived(const QString& text)
         // Mark as voice message after sendMessage (which resets to false)
         // This will be checked when the async API response arrives
         _lastMessageWasVoice = true;
+    }
+}
+
+void AIChatController::addPOI(double latitude, double longitude)
+{
+    int number = _pois->count() + 1;
+    auto* poi = new POIItem(QGeoCoordinate(latitude, longitude), number, this);
+    _pois->append(poi);
+    qCDebug(AIChatControllerLog) << "Added POI" << number << "at" << latitude << longitude;
+}
+
+void AIChatController::removePOI(int index)
+{
+    if (index < 0 || index >= _pois->count()) {
+        return;
+    }
+
+    qCDebug(AIChatControllerLog) << "Removing POI" << (index + 1);
+    _pois->removeAt(index);
+
+    // Renumber remaining POIs
+    for (int i = 0; i < _pois->count(); ++i) {
+        auto* poi = qobject_cast<POIItem*>(_pois->get(i));
+        if (poi) {
+            poi->setNumber(i + 1);
+        }
     }
 }
 

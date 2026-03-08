@@ -809,6 +809,7 @@ public slots:
 
 signals:
     void coordinateChanged              (QGeoCoordinate coordinate);
+    void guidedModeGotoLocationSent     (QGeoCoordinate gotoCoord);
     void mavlinkMessageReceived         (const mavlink_message_t& message);
     void homePositionChanged            (const QGeoCoordinate& homePosition);
     void armedPositionChanged();
