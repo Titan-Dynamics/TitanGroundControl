@@ -202,6 +202,13 @@ Rectangle {
                                 font.pointSize: ScreenTools.smallFontPointSize
                                 color: qgcPal.colorRed
                             }
+
+                            QGCLabel {
+                                visible: messageDelegate.safeStatus === 5
+                                text: qsTr("Cancelled")
+                                font.pointSize: ScreenTools.smallFontPointSize
+                                color: qgcPal.warningText
+                            }
                         }
                     }
                 }

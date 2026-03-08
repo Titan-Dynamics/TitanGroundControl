@@ -203,11 +203,48 @@ void AIChatController::executeCommand(int messageIndex, bool userInitiated)
         return;
     }
 
+    QVariantList actions = message->actions();
+
+    // Check if all new actions are non-disruptive (can run without cancelling current flight)
+    bool allNonDisruptive = _isExecutingQueue;
+    if (allNonDisruptive) {
+        for (const QVariant& actionVar : actions) {
+            QString actionName = actionVar.toMap()["action"].toString();
+            bool nonDisruptive = (actionName == "set_speed" ||
+                                  actionName == "set_parameter" ||
+                                  actionName == "get_parameter" ||
+                                  actionName == "set_servo" ||
+                                  actionName == "change_altitude" ||
+                                  actionName == "change_heading");
+            if (!nonDisruptive) {
+                allNonDisruptive = false;
+                break;
+            }
+        }
+    }
+
+    if (allNonDisruptive) {
+        // Execute non-disruptive actions immediately without clearing the existing queue
+        qCDebug(AIChatControllerLog) << "Executing non-disruptive actions without clearing queue";
+        message->setCommandStatus(CommandStatus::Pending);
+        message->setExecutedActionCount(0);
+        int executed = 0;
+        for (const QVariant& actionVar : actions) {
+            QVariantMap actionMap = actionVar.toMap();
+            QString actionName = actionMap["action"].toString();
+            QVariantMap params = actionMap["parameters"].toMap();
+            bool success = _executeVehicleCommand(actionName, params);
+            qCDebug(AIChatControllerLog) << "  Non-disruptive:" << actionName << (success ? "OK" : "FAILED");
+            executed++;
+        }
+        message->setExecutedActionCount(executed);
+        message->setCommandStatus(CommandStatus::Executed);
+        return;
+    }
+
     // Clear any existing queue (new command takes priority)
     _clearActionQueue();
 
-    // Queue all actions for sequential execution
-    QVariantList actions = message->actions();
     _currentMessageIndex = messageIndex;
 
     // Immediately update UI to show execution is starting
@@ -240,6 +277,17 @@ void AIChatController::_clearActionQueue()
 {
     if (_isExecutingQueue) {
         qCDebug(AIChatControllerLog) << "Clearing action queue (had" << _actionQueue.count() << "pending actions)";
+
+        // Mark any in-progress message as canceled (unless already completed or failed)
+        if (_currentMessageIndex >= 0 && _currentMessageIndex < _messages->count()) {
+            auto* message = qobject_cast<AIChatMessage*>(_messages->get(_currentMessageIndex));
+            if (message) {
+                auto status = static_cast<CommandStatus>(message->commandStatus());
+                if (status != CommandStatus::Executed && status != CommandStatus::Failed) {
+                    message->setCommandStatus(CommandStatus::Cancelled);
+                }
+            }
+        }
     }
     _actionQueue.clear();
     _actionQueueTimer->stop();
@@ -366,6 +414,29 @@ void AIChatController::_executeNextAction()
     bool success = _executeVehicleCommand(currentAction.action, currentAction.parameters);
 
     if (!success) {
+        // Non-critical actions: skip and continue with the rest of the queue
+        bool nonCritical = (currentAction.action == "change_altitude" ||
+                            currentAction.action == "change_heading" ||
+                            currentAction.action == "set_parameter" ||
+                            currentAction.action == "get_parameter" ||
+                            currentAction.action == "set_speed" ||
+                            currentAction.action == "set_servo");
+
+        if (nonCritical && _actionQueue.count() > 1) {
+            qCWarning(AIChatControllerLog) << "  [RESULT] Non-critical action failed:" << currentAction.action << "- skipping and continuing";
+            _actionQueue.removeFirst();
+
+            if (_currentMessageIndex >= 0 && _currentMessageIndex < _messages->count()) {
+                auto* message = qobject_cast<AIChatMessage*>(_messages->get(_currentMessageIndex));
+                if (message) {
+                    message->setExecutedActionCount(message->executedActionCount() + 1);
+                }
+            }
+
+            QTimer::singleShot(200, this, &AIChatController::_executeNextAction);
+            return;
+        }
+
         qCWarning(AIChatControllerLog) << "  [RESULT] ACTION FAILED:" << currentAction.action;
         qCWarning(AIChatControllerLog) << "  Clearing remaining action queue";
 
@@ -554,9 +625,22 @@ bool AIChatController::_isCurrentActionComplete()
             return false;
         }
         double distance = currentPos.distanceTo(current.targetPosition);
-        bool complete = distance < positionThreshold;
+
+        // For fixed wing, use loiter radius as threshold since planes orbit the waypoint
+        double threshold = positionThreshold;
+        if (_vehicle->fixedWing()) {
+            ParameterManager* paramMgr = _vehicle->parameterManager();
+            int compId = ParameterManager::defaultComponentId;
+            if (paramMgr->parameterExists(compId, "WP_LOITER_RAD")) {
+                threshold = qAbs(paramMgr->getParameter(compId, "WP_LOITER_RAD")->rawValue().toDouble()) * 1.5;
+            } else {
+                threshold = 100;  // Default fallback for planes
+            }
+        }
+
+        bool complete = distance < threshold;
         if (complete) {
-            qCDebug(AIChatControllerLog) << "  Position reached: distance=" << distance << "m";
+            qCDebug(AIChatControllerLog) << "  Position reached: distance=" << distance << "m (threshold=" << threshold << "m)";
         }
         return complete;
     }

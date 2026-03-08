@@ -52,7 +52,8 @@ public:
         Pending,
         RequiresConfirmation,
         Executed,
-        Failed
+        Failed,
+        Cancelled
     };
     Q_ENUM(CommandStatus)
 

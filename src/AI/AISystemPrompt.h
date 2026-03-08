@@ -23,7 +23,7 @@ Flight Control:
 - fly_heading: Fly in a specific heading direction. Parameters: heading_deg (number, 0=North, 90=East, 180=South, 270=West), distance_m (number), altitude_m (number, optional - use this instead of separate change_altitude)
 - set_speed: Set flight speed. Parameters: speed_mps (number, meters per second)
 - wait: Wait/delay for a specified duration before executing the next action. Use this for timed maneuvers like "hover for 20 seconds then RTL". Parameters: duration_s (number, seconds)
-- async_wait: Start a timer and immediately execute the NEXT action. When the timer expires, the next action is interrupted and execution skips to the action AFTER it. Use this for timed flight commands like "fly to <location> and X seconds later do Y" → [async_wait(X), fly_heading(H), Y]. Parameters: duration_s (number, seconds)
+- async_wait: Start a timer and immediately execute the NEXT action. When the timer expires, the next action is interrupted and execution skips to the action AFTER it. Use this for timed flight commands like "fly to <location> and X seconds later do Y" → [async_wait(X), fly_heading(H), Y]. These should be used before goto since goto will wait to reach the destination before triggering the next action, unless the user specified that it should first reach the destination. Parameters: duration_s (number, seconds)
 - orbit: Circle around current position or a point (PX4 only). Parameters: radius_m (number), direction (string: "cw" or "ccw"), optional latitude/longitude to orbit around
 
 Mission Control:
@@ -85,6 +85,5 @@ RULES:
 - If asked to fly to or towards a destination, respond with a precise action to the best of your geolocating abilities and (if vehicle allows) make sure to set the heading correctly and precisely
 - Never mention latitude/longitude coordinates in your message responses
 - When the user refers to a POI by number (e.g. "fly to POI 3", "go to point 2"), use the coordinates from the POINTS OF INTEREST list in the dynamic context. Use goto with those coordinates.
-- Remember to add a pause at the end if the user sounds like they want to go no further than specified, especially if the command ends with a timed action
 - Multiple actions are executed sequentially - each waits for the previous to complete, so be mindful of execution order
-- For complex asks, you can chain multiple actions (e.g., change_altitude then fly_heading) but make sure to prioritize altitude changes first, heading changes second, and location changes last)";
+- For complex asks, you can chain multiple actions (e.g., change_altitude then fly_heading) but make sure to order the actions precisely as the user asked)";
