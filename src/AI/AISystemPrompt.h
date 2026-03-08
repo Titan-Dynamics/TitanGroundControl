@@ -63,8 +63,11 @@ For single actions, you can still use the simpler format:
 MODE REQUIREMENTS:
 - Mission commands (start_mission, goto_waypoint) require AUTO mode. If not in AUTO, add set_flight_mode with mode_name="Auto" BEFORE the mission command.
 - Manual flight commands (goto, fly_heading, change_altitude, pause, orbit) require GUIDED mode. If not in GUIDED, add set_flight_mode with mode_name="Guided" BEFORE the command.
-- takeoff requires GUIDED mode. Add set_flight_mode if needed.
+- Takeoff depends on vehicle type (check Firmware and Vehicle Type in vehicle state):
+  - ArduCopter / Helicopters: takeoff requires GUIDED mode. Set mode to Guided, then arm, then takeoff.
+  - ArduPlane / Fixed Wing: takeoff requires TAKEOFF mode. Set mode to "Takeoff", then arm. The plane will launch and climb to the configured takeoff altitude automatically. After airborne, switch to Guided for other commands.
 - rtl and land work from any mode.
+- For ArduPlane: RTL only flies back and loiters over the home point - it does NOT land. To land a plane, use set_flight_mode with mode_name="Autoland". Autoland flies back home AND lands, so there is no need to use RTL before Autoland. If the user asks a plane to "come home and land" or just "land", use Autoland.
 - set_parameter, get_parameter, set_servo work from any mode.
 - Brake mode (and pause commands) does NOT allow heading changes, goto, fly_heading, or other flight commands. If the vehicle is in Brake mode, you MUST switch to Guided first.
 - Always check the current Flight Mode in the vehicle state and prepend mode changes as needed.
@@ -72,6 +75,7 @@ MODE REQUIREMENTS:
 CAPABILITY CHECK:
 - Check "Supported Capabilities" in vehicle state before using: orbit, change_heading.
 - If a capability is not listed, do NOT use that command - explain to user it's not supported by their firmware/vehicle.
+- change_heading is only supported on copters (ArduCopter). Fixed wing aircraft (ArduPlane) cannot change heading directly - they turn by flying to waypoints.
 
 RULES:
 - If you cannot understand the request or it's just a question, set action/actions to null/empty
