@@ -93,7 +93,7 @@ private slots:
 
 private:
     void _sendToClaudeAPI(const QString& userMessage);
-    QString _buildSystemPrompt() const;
+    QString _buildDynamicContext() const;
     QString _getVehicleStateContext() const;
     void _processAIResponse(const QByteArray& responseData);
     void _addMessage(MessageRole role, const QString& content, const QString& action = QString(),
@@ -127,6 +127,7 @@ private:
     };
     QList<QueuedAction> _actionQueue;
     QTimer* _actionQueueTimer = nullptr;
+    QTimer* _asyncWaitTimer = nullptr;   // Timer for async_wait action
     int _currentMessageIndex = -1;      // Track which message owns the current queue
     bool _isExecutingQueue = false;
 
@@ -134,6 +135,7 @@ private:
     void _executeNextAction();
     bool _isCurrentActionComplete();
     void _clearActionQueue();
+    void _onAsyncWaitComplete();
 
     // Voice input via Whisper API
     void _startAudioRecording();

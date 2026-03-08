@@ -139,6 +139,10 @@ AIChatController::AIChatController(Vehicle* vehicle, QObject* parent)
     _actionQueueTimer = new QTimer(this);
     _actionQueueTimer->setInterval(250);  // Check every 250ms
     connect(_actionQueueTimer, &QTimer::timeout, this, &AIChatController::_processActionQueue);
+
+    _asyncWaitTimer = new QTimer(this);
+    _asyncWaitTimer->setSingleShot(true);
+    connect(_asyncWaitTimer, &QTimer::timeout, this, &AIChatController::_onAsyncWaitComplete);
 }
 
 AIChatController::~AIChatController()
@@ -235,6 +239,7 @@ void AIChatController::_clearActionQueue()
     }
     _actionQueue.clear();
     _actionQueueTimer->stop();
+    _asyncWaitTimer->stop();
     _isExecutingQueue = false;
     _currentMessageIndex = -1;
 }
@@ -329,6 +334,27 @@ void AIChatController::_executeNextAction()
         }
 
         QTimer::singleShot(durationMs, this, &AIChatController::_executeNextAction);
+        return;
+    }
+
+    // Handle async_wait - starts a timer then immediately executes the next action.
+    // When the timer fires, it skips the currently running action and proceeds to the one after it.
+    if (currentAction.action == "async_wait") {
+        int durationMs = qRound(currentAction.parameters.value("duration_s", 5).toDouble() * 1000);
+        qCDebug(AIChatControllerLog) << "  -> Async wait for" << durationMs << "ms, proceeding to next action immediately";
+        _actionQueue.removeFirst();
+
+        // Update executed count in UI
+        if (_currentMessageIndex >= 0 && _currentMessageIndex < _messages->count()) {
+            auto* message = qobject_cast<AIChatMessage*>(_messages->get(_currentMessageIndex));
+            if (message) {
+                message->setExecutedActionCount(message->executedActionCount() + 1);
+            }
+        }
+
+        // Start the async timer, then immediately execute the next action
+        _asyncWaitTimer->start(durationMs);
+        _executeNextAction();
         return;
     }
 
@@ -429,6 +455,32 @@ void AIChatController::_processActionQueue()
 
         _executeNextAction();
     }
+}
+
+void AIChatController::_onAsyncWaitComplete()
+{
+    if (_actionQueue.isEmpty() || !_isExecutingQueue) {
+        return;
+    }
+
+    qCDebug(AIChatControllerLog) << "  -> Async wait complete, skipping current action:" << _actionQueue.first().action;
+
+    // Stop monitoring the current action
+    _actionQueueTimer->stop();
+
+    // Remove the currently executing action (skip it)
+    _actionQueue.removeFirst();
+
+    // Update executed count in UI for the skipped action
+    if (_currentMessageIndex >= 0 && _currentMessageIndex < _messages->count()) {
+        auto* message = qobject_cast<AIChatMessage*>(_messages->get(_currentMessageIndex));
+        if (message) {
+            message->setExecutedActionCount(message->executedActionCount() + 1);
+        }
+    }
+
+    // Proceed to the next action
+    _executeNextAction();
 }
 
 bool AIChatController::_isCurrentActionComplete()
@@ -535,11 +587,30 @@ void AIChatController::_sendToClaudeAPI(const QString& userMessage)
         messagesArray.append(userMsg);
     }
 
-    // Build request body
+    // Build request body with prompt caching for the static system prompt
     QJsonObject requestBody;
     requestBody["model"] = "claude-sonnet-4-5-20250929";
     requestBody["max_tokens"] = 1024;
-    requestBody["system"] = _buildSystemPrompt();
+
+    // Use array format for system prompt to enable prompt caching
+    // The static prompt is cached; dynamic vehicle state is appended fresh each request
+    QJsonArray systemArray;
+    QJsonObject staticPrompt;
+    staticPrompt["type"] = "text";
+    staticPrompt["text"] = QString::fromLatin1(kAISystemPrompt);
+    staticPrompt["cache_control"] = QJsonObject{{"type", "ephemeral"}};
+    systemArray.append(staticPrompt);
+
+    // Append dynamic context (vehicle state + custom context)
+    QString dynamicContext = _buildDynamicContext();
+    if (!dynamicContext.isEmpty()) {
+        QJsonObject dynamicPrompt;
+        dynamicPrompt["type"] = "text";
+        dynamicPrompt["text"] = dynamicContext;
+        systemArray.append(dynamicPrompt);
+    }
+
+    requestBody["system"] = systemArray;
     requestBody["messages"] = messagesArray;
 
     QByteArray requestData = QJsonDocument(requestBody).toJson();
@@ -549,24 +620,25 @@ void AIChatController::_sendToClaudeAPI(const QString& userMessage)
     connect(_pendingReply, &QNetworkReply::finished, this, &AIChatController::_onNetworkReplyFinished);
 }
 
-QString AIChatController::_buildSystemPrompt() const
+QString AIChatController::_buildDynamicContext() const
 {
     auto* aiSettings = SettingsManager::instance()->aiSettings();
     bool includeState = aiSettings->includeVehicleState()->rawValue().toBool();
 
-    QString prompt = QString::fromLatin1(kAISystemPrompt);
+    QString context;
 
     if (includeState && _vehicle) {
-        prompt += "\n\nCURRENT VEHICLE STATE:\n" + _getVehicleStateContext();
+        context += "CURRENT VEHICLE STATE:\n" + _getVehicleStateContext();
     }
 
     // Add custom context if provided
     QString customContext = aiSettings->customContext()->rawValue().toString().trimmed();
     if (!customContext.isEmpty()) {
-        prompt += "\n\nADDITIONAL CONTEXT:\n" + customContext;
+        if (!context.isEmpty()) context += "\n";
+        context += "ADDITIONAL CONTEXT:\n" + customContext;
     }
 
-    return prompt;
+    return context;
 }
 
 QString AIChatController::_getVehicleStateContext() const
@@ -598,12 +670,12 @@ QString AIChatController::_getVehicleStateContext() const
 
     QGeoCoordinate coord = _vehicle->coordinate();
     if (coord.isValid()) {
-        state += QString("- Position: %1, %2\n").arg(coord.latitude(), 0, 'f', 6).arg(coord.longitude(), 0, 'f', 6);
+        state += QString("- Position: %1, %2\n").arg(coord.latitude(), 0, 'f', 10).arg(coord.longitude(), 0, 'f', 10);
     }
 
     QGeoCoordinate home = _vehicle->homePosition();
     if (home.isValid()) {
-        state += QString("- Home Position: %1, %2\n").arg(home.latitude(), 0, 'f', 6).arg(home.longitude(), 0, 'f', 6);
+        state += QString("- Home Position: %1, %2\n").arg(home.latitude(), 0, 'f', 10).arg(home.longitude(), 0, 'f', 10);
         if (coord.isValid()) {
             state += QString("- Distance to Home: %1 m\n").arg(coord.distanceTo(home), 0, 'f', 1);
             state += QString("- Bearing to Home: %1 deg\n").arg(coord.azimuthTo(home), 0, 'f', 1);
