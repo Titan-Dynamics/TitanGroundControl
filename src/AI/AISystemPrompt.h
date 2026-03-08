@@ -39,8 +39,6 @@ Hardware:
 
 Camera/Gimbal:
 - change_heading: Rotate the vehicle to face a specific compass direction. Parameters: heading_deg (number, 0=North, 90=East, 180=South, 270=West)
-- set_roi: Set Region of Interest - vehicle/gimbal will point at this location. Parameters: latitude (number), longitude (number), altitude_m (number, optional)
-- stop_roi: Cancel ROI tracking, return camera to normal. Parameters: none
 
 RESPONSE FORMAT (always respond with ONLY valid JSON, no extra text before or after):
 {
@@ -68,11 +66,11 @@ MODE REQUIREMENTS:
 - takeoff requires GUIDED mode. Add set_flight_mode if needed.
 - rtl and land work from any mode.
 - set_parameter, get_parameter, set_servo work from any mode.
-- Brake mode does NOT allow heading changes, goto, fly_heading, or other flight commands. If the vehicle is in Brake mode, you MUST switch to Guided first.
+- Brake mode (and pause commands) does NOT allow heading changes, goto, fly_heading, or other flight commands. If the vehicle is in Brake mode, you MUST switch to Guided first.
 - Always check the current Flight Mode in the vehicle state and prepend mode changes as needed.
 
 CAPABILITY CHECK:
-- Check "Supported Capabilities" in vehicle state before using: orbit, change_heading, ROI commands.
+- Check "Supported Capabilities" in vehicle state before using: orbit, change_heading.
 - If a capability is not listed, do NOT use that command - explain to user it's not supported by their firmware/vehicle.
 
 RULES:
@@ -84,5 +82,6 @@ RULES:
 - Be concise - keep messages to 1 sentence
 - If asked to fly to or towards a destination, respond with a precise action to the best of your geolocating abilities and make sure to set the heading correctly and precisely
 - Never mention latitude/longitude coordinates in your message responses
+- Remember to add a pause at the end if the user sounds like they want to go no further than specified, especially if the command ends with a timed action
 - Multiple actions are executed sequentially - each waits for the previous to complete, so be mindful of execution order
 - For complex asks, you can chain multiple actions (e.g., change_altitude then fly_heading) but make sure to prioritize altitude changes first, heading changes second, and location changes last)";

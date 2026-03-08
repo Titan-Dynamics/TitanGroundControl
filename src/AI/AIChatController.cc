@@ -396,8 +396,7 @@ void AIChatController::_executeNextAction()
                                   currentAction.action == "get_parameter" ||
                                   currentAction.action == "set_servo" ||
                                   currentAction.action == "change_heading" ||
-                                  currentAction.action == "set_roi" ||
-                                  currentAction.action == "stop_roi");
+                                  currentAction.action == "change_heading");
 
     if (completesImmediately) {
         qCDebug(AIChatControllerLog) << "  -> Action completes immediately (fire-and-forget)";
@@ -682,12 +681,11 @@ QString AIChatController::_getVehicleStateContext() const
         }
     }
 
-    state += QString("- ROI Active: %1\n").arg(_vehicle->isROIEnabled() ? "Yes" : "No");
 
     // Supported capabilities (so AI knows what commands will work)
     QStringList capabilities;
     if (_vehicle->orbitModeSupported()) capabilities << "orbit";
-    if (_vehicle->roiModeSupported()) capabilities << "ROI";
+
     if (_vehicle->changeHeadingSupported()) capabilities << "change_heading";
     if (_vehicle->pauseVehicleSupported()) capabilities << "pause";
     if (_vehicle->guidedModeSupported()) capabilities << "guided_mode";
@@ -849,6 +847,24 @@ void AIChatController::_processAIResponse(const QByteArray& responseData)
         actionEntry["parameters"] = aiResponse["parameters"].toObject().toVariantMap();
         actionsList.append(actionEntry);
         qCDebug(AIChatControllerLog) << "Parsed single action:" << actionEntry["action"].toString();
+    }
+
+    // Log parsed actions in readable format
+    if (!actionsList.isEmpty()) {
+        qCDebug(AIChatControllerLog) << "AI response:" << message;
+        qCDebug(AIChatControllerLog) << "Actions (" << actionsList.count() << "):";
+        for (int i = 0; i < actionsList.count(); ++i) {
+            QVariantMap entry = actionsList[i].toMap();
+            QString actionName = entry["action"].toString();
+            QVariantMap params = entry["parameters"].toMap();
+            QStringList paramStrs;
+            for (auto it = params.constBegin(); it != params.constEnd(); ++it) {
+                paramStrs << QString("%1=%2").arg(it.key(), it.value().toString());
+            }
+            qCDebug(AIChatControllerLog) << "  " << (i + 1) << "." << actionName << (paramStrs.isEmpty() ? "" : "(" + paramStrs.join(", ") + ")");
+        }
+    } else {
+        qCDebug(AIChatControllerLog) << "AI response (no actions):" << message;
     }
 
     // If message is empty but we have valid JSON, create a default message
@@ -1201,27 +1217,6 @@ bool AIChatController::_executeVehicleCommand(const QString& action, const QVari
         _vehicle->guidedModeChangeHeading(headingCoord);
         return true;
     }
-    else if (action == "set_roi") {
-        double lat = parameters.value("latitude").toDouble();
-        double lon = parameters.value("longitude").toDouble();
-        double alt = parameters.value("altitude_m", 0).toDouble();
-
-        QGeoCoordinate roiCoord(lat, lon, alt);
-        if (!roiCoord.isValid()) {
-            qCWarning(AIChatControllerLog) << "set_roi: invalid coordinates:" << lat << lon;
-            return false;
-        }
-
-        qCDebug(AIChatControllerLog) << "  set_roi:" << roiCoord;
-        _vehicle->guidedModeROI(roiCoord);
-        return true;
-    }
-    else if (action == "stop_roi") {
-        qCDebug(AIChatControllerLog) << "  stop_roi";
-        _vehicle->stopGuidedModeROI();
-        return true;
-    }
-
     qCWarning(AIChatControllerLog) << "  [VEHICLE CMD] FAILED - Unknown action:" << action;
     return false;
 }
