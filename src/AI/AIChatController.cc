@@ -782,6 +782,21 @@ QString AIChatController::_getVehicleStateContext() const
     state += QString("- Firmware: %1\n").arg(_vehicle->firmwareTypeString());
     state += QString("- Vehicle Type: %1\n").arg(_vehicle->vehicleTypeString());
 
+    // Detect QuadPlane/VTOL
+    bool isVtol = _vehicle->vtol();
+    if (!isVtol && _vehicle->fixedWing()) {
+        // ArduPlane quadplanes report as fixed wing but have Q_ENABLE=1
+        ParameterManager* paramMgr = _vehicle->parameterManager();
+        int compId = ParameterManager::defaultComponentId;
+        if (paramMgr->parameterExists(compId, "Q_ENABLE")) {
+            isVtol = paramMgr->getParameter(compId, "Q_ENABLE")->rawValue().toInt() == 1;
+        }
+    }
+    if (isVtol) {
+        state += QString("- VTOL/QuadPlane: Yes\n");
+        state += QString("- In Forward Flight: %1\n").arg(_vehicle->vtolInFwdFlight() ? "Yes" : "No");
+    }
+
     // Basic state
     state += QString("- Armed: %1\n").arg(_vehicle->armed() ? "Yes" : "No");
     state += QString("- Flying: %1\n").arg(_vehicle->flying() ? "Yes" : "No");
@@ -1101,11 +1116,48 @@ bool AIChatController::_executeVehicleCommand(const QString& action, const QVari
     }
     else if (action == "takeoff") {
         double altitude = parameters.value("altitude_m", 10.0).toDouble();
-        _vehicle->guidedModeTakeoff(altitude);
+
+        // QuadPlanes reporting as fixed wing are rejected by guidedModeTakeoff().
+        // Send MAV_CMD_NAV_TAKEOFF directly after setting Guided mode.
+        bool isQuadPlane = false;
+        if (_vehicle->fixedWing() && !_vehicle->vtol()) {
+            ParameterManager* paramMgr = _vehicle->parameterManager();
+            int compId = ParameterManager::defaultComponentId;
+            if (paramMgr->parameterExists(compId, "Q_ENABLE")) {
+                isQuadPlane = paramMgr->getParameter(compId, "Q_ENABLE")->rawValue().toInt() == 1;
+            }
+        }
+
+        if (isQuadPlane) {
+            qCDebug(AIChatControllerLog) << "  QuadPlane takeoff via MAV_CMD_NAV_TAKEOFF to" << altitude << "m";
+            _vehicle->sendMavCommand(
+                _vehicle->defaultComponentId(),
+                MAV_CMD_NAV_TAKEOFF,
+                true, // show error
+                0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                static_cast<float>(altitude));
+        } else {
+            _vehicle->guidedModeTakeoff(altitude);
+        }
         return true;
     }
     else if (action == "land") {
-        _vehicle->guidedModeLand();
+        // QuadPlanes need QLAND mode for vertical landing
+        bool isQuadPlane = false;
+        if (_vehicle->fixedWing() && !_vehicle->vtol()) {
+            ParameterManager* paramMgr = _vehicle->parameterManager();
+            int compId = ParameterManager::defaultComponentId;
+            if (paramMgr->parameterExists(compId, "Q_ENABLE")) {
+                isQuadPlane = paramMgr->getParameter(compId, "Q_ENABLE")->rawValue().toInt() == 1;
+            }
+        }
+
+        if (isQuadPlane) {
+            qCDebug(AIChatControllerLog) << "  QuadPlane land via QLAND mode";
+            _vehicle->setFlightMode("QLAND");
+        } else {
+            _vehicle->guidedModeLand();
+        }
         return true;
     }
     else if (action == "rtl") {
