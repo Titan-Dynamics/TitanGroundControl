@@ -7,13 +7,20 @@ import QGroundControl.Controls
 
 Rectangle {
     id: aiChatWidget
-    width: ScreenTools.defaultFontPixelWidth * 50
-    height: ScreenTools.defaultFontPixelHeight * 22
+    width: _chatWidth
+    height: _chatHeight
     color: Qt.rgba(qgcPal.window.r, qgcPal.window.g, qgcPal.window.b, 0.9)
     radius: ScreenTools.defaultFontPixelWidth / 2
     visible: _showWidget && _activeVehicle
 
     property real _margins: ScreenTools.defaultFontPixelHeight / 2
+    property real _chatWidth: ScreenTools.defaultFontPixelWidth * 50
+    property real _chatHeight: ScreenTools.defaultFontPixelHeight * 22
+    property real _minWidth: ScreenTools.defaultFontPixelWidth * 30
+    property real _minHeight: ScreenTools.defaultFontPixelHeight * 14
+    property real _maxWidth: ScreenTools.defaultFontPixelWidth * 80
+    property real _maxHeight: ScreenTools.defaultFontPixelHeight * 40
+    property real _dragMargin: ScreenTools.defaultFontPixelWidth
     property var _activeVehicle: globals.activeVehicle
     property var _flyViewSettings: QGroundControl.settingsManager.flyViewSettings
     property var _aiSettings: QGroundControl.settingsManager.aiSettings
@@ -25,6 +32,75 @@ Rectangle {
     QGCPalette { id: qgcPal; colorGroupEnabled: enabled }
 
     DeadMouseArea { anchors.fill: parent }
+
+    // Bottom-left corner resize grip
+    Item {
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+        width: _dragMargin * 3
+        height: _dragMargin * 3
+        z: 10
+
+        // Grip visual (three diagonal lines)
+        Column {
+            anchors.left: parent.left
+            anchors.bottom: parent.bottom
+            anchors.margins: _dragMargin * 0.4
+            spacing: 2
+            opacity: 0.4
+
+            Repeater {
+                model: 3
+                Rectangle {
+                    width: (3 - index) * _dragMargin * 0.5
+                    height: 1
+                    color: qgcPal.text
+                }
+            }
+        }
+
+        MouseArea {
+            id: resizeHandle
+            anchors.fill: parent
+            cursorShape: Qt.SizeBDiagCursor
+            preventStealing: true
+
+            property real _lastScreenX
+            property real _lastScreenY
+            property real _stepW: ScreenTools.defaultFontPixelWidth
+            property real _stepH: ScreenTools.defaultFontPixelHeight
+            property real _accumX: 0
+            property real _accumY: 0
+
+            onPressed: (mouse) => {
+                var sp = mapToGlobal(mouse.x, mouse.y)
+                _lastScreenX = sp.x
+                _lastScreenY = sp.y
+                _accumX = 0
+                _accumY = 0
+            }
+
+            onPositionChanged: (mouse) => {
+                var sp = mapToGlobal(mouse.x, mouse.y)
+                _accumX += (sp.x - _lastScreenX)
+                _accumY += (sp.y - _lastScreenY)
+                _lastScreenX = sp.x
+                _lastScreenY = sp.y
+
+                // Only resize in discrete steps
+                if (Math.abs(_accumX) >= _stepW) {
+                    var stepsX = Math.trunc(_accumX / _stepW)
+                    _chatWidth = Math.max(_minWidth, Math.min(_maxWidth, _chatWidth - stepsX * _stepW))
+                    _accumX -= stepsX * _stepW
+                }
+                if (Math.abs(_accumY) >= _stepH) {
+                    var stepsY = Math.trunc(_accumY / _stepH)
+                    _chatHeight = Math.max(_minHeight, Math.min(_maxHeight, _chatHeight + stepsY * _stepH))
+                    _accumY -= stepsY * _stepH
+                }
+            }
+        }
+    }
 
     ColumnLayout {
         id: contentColumn
