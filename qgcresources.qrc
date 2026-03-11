@@ -16,6 +16,7 @@
         <file alias="BingNoTileBytes.dat">resources/BingNoTileBytes.dat</file>
         <file alias="CameraGimbal.png">resources/CameraGimbal.png</file>
         <file alias="cancel.svg">resources/cancel.svg</file>
+        <file alias="send.svg">resources/send.svg</file>
         <file alias="clockwise-arrow.svg">resources/clockwise-arrow.svg</file>
         <file alias="counter-clockwise-arrow.svg">resources/counter-clockwise-arrow.svg</file>
         <file alias="chevron-down.svg">resources/chevron-down.svg</file>
@@ -73,7 +74,7 @@
         <file alias="XDelete.svg">resources/XDelete.svg</file>
         <file alias="XDeleteBlack.svg">resources/XDeleteBlack.svg</file>
         <file alias="waypoint.svg">resources/waypoint.svg</file>
-        <file alias="mic.png">resources/mic.png</file>
+        <file alias="mic.svg">resources/mic.svg</file>
         <file alias="Gripper.svg">resources/Gripper.svg</file>
         <file alias="GripperRelease.svg">resources/GripperRelease.svg</file>
         <file alias="GripperGrab.svg">resources/GripperGrab.svg</file>

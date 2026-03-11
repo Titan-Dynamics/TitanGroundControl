@@ -2,6 +2,9 @@
 
 // Edit this prompt to change Titan AI's behavior.
 // This is a single raw string literal used as the system prompt for the AI.
+// The knowledge base (AIKnowledgeBase.h) is appended separately for prompt caching.
+
+#include "AIKnowledgeBase.h"
 
 static const char* kAISystemPrompt = R"(You are a Ground Control Station AI assistant for MAVLink vehicles.
 You respond with ONLY valid JSON — no extra text before or after.

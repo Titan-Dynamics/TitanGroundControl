@@ -712,7 +712,10 @@ void AIChatController::_sendToClaudeAPI(const QString& userMessage)
     QJsonArray systemArray;
     QJsonObject staticPrompt;
     staticPrompt["type"] = "text";
-    staticPrompt["text"] = QString::fromLatin1(kAISystemPrompt);
+    staticPrompt["text"] = QString::fromLatin1(kAIKnowledgeBase1)
+        + QString::fromLatin1(kAIKnowledgeBase2)
+        + QString::fromLatin1(kAIKnowledgeBase3)
+        + QString::fromLatin1(kAISystemPrompt);
     staticPrompt["cache_control"] = QJsonObject{{"type", "ephemeral"}};
     systemArray.append(staticPrompt);
 
@@ -1489,6 +1492,24 @@ void AIChatController::stopListening()
     } else {
         _isListening = false;
         emit isListeningChanged();
+    }
+}
+
+void AIChatController::cancelListening()
+{
+    if (!_isListening) {
+        return;
+    }
+
+    qCDebug(AIChatControllerLog) << "Cancelling voice input";
+
+    // Clear _isListening BEFORE stopping the recorder so the recorderStateChanged
+    // handler sees _isListening == false and skips sending audio to Whisper.
+    _isListening = false;
+    emit isListeningChanged();
+
+    if (_mediaRecorder) {
+        _mediaRecorder->stop();
     }
 }
 

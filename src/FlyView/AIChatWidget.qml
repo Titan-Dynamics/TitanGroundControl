@@ -279,14 +279,14 @@ Rectangle {
                 Layout.preferredWidth: ScreenTools.defaultFontPixelHeight * 2.5
                 Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2.5
                 radius: ScreenTools.defaultFontPixelWidth / 4
-                color: _chatController && _chatController.isListening ? qgcPal.colorRed : qgcPal.buttonHighlight
+                color: _chatController && _chatController.isListening ? qgcPal.colorRed : qgcPal.windowShade
                 visible: _chatController && _chatController.voiceInputAvailable
 
                 QGCColoredImage {
                     anchors.centerIn: parent
                     width: ScreenTools.defaultFontPixelHeight * 1.1
                     height: width
-                    source: "/res/mic.png"
+                    source: "/res/mic.svg"
                     color: qgcPal.text
                 }
 
@@ -297,17 +297,39 @@ Rectangle {
                         if (_chatController.isListening) {
                             _chatController.stopListening()
                         } else {
+                            inputField.text = ""
                             _chatController.startListening()
                         }
                     }
                 }
             }
 
-            QGCButton {
-                text: qsTr("Send")
+            Rectangle {
+                Layout.preferredWidth: ScreenTools.defaultFontPixelHeight * 2.5
                 Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2.5
-                enabled: inputField.text.trim().length > 0 && _chatController && !_chatController.isProcessing && !_chatController.isListening
-                onClicked: sendMessage()
+                radius: ScreenTools.defaultFontPixelWidth / 4
+                color: inputField.text.trim().length > 0 ? qgcPal.buttonHighlight : qgcPal.windowShade
+
+                QGCColoredImage {
+                    anchors.centerIn: parent
+                    width: ScreenTools.defaultFontPixelHeight * 1.1
+                    height: width
+                    source: _chatController && _chatController.isListening ? "/res/XDelete.svg" : "/res/send.svg"
+                    color: qgcPal.text
+                }
+
+                MouseArea {
+                    id: sendMouseArea
+                    anchors.fill: parent
+                    enabled: _chatController && (_chatController.isListening || (inputField.text.trim().length > 0 && !_chatController.isProcessing))
+                    onClicked: {
+                        if (_chatController.isListening) {
+                            _chatController.cancelListening()
+                        } else {
+                            sendMessage()
+                        }
+                    }
+                }
             }
         }
     }

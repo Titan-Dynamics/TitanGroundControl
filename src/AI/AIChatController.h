@@ -79,8 +79,11 @@ public:
     /// Start listening for voice input
     Q_INVOKABLE void startListening();
 
-    /// Stop listening for voice input
+    /// Stop listening for voice input and send to Whisper
     Q_INVOKABLE void stopListening();
+
+    /// Cancel listening — stops recording without sending to Whisper
+    Q_INVOKABLE void cancelListening();
 
     /// Add a POI at the given coordinate
     Q_INVOKABLE void addPOI(double latitude, double longitude);
