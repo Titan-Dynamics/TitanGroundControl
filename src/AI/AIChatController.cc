@@ -651,6 +651,7 @@ bool AIChatController::_isCurrentActionComplete()
 
 void AIChatController::clearHistory()
 {
+    AudioOutput::instance()->stop();
     _messages->clearAndDeleteContents();
     _errorMessage.clear();
     emit errorMessageChanged();
@@ -704,7 +705,7 @@ void AIChatController::_sendToClaudeAPI(const QString& userMessage)
     // Build request body with prompt caching for the static system prompt
     QJsonObject requestBody;
     requestBody["model"] = "claude-sonnet-4-5-20250929";
-    requestBody["max_tokens"] = 1024;
+    requestBody["max_tokens"] = 4096;
 
     // Use array format for system prompt to enable prompt caching
     // The static prompt is cached; dynamic vehicle state is appended fresh each request
@@ -921,7 +922,6 @@ void AIChatController::_processAIResponse(const QByteArray& responseData)
 
     qCDebug(AIChatControllerLog) << "AI response text:" << textContent;
 
-    // Sometimes the AI wraps JSON in markdown code blocks, strip them
     QString cleanedContent = textContent.trimmed();
     if (cleanedContent.startsWith("```json")) {
         cleanedContent = cleanedContent.mid(7);
@@ -1180,7 +1180,15 @@ bool AIChatController::_executeVehicleCommand(const QString& action, const QVari
             coord.setAltitude(alt);
         }
 
-        _vehicle->guidedModeGotoLocation(coord);
+        double loiterRadius = 0;
+        if (_vehicle->fixedWing()) {
+            ParameterManager* paramMgr = _vehicle->parameterManager();
+            int compId = ParameterManager::defaultComponentId;
+            if (paramMgr->parameterExists(compId, "WP_LOITER_RAD")) {
+                loiterRadius = paramMgr->getParameter(compId, "WP_LOITER_RAD")->rawValue().toDouble();
+            }
+        }
+        _vehicle->guidedModeGotoLocation(coord, loiterRadius);
         return true;
     }
     else if (action == "pause") {
@@ -1240,7 +1248,15 @@ bool AIChatController::_executeVehicleCommand(const QString& action, const QVari
 
         qCDebug(AIChatControllerLog) << "  fly_heading: heading=" << headingDeg << "deg, distance=" << distanceM << "m";
         qCDebug(AIChatControllerLog) << "  fly_heading: from=" << currentPos << "to=" << destination << "alt=" << targetAlt << "m";
-        _vehicle->guidedModeGotoLocation(destination);
+        double loiterRadius = 0;
+        if (_vehicle->fixedWing()) {
+            ParameterManager* paramMgr = _vehicle->parameterManager();
+            int compId = ParameterManager::defaultComponentId;
+            if (paramMgr->parameterExists(compId, "WP_LOITER_RAD")) {
+                loiterRadius = paramMgr->getParameter(compId, "WP_LOITER_RAD")->rawValue().toDouble();
+            }
+        }
+        _vehicle->guidedModeGotoLocation(destination, loiterRadius);
         return true;
     }
     else if (action == "set_speed") {
@@ -1330,6 +1346,19 @@ bool AIChatController::_executeVehicleCommand(const QString& action, const QVari
 
         qCDebug(AIChatControllerLog) << "  set_parameter:" << paramName << "=" << paramValue;
         param->setRawValue(paramValue);
+
+        // In Guided mode, changing WP_LOITER_RAD param alone doesn't affect the active loiter radius.
+        // Re-send guidedModeGotoLocation to the existing goto target (or current position as fallback).
+        if (paramName == "WP_LOITER_RAD" && _vehicle->guidedMode() && _vehicle->flying()) {
+            double newRadius = param->rawValue().toDouble();
+            QGeoCoordinate target = _vehicle->lastGotoCoordinate();
+            if (!target.isValid()) {
+                target = _vehicle->coordinate();
+            }
+            qCDebug(AIChatControllerLog) << "  Guided mode: sending reposition with new loiter radius:" << newRadius << "at" << target;
+            _vehicle->guidedModeGotoLocation(target, newRadius);
+        }
+
         return true;
     }
     else if (action == "get_parameter") {

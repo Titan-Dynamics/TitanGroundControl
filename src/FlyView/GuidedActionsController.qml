@@ -644,12 +644,12 @@ Item {
             )
             break
         case actionGoto:
-            _activeVehicle.guidedModeGotoLocation(
-                actionData,
-                _vehicleInFwdFlight /* forwardFlightLoiterRadius */
-                    ? _flyViewSettings.forwardFlightGoToLocationLoiterRad.value
-                    : 0
-            )
+            var loiterRad = 0
+            if (_vehicleInFwdFlight) {
+                var loiterFact = _activeVehicle.loiterRadiusFact()
+                loiterRad = loiterFact ? loiterFact.rawValue : _flyViewSettings.forwardFlightGoToLocationLoiterRad.value
+            }
+            _activeVehicle.guidedModeGotoLocation(actionData, loiterRad)
             break
         case actionSetWaypoint:
             _activeVehicle.setCurrentMissionSequence(actionData)

@@ -2082,8 +2082,19 @@ void Vehicle::guidedModeGotoLocation(const QGeoCoordinate& gotoCoord, double for
         qgcApp()->showAppMessage(QString("New location is too far. Must be less than %1 %2.").arg(qRound(FactMetaData::metersToAppSettingsHorizontalDistanceUnits(maxDistance).toDouble())).arg(FactMetaData::appSettingsHorizontalDistanceUnitsString()));
         return;
     }
+    _lastGotoCoordinate = gotoCoord;
     _firmwarePlugin->guidedModeGotoLocation(this, gotoCoord, forwardFlightLoiterRadius);
     emit guidedModeGotoLocationSent(gotoCoord);
+}
+
+Fact* Vehicle::loiterRadiusFact()
+{
+    ParameterManager* paramMgr = parameterManager();
+    int compId = ParameterManager::defaultComponentId;
+    if (paramMgr->parameterExists(compId, "WP_LOITER_RAD")) {
+        return paramMgr->getParameter(compId, "WP_LOITER_RAD");
+    }
+    return nullptr;
 }
 
 void Vehicle::guidedModeChangeAltitude(double altitudeChange, bool pauseVehicle)

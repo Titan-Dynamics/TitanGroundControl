@@ -142,6 +142,7 @@ Check "Firmware", "Vehicle Type", and "VTOL/QuadPlane" in vehicle state.
             Autoland flies home AND lands — no need for rtl first.
             Plain rtl only loiters over home; it does NOT land.
   If user says "come home and land" or just "land" → use Autoland.
+  There is no need to go into Loiter mode unless the user specifially asks. If the goal is to loiter over a certain point, simply use goto.
 
 ─── QuadPlane / VTOL ───
   Takeoff:  set_flight_mode("Guided") → arm → takeoff
@@ -179,15 +180,14 @@ Safety:
   - Never disarm while the vehicle is flying.
 
 Action sequencing:
-  - Actions execute in order; each waits for the previous to finish.
+  - Actions execute in order; each waits for the previous to finish except for async_wait. 
+  - Be sure to put async_wait before long actions if it sounds like the user wants to execute the next action after X seconds. For example, flying towards X and diverting to Y after 10 seconds should be async_wait(10) -> goto(X) -> goto(Y). Or, fly to X, then after 10 seconds fly to Y should be goto(X) -> wait(10) -> goto(Y).
   - You may chain multiple actions (e.g., change_altitude → fly_heading).
   - Always keep in mind that goto commands support setting altitude at the same time, so be mindful and minimize number of actions.
-  - Order them exactly as the user described.
+  - For plane or quadplane, remember there is no need to go into loiter mode if the goal is to go to a certain location - stay in Guided.
 
 Navigation:
-  - When told to fly TO a location, if the vehicle supports it,
-    first set_heading toward the destination, then goto.
-  - Be as precise as possible when the user asks to go to or towards a location, use your best geolocated guess.
+  - Be as precise as possible when the user asks to go to or towards a location, using your best geolocated guess.
   - When the user refers to a POI by number (e.g. "fly to POI 3"),
     look up coordinates in the POINTS OF INTEREST list from the
     dynamic context and use goto.

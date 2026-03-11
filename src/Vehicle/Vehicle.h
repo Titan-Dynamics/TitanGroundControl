@@ -327,6 +327,13 @@ public:
     /// Command vehicle to change groundspeed
     ///     @param groundspeed Target horizontal groundspeed
     Q_INVOKABLE void guidedModeChangeGroundSpeedMetersSecond(double groundspeed);
+
+    /// Returns the WP_LOITER_RAD parameter Fact if it exists, nullptr otherwise.
+    /// QML can bind to the returned Fact's rawValue for reactive updates.
+    Q_INVOKABLE Fact* loiterRadiusFact();
+
+    /// Returns the last goto coordinate sent via guidedModeGotoLocation, or an invalid coordinate if none.
+    QGeoCoordinate lastGotoCoordinate() const { return _lastGotoCoordinate; }
     /// Command vehicle to change equivalent airspeed
     ///     @param airspeed Target equivalent airspeed
     Q_INVOKABLE void guidedModeChangeEquivalentAirspeedMetersSecond(double airspeed);
@@ -1010,6 +1017,7 @@ void _activeVehicleChanged          (Vehicle* newActiveVehicle);
     QGeoCoordinate  _coordinate;
     QGeoCoordinate  _homePosition;
     QGeoCoordinate  _armedPosition;
+    QGeoCoordinate  _lastGotoCoordinate;
 
     qreal           _initialGCSPressure = 0.;
     qreal           _initialGCSTemperature = 0.;

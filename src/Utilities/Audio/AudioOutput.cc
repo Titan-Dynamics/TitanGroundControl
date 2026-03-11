@@ -136,7 +136,7 @@ void AudioOutput::stop()
     }
 
     if (_textQueueSize > 0) {
-        (void) QMetaObject::invokeMethod(_engine, "stop", Qt::AutoConnection, QTextToSpeech::BoundaryHint::Default);
+        (void) QMetaObject::invokeMethod(_engine, "stop", Qt::AutoConnection, QTextToSpeech::BoundaryHint::Immediate);
         _textQueueSize = 0;
         qCDebug(AudioOutputLog) << "Stopped current speech";
     }
@@ -172,7 +172,7 @@ void AudioOutput::say(const QString &text, TextMods textMods, bool ignoreMute, d
 
     // Stop any currently playing speech to start the new one immediately
     if (_textQueueSize > 0) {
-        (void) QMetaObject::invokeMethod(_engine, "stop", Qt::AutoConnection, QTextToSpeech::BoundaryHint::Default);
+        (void) QMetaObject::invokeMethod(_engine, "stop", Qt::AutoConnection, QTextToSpeech::BoundaryHint::Immediate);
         _textQueueSize = 0;
         qCDebug(AudioOutputLog) << "Stopped current speech to play new audio";
     }

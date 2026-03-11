@@ -488,16 +488,26 @@ FlightMap {
             clockwiseRotation:  true
 
             property real _defaultLoiterRadius: _flyViewSettings.forwardFlightGoToLocationLoiterRad.value
-            property real _committedRadius;
+            property var  _loiterRadFact: null
+            property real _vehicleLoiterRadius: _loiterRadFact ? Math.abs(_loiterRadFact.rawValue) : _defaultLoiterRadius
+            property real _committedRadius: _vehicleLoiterRadius
 
-            onCenterChanged: {
-                radius.rawValue = _defaultLoiterRadius
-                // Don't commit the radius in case this operation is undone
+            function _updateLoiterRadFact() {
+                if (_activeVehicle && _activeVehicle.parameterManager.parametersReady) {
+                    _loiterRadFact = _activeVehicle.loiterRadiusFact()
+                } else {
+                    _loiterRadFact = null
+                }
             }
 
-            Component.onCompleted: {
-                radius.rawValue = _defaultLoiterRadius
-                _commitRadius()
+            onCenterChanged: {
+                if (!interactive)
+                    radius.rawValue = _vehicleLoiterRadius
+            }
+
+            on_VehicleLoiterRadiusChanged: {
+                if (!interactive)
+                    radius.rawValue = _vehicleLoiterRadius
             }
 
             function _commitRadius() {
@@ -510,11 +520,20 @@ FlightMap {
         }
     }
 
+    // Update loiter radius fact when vehicle parameters become available
+    Connections {
+        target: _activeVehicle ? _activeVehicle.parameterManager : null
+        function onParametersReadyChanged() {
+            _fwdFlightGotoMapCircle._updateLoiterRadFact()
+        }
+    }
+
     // Update goto indicator whenever any goto command is sent (UI or AI)
     Connections {
         target: _activeVehicle
         function onGuidedModeGotoLocationSent(coord) {
             gotoLocationItem.show(coord)
+            gotoLocationItem._commitCoordinate()
         }
     }
 
@@ -768,9 +787,9 @@ FlightMap {
                         visible:            globals.guidedControllerFlyView.showGotoLocation
                         onClicked: {
                             mapClickDropPanel.close()
-                            gotoLocationItem.show(mapClickCoord)
 
                             if ((_activeVehicle.flightMode == _activeVehicle.gotoFlightMode) && !_flyViewSettings.goToLocationRequiresConfirmInGuided.value) {
+                                gotoLocationItem.show(mapClickCoord)
                                 globals.guidedControllerFlyView.executeAction(globals.guidedControllerFlyView.actionGoto, mapClickCoord, gotoLocationItem)
                                 gotoLocationItem.actionConfirmed() // Still need to call this to commit the new coordinate and radius
                             } else {
