@@ -376,6 +376,10 @@ Item {
 
     function skipFutureConfirmations(actionCode) {
         _skipConfirmActions[actionCode] = true
+        // Persist "Don't show again" for Start Mission by disabling automatic popups
+        if (actionCode === actionStartMission || actionCode === actionContinueMission || actionCode === actionResumeMission) {
+            _flyViewSettings.enableAutomaticMissionPopups.rawValue = false
+        }
     }
 
     // Called when an action is about to be executed in order to confirm
@@ -640,12 +644,12 @@ Item {
             )
             break
         case actionGoto:
-            _activeVehicle.guidedModeGotoLocation(
-                actionData,
-                _vehicleInFwdFlight /* forwardFlightLoiterRadius */
-                    ? _flyViewSettings.forwardFlightGoToLocationLoiterRad.value
-                    : 0
-            )
+            var loiterRad = 0
+            if (_vehicleInFwdFlight) {
+                var loiterFact = _activeVehicle.loiterRadiusFact()
+                loiterRad = loiterFact ? loiterFact.rawValue : _flyViewSettings.forwardFlightGoToLocationLoiterRad.value
+            }
+            _activeVehicle.guidedModeGotoLocation(actionData, loiterRad)
             break
         case actionSetWaypoint:
             _activeVehicle.setCurrentMissionSequence(actionData)

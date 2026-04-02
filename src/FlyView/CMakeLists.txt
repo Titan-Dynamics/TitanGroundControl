@@ -10,6 +10,7 @@ qt_add_qml_module(FlyViewModule
     VERSION 1.0
     RESOURCE_PREFIX /qml
     QML_FILES
+        AIChatWidget.qml
         CustomGuidedActionsController.qml
         DefaultChecklist.qml
         FixedWingChecklist.qml

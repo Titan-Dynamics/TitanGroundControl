@@ -108,6 +108,13 @@ ListModel {
     }
 
     ListElement {
+        name: qsTr("Titan AI")
+        url: "qrc:/qml/QGroundControl/AppSettings/AISettings.qml"
+        iconUrl: "qrc:/InstrumentValueIcons/conversation.svg"
+        pageVisible: function() { return true }
+    }
+
+    ListElement {
         name: "Divider"
     }
 

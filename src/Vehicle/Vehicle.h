@@ -42,6 +42,7 @@
 #include "EscStatusFactGroupListModel.h"
 
 class Actuators;
+class AIChatController;
 class AutoPilotPlugin;
 class Autotune;
 class ComponentInformationManager;
@@ -82,6 +83,7 @@ class Vehicle : public VehicleFactGroup
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("")
+    Q_MOC_INCLUDE("AIChatController.h")
     Q_MOC_INCLUDE("AutoPilotPlugin.h")
     Q_MOC_INCLUDE("TrajectoryPoints.h")
     Q_MOC_INCLUDE("ParameterManager.h")
@@ -207,6 +209,7 @@ public:
     Q_PROPERTY(quint64              mavlinkLossCount            READ mavlinkLossCount                                               NOTIFY mavlinkStatusChanged)
     Q_PROPERTY(float                mavlinkLossPercent          READ mavlinkLossPercent                                             NOTIFY mavlinkStatusChanged)
     Q_PROPERTY(GimbalController*    gimbalController            READ gimbalController                                               CONSTANT)
+    Q_PROPERTY(AIChatController*    aiChatController            READ aiChatController                                               CONSTANT)
     Q_PROPERTY(bool                 hasGripper                  READ hasGripper                                                     NOTIFY hasGripperChanged)
     Q_PROPERTY(bool                 isROIEnabled                READ isROIEnabled                                                   NOTIFY isROIEnabledChanged)
     Q_PROPERTY(CheckList            checkListState              READ checkListState             WRITE setCheckListState             NOTIFY checkListStateChanged)
@@ -324,6 +327,13 @@ public:
     /// Command vehicle to change groundspeed
     ///     @param groundspeed Target horizontal groundspeed
     Q_INVOKABLE void guidedModeChangeGroundSpeedMetersSecond(double groundspeed);
+
+    /// Returns the WP_LOITER_RAD parameter Fact if it exists, nullptr otherwise.
+    /// QML can bind to the returned Fact's rawValue for reactive updates.
+    Q_INVOKABLE Fact* loiterRadiusFact();
+
+    /// Returns the last goto coordinate sent via guidedModeGotoLocation, or an invalid coordinate if none.
+    QGeoCoordinate lastGotoCoordinate() const { return _lastGotoCoordinate; }
     /// Command vehicle to change equivalent airspeed
     ///     @param airspeed Target equivalent airspeed
     Q_INVOKABLE void guidedModeChangeEquivalentAirspeedMetersSecond(double airspeed);
@@ -796,6 +806,7 @@ public:
     HealthAndArmingCheckReport* healthAndArmingCheckReport() { return &_healthAndArmingCheckReport; }
 
     GimbalController* gimbalController  () { return _gimbalController; }
+    AIChatController* aiChatController  () { return _aiChatController; }
 
 public slots:
     void setVtolInFwdFlight                 (bool vtolInFwdFlight);
@@ -805,6 +816,7 @@ public slots:
 
 signals:
     void coordinateChanged              (QGeoCoordinate coordinate);
+    void guidedModeGotoLocationSent     (QGeoCoordinate gotoCoord);
     void mavlinkMessageReceived         (const mavlink_message_t& message);
     void homePositionChanged            (const QGeoCoordinate& homePosition);
     void armedPositionChanged();
@@ -979,6 +991,7 @@ void _activeVehicleChanged          (Vehicle* newActiveVehicle);
 
     // The following methods should only be called by unit tests
     void _deleteGimbalController();
+    void _deleteAIChatController();
     void _deleteCameraManager();
 
     /// Called by VehicleLinkManager when all links are removed.
@@ -1004,6 +1017,7 @@ void _activeVehicleChanged          (Vehicle* newActiveVehicle);
     QGeoCoordinate  _coordinate;
     QGeoCoordinate  _homePosition;
     QGeoCoordinate  _armedPosition;
+    QGeoCoordinate  _lastGotoCoordinate;
 
     qreal           _initialGCSPressure = 0.;
     qreal           _initialGCSTemperature = 0.;
@@ -1051,6 +1065,7 @@ void _activeVehicleChanged          (Vehicle* newActiveVehicle);
     VehicleObjectAvoidance*         _objectAvoidance                = nullptr;
     Autotune*                       _autotune                       = nullptr;
     GimbalController*               _gimbalController               = nullptr;
+    AIChatController*               _aiChatController               = nullptr;
 
     bool    _armed = false;         ///< true: vehicle is armed
     uint8_t _base_mode = 0;     ///< base_mode from HEARTBEAT

@@ -345,6 +345,89 @@ FlightMap {
         }
     }
 
+    // POI markers
+    MapItemView {
+        model: _activeVehicle && _activeVehicle.aiChatController ? _activeVehicle.aiChatController.pois : null
+
+        delegate: MapQuickItem {
+            id: poiDelegate
+            anchorPoint.x:  sourceItem.anchorPointX
+            anchorPoint.y:  sourceItem.anchorPointY
+            coordinate:     object.coordinate
+            z:              QGroundControl.zOrderMapItems
+
+            property int poiModelIndex: index
+
+            sourceItem: MissionItemIndexLabel {
+                label:      qsTr("POI")
+                index:      object.number
+                checked:    true
+                color:      "orange"
+
+                onClicked: (position) => {
+                    poiRemoveDialog.poiIndex = poiDelegate.poiModelIndex
+                    poiRemoveDialog.poiNumber = object.number
+                    poiRemoveDialog.open()
+                }
+            }
+        }
+    }
+
+    // POI removal confirmation popup
+    Popup {
+        id:                 poiRemoveDialog
+        modal:              true
+        focus:              true
+        closePolicy:        Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        anchors.centerIn:   parent
+        padding:            ScreenTools.defaultFontPixelWidth * 2
+
+        property int poiIndex: -1
+        property int poiNumber: 0
+
+        QGCPalette { id: poiDialogPal }
+
+        background: Rectangle {
+            color:          poiDialogPal.window
+            radius:         ScreenTools.defaultFontPixelHeight / 2
+            border.color:   poiDialogPal.buttonText
+            border.width:   1
+            opacity:        0.95
+        }
+
+        contentItem: ColumnLayout {
+            spacing: ScreenTools.defaultFontPixelHeight / 2
+
+            QGCLabel {
+                text:               qsTr("Remove POI %1?").arg(poiRemoveDialog.poiNumber)
+                font.pointSize:     ScreenTools.largeFontPointSize
+                font.bold:          true
+                Layout.fillWidth:   true
+            }
+
+            RowLayout {
+                spacing:            ScreenTools.defaultFontPixelWidth
+                Layout.alignment:   Qt.AlignRight
+
+                QGCButton {
+                    text: qsTr("Cancel")
+                    onClicked: poiRemoveDialog.close()
+                }
+
+                QGCButton {
+                    text:           qsTr("Remove")
+                    highlighted:    true
+                    onClicked: {
+                        if (_activeVehicle && _activeVehicle.aiChatController && poiRemoveDialog.poiIndex >= 0) {
+                            _activeVehicle.aiChatController.removePOI(poiRemoveDialog.poiIndex)
+                        }
+                        poiRemoveDialog.close()
+                    }
+                }
+            }
+        }
+    }
+
     // Camera trigger points
     MapItemView {
         model: _activeVehicle ? _activeVehicle.cameraTriggerPoints : 0
@@ -405,16 +488,26 @@ FlightMap {
             clockwiseRotation:  true
 
             property real _defaultLoiterRadius: _flyViewSettings.forwardFlightGoToLocationLoiterRad.value
-            property real _committedRadius;
+            property var  _loiterRadFact: null
+            property real _vehicleLoiterRadius: _loiterRadFact ? Math.abs(_loiterRadFact.rawValue) : _defaultLoiterRadius
+            property real _committedRadius: _vehicleLoiterRadius
 
-            onCenterChanged: {
-                radius.rawValue = _defaultLoiterRadius
-                // Don't commit the radius in case this operation is undone
+            function _updateLoiterRadFact() {
+                if (_activeVehicle && _activeVehicle.parameterManager.parametersReady) {
+                    _loiterRadFact = _activeVehicle.loiterRadiusFact()
+                } else {
+                    _loiterRadFact = null
+                }
             }
 
-            Component.onCompleted: {
-                radius.rawValue = _defaultLoiterRadius
-                _commitRadius()
+            onCenterChanged: {
+                if (!interactive)
+                    radius.rawValue = _vehicleLoiterRadius
+            }
+
+            on_VehicleLoiterRadiusChanged: {
+                if (!interactive)
+                    radius.rawValue = _vehicleLoiterRadius
             }
 
             function _commitRadius() {
@@ -424,6 +517,23 @@ FlightMap {
             function _restoreRadius() {
                 radius.rawValue = _committedRadius
             }
+        }
+    }
+
+    // Update loiter radius fact when vehicle parameters become available
+    Connections {
+        target: _activeVehicle ? _activeVehicle.parameterManager : null
+        function onParametersReadyChanged() {
+            _fwdFlightGotoMapCircle._updateLoiterRadFact()
+        }
+    }
+
+    // Update goto indicator whenever any goto command is sent (UI or AI)
+    Connections {
+        target: _activeVehicle
+        function onGuidedModeGotoLocationSent(coord) {
+            gotoLocationItem.show(coord)
+            gotoLocationItem._commitCoordinate()
         }
     }
 
@@ -677,9 +787,9 @@ FlightMap {
                         visible:            globals.guidedControllerFlyView.showGotoLocation
                         onClicked: {
                             mapClickDropPanel.close()
-                            gotoLocationItem.show(mapClickCoord)
 
                             if ((_activeVehicle.flightMode == _activeVehicle.gotoFlightMode) && !_flyViewSettings.goToLocationRequiresConfirmInGuided.value) {
+                                gotoLocationItem.show(mapClickCoord)
                                 globals.guidedControllerFlyView.executeAction(globals.guidedControllerFlyView.actionGoto, mapClickCoord, gotoLocationItem)
                                 gotoLocationItem.actionConfirmed() // Still need to call this to commit the new coordinate and radius
                             } else {
@@ -739,6 +849,16 @@ FlightMap {
                         }
                     }
 
+                    QGCButton {
+                        Layout.fillWidth:   true
+                        text:               qsTr("Add POI")
+                        visible:            _activeVehicle && _activeVehicle.aiChatController
+                        onClicked: {
+                            mapClickDropPanel.close()
+                            _activeVehicle.aiChatController.addPOI(mapClickCoord.latitude, mapClickCoord.longitude)
+                        }
+                    }
+
                     ColumnLayout {
                         spacing: 0
                         QGCLabel { text: qsTr("Lat: %1").arg(mapClickCoord.latitude.toFixed(6)) }
@@ -753,7 +873,8 @@ FlightMap {
         if (!globals.guidedControllerFlyView.guidedUIVisible &&
             (globals.guidedControllerFlyView.showGotoLocation || globals.guidedControllerFlyView.showOrbit ||
              globals.guidedControllerFlyView.showROI || globals.guidedControllerFlyView.showSetHome ||
-             globals.guidedControllerFlyView.showSetEstimatorOrigin)) {
+             globals.guidedControllerFlyView.showSetEstimatorOrigin ||
+             (_activeVehicle && _activeVehicle.aiChatController))) {
 
             position = Qt.point(position.x, position.y)
             var clickCoord = _root.toCoordinate(position, false /* clipToViewPort */)

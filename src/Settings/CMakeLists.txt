@@ -7,6 +7,8 @@ target_sources(${CMAKE_PROJECT_NAME}
     PRIVATE
         ADSBVehicleManagerSettings.cc
         ADSBVehicleManagerSettings.h
+        AISettings.cc
+        AISettings.h
         AppSettings.cc
         AppSettings.h
         AutoConnectSettings.cc

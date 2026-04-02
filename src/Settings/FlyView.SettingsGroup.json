@@ -15,7 +15,7 @@
     "shortDesc": "Maximum altitude for guided actions altitude slider.",
     "type":             "double",
     "units":            "m",
-    "default":     121.92
+    "default":     10000
 },
 {
     "name":             "showLogReplayStatusBar",
@@ -48,6 +48,13 @@
     "default":      false
 },
 {
+    "name":         "showAIChatWidget",
+    "shortDesc":    "Show Titan AI Command Chat in Fly View",
+    "longDesc":     "Enable a chat interface to control the vehicle using natural language commands powered by Titan AI.",
+    "type":         "bool",
+    "default":      false
+},
+{
     "name":         "showObstacleDistanceOverlay",
     "shortDesc":    "Show obstacle distance overlay on map and video.",
     "type":         "bool",
@@ -55,11 +62,11 @@
 },
 {
     "name":             "maxGoToLocationDistance",
-    "shortDesc": "Maximum distance allowed for Go To Location.",
+    "shortDesc": "Location Max Distance (0 = no limit)",
     "type":             "double",
     "units":            "m",
-    "default":     1000,
-    "min":              1
+    "default":     0,
+    "min":              0
 },
 {
     "name":         "forwardFlightGoToLocationLoiterRad",

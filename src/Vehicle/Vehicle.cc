@@ -1,6 +1,7 @@
 #include "Vehicle.h"
 #include "Actuators.h"
 #include "ADSBVehicleManager.h"
+#include "AIChatController.h"
 #include "AudioOutput.h"
 #include "AutoPilotPlugin.h"
 #include "ComponentInformationManager.h"
@@ -342,6 +343,7 @@ void Vehicle::_commonInit(LinkInterface* link)
     }
 
     _gimbalController = new GimbalController(this);
+    _aiChatController = new AIChatController(this, this);
 
     _createCameraManager();
 }
@@ -385,6 +387,15 @@ void Vehicle::_deleteGimbalController()
         _gimbalController->disconnect();
         delete _gimbalController;
         _gimbalController = nullptr;
+    }
+}
+
+void Vehicle::_deleteAIChatController()
+{
+    if (_aiChatController) {
+        _aiChatController->disconnect();
+        delete _aiChatController;
+        _aiChatController = nullptr;
     }
 }
 
@@ -2067,11 +2078,23 @@ void Vehicle::guidedModeGotoLocation(const QGeoCoordinate& gotoCoord, double for
         return;
     }
     double maxDistance = SettingsManager::instance()->flyViewSettings()->maxGoToLocationDistance()->rawValue().toDouble();
-    if (coordinate().distanceTo(gotoCoord) > maxDistance) {
+    if (maxDistance > 0 && coordinate().distanceTo(gotoCoord) > maxDistance) {
         qgcApp()->showAppMessage(QString("New location is too far. Must be less than %1 %2.").arg(qRound(FactMetaData::metersToAppSettingsHorizontalDistanceUnits(maxDistance).toDouble())).arg(FactMetaData::appSettingsHorizontalDistanceUnitsString()));
         return;
     }
+    _lastGotoCoordinate = gotoCoord;
     _firmwarePlugin->guidedModeGotoLocation(this, gotoCoord, forwardFlightLoiterRadius);
+    emit guidedModeGotoLocationSent(gotoCoord);
+}
+
+Fact* Vehicle::loiterRadiusFact()
+{
+    ParameterManager* paramMgr = parameterManager();
+    int compId = ParameterManager::defaultComponentId;
+    if (paramMgr->parameterExists(compId, "WP_LOITER_RAD")) {
+        return paramMgr->getParameter(compId, "WP_LOITER_RAD");
+    }
+    return nullptr;
 }
 
 void Vehicle::guidedModeChangeAltitude(double altitudeChange, bool pauseVehicle)

@@ -1,0 +1,49 @@
+{
+    "version":      1,
+    "fileType":  "FactMetaData",
+    "QGC.MetaData.Facts":
+[
+{
+    "name":         "claudeApiKey",
+    "shortDesc":    "Claude API Key for AI command processing",
+    "longDesc":     "Your Anthropic Claude API key. Get one at console.anthropic.com",
+    "type":         "string",
+    "default":      ""
+},
+{
+    "name":         "groqApiKey",
+    "shortDesc":    "Groq API Key for voice input (Whisper)",
+    "longDesc":     "Your Groq API key for Whisper speech-to-text. Get one free at console.groq.com",
+    "type":         "string",
+    "default":      ""
+},
+{
+    "name":         "enableTextToSpeech",
+    "shortDesc":    "Enable Text-to-Speech response",
+    "longDesc":     "When enabled, Titan AI will speak responses aloud using text-to-speech",
+    "type":         "bool",
+    "default":      true
+},
+{
+    "name":         "confirmDangerousCommands",
+    "shortDesc":    "Require confirmation for dangerous commands",
+    "longDesc":     "Always require manual confirmation for commands like arm, takeoff, emergency stop, etc.",
+    "type":         "bool",
+    "default":      true
+},
+{
+    "name":         "includeVehicleState",
+    "shortDesc":    "Include vehicle state in AI context",
+    "longDesc":     "Send current vehicle position, altitude, speed, and status to AI for context-aware responses",
+    "type":         "bool",
+    "default":      true
+},
+{
+    "name":         "customContext",
+    "shortDesc":    "Custom AI Context",
+    "longDesc":     "Additional context to provide to the AI, such as ArduPilot parameter documentation, MAVLink command references, or custom instructions.",
+    "type":         "string",
+    "default":      ""
+}
+]
+}

@@ -7,6 +7,7 @@
 #include <QtCore/QMap>
 
 class ADSBVehicleManagerSettings;
+class AISettings;
 class APMMavlinkStreamRateSettings;
 class AppSettings;
 class AutoConnectSettings;
@@ -40,6 +41,7 @@ class SettingsManager : public QObject
     QML_ELEMENT
     QML_UNCREATABLE("")
     Q_MOC_INCLUDE("ADSBVehicleManagerSettings.h")
+    Q_MOC_INCLUDE("AISettings.h")
 #ifndef QGC_NO_ARDUPILOT_DIALECT
     Q_MOC_INCLUDE("APMMavlinkStreamRateSettings.h")
 #endif
@@ -65,6 +67,7 @@ class SettingsManager : public QObject
     Q_MOC_INCLUDE("JoystickManagerSettings.h")
     Q_MOC_INCLUDE("Viewer3DSettings.h")
     Q_PROPERTY(QObject *adsbVehicleManagerSettings      READ adsbVehicleManagerSettings     CONSTANT)
+    Q_PROPERTY(QObject *aiSettings                      READ aiSettings                     CONSTANT)
 #ifndef QGC_NO_ARDUPILOT_DIALECT
     Q_PROPERTY(QObject *apmMavlinkStreamRateSettings    READ apmMavlinkStreamRateSettings   CONSTANT)
 #endif
@@ -105,6 +108,7 @@ public:
     static void adjustSettingMetaData(const QString &settingsGroup, FactMetaData &metaData, bool &visible);
 
     ADSBVehicleManagerSettings *adsbVehicleManagerSettings() const;
+    AISettings *aiSettings() const;
 #ifndef QGC_NO_ARDUPILOT_DIALECT
     APMMavlinkStreamRateSettings *apmMavlinkStreamRateSettings() const;
 #endif
@@ -134,6 +138,7 @@ private:
     void _loadSettingsFiles();
 
     ADSBVehicleManagerSettings *_adsbVehicleManagerSettings = nullptr;
+    AISettings *_aiSettings = nullptr;
 #ifndef QGC_NO_ARDUPILOT_DIALECT
     APMMavlinkStreamRateSettings *_apmMavlinkStreamRateSettings = nullptr;
 #endif

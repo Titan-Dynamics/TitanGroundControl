@@ -85,6 +85,15 @@ SettingsPage {
 
         FactCheckBoxSlider {
             Layout.fillWidth:   true
+            text:               qsTr("Show Titan AI Command Chat")
+            visible:            _showAIChatWidget.visible
+            fact:               _showAIChatWidget
+
+            property Fact _showAIChatWidget: _flyViewSettings.showAIChatWidget
+        }
+
+        FactCheckBoxSlider {
+            Layout.fillWidth:   true
             text:               qsTr("Update return to home position based on device location.")
             fact:               _updateHomePosition
             visible:            _updateHomePosition.visible
@@ -116,7 +125,7 @@ SettingsPage {
 
         LabelledFactTextField {
             Layout.fillWidth:   true
-            label:              qsTr("Go To Location Max Distance")
+            label:              qsTr("Location Max Distance (0 = no limit)")
             fact:               _maxGoToLocationDistance
             visible:            fact.visible
         }
