@@ -42,7 +42,7 @@ Item {
         QGCLabel {
             id:                 flightModeLabel
             text:               activeVehicle ? TDHelpers.displayModeName(activeVehicle.flightMode) : qsTr("N/A", "No data to display")
-            color:              qgcPal.windowTransparentText
+            color:              qgcPal.text
             font.pointSize:     fontPointSize
 
         }

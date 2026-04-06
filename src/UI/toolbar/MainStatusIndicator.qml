@@ -104,31 +104,6 @@ RowLayout {
             }
         }
 
-        QGCColoredImage {
-            id:                     vehicleMessagesIcon
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.right:          parent.right
-            width:                  ScreenTools.defaultFontPixelWidth * 2
-            height:                 width
-            source:                 "/res/VehicleMessages.png"
-            color:                  getIconColor()
-            sourceSize.width:       width
-            fillMode:               Image.PreserveAspectFit
-            visible:                _activeVehicle && _activeVehicle.messageCount > 0
-
-            function getIconColor() {
-                let iconColor = qgcPal.text
-                if (_activeVehicle) {
-                    if (_activeVehicle.messageTypeWarning) {
-                        iconColor = qgcPal.colorOrange
-                    } else if (_activeVehicle.messageTypeError) {
-                        iconColor = qgcPal.colorRed
-                    }
-                }
-                return iconColor
-            }
-        }
-
         QGCMouseArea {
             anchors.fill:   parent
             onClicked:      dropMainStatusIndicator()
