@@ -30,6 +30,9 @@
                     "setting": "flyViewSettings.showLogReplayStatusBar"
                 },
                 {
+                    "setting": "flyViewSettings.showAIChatWidget"
+                },
+                {
                     "setting": "flyViewSettings.showSimpleCameraControl"
                 },
                 {
