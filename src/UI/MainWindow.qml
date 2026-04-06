@@ -9,6 +9,7 @@ import QGroundControl.Controls
 import QGroundControl.FactControls
 import QGroundControl.FlyView
 import QGroundControl.FlightMap
+import QGroundControl.PlanView
 import QGroundControl.Toolbar
 
 /// @brief Native QML top level window
@@ -75,6 +76,9 @@ ApplicationWindow {
         // Number of QGCTextField's with validation errors. Used to prevent closing panels with validation errors.
         property int                validationErrorCount:           0
 
+        // Set to a non-empty string to block navigation with a custom reason (e.g. during calibration)
+        property string             navigationBlockedReason:        ""
+
         // Property to manage RemoteID quick access to settings page
         property bool               commingFromRIDIndicator:        false
     }
@@ -96,12 +100,31 @@ ApplicationWindow {
     //-- Global Scope Functions
 
     // This function is used to prevent view switching if there are validation errors
-    function allowViewSwitch(previousValidationErrorCount = 0) {
+    function allowViewSwitch(previousValidationErrorCount = 0, showErrorOnDisallow = true) {
+        // Check for explicit navigation block (e.g. calibration in progress)
+        if (globals.navigationBlockedReason !== "") {
+            if (showErrorOnDisallow) {
+                validationErrorToast.text = globals.navigationBlockedReason
+                if (validationErrorToast.visible) {
+                    validationErrorToast.close()
+                }
+                validationErrorToast.open()
+            }
+            return false
+        }
         // Run validation on active focus control to ensure it is valid before switching views
         if (mainWindow.activeFocusControl instanceof FactTextField) {
             mainWindow.activeFocusControl._onEditingFinished()
         }
-        return globals.validationErrorCount <= previousValidationErrorCount
+        var allowed = globals.validationErrorCount <= previousValidationErrorCount
+        if (!allowed && showErrorOnDisallow) {
+            validationErrorToast.text = qsTr("Please correct the invalid value before continuing")
+            if (validationErrorToast.visible) {
+                validationErrorToast.close()
+            }
+            validationErrorToast.open()
+        }
+        return allowed
     }
 
     function showPlanView() {
@@ -129,7 +152,7 @@ ApplicationWindow {
     }
 
     function showVehicleConfig() {
-        showTool(qsTr("Vehicle Configuration"), "qrc:/qml/QGroundControl/VehicleSetup/SetupView.qml", "/qmlimages/Gears.svg")
+        showTool(qsTr("Vehicle Configuration"), "qrc:/qml/QGroundControl/VehicleSetup/VehicleConfigView.qml", "/qmlimages/Gears.svg")
     }
 
     function showVehicleConfigParametersPage() {
@@ -223,10 +246,11 @@ ApplicationWindow {
     }
 
     function checkForUnsavedMission() {
-        if (planView._planMasterController.dirty) {
-            _showCloseCheckDialog(
-                qsTr("You have a mission edit in progress which has not been saved/sent. If you close you will lose changes. Are you sure you want to close?"),
-                function() { _closeChecksToSkip |= _skipUnsavedMissionCheckMask; performCloseChecks() })
+        if (planView._planMasterController.dirtyForSave || planView._planMasterController.dirtyForUpload) {
+            QGroundControl.showMessageDialog(mainWindow, closeDialogTitle,
+                              qsTr("You have a mission edit in progress which has not been saved/uploaded. If you close you will lose changes. Are you sure you want to close?"),
+                              Dialog.Yes | Dialog.No,
+                              function() { _closeChecksToSkip |= _skipUnsavedMissionCheckMask; performCloseChecks() })
             return false
         } else {
             return true
@@ -373,6 +397,26 @@ ApplicationWindow {
     function showToolSelectDialog() {
         if (mainWindow.allowViewSwitch()) {
             mainWindow.showIndicatorDrawer(toolSelectComponent, null)
+        }
+    }
+
+    // Toast notification shown when a view switch is blocked by a validation error
+    ToolTip {
+        id:             validationErrorToast
+        x:              (mainWindow.width - width) / 2
+        y:              mainWindow.height - height - ScreenTools.defaultFontPixelHeight * 3
+        timeout:        3000
+        closePolicy:    Popup.NoAutoClose
+        text:           qsTr("Please correct the invalid value before continuing")
+
+        background: Rectangle {
+            color:  qgcPal.alertBackground
+            radius: ScreenTools.defaultFontPixelWidth / 2
+        }
+
+        contentItem: QGCLabel {
+            text:   validationErrorToast.text
+            color:  qgcPal.alertText
         }
     }
 
@@ -685,10 +729,11 @@ ApplicationWindow {
     // to mainWindow. Otherwise if they are rooted to the AnalyzeView itself they will die when the analyze viewSwitch
     // closes.
 
-    function createrWindowedAnalyzePage(title, source) {
+    function createWindowedAnalyzePage(title, source, requiresVehicle) {
         var windowedPage = windowedAnalyzePage.createObject(mainWindow)
         windowedPage.title = title
         windowedPage.source = source
+        windowedPage.requiresVehicle = requiresVehicle
     }
 
     Component {
@@ -700,6 +745,16 @@ ApplicationWindow {
             visible:    true
 
             property alias source: loader.source
+            property bool requiresVehicle: false
+
+            Connections {
+                target: QGroundControl.multiVehicleManager
+                function onActiveVehicleChanged() {
+                    if (requiresVehicle) {
+                        close()
+                    }
+                }
+            }
 
             Rectangle {
                 color:          QGroundControl.globalPalette.window
@@ -715,6 +770,7 @@ ApplicationWindow {
             onClosing: {
                 visible = false
                 source = ""
+                Qt.callLater(destroy)
             }
         }
     }

@@ -21,6 +21,15 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from ci_bootstrap import ensure_tools_dir
+
+ensure_tools_dir(__file__)
+
+from common.gh_actions import (  # noqa: E402
+    write_github_output as _write_github_output,
+    write_step_summary as _write_step_summary,
+)
+
 
 class BinaryAnalyzer:
     """Analyzes binary size and symbol information."""
@@ -96,13 +105,22 @@ class BinaryAnalyzer:
             subprocess.run(
                 ["sudo", "apt-get", "install", "-y",
                  "libprotobuf-dev", "protobuf-compiler", "libre2-dev", "libcapstone-dev"],
-                timeout=60, capture_output=True,
+                timeout=60, check=True, capture_output=True,
             )
             bloaty_dir = tempfile.mkdtemp(prefix="bloaty-")
             subprocess.run(
-                ["git", "clone", "--depth", "1", "--branch", "v1.1",
-                 "https://github.com/google/bloaty.git", bloaty_dir],
+                ["git", "init", bloaty_dir],
+                timeout=10, check=True, capture_output=True,
+            )
+            subprocess.run(
+                ["git", "-C", bloaty_dir, "fetch", "--depth", "1",
+                 "https://github.com/google/bloaty.git",
+                 "87082741b1cc0a97cd84bd17cd4ee41d70a42fc6"],
                 timeout=30, check=True, capture_output=True,
+            )
+            subprocess.run(
+                ["git", "-C", bloaty_dir, "checkout", "FETCH_HEAD"],
+                timeout=10, check=True, capture_output=True,
             )
             subprocess.run(
                 ["cmake", "-B", f"{bloaty_dir}/build", "-S", bloaty_dir,
@@ -155,32 +173,20 @@ class BinaryAnalyzer:
         except (subprocess.SubprocessError, FileNotFoundError):
             return "Bloaty analysis skipped"
 
-    def generate_metrics_json(self) -> list[dict[str, Any]]:
+    def generate_metrics_json(
+        self, binary_size: int, stripped_size: int, symbol_count: int,
+    ) -> list[dict[str, Any]]:
         """Generate metrics in the expected JSON format."""
         return [
-            {
-                "name": "Binary Size",
-                "unit": "bytes",
-                "value": self.get_binary_size(),
-            },
-            {
-                "name": "Stripped Size",
-                "unit": "bytes",
-                "value": self.get_stripped_size(),
-            },
-            {
-                "name": "Symbol Count",
-                "unit": "symbols",
-                "value": self.get_symbol_count(),
-            },
+            {"name": "Binary Size", "unit": "bytes", "value": binary_size},
+            {"name": "Stripped Size", "unit": "bytes", "value": stripped_size},
+            {"name": "Symbol Count", "unit": "symbols", "value": symbol_count},
         ]
 
-    def generate_summary(self) -> str:
+    def generate_summary(
+        self, binary_size: int, stripped_size: int, symbol_count: int,
+    ) -> str:
         """Generate GitHub step summary in Markdown format."""
-        binary_size = self.get_binary_size()
-        stripped_size = self.get_stripped_size()
-        symbol_count = self.get_symbol_count()
-
         binary_mb = binary_size / 1048576
         stripped_mb = stripped_size / 1048576
 
@@ -218,20 +224,16 @@ class BinaryAnalyzer:
 
 def write_github_output(binary_size: int, stripped_size: int, symbol_count: int) -> None:
     """Write outputs to GITHUB_OUTPUT file if available."""
-    github_output = os.environ.get("GITHUB_OUTPUT")
-    if github_output:
-        with open(github_output, "a") as f:
-            f.write(f"binary_size={binary_size}\n")
-            f.write(f"stripped_size={stripped_size}\n")
-            f.write(f"symbol_count={symbol_count}\n")
+    _write_github_output({
+        "binary_size": str(binary_size),
+        "stripped_size": str(stripped_size),
+        "symbol_count": str(symbol_count),
+    })
 
 
 def write_github_step_summary(summary: str) -> None:
     """Write summary to GITHUB_STEP_SUMMARY file if available."""
-    step_summary = os.environ.get("GITHUB_STEP_SUMMARY")
-    if step_summary:
-        with open(step_summary, "a") as f:
-            f.write(summary)
+    _write_step_summary(summary)
 
 
 def parse_args() -> argparse.Namespace:
@@ -298,12 +300,12 @@ def main() -> int:
 
     write_github_output(binary_size, stripped_size, symbol_count)
 
-    metrics = analyzer.generate_metrics_json()
+    metrics = analyzer.generate_metrics_json(binary_size, stripped_size, symbol_count)
     args.output.write_text(json.dumps(metrics, indent=2) + "\n")
     print(f"Metrics written to: {args.output}")
 
     if os.environ.get("GITHUB_STEP_SUMMARY"):
-        summary = analyzer.generate_summary()
+        summary = analyzer.generate_summary(binary_size, stripped_size, symbol_count)
         write_github_step_summary(summary)
 
     return 0

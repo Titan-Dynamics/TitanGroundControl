@@ -44,31 +44,71 @@ runs:
               args.append('--vulkan')
           sys.exit(subprocess.run(args).returncode)
 
-    - name: Install dependencies (Linux)
+    - name: Get system package list (Linux)
       if: runner.os == 'Linux'
-      uses: nick-fields/retry@v3
+      id: linux-deps
+      shell: bash
+      run: |
+        packages=$(python3 tools/setup/install_dependencies.py --platform debian --print-packages)
+        echo "packages=${packages}" >> "$GITHUB_OUTPUT"
+
+    - name: Enable universe repository (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: python3 "${GITHUB_WORKSPACE}/.github/scripts/install_dependencies_helper.py" enable-universe
+
+    - name: Cache and install apt packages (Linux)
+      if: runner.os == 'Linux'
+      uses: awalsh128/cache-apt-pkgs-action@v1.6.0
       with:
-        timeout_minutes: 10
-        max_attempts: 3
-        command: |
-          python3 tools/setup/install_dependencies.py --platform debian
+        packages: ${{ steps.linux-deps.outputs.packages }}
+        version: linux-deps-v2-${{ hashFiles('tools/setup/install_dependencies.py', '.github/build-config.json', '.github/actions/install-dependencies/action.yml') }}
+
+    - name: Fix apt alternatives after cache restore (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: python3 "${GITHUB_WORKSPACE}/.github/scripts/install_dependencies_helper.py" fix-apt-alternatives
+
+    - name: Install optional apt packages (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: python3 "${GITHUB_WORKSPACE}/.github/scripts/install_dependencies_helper.py" install-optional
+
+    - name: Detect Python version for pipx cache (Linux)
+      if: runner.os == 'Linux'
+      id: python-version
+      shell: bash
+      run: python3 "${GITHUB_WORKSPACE}/.github/scripts/install_dependencies_helper.py" detect-python-version
+
+    - name: Cache pipx and pip downloads (Linux)
+      if: runner.os == 'Linux'
+      uses: actions/cache@v5
+      with:
+        path: |
+          ~/.cache/pip
+          ~/.local/pipx
+        key: pipx-linux-v2-py${{ steps.python-version.outputs.minor }}-${{ hashFiles('tools/setup/install_dependencies.py', '.github/actions/install-dependencies/action.yml') }}
+        restore-keys: |
+          pipx-linux-v2-py${{ steps.python-version.outputs.minor }}-
+          pipx-linux-v2-
+
+    - name: Install pipx packages (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: python3 tools/setup/install_dependencies.py --platform debian --skip-system-packages
 
     - name: Install extra packages (Linux)
       if: runner.os == 'Linux' && inputs.extra-packages != ''
       uses: nick-fields/retry@v3
+      env:
+        EXTRA_PACKAGES: ${{ inputs.extra-packages }}
       with:
         timeout_minutes: 5
         max_attempts: 3
         command: |
-          EXTRA_PACKAGES='${{ inputs.extra-packages }}'
-          for pkg in $EXTRA_PACKAGES; do
-            if [[ ! "$pkg" =~ ^[a-zA-Z0-9][a-zA-Z0-9.+-]*$ ]]; then
-              echo "Error: Invalid package name '$pkg'" >&2
-              exit 1
-            fi
-          done
+          validated="$(python3 tools/setup/install_dependencies.py --validate-extra-packages $EXTRA_PACKAGES)"
           # shellcheck disable=SC2086
-          sudo apt-get install -y $EXTRA_PACKAGES
+          sudo apt-get install -y $validated
 
     - name: Install dependencies (macOS)
       if: runner.os == 'macOS'

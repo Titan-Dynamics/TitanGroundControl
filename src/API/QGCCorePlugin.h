@@ -33,12 +33,9 @@ class QGCCorePlugin : public QObject
     Q_PROPERTY(bool showAdvancedUI                      READ showAdvancedUI                     WRITE _setShowAdvancedUI    NOTIFY showAdvancedUIChanged)
     Q_PROPERTY(bool showTouchAreas                      READ showTouchAreas                     WRITE _setShowTouchAreas    NOTIFY showTouchAreasChanged)
     Q_PROPERTY(int defaultSettings                      READ defaultSettings                                                CONSTANT)
-    Q_PROPERTY(int offlineVehicleFirstRunPromptId       MEMBER kOfflineVehicleFirstRunPromptId                              CONSTANT)
-    Q_PROPERTY(int unitsFirstRunPromptId                MEMBER kUnitsFirstRunPromptId                                       CONSTANT)
+    Q_PROPERTY(int initialSetupPromptId                 MEMBER kInitialSetupPromptId                                       CONSTANT)
     Q_PROPERTY(const QGCOptions *options                READ options                                                        CONSTANT)
     Q_PROPERTY(const QmlObjectListModel *customMapItems READ customMapItems                                                 CONSTANT)
-    Q_PROPERTY(QString brandImageIndoor                 READ brandImageIndoor                                               CONSTANT)
-    Q_PROPERTY(QString brandImageOutdoor                READ brandImageOutdoor                                              CONSTANT)
     Q_PROPERTY(QString showAdvancedUIMessage            READ showAdvancedUIMessage                                          CONSTANT)
     Q_PROPERTY(QVariantList analyzePages                READ analyzePages                                                   CONSTANT)
     Q_PROPERTY(QVariantList toolBarIndicators           READ toolBarIndicators                                              CONSTANT)
@@ -72,17 +69,11 @@ public:
     /// Allows the core plugin to override the meta data before the fact is created.
     ///     @param settingsGroup - QSettings group which contains this item
     ///     @param metaData - MetaData for setting fact
-    ///     @param visible - true: Setting should be visible in ui, false: Setting should not be shown in ui (default value will be used as value)
-    /// If not overridden, metaData and visible are left unchanged.
-    virtual void adjustSettingMetaData(const QString &settingsGroup, FactMetaData &metaData, bool &visible);
+    ///     @param userVisible - true: Setting should be visible in ui, false: Setting should not be shown in ui (default value will be used as value)
+    /// If not overridden, metaData and userVisible are left unchanged.
+    virtual void adjustSettingMetaData(const QString &settingsGroup, FactMetaData &metaData, bool &userVisible);
 
-    /// Return the resource file which contains the brand image for for Indoor theme.
-    virtual QString brandImageIndoor() const { return QString(); }
-
-    /// Return the resource file which contains the brand image for for Outdoor theme.
-    virtual QString brandImageOutdoor() const { return QString(); }
-
-    /// @return The message to show to the user when they a re prompted to confirm turning on advanced ui.
+    /// @return The message to show to the user when they are prompted to confirm turning on advanced ui.
     virtual QString showAdvancedUIMessage() const;
 
     /// @return An instance of an alternate position source (or NULL if not available)
@@ -153,7 +144,7 @@ public:
     /// Returns the standard list of first run prompt ids for possible display. Actual display is based on the
     /// current AppSettings::firstRunPromptIds value. The order of this list also determines the order the prompts
     /// will be displayed in.
-    virtual QList<int> firstRunPromptStdIds() { return QList<int>({ kUnitsFirstRunPromptId, kOfflineVehicleFirstRunPromptId }); }
+    virtual QList<int> firstRunPromptStdIds() { return QList<int>({ kInitialSetupPromptId }); }
 
     /// Returns the custom build list of first run prompt ids for possible display. Actual display is based on the
     /// current AppSettings::firstRunPromptIds value. The order of this list also determines the order the prompts
@@ -183,8 +174,7 @@ public:
     bool showAdvancedUI() const { return _showAdvancedUI; }
 
     // Standard first run prompt ids
-    static constexpr int kUnitsFirstRunPromptId = 1;
-    static constexpr int kOfflineVehicleFirstRunPromptId = 2;
+    static constexpr int kInitialSetupPromptId = 3;
 
     // Custom builds can start there first run prompt ids from here
     static constexpr int kFirstRunPromptIdsFirstCustomId = 10000;

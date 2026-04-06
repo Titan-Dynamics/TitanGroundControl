@@ -1,7 +1,9 @@
 #pragma once
 
 #include "QGCStateMachine.h"
-#include "MAVLinkLib.h"
+#include "MAVLinkEnums.h"
+#include "MAVLinkMessageType.h"
+#include "VehicleTypes.h"
 
 #include <QtCore/QElapsedTimer>
 #include <QtCore/QLoggingCategory>
@@ -53,13 +55,21 @@ private:
     bool _shouldSkipTranslation() const;
 
     // Download helpers
-    void _requestFile(const QString& cacheFileTag, bool crcValid, const QString& uri, QString& outputFileName);
+    void _requestFile(const QString& cacheFileTag, bool crcValid, const QString& uri, QString& outputFileName, bool trackMetadataSource);
     QString _downloadCompleteJsonWorker(const QString& jsonFileName);
     static bool _uriIsMAVLinkFTP(const QString& uri);
 
+    enum class MetadataSource {
+        None,
+        Cache,
+        FTP,
+        HTTP,
+    };
+    static const char* _metadataSourceToString(MetadataSource source);
+
     // Message result handlers
     void _handleCompMetadataResult(MAV_RESULT result, const mavlink_message_t& message);
-    void _handleCompInfoResult(MAV_RESULT result, Vehicle::RequestMessageResultHandlerFailureCode_t failureCode, const mavlink_message_t& message);
+    void _handleCompInfoResult(MAV_RESULT result, VehicleTypes::RequestMessageResultHandlerFailureCode_t failureCode, const mavlink_message_t& message);
 
 private slots:
     void _ftpDownloadComplete(const QString& file, const QString& errorMsg);
@@ -82,6 +92,9 @@ private:
     bool _currentFileValidCrc = false;
 
     QElapsedTimer _downloadStartTime;
+    MetadataSource _metadataSource = MetadataSource::None;
+    QString _metadataUri;
+    bool _metadataIsFallback = false;
 
     // State pointers
     AsyncFunctionState* _stateRequestCompInfo = nullptr;

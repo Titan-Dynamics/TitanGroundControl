@@ -12,6 +12,8 @@
 #include "Actuators.h"
 #include "ActuatorComponent.h"
 
+#include <algorithm>
+
 PX4AutoPilotPlugin::PX4AutoPilotPlugin(Vehicle* vehicle, QObject* parent)
     : AutoPilotPlugin(vehicle, parent)
     , _incorrectParameterVersion(false)
@@ -75,12 +77,31 @@ const QVariantList& PX4AutoPilotPlugin::vehicleComponents(void)
                 if (_vehicle->actuators()) {
                     _vehicle->actuators()->init(); // At this point params are loaded, so we can init the actuators
                 }
-                if (_vehicle->actuators() && _vehicle->actuators()->showUi()) {
+
+                // Decide between new Actuators page or legacy Motor page
+                bool showActuatorsPage = false;
+                if (!_vehicle->actuators()) {
+                    qCDebug(ActuatorsConfigLog) << "Actuators page will NOT show because:";
+                    qCDebug(ActuatorsConfigLog) << "  - Vehicle did not provide actuators metadata via component information";
+                } else if (!_vehicle->actuators()->showUi()) {
+                    qCDebug(ActuatorsConfigLog) << "Actuators page will NOT show because:";
+                    if (!_vehicle->actuators()->isInitialized()) {
+                        qCDebug(ActuatorsConfigLog) << "  - Actuators initialization failed:" << _vehicle->actuators()->initializationError();
+                    } else {
+                        qCDebug(ActuatorsConfigLog) << "  - Condition 'show-ui-if' evaluated to false";
+                        qCDebug(ActuatorsConfigLog) << "    (see 'Evaluating [show-ui-if]' log above for details)";
+                    }
+                } else {
+                    showActuatorsPage = true;
+                    qCDebug(ActuatorsConfigLog) << "Actuators page WILL show (all conditions passed)";
+                }
+
+                if (showActuatorsPage) {
                     _actuatorComponent = new ActuatorComponent(_vehicle, this, this);
                     _actuatorComponent->setupTriggerSignals();
                     _components.append(QVariant::fromValue(static_cast<VehicleComponent*>(_actuatorComponent)));
                 } else {
-                    // show previous motor UI instead
+                    qCDebug(ActuatorsConfigLog) << "  → Using legacy Motor page instead";
                     _motorComponent = new MotorComponent(_vehicle, this, this);
                     _motorComponent->setupTriggerSignals();
                     _components.append(QVariant::fromValue(static_cast<VehicleComponent*>(_motorComponent)));
@@ -123,6 +144,10 @@ const QVariantList& PX4AutoPilotPlugin::vehicleComponents(void)
         } else {
             qWarning() << "Internal error";
         }
+
+        std::sort(_components.begin(), _components.end(), [](const QVariant &a, const QVariant &b) {
+            return a.value<VehicleComponent*>()->name().toLower() < b.value<VehicleComponent*>()->name().toLower();
+        });
     }
 
     return _components;

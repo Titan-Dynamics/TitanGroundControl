@@ -10,6 +10,7 @@
 #include "POIItem.h"
 #include "Fact.h"
 #include "Vehicle.h"
+#include "VehicleSupports.h"
 #include "ParameterManager.h"
 #include "QGCNetworkHelper.h"
 
@@ -833,11 +834,11 @@ QString AIChatController::_getVehicleStateContext() const
 
     // Supported capabilities (so AI knows what commands will work)
     QStringList capabilities;
-    if (_vehicle->orbitModeSupported()) capabilities << "orbit";
+    if (_vehicle->supports()->orbitMode()) capabilities << "orbit";
 
-    if (_vehicle->changeHeadingSupported()) capabilities << "change_heading";
-    if (_vehicle->pauseVehicleSupported()) capabilities << "pause";
-    if (_vehicle->guidedModeSupported()) capabilities << "guided_mode";
+    if (_vehicle->supports()->changeHeading()) capabilities << "change_heading";
+    if (_vehicle->supports()->pauseVehicle()) capabilities << "pause";
+    if (_vehicle->supports()->guidedMode()) capabilities << "guided_mode";
 
     state += QString("- Supported Capabilities: %1\n").arg(capabilities.isEmpty() ? "none" : capabilities.join(", "));
 
@@ -1268,7 +1269,7 @@ bool AIChatController::_executeVehicleCommand(const QString& action, const QVari
         return true;
     }
     else if (action == "orbit") {
-        if (!_vehicle->orbitModeSupported()) {
+        if (!_vehicle->supports()->orbitMode()) {
             qCWarning(AIChatControllerLog) << "orbit: not supported by this vehicle/firmware";
             return false;
         }

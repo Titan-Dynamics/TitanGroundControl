@@ -16,19 +16,21 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_
 
 # ----------------------------------------------------------------------------
 # earcut.hpp — polygon triangulation
+# EXCLUDE_FROM_ALL prevents earcut's unconditionally-built "fixtures" object
+# library (30+ test data files) from compiling as part of our build.
 # ----------------------------------------------------------------------------
 
 CPMAddPackage(
     NAME earcut_hpp
     GITHUB_REPOSITORY mapbox/earcut.hpp
     GIT_TAG f36ced7e50254738c4e5af1a239f5fb7b1094007
+    EXCLUDE_FROM_ALL YES
     OPTIONS
         "EARCUT_BUILD_TESTS OFF"
         "EARCUT_BUILD_BENCH OFF"
         "EARCUT_BUILD_VIZ OFF"
+    SYSTEM YES
 )
-
-qgc_disable_dependency_warnings(earcut_hpp)
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE earcut_hpp::earcut_hpp)
 

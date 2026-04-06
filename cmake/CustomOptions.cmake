@@ -62,14 +62,10 @@ set(QGC_VALGRIND_TIMEOUT_MULTIPLIER 20 CACHE STRING "Timeout multiplier for Valg
 option(QGC_ENABLE_BZIP2 "Enable BZip2 decompression support" OFF)
 option(QGC_ENABLE_LZ4 "Enable LZ4 decompression support" OFF)
 
-# MAVLink Inspector is disabled by default due to GPL licensing of QtCharts
-# option(QGC_DISABLE_MAVLINK_INSPECTOR "Disable MAVLink Inspector" OFF)
-
 # ============================================================================
 # Communication Options
 # ============================================================================
 
-option(QGC_ZEROCONF_ENABLED "Enable ZeroConf/Bonjour discovery" OFF)
 option(QGC_NO_SERIAL_LINK "Disable serial port communication" OFF)
 
 # ============================================================================
@@ -78,7 +74,6 @@ option(QGC_NO_SERIAL_LINK "Disable serial port communication" OFF)
 
 option(QGC_ENABLE_UVC "Enable UVC (USB Video Class) device support" ON)
 option(QGC_ENABLE_GST_VIDEOSTREAMING "Enable GStreamer video backend" ON)
-cmake_dependent_option(QGC_CUSTOM_GST_PACKAGE "Use QGC-provided GStreamer packages" OFF "QGC_ENABLE_GST_VIDEOSTREAMING" OFF)
 option(QGC_ENABLE_QT_VIDEOSTREAMING "Enable QtMultimedia video backend" OFF)
 
 # ============================================================================

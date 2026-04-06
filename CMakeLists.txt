@@ -90,6 +90,11 @@ project(${QGC_APP_NAME}
     LANGUAGES C CXX
 )
 
+if(MSVC)
+    string(APPEND CMAKE_CXX_FLAGS " /bigobj")
+    string(APPEND CMAKE_C_FLAGS " /bigobj")
+endif()
+
 # ============================================================================
 # CMake & Build System Configuration
 # ============================================================================
@@ -269,6 +274,9 @@ qt_add_executable(${CMAKE_PROJECT_NAME}
 # Apply optional sanitizer instrumentation to the main target.
 include(Sanitizers)
 
+# Apply optional coverage instrumentation and coverage targets.
+include(Coverage)
+
 # Apply compiler warning configuration to QGC target
 qgc_apply_warning_flags()
 
@@ -342,7 +350,7 @@ qt_add_resources(${CMAKE_PROJECT_NAME} "qgcresources_cmake"
 # Qt Plugin Configuration
 # ----------------------------------------------------------------------------
 qt_import_plugins(${CMAKE_PROJECT_NAME}
-    INCLUDE Qt6::QSvgPlugin
+    INCLUDE Qt6::QSvgPlugin Qt6::QOffscreenIntegrationPlugin
     EXCLUDE_BY_TYPE geoservices  # Use built-in location plugins
     INCLUDE_BY_TYPE sqldrivers Qt6::QSQLiteDriverPlugin
 )

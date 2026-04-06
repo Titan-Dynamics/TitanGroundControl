@@ -3,8 +3,36 @@ description: Download artifacts from all completed platform workflow runs for th
 
 inputs:
   github-token:
-    description: GitHub token for API access
+    description: Optional GitHub token for API access (defaults to github.token)
+    required: false
+    default: ''
+  head-sha:
+    description: Commit SHA to fetch workflow artifacts from
     required: true
+  workflows:
+    description: Comma-separated workflow names to download artifacts from
+    required: false
+    default: Linux,Windows,MacOS,Android
+  event:
+    description: Optional workflow event name to filter runs by
+    required: false
+    default: ''
+  output-dir:
+    description: Output directory for downloaded artifacts
+    required: false
+    default: artifacts
+  runs-file:
+    description: Path to cached workflow runs JSON (skips API call if provided)
+    required: false
+    default: ''
+  artifact-prefixes:
+    description: Comma-separated artifact name prefixes to download (optional)
+    required: false
+    default: ''
+  artifact-metadata-file:
+    description: Optional JSON path to write run artifact metadata (name + size_in_bytes)
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -12,10 +40,35 @@ runs:
     - name: Download artifacts from all platform workflows
       shell: bash
       env:
-        GH_TOKEN: ${{ inputs.github-token }}
+        GH_TOKEN: ${{ inputs.github-token || github.token }}
+        QGC_GH_API_MODE: http
+        RUNS_FILE: ${{ inputs.runs-file }}
+        INPUT_REPO: ${{ github.repository }}
+        INPUT_HEAD_SHA: ${{ inputs.head-sha }}
+        INPUT_OUTPUT_DIR: ${{ inputs.output-dir }}
+        INPUT_WORKFLOWS: ${{ inputs.workflows }}
+        INPUT_EVENT: ${{ inputs.event }}
+        INPUT_ARTIFACT_PREFIXES: ${{ inputs.artifact-prefixes }}
+        INPUT_ARTIFACT_METADATA_FILE: ${{ inputs.artifact-metadata-file }}
       run: |
-        python3 "${GITHUB_WORKSPACE}/tools/setup/download_artifacts.py" \
-          --repo "${{ github.repository }}" \
-          --head-sha "${{ github.event.workflow_run.head_sha }}" \
-          --output-dir artifacts \
-          --workflows "Linux,Windows,MacOS,Android"
+        python3 -c "
+        import os, subprocess, sys
+        args = ['${GITHUB_WORKSPACE}/.github/scripts/download_artifacts.py',
+                '--repo', os.environ['INPUT_REPO'],
+                '--head-sha', os.environ['INPUT_HEAD_SHA'],
+                '--output-dir', os.environ['INPUT_OUTPUT_DIR'],
+                '--workflows', os.environ['INPUT_WORKFLOWS']]
+        event = os.environ.get('INPUT_EVENT', '')
+        if event:
+            args += ['--event', event]
+        runs = os.environ.get('RUNS_FILE', '')
+        if runs and os.path.isfile(runs):
+            args += ['--runs-file', runs]
+        prefixes = os.environ.get('INPUT_ARTIFACT_PREFIXES', '')
+        if prefixes:
+            args += ['--artifact-prefixes', prefixes]
+        meta = os.environ.get('INPUT_ARTIFACT_METADATA_FILE', '')
+        if meta:
+            args += ['--artifact-metadata-out', meta]
+        sys.exit(subprocess.run([sys.executable] + args).returncode)
+        "

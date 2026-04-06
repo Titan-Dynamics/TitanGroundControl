@@ -4,6 +4,7 @@ Common utilities for QGC developer tools.
 Modules:
     patterns: QGC-specific regex patterns for code analysis
     file_traversal: Utilities for walking C++ source trees
+    gh_actions: Shared GitHub Actions API helpers
     logging: Colored terminal output and logging utilities
     errors: Custom exception hierarchy
 """
@@ -26,6 +27,29 @@ from .file_traversal import (
     find_source_files,
     find_json_files,
     DEFAULT_SKIP_DIRS,
+)
+
+from .gh_actions import (
+    gh,
+    parse_json_documents,
+    list_workflow_runs_for_sha,
+    list_run_artifacts,
+    write_github_output,
+)
+
+from .build_config import (
+    find_build_config,
+    load_build_config,
+    get_build_config_value,
+    export_build_config_values,
+    derive_ios_qt_modules,
+)
+
+from .github_runs import (
+    parse_created_at,
+    is_newer_run,
+    select_latest_runs_by_name,
+    group_runs_by_name,
 )
 
 from .logging import (
@@ -76,6 +100,21 @@ __all__ = [
     'find_source_files',
     'find_json_files',
     'DEFAULT_SKIP_DIRS',
+    # GitHub Actions
+    'gh',
+    'parse_json_documents',
+    'list_workflow_runs_for_sha',
+    'list_run_artifacts',
+    'write_github_output',
+    'find_build_config',
+    'load_build_config',
+    'get_build_config_value',
+    'export_build_config_values',
+    'derive_ios_qt_modules',
+    'parse_created_at',
+    'is_newer_run',
+    'select_latest_runs_by_name',
+    'group_runs_by_name',
     # Logging
     'Color',
     'Colors',

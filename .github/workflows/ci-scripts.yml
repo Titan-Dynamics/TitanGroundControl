@@ -8,10 +8,17 @@ on:
       - '.github/workflows/**'
       - '.github/build-config.json'
       - 'tools/setup/**'
+      - 'tools/*.py'
+      - 'tools/uv.lock'
       - 'tools/tests/**'
       - 'tools/common/**'
       - 'tools/generators/**'
       - 'tools/analyzers/**'
+      - 'tools/locators/**'
+      - 'tools/log-analyzer/**'
+      - 'tools/lsp/**'
+      - 'tools/simulation/**'
+      - 'tools/translations/**'
   push:
     branches:
       - master
@@ -22,10 +29,17 @@ on:
       - '.github/workflows/**'
       - '.github/build-config.json'
       - 'tools/setup/**'
+      - 'tools/*.py'
+      - 'tools/uv.lock'
       - 'tools/tests/**'
       - 'tools/common/**'
       - 'tools/generators/**'
       - 'tools/analyzers/**'
+      - 'tools/locators/**'
+      - 'tools/log-analyzer/**'
+      - 'tools/lsp/**'
+      - 'tools/simulation/**'
+      - 'tools/translations/**'
   workflow_dispatch:
 
 concurrency:
@@ -34,6 +48,7 @@ concurrency:
 
 permissions:
   contents: read
+  checks: write
 
 jobs:
   lint-workflows:
@@ -56,15 +71,14 @@ jobs:
             .github/actions
           sparse-checkout-cone-mode: false
 
-      - name: Install actionlint
-        run: |
-          mkdir -p "$RUNNER_TEMP/bin"
-          curl -sSL "https://github.com/rhysd/actionlint/releases/download/v1.7.8/actionlint_1.7.8_linux_amd64.tar.gz" \
-            | tar -xz -C "$RUNNER_TEMP/bin" actionlint
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
-
       - name: Run actionlint
-        run: actionlint -config-file .github/.actionlint.yml .github/workflows/*.yml
+        uses: reviewdog/action-actionlint@v1
+        with:
+          actionlint_flags: -config-file .github/.actionlint.yml
+          reporter: github-pr-check
+          filter_mode: added
+          fail_level: error
+          level: warning
 
   test-ci-scripts:
     name: Test CI Scripts
@@ -84,21 +98,29 @@ jobs:
             .github/actions/setup-python
             .github/build-config.json
             .github/scripts
+            tools/pyproject.toml
+            tools/uv.lock
+            tools/*.py
             tools/setup
             tools/tests
             tools/common
             tools/generators
             tools/analyzers
+            tools/locators
+            tools/log-analyzer
+            tools/lsp
+            tools/simulation
+            tools/translations
           sparse-checkout-cone-mode: false
 
       - name: Setup Python
         uses: ./.github/actions/setup-python
         with:
-          groups: test
+          groups: scripts,test
           python-version: '3.12'
 
       - name: Python syntax smoke test
-        run: python3 -m compileall .github/scripts tools/setup
+        run: python3 -m compileall .github/scripts tools/*.py tools/setup tools/common tools/generators tools/analyzers tools/locators tools/log-analyzer tools/lsp tools/simulation tools/translations
 
       - name: Run CI script tests
         run: pytest -q tools/tests .github/scripts/tests

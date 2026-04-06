@@ -5,85 +5,59 @@ inputs:
   head-sha:
     description: The commit SHA to find workflow runs for
     required: true
+  workflows:
+    description: Comma-separated workflow names to collect artifact sizes for
+    required: false
+    default: Linux,Windows,MacOS,Android
+  event:
+    description: Optional workflow event name to filter runs by
+    required: false
+    default: ''
   output-file:
     description: Output JSON file path
     required: true
     default: artifact-sizes.json
+  runs-file:
+    description: Path to cached workflow runs JSON (skips API call if provided)
+    required: false
+    default: ''
+  artifacts-file:
+    description: Optional path to run artifact metadata JSON (skips per-run artifact API calls)
+    required: false
+    default: ''
 
 runs:
   using: composite
   steps:
     - name: Collect artifact sizes from API
-      uses: actions/github-script@v8
+      shell: bash
       env:
+        GH_TOKEN: ${{ github.token }}
+        QGC_GH_API_MODE: http
+        GITHUB_WORKSPACE: ${{ github.workspace }}
+        REPO: ${{ github.repository }}
         HEAD_SHA: ${{ inputs.head-sha }}
+        WORKFLOWS: ${{ inputs.workflows }}
+        EVENT: ${{ inputs.event }}
         OUTPUT_FILE: ${{ inputs.output-file }}
-      with:
-        script: |
-          const fs = require('fs');
-          const headSha = process.env.HEAD_SHA;
-          const outputFile = process.env.OUTPUT_FILE;
-
-          const runs = await github.rest.actions.listWorkflowRunsForRepo({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            head_sha: headSha,
-            per_page: 100
-          });
-
-          const platformRuns = {};
-          const targetPlatforms = ['Linux', 'Windows', 'MacOS', 'Android'];
-
-          for (const run of runs.data.workflow_runs) {
-            if (targetPlatforms.includes(run.name) &&
-                run.status === 'completed' &&
-                run.conclusion === 'success') {
-              platformRuns[run.name] = run.id;
-            }
-          }
-
-          const extensionMap = {
-            'Linux': '.AppImage',
-            'Windows': '.exe',
-            'MacOS': '.dmg',
-            'Android': '.apk'
-          };
-
-          const artifacts = [];
-          for (const [platform, runId] of Object.entries(platformRuns)) {
-            const artifactsResponse = await github.rest.actions.listWorkflowRunArtifacts({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: runId
-            });
-
-            for (const artifact of artifactsResponse.data.artifacts) {
-              if (artifact.name.startsWith('test-results') || artifact.name === 'coverage-report') {
-                continue;
-              }
-
-              const ext = extensionMap[platform] || '';
-              const displayName = artifact.name + ext;
-              const sizeBytes = artifact.size_in_bytes;
-              const sizeMB = sizeBytes / 1024 / 1024;
-              const sizeHuman = sizeMB >= 1024
-                ? `${(sizeMB / 1024).toFixed(2)} GB`
-                : `${sizeMB.toFixed(2)} MB`;
-
-              artifacts.push({
-                name: displayName,
-                size_bytes: sizeBytes,
-                size_human: sizeHuman
-              });
-            }
-          }
-
-          artifacts.sort((a, b) => a.name.localeCompare(b.name));
-
-          if (artifacts.length > 0) {
-            fs.writeFileSync(outputFile, JSON.stringify({ artifacts }, null, 2));
-            console.log(`Wrote ${artifacts.length} artifacts to ${outputFile}`);
-            console.log(JSON.stringify({ artifacts }, null, 2));
-          } else {
-            console.log('No artifacts found');
-          }
+        RUNS_FILE: ${{ inputs.runs-file }}
+        ARTIFACTS_FILE: ${{ inputs.artifacts-file }}
+      run: |
+        python3 -c "
+        import os, subprocess, sys
+        args = ['${GITHUB_WORKSPACE}/.github/scripts/collect_artifact_sizes.py',
+                '--repo', os.environ['REPO'],
+                '--head-sha', os.environ['HEAD_SHA'],
+                '--platform-workflows', os.environ['WORKFLOWS'],
+                '--output-file', os.environ['OUTPUT_FILE']]
+        event = os.environ.get('EVENT', '')
+        if event:
+            args += ['--event', event]
+        runs = os.environ.get('RUNS_FILE', '')
+        if runs and os.path.isfile(runs):
+            args += ['--runs-file', runs]
+        artifacts = os.environ.get('ARTIFACTS_FILE', '')
+        if artifacts and os.path.isfile(artifacts):
+            args += ['--artifacts-file', artifacts]
+        sys.exit(subprocess.run([sys.executable] + args).returncode)
+        "

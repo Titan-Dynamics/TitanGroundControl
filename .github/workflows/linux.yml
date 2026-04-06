@@ -1,6 +1,16 @@
 name: Linux
 
 on:
+  push:
+    branches:
+      - master
+      - 'Stable*'
+    tags:
+      - 'v*'
+    paths-ignore:
+      - 'docs/**'
+  pull_request:
+  merge_group:
   workflow_dispatch:
     inputs:
       build_type:
@@ -11,7 +21,6 @@ on:
         options:
           - Release
           - Debug
-  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,10 +32,18 @@ permissions:
   attestations: write
   security-events: write
   actions: read
+  checks: write
 
 jobs:
+  changes:
+    uses: ./.github/workflows/_detect-changes.yml
+    with:
+      platform: linux
+
   build:
     name: Build ${{ matrix.arch }} ${{ matrix.build_type }}
+    needs: changes
+    if: always() && !cancelled() && (needs.changes.outputs.should_build == 'true' || needs.changes.result == 'skipped')
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
 
@@ -37,12 +54,12 @@ jobs:
         os: [ubuntu-24.04-arm, ubuntu-22.04]
         include:
           - os: ubuntu-24.04-arm
-            package: TitanGroundControl-aarch64
+            package: QGroundControl-aarch64
             host: linux_arm64
             arch: linux_gcc_arm64
 
           - os: ubuntu-22.04
-            package: TitanGroundControl-x86_64
+            package: QGroundControl-x86_64
             host: linux
             arch: linux_gcc_64
 
@@ -56,6 +73,7 @@ jobs:
 
     steps:
       - name: Harden Runner
+        if: runner.arch != 'ARM64'
         uses: step-security/harden-runner@v2
         with:
           egress-policy: audit
@@ -63,8 +81,8 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
-          fetch-tags: true
+          fetch-depth: ${{ github.event_name == 'pull_request' && 1 || 0 }}
+          fetch-tags: ${{ github.event_name != 'pull_request' }}
 
       - name: Build Setup
         uses: ./.github/actions/build-setup
@@ -72,7 +90,6 @@ jobs:
           qt-host: ${{ matrix.host }}
           qt-arch: ${{ matrix.arch }}
           build-type: ${{ matrix.build_type }}
-          save-cache: ${{ github.event_name != 'pull_request' }}
 
       - name: Install Dependencies
         uses: ./.github/actions/install-dependencies
@@ -90,7 +107,6 @@ jobs:
           build-dir: ${{ runner.temp }}/build
           build-type: ${{ matrix.build_type }}
           testing: ${{ matrix.build_type == 'Debug' && 'true' || 'false' }}
-          coverage: ${{ matrix.build_type == 'Debug' && 'true' || 'false' }}
           stable: ${{ (github.ref_type == 'tag' || contains(github.ref, 'Stable')) && 'true' || 'false' }}
 
       - name: Build
@@ -98,6 +114,8 @@ jobs:
         with:
           build-dir: ${{ runner.temp }}/build
           build-type: ${{ matrix.build_type }}
+          reviewdog: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
+          reviewdog-token: ${{ github.token }}
 
       - name: Perform CodeQL Analysis
         if: matrix.build_type == 'Debug' && github.event_name != 'pull_request'
@@ -106,19 +124,50 @@ jobs:
         with:
           category: "/language:c-cpp"
 
-      - name: Upload Debug Build Artifacts
+      - name: Run Unit Tests
         if: matrix.build_type == 'Debug'
-        uses: actions/upload-artifact@v6
+        uses: ./.github/actions/run-unit-tests
         with:
-          name: debug-build-${{ matrix.arch }}
-          path: ${{ runner.temp }}/build
-          retention-days: 1
+          build-dir: ${{ runner.temp }}/build
+          junit-output: junit-results-linux-${{ matrix.arch }}.xml
+          ctest-output: test-output-linux-${{ matrix.arch }}.txt
+          include-labels: 'Unit|Integration'
+          exclude-labels: 'Flaky|Network'
+
+      - name: Report Test Results
+        if: always() && !cancelled() && matrix.build_type == 'Debug'
+        uses: ./.github/actions/test-report
+        with:
+          name: Unit Tests (${{ matrix.arch }})
+          build-dir: ${{ runner.temp }}/build
+          junit-file: junit-results-linux-${{ matrix.arch }}.xml
+          output-file: test-output-linux-${{ matrix.arch }}.txt
+          artifact-name: test-results-${{ matrix.arch }}
+          retention-days: 7
+          trunk-org-slug: ${{ vars.TRUNK_ORG_SLUG }}
+          trunk-token: ${{ secrets.TRUNK_TOKEN }}
 
       - name: Verify Executable
         if: matrix.build_type == 'Release'
         uses: ./.github/actions/verify-executable
         with:
-          binary-path: ${{ runner.temp }}/build/${{ matrix.build_type }}/TitanGroundControl
+          binary-path: ${{ runner.temp }}/build/${{ matrix.build_type }}/QGroundControl
+
+      - name: Analyze binary size
+        if: matrix.build_type == 'Release' && matrix.os == 'ubuntu-22.04'
+        uses: ./.github/actions/size-analysis
+        with:
+          binary-path: ${{ runner.temp }}/build/${{ matrix.build_type }}/QGroundControl
+          output-file: ${{ runner.temp }}/build/metrics.json
+
+      - name: Upload metrics artifact
+        if: matrix.build_type == 'Release' && matrix.os == 'ubuntu-22.04'
+        uses: actions/upload-artifact@v7
+        with:
+          name: size-metrics
+          path: ${{ runner.temp }}/build/metrics.json
+          if-no-files-found: error
+          retention-days: 90
 
       - name: Create AppImage
         working-directory: ${{ runner.temp }}/build
@@ -131,31 +180,38 @@ jobs:
           binary-path: ${{ runner.temp }}/build/${{ matrix.package }}.AppImage
           type: appimage
 
-      - name: Attest Build with SBOM
+      - name: Attest and Upload
         if: matrix.build_type == 'Release'
-        uses: ./.github/actions/attest-sbom
+        uses: ./.github/actions/attest-and-upload
         with:
-          subject-path: ${{ runner.temp }}/build/${{ matrix.package }}.AppImage
-          subject-name: ${{ matrix.package }}
-          scan-path: ${{ runner.temp }}/build
+          artifact-name: ${{ matrix.package }}.AppImage
+          package-name: ${{ matrix.package }}
+          aws-role-arn: ${{ secrets.AWS_ROLE_ARN }}
+          aws-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-distribution-id: ${{ secrets.AWS_DISTRIBUTION_ID }}
 
-      - name: Upload Build File
-        if: matrix.build_type == 'Release'
-        uses: ./.github/actions/upload
-        with:
-          artifact_name: ${{ matrix.package }}.AppImage
-          package_name: ${{ matrix.package }}
-          aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
-          aws_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws_distribution_id: ${{ secrets.AWS_DISTRIBUTION_ID }}
-
-  test:
-    name: Test + Coverage linux_gcc_64 Debug
-    needs: build
-    if: ${{ !cancelled() && needs.build.result == 'success' && (github.event_name != 'workflow_dispatch' || inputs.build_type == 'Debug') }}
+  debug-validation:
+    name: ${{ matrix.job_name }}
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.outputs.should_build == 'true' || needs.changes.result == 'skipped') && (github.event_name != 'workflow_dispatch' || inputs.build_type == 'Debug') }}
     runs-on: ubuntu-22.04
-    timeout-minutes: 60
+    timeout-minutes: ${{ matrix.timeout_minutes }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # - job_name: Test + Coverage linux_gcc_64 Debug
+          #   mode: coverage
+          #   timeout_minutes: 60
+          #   fetch_depth: 0
+          #   fetch_tags: false
+          - job_name: Sanitizers linux_gcc_64 Debug (ASan+UBSan)
+            mode: sanitizers
+            timeout_minutes: 120
+            fetch_depth: 1
+            fetch_tags: false
 
     defaults:
       run:
@@ -170,43 +226,60 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          fetch-depth: ${{ matrix.fetch_depth }}
+          fetch-tags: ${{ matrix.fetch_tags }}
 
       - name: Restore file timestamps
+        if: matrix.mode == 'coverage' && vars.COVERAGE_ENABLED == 'true'
         uses: chetan/git-restore-mtime-action@v2
 
-      - name: Get build config
-        id: config
-        uses: ./.github/actions/build-config
-
-      - uses: lukka/get-cmake@v4.2.1
+      - name: Build Setup
+        uses: ./.github/actions/build-setup
+        with:
+          restore-timestamps: 'false'
+          qt-host: linux
+          qt-arch: linux_gcc_64
+          build-type: Debug
 
       - name: Install Dependencies
         uses: ./.github/actions/install-dependencies
 
-      - name: Install Qt for Linux
-        uses: ./.github/actions/qt-install
+      - name: Configure (Coverage)
+        if: matrix.mode == 'coverage' && vars.COVERAGE_ENABLED == 'true'
+        uses: ./.github/actions/cmake-configure
         with:
-          host: linux
-          arch: linux_gcc_64
-          version: ${{ steps.config.outputs.qt_version }}
-          modules: ${{ steps.config.outputs.qt_modules }}
+          build-dir: ${{ runner.temp }}/build
+          build-type: Debug
+          testing: 'true'
+          coverage: 'true'
+          stable: ${{ (github.ref_type == 'tag' || contains(github.ref, 'Stable')) && 'true' || 'false' }}
 
-      - name: Download Debug Build
-        uses: actions/download-artifact@v6
+      - name: Build (Coverage)
+        if: matrix.mode == 'coverage' && vars.COVERAGE_ENABLED == 'true'
+        uses: ./.github/actions/cmake-build
         with:
-          name: debug-build-linux_gcc_64
-          path: ${{ runner.temp }}/build
+          build-dir: ${{ runner.temp }}/build
+          build-type: Debug
 
-      - name: Restore executable permissions
-        run: |
-          find "${{ runner.temp }}/build" -name '*.so*' -exec chmod +x {} +
-          find "${{ runner.temp }}/build" -path '*/bin/*' -exec chmod +x {} +
-          find "${{ runner.temp }}/build" -path '*/Debug/*' -type f ! -name '*.o' ! -name '*.a' -exec chmod +x {} +
-          chmod -f +x "${{ runner.temp }}/build/Debug/QGroundControl" || true
-          find "${{ runner.temp }}/build" -name 'tst_*' -exec chmod +x {} +
+      - name: Configure (ASan+UBSan)
+        if: matrix.mode == 'sanitizers'
+        uses: ./.github/actions/cmake-configure
+        with:
+          build-dir: ${{ runner.temp }}/build
+          build-type: Debug
+          testing: 'true'
+          stable: ${{ (github.ref_type == 'tag' || contains(github.ref, 'Stable')) && 'true' || 'false' }}
+          extra-args: -DQGC_ENABLE_ASAN=ON -DQGC_ENABLE_UBSAN=ON
+
+      - name: Build (ASan+UBSan)
+        if: matrix.mode == 'sanitizers'
+        uses: ./.github/actions/cmake-build
+        with:
+          build-dir: ${{ runner.temp }}/build
+          build-type: Debug
 
       - name: Run Unit Tests
+        if: matrix.mode == 'coverage' && vars.COVERAGE_ENABLED == 'true'
         uses: ./.github/actions/run-unit-tests
         with:
           build-dir: ${{ runner.temp }}/build
@@ -214,10 +287,27 @@ jobs:
           ctest-output: test-output-linux-linux_gcc_64.txt
           include-labels: 'Unit|Integration'
           exclude-labels: 'Flaky|Network'
-          parallel: auto
+          # All tests execute the same instrumented binary; serial execution
+          # avoids gcov data file races that can yield empty coverage output.
+          parallel: '1'
+
+      - name: Run Unit Tests (ASan+UBSan)
+        if: matrix.mode == 'sanitizers'
+        uses: ./.github/actions/run-unit-tests
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:check_initialization_order=1
+          LSAN_OPTIONS: suppressions=${{ runner.temp }}/build/asan_suppressions.txt
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1:suppressions=${{ runner.temp }}/build/ubsan_suppressions.txt
+        with:
+          build-dir: ${{ runner.temp }}/build
+          junit-output: junit-results-linux-sanitizers.xml
+          ctest-output: test-output-linux-sanitizers.txt
+          include-labels: 'Unit|Integration'
+          exclude-labels: 'Flaky|Network|NoSanitizer'
+          parallel: '1'
 
       - name: Analyze Unit Test Durations
-        if: always()
+        if: always() && !cancelled() && matrix.mode == 'coverage' && vars.COVERAGE_ENABLED == 'true'
         uses: ./.github/actions/test-duration-report
         with:
           junit-path: ${{ runner.temp }}/build/junit-results-linux-linux_gcc_64.xml
@@ -229,8 +319,21 @@ jobs:
           min-delta-seconds: '5'
           fail-on-regression: 'false'
 
+      - name: Analyze Unit Test Durations (Sanitizers)
+        if: always() && !cancelled() && matrix.mode == 'sanitizers'
+        uses: ./.github/actions/test-duration-report
+        with:
+          junit-path: ${{ runner.temp }}/build/junit-results-linux-sanitizers.xml
+          baseline-path: ${{ github.workspace }}/.github/test-duration-baseline.json
+          report-json-path: ${{ runner.temp }}/build/test-duration-linux-sanitizers.json
+          top-n: '20'
+          slow-threshold-seconds: '60'
+          regression-factor: '1.5'
+          min-delta-seconds: '5'
+          fail-on-regression: 'false'
+
       - name: Report Test Results
-        if: always()
+        if: always() && !cancelled() && matrix.mode == 'coverage' && vars.COVERAGE_ENABLED == 'true'
         uses: ./.github/actions/test-report
         with:
           name: Unit Tests (linux_gcc_64)
@@ -243,137 +346,16 @@ jobs:
           trunk-token: ${{ secrets.TRUNK_TOKEN }}
 
       - name: Upload Duration Report
-        if: always()
-        uses: actions/upload-artifact@v6
+        if: always() && !cancelled() && matrix.mode == 'coverage' && vars.COVERAGE_ENABLED == 'true'
+        uses: actions/upload-artifact@v7
         with:
           name: test-duration-linux_gcc_64
           path: ${{ runner.temp }}/build/test-duration-linux-linux_gcc_64.json
           retention-days: 7
 
-      - name: Install coverage tools
-        run: |
-          sudo apt-get install -y --no-install-recommends ccache
-          # Ensure ccache is at /usr/local/bin where the build's ccache-launcher expects it
-          if [ ! -f /usr/local/bin/ccache ] && command -v ccache >/dev/null 2>&1; then
-            sudo ln -s "$(command -v ccache)" /usr/local/bin/ccache
-          fi
-          pipx install gcovr
-
-      - name: Coverage Report
-        uses: ./.github/actions/coverage
-        with:
-          build-dir: ${{ runner.temp }}/build
-          mode: report-only
-
-      - name: Verify Coverage Thresholds
-        working-directory: ${{ runner.temp }}/build
-        run: |
-          python3 - <<'PY'
-          import sys
-          import xml.etree.ElementTree as ET
-          from pathlib import Path
-
-          if not Path("coverage.xml").exists():
-              print("::warning::coverage.xml not found, skipping threshold check")
-              sys.exit(0)
-
-          tree = ET.parse("coverage.xml")
-          cov = tree.getroot()
-          line_rate = float(cov.get("line-rate", 0)) * 100
-          branch_rate = float(cov.get("branch-rate", 0)) * 100
-
-          print(f"Line coverage: {line_rate:.1f}% (threshold: 30%)")
-          print(f"Branch coverage: {branch_rate:.1f}% (threshold: 20%)")
-
-          failed = False
-          if line_rate < 30:
-              print(f"::error::Line coverage {line_rate:.1f}% is below 30% threshold")
-              failed = True
-          if branch_rate < 20:
-              print(f"::error::Branch coverage {branch_rate:.1f}% is below 20% threshold")
-              failed = True
-
-          sys.exit(1 if failed else 0)
-          PY
-
-  sanitizers:
-    name: Sanitizers linux_gcc_64 Debug (ASan+UBSan)
-    if: github.event_name != 'workflow_dispatch' || inputs.build_type == 'Debug'
-    runs-on: ubuntu-22.04
-    timeout-minutes: 120
-
-    defaults:
-      run:
-        shell: bash
-
-    steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@v2
-        with:
-          egress-policy: audit
-
-      - name: Checkout repo
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 1
-          fetch-tags: true
-
-      - name: Build Setup
-        uses: ./.github/actions/build-setup
-        with:
-          qt-host: linux
-          qt-arch: linux_gcc_64
-          build-type: Debug
-          save-cache: ${{ github.event_name != 'pull_request' }}
-
-      - name: Install Dependencies
-        uses: ./.github/actions/install-dependencies
-
-      - name: Configure (ASan+UBSan)
-        uses: ./.github/actions/cmake-configure
-        with:
-          build-dir: ${{ runner.temp }}/build
-          build-type: Debug
-          testing: 'true'
-          stable: ${{ (github.ref_type == 'tag' || contains(github.ref, 'Stable')) && 'true' || 'false' }}
-          extra-args: -DQGC_ENABLE_ASAN=ON -DQGC_ENABLE_UBSAN=ON
-
-      - name: Build (ASan+UBSan)
-        uses: ./.github/actions/cmake-build
-        with:
-          build-dir: ${{ runner.temp }}/build
-          build-type: Debug
-
-      - name: Run Unit Tests (ASan+UBSan)
-        uses: ./.github/actions/run-unit-tests
-        env:
-          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:check_initialization_order=1
-          LSAN_OPTIONS: suppressions=${{ runner.temp }}/build/asan_suppressions.txt
-          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
-        with:
-          build-dir: ${{ runner.temp }}/build
-          junit-output: junit-results-linux-sanitizers.xml
-          ctest-output: test-output-linux-sanitizers.txt
-          include-labels: 'Unit|Integration'
-          exclude-labels: 'Flaky|Network'
-          parallel: '1'
-
-      - name: Analyze Unit Test Durations (Sanitizers)
-        if: always()
-        uses: ./.github/actions/test-duration-report
-        with:
-          junit-path: ${{ runner.temp }}/build/junit-results-linux-sanitizers.xml
-          baseline-path: ${{ github.workspace }}/.github/test-duration-baseline.json
-          report-json-path: ${{ runner.temp }}/build/test-duration-linux-sanitizers.json
-          top-n: '20'
-          slow-threshold-seconds: '60'
-          regression-factor: '1.5'
-          min-delta-seconds: '5'
-          fail-on-regression: 'false'
-
       - name: Upload Test Results (Sanitizers)
-        if: always()
-        uses: actions/upload-artifact@v6
+        if: always() && !cancelled() && matrix.mode == 'sanitizers'
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-linux-sanitizers
           path: |
@@ -381,3 +363,96 @@ jobs:
             ${{ runner.temp }}/build/junit-results-linux-sanitizers.xml
             ${{ runner.temp }}/build/test-duration-linux-sanitizers.json
           retention-days: 7
+
+      - name: Ensure coverage tools are available
+        if: matrix.mode == 'coverage' && vars.COVERAGE_ENABLED == 'true'
+        run: |
+          ccache_path="$(command -v ccache 2>/dev/null)" || {
+            echo "Error: ccache not found — expected pinned binary from cache action" >&2
+            exit 1
+          }
+          echo "ccache found at: ${ccache_path}"
+          if [[ "${ccache_path}" != "/usr/local/bin/ccache" ]]; then
+            echo "Warning: ccache resolved to ${ccache_path}, expected /usr/local/bin/ccache" >&2
+          fi
+          ccache_ver="$(ccache --version | head -1)"
+          echo "ccache version: ${ccache_ver}"
+          if ! command -v gcovr >/dev/null 2>&1; then
+            pipx install gcovr
+          fi
+
+      - name: Verify coverage data files exist
+        if: matrix.mode == 'coverage' && vars.COVERAGE_ENABLED == 'true'
+        working-directory: ${{ runner.temp }}/build
+        run: |
+          gcda_count=$(find . -name '*.gcda' | wc -l | tr -d '[:space:]')
+          echo "Detected ${gcda_count} .gcda files"
+          if [ "${gcda_count}" -eq 0 ]; then
+            echo "::error::No .gcda files were produced by test execution"
+            exit 1
+          fi
+
+      - name: Coverage Report
+        if: matrix.mode == 'coverage' && vars.COVERAGE_ENABLED == 'true'
+        uses: ./.github/actions/coverage
+        with:
+          build-dir: ${{ runner.temp }}/build
+          mode: report-only
+
+      - name: Verify Coverage Thresholds
+        if: matrix.mode == 'coverage' && vars.COVERAGE_ENABLED == 'true'
+        working-directory: ${{ runner.temp }}/build
+        run: |
+          line_thresh=$(cmake -L -N . 2>/dev/null | sed -n 's/^QGC_COVERAGE_LINE_THRESHOLD:STRING=//p')
+          branch_thresh=$(cmake -L -N . 2>/dev/null | sed -n 's/^QGC_COVERAGE_BRANCH_THRESHOLD:STRING=//p')
+          line_thresh="${line_thresh:-30}"
+          branch_thresh="${branch_thresh:-20}"
+
+          python3 - "$line_thresh" "$branch_thresh" <<'PY'
+          import os, sys
+          from pathlib import Path
+
+          sys.path.insert(0, os.path.join(os.environ["GITHUB_WORKSPACE"], ".github", "scripts"))
+          from xml_utils import xml_parse
+
+          line_thresh = float(sys.argv[1])
+          branch_thresh = float(sys.argv[2])
+
+          if not Path("coverage.xml").exists():
+              print("::warning::coverage.xml not found, skipping threshold check")
+              sys.exit(0)
+
+          tree = xml_parse("coverage.xml")
+          cov = tree.getroot()
+          lines_valid = int(cov.get("lines-valid", 0))
+          line_rate = float(cov.get("line-rate", 0)) * 100
+          branch_rate = float(cov.get("branch-rate", 0)) * 100
+
+          if lines_valid == 0:
+              lines_covered = int(cov.get("lines-covered", 0))
+              print(
+                  "::error::Coverage report contains 0 lines — "
+                  f"lines-covered={lines_covered}, line-rate={line_rate:.2f}%, branch-rate={branch_rate:.2f}%"
+              )
+              output = Path("coverage-output.txt")
+              if output.exists():
+                  print("::group::coverage-output tail")
+                  for line in output.read_text(encoding="utf-8", errors="replace").splitlines()[-40:]:
+                      print(line)
+                  print("::endgroup::")
+              sys.exit(1)
+
+          print(f"Line coverage: {line_rate:.1f}% (threshold: {line_thresh}%)")
+          print(f"Branch coverage: {branch_rate:.1f}% (threshold: {branch_thresh}%)")
+
+          failed = False
+          if line_rate < line_thresh:
+              print(f"::error::Line coverage {line_rate:.1f}% is below {line_thresh}% threshold")
+              failed = True
+          if branch_rate < branch_thresh:
+              print(f"::error::Branch coverage {branch_rate:.1f}% is below {branch_thresh}% threshold")
+              failed = True
+
+          sys.exit(1 if failed else 0)
+          PY
+

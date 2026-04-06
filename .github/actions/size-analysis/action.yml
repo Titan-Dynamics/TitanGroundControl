@@ -40,9 +40,4 @@ runs:
         )
         [[ "$INPUT_INSTALL_BLOATY" == "true" ]] && args+=(--install-bloaty)
 
-        if command -v python3 >/dev/null 2>&1; then
-          py_cmd="python3"
-        else
-          py_cmd="python"
-        fi
-        "${py_cmd}" "${GITHUB_WORKSPACE}/.github/scripts/size_analysis.py" "${args[@]}"
+        python3 "${GITHUB_WORKSPACE}/.github/scripts/size_analysis.py" "${args[@]}"

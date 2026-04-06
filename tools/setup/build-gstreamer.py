@@ -39,6 +39,12 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
+_tools_dir = Path(__file__).resolve().parents[1]
+if str(_tools_dir) not in sys.path:
+    sys.path.insert(0, str(_tools_dir))
+
+from common.logging import log_info, log_ok, log_warn, log_error
+
 
 # ============================================================================
 # Shared Utilities
@@ -46,25 +52,6 @@ from pathlib import Path
 
 MESON_VERSION = "1.10.1"
 NINJA_VERSION = "1.13.0"
-
-class Colors:
-    RED = '\033[0;31m'
-    GREEN = '\033[0;32m'
-    YELLOW = '\033[1;33m'
-    BLUE = '\033[0;34m'
-    NC = '\033[0m'
-
-def log_info(msg: str) -> None:
-    print(f"{Colors.BLUE}[INFO]{Colors.NC} {msg}")
-
-def log_ok(msg: str) -> None:
-    print(f"{Colors.GREEN}[OK]{Colors.NC} {msg}")
-
-def log_warn(msg: str) -> None:
-    print(f"{Colors.YELLOW}[WARN]{Colors.NC} {msg}", file=sys.stderr)
-
-def log_error(msg: str) -> None:
-    print(f"{Colors.RED}[ERROR]{Colors.NC} {msg}", file=sys.stderr)
 
 def run_cmd(cmd: list, cwd: Path | None = None, check: bool = True,
             env: dict | None = None) -> subprocess.CompletedProcess:
@@ -112,8 +99,11 @@ def read_config(key: str, default: str = '') -> str:
         with open(config_file) as f:
             config = json.load(f)
         return config.get(key, default)
-    except Exception:
+    except FileNotFoundError:
         return default
+    except json.JSONDecodeError as error:
+        log_error(f"Failed to parse JSON config '{config_file}': {error}")
+        raise
 
 def write_github_output(outputs: dict) -> None:
     """Write outputs for GitHub Actions."""
@@ -131,7 +121,11 @@ def write_github_output(outputs: dict) -> None:
 # Common meson options for all Meson-based platforms
 MESON_COMMON = {
     'auto_features': 'disabled',
-    'gst-full-libraries': 'video,gl',
+    'introspection': 'disabled',
+    'tests': 'disabled',
+    'examples': 'disabled',
+    'gtk_doc': 'disabled',
+    'gst-full-libraries': 'app,video,audio,gl,codecparsers',
     'gpl': 'enabled',
     'libav': 'enabled',
     'orc': 'enabled',
@@ -304,6 +298,13 @@ class MesonBuilder:
         else:
             log_info(f"Using existing source at {self.config.source_dir}")
 
+    def _find_ccache(self) -> str | None:
+        """Find ccache if available."""
+        path = shutil.which('ccache')
+        if path:
+            log_info(f"Using ccache: {path}")
+        return path
+
     def get_meson_args(self) -> list:
         """Build meson configuration arguments."""
         args = [
@@ -361,6 +362,11 @@ class MesonBuilder:
         env = {}
         if self.config.qt_prefix:
             env['PKG_CONFIG_PATH'] = f"{self.config.qt_prefix}/lib/pkgconfig"
+
+        ccache = self._find_ccache()
+        if ccache:
+            env['CC'] = f'ccache cc'
+            env['CXX'] = f'ccache c++'
 
         run_cmd(args, cwd=self.config.source_dir, env=env)
 
@@ -632,7 +638,7 @@ def main() -> int:
     args = parse_args()
 
     # Resolve defaults
-    version = args.version or read_config('gstreamer_version', '1.24.10')
+    version = args.version or read_config('gstreamer_default_version', '1.24.13')
     arch = args.arch or get_default_arch(args.platform)
     prefix = Path(args.prefix) if args.prefix else None
     work_dir = Path(args.work_dir)

@@ -1,15 +1,18 @@
 #pragma once
 
+#include <QtCore/QFuture>
 #include <QtCore/QLoggingCategory>
+#include <QtCore/QPromise>
 #include <QtCore/QObject>
-#include <QtCore/QRunnable>
 #include <QtCore/QSize>
 #include <QtQmlIntegration/QtQmlIntegration>
+
+#include <functional>
+#include <memory>
 
 Q_DECLARE_LOGGING_CATEGORY(VideoManagerLog)
 
 class QQuickWindow;
-class FinishVideoInitialization;
 class SubtitleWriter;
 class Vehicle;
 class VideoReceiver;
@@ -23,6 +26,7 @@ class VideoManager : public QObject
     Q_MOC_INCLUDE("Vehicle.h")
 
     Q_PROPERTY(bool     gstreamerEnabled        READ gstreamerEnabled                           CONSTANT)
+    Q_PROPERTY(bool     gstreamerD3D11Sink      READ gstreamerD3D11Sink                         CONSTANT)
     Q_PROPERTY(bool     qtmultimediaEnabled     READ qtmultimediaEnabled                        CONSTANT)
     Q_PROPERTY(bool     uvcEnabled              READ uvcEnabled                                 CONSTANT)
     Q_PROPERTY(bool     autoStreamConfigured    READ autoStreamConfigured                       NOTIFY autoStreamConfiguredChanged)
@@ -42,11 +46,11 @@ class VideoManager : public QObject
     Q_PROPERTY(QString  imageFile               READ imageFile                                  NOTIFY imageFileChanged)
     Q_PROPERTY(QString  uvcVideoSourceID        READ uvcVideoSourceID                           NOTIFY uvcVideoSourceIDChanged)
 
+    friend class VideoManagerInitTest;
+
 public:
     explicit VideoManager(QObject *parent = nullptr);
     ~VideoManager();
-
-    friend class FinishVideoInitialization;
 
     static VideoManager *instance();
 
@@ -57,6 +61,8 @@ public:
     Q_INVOKABLE void stopVideo();
 
     void init(QQuickWindow *mainWindow);
+    void startGStreamerInit();
+    bool waitForGStreamerInit(int timeoutMs = 60000);
     void cleanup();
     bool autoStreamConfigured() const;
     bool decoding() const { return _decoding; }
@@ -76,6 +82,7 @@ public:
     QString uvcVideoSourceID() const { return _uvcVideoSourceID; }
     void setfullScreen(bool on);
     static bool gstreamerEnabled();
+    static bool gstreamerD3D11Sink();
     static bool qtmultimediaEnabled();
     static bool uvcEnabled();
 
@@ -101,7 +108,19 @@ private slots:
     void _videoSourceChanged();
 
 private:
+    enum class InitState : uint8_t {
+        NotStarted,
+        Pending,
+        GstReady,
+        QmlReady,
+        Running,
+        Failed
+    };
+
+    static bool _shouldSkipGStreamerForUnitTests();
     void _initAfterQmlIsReady();
+    void _onGstInitComplete(bool success);
+    void _createVideoReceivers();
     void _initVideoReceiver(VideoReceiver *receiver, QQuickWindow *window);
     bool _updateAutoStream(VideoReceiver *receiver);
     bool _updateUVC(VideoReceiver *receiver);
@@ -114,30 +133,27 @@ private:
     static void _cleanupOldVideos();
 
     QList<VideoReceiver*> _videoReceivers;
-
     SubtitleWriter *_subtitleWriter = nullptr;
     VideoSettings *_videoSettings = nullptr;
+    QQuickWindow *_mainWindow = nullptr;
+    Vehicle *_activeVehicle = nullptr;
 
+    InitState _initState = InitState::NotStarted;
+    QFuture<bool> _gstInitFuture;
+#if defined(QGC_GST_STREAMING) && defined(Q_OS_ANDROID)
+#endif
     bool _initialized = false;
-    bool _initAfterQmlIsReadyDone = false;
+    bool _gstreamerDisabledForUnitTests = false;
     bool _fullScreen = false;
+
     QAtomicInteger<bool> _decoding = false;
     QAtomicInteger<bool> _recording = false;
     QAtomicInteger<bool> _streaming = false;
     QSize _videoSize;
     QString _imageFile;
     QString _uvcVideoSourceID;
-    Vehicle *_activeVehicle = nullptr;
-    QQuickWindow *_mainWindow = nullptr;
-};
 
-/*===========================================================================*/
-
-class FinishVideoInitialization : public QRunnable
-{
-public:
-    FinishVideoInitialization();
-    ~FinishVideoInitialization();
-
-    void run() final;
+#ifdef QGC_UNITTEST_BUILD
+    std::function<void()> _createVideoReceiversForTest;
+#endif
 };

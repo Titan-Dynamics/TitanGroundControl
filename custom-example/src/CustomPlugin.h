@@ -64,11 +64,8 @@ public:
 
     void cleanup() final;
     QGCOptions *options() final { return _options; }
-    QString brandImageIndoor() const final { return QStringLiteral("/custom/img/dronecode-white.svg"); }
-    QString brandImageOutdoor() const final { return QStringLiteral("/custom/img/dronecode-black.svg"); }
-    bool overrideSettingsGroupVisibility(const QString &name) final;
     /// This allows you to override/hide QGC Application settings
-    void adjustSettingMetaData(const QString &settingsGroup, FactMetaData &metaData, bool &visible) final;
+    void adjustSettingMetaData(const QString &settingsGroup, FactMetaData &metaData, bool &userVisible) final;
     /// This modifies QGC colors palette to match possible custom corporate branding
     void paletteOverride(const QString &colorName, QGCPalette::PaletteColorInfo_t &colorInfo) final;
     /// We override this so we can get access to QQmlApplicationEngine and use it to register our qml module

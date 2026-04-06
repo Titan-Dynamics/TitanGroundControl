@@ -4,6 +4,7 @@
 #include <QtCore/QLoggingCategory>
 #include <QtCore/QObject>
 #include <QtCore/QPointer>
+#include <QtCore/QRegularExpression>
 #include <QtCore/QStringView>
 #include <QtCore/QTemporaryDir>
 #include <QtCore/QTemporaryFile>
@@ -89,7 +90,9 @@ QStringList availableLabelNames();
     do {                                                                                                       \
         const QGeoCoordinate _actual = (actual);                                                               \
         const QGeoCoordinate _expected = (expected);                                                           \
-        const double _tolerance = (0.0 __VA_OPT__(+) __VA_ARGS__) > 0 ? (0.0 __VA_OPT__(+) __VA_ARGS__) : 1.0; \
+        const double _tolerance_args[] = { 0.0, ##__VA_ARGS__ };                                               \
+        const double _tolerance = _tolerance_args[sizeof(_tolerance_args)/sizeof(double) - 1] > 0              \
+                                    ? _tolerance_args[sizeof(_tolerance_args)/sizeof(double) - 1] : 1.0;       \
         const double _distance = _actual.distanceTo(_expected);                                                \
         if (_distance > _tolerance) {                                                                          \
             const QString _msg = QString(                                                                      \
@@ -436,7 +439,17 @@ protected:
     /// Allows derived fixtures to append state to failure dumps.
     virtual QString failureContextSummary() const;
 
+    /// Declare that a captured log message matching @a pattern at level @a type
+    /// is expected and should not cause a test failure in cleanup().
+    /// Call this before the code that emits the message.
+    void expectLogMessage(QtMsgType type, const QRegularExpression &pattern);
+
 private:
+    struct ExpectedLogMessage {
+        QtMsgType type;
+        QRegularExpression pattern;
+    };
+
     void _cleanupTempFiles();
     void _resetTestState();
 
@@ -445,6 +458,7 @@ private:
 
     QList<QTemporaryFile*> _tempFiles;
     QList<QTemporaryDir*> _tempDirs;
+    QList<ExpectedLogMessage> _expectedLogMessages;
 
     TestLabels _labels;
     bool _unitTestRun = false;

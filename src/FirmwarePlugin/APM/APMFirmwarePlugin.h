@@ -31,7 +31,7 @@ public:
     bool isCapable(const Vehicle *vehicle, FirmwareCapabilities capabilities) const override;
     void setGuidedMode(Vehicle *vehicle, bool guidedMode) const override;
     void guidedModeTakeoff(Vehicle *vehicle, double altitudeRel) const override;
-    void guidedModeGotoLocation(Vehicle *vehicle, const QGeoCoordinate& gotoCoord, double forwardFlightLoiterRadius) const override;
+    bool guidedModeGotoLocation(Vehicle *vehicle, const QGeoCoordinate& gotoCoord, double forwardFlightLoiterRadius) const override;
     double minimumTakeoffAltitudeMeters(Vehicle *vehicle) const override;
     void startTakeoff(Vehicle *vehicle) const override;
     void startMission(Vehicle *vehicle) const override;
@@ -59,8 +59,6 @@ public:
     FactMetaData *_getMetaDataForFact(QObject *parameterMetaData, const QString &name, FactMetaData::ValueType_t type, MAV_TYPE vehicleType) const override;
     void _getParameterMetaDataVersionInfo(const QString &metaDataFile, int &majorVersion, int &minorVersion) const override;
     QObject *_loadParameterMetaData(const QString &metaDataFile) override;
-    QString brandImageIndoor(const Vehicle *vehicle) const override { Q_UNUSED(vehicle); return QStringLiteral("/qmlimages/APM/BrandImage"); }
-    QString brandImageOutdoor(const Vehicle *vehicle) const override { Q_UNUSED(vehicle); return QStringLiteral("/qmlimages/APM/BrandImage"); }
     QString getHobbsMeter(Vehicle *vehicle) const override;
     bool hasGripper(const Vehicle *vehicle) const override;
     const QVariantList &toolIndicators(const Vehicle *vehicle) override;
@@ -73,7 +71,7 @@ public:
 
     // support for changing speed in Copter guide mode:
     bool mulirotorSpeedLimitsAvailable(Vehicle *vehicle) const override;
-    double maximumHorizontalSpeedMultirotor(Vehicle *vehicle) const override;
+    double maximumHorizontalSpeedMultirotorMetersSecond(Vehicle *vehicle) const override;
     void guidedModeChangeGroundSpeedMetersSecond(Vehicle *vehicle, double speed) const override;
 
     static QPair<QMetaObject::Connection,QMetaObject::Connection> startCompensatingBaro(Vehicle *vehicle);

@@ -9,6 +9,7 @@ import QGroundControl
 import QGroundControl.Controls
 import QGroundControl.FlyView
 import QGroundControl.FlightMap
+import QGroundControl.PlanView
 
 FlightMap {
     id:                         _root
@@ -760,7 +761,7 @@ FlightMap {
                         Layout.fillWidth:   true
                         text:               qsTr("Edit Position")
                         onClicked: {
-                            roiEditPositionDialogFactory.open({ showSetPositionFromVehicle: false })
+                            roiEditPositionDialogFactory.open()
                             roiEditDropPanel.close()
                         }
                     }
@@ -790,8 +791,11 @@ FlightMap {
 
                             if ((_activeVehicle.flightMode == _activeVehicle.gotoFlightMode) && !_flyViewSettings.goToLocationRequiresConfirmInGuided.value) {
                                 gotoLocationItem.show(mapClickCoord)
-                                globals.guidedControllerFlyView.executeAction(globals.guidedControllerFlyView.actionGoto, mapClickCoord, gotoLocationItem)
-                                gotoLocationItem.actionConfirmed() // Still need to call this to commit the new coordinate and radius
+                                if (globals.guidedControllerFlyView.executeAction(globals.guidedControllerFlyView.actionGoto, mapClickCoord)) {
+                                    gotoLocationItem.actionConfirmed() // Still need to call this to commit the new coordinate and radius
+                                } else {
+                                    gotoLocationItem.actionCancelled()
+                                }
                             } else {
                                 globals.guidedControllerFlyView.confirmAction(globals.guidedControllerFlyView.actionGoto, mapClickCoord, gotoLocationItem)
                             }
@@ -892,8 +896,5 @@ FlightMap {
         anchors.top:        parent.top
         mapControl:         _root
         visible:            !ScreenTools.isTinyScreen && QGroundControl.corePlugin.options.flyView.showMapScale && mapControl.pipState.state === mapControl.pipState.windowState
-
-        property real centerInset: visible ? parent.height - y : 0
     }
-
 }

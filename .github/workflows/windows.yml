@@ -1,6 +1,16 @@
 name: Windows
 
 on:
+  push:
+    branches:
+      - master
+      - 'Stable*'
+    tags:
+      - 'v*'
+    paths-ignore:
+      - 'docs/**'
+  pull_request:
+  merge_group:
   workflow_dispatch:
     inputs:
       build_type:
@@ -11,7 +21,6 @@ on:
         options:
           - Release
           - Debug
-  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -22,10 +31,18 @@ permissions:
   id-token: write
   attestations: write
   actions: read
+  security-events: write
 
 jobs:
+  changes:
+    uses: ./.github/workflows/_detect-changes.yml
+    with:
+      platform: windows
+
   build:
     name: Build ${{ matrix.arch }} ${{ matrix.build_type }}
+    needs: changes
+    if: always() && !cancelled() && (needs.changes.outputs.should_build == 'true' || needs.changes.result == 'skipped')
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
 
@@ -39,13 +56,13 @@ jobs:
             os: windows-2022
             host: windows
             arch: win64_msvc2022_64
-            package: TitanGroundControl-installer-AMD64
+            package: QGroundControl-installer-AMD64
 
           - variant: arm64
             os: windows-11-arm
             host: windows_arm64
             arch: win64_msvc2022_arm64
-            package: TitanGroundControl-installer-ARM64
+            package: QGroundControl-installer-ARM64
 
           # TODO: Remove qt_version override once aqtinstall supports Qt 6.10.1+ for cross-compiled ARM64
           # Workaround: Pin to Qt 6.10.0 until aqtinstall fix is released
@@ -54,7 +71,7 @@ jobs:
             os: windows-2022
             host: windows
             arch: win64_msvc2022_arm64_cross_compiled
-            package: TitanGroundControl-installer-AMD64-ARM64
+            package: QGroundControl-installer-AMD64-ARM64
             qt_version: '6.10.0'
 
     defaults:
@@ -70,8 +87,8 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
-          fetch-tags: true
+          fetch-depth: ${{ github.event_name == 'pull_request' && 1 || 0 }}
+          fetch-tags: ${{ github.event_name != 'pull_request' }}
 
       - name: Build Setup
         id: build-setup
@@ -81,18 +98,22 @@ jobs:
           qt-arch: ${{ matrix.arch }}
           qt-version: ${{ matrix.qt_version || '' }}
           build-type: ${{ matrix.build_type }}
-          save-cache: ${{ github.event_name != 'pull_request' }}
-
-      - name: Install GStreamer
-        if: matrix.arch == 'win64_msvc2022_64'
-        uses: ./.github/actions/install-dependencies
-        with:
-          gstreamer-version: ${{ steps.build-setup.outputs.gstreamer_windows_version }}
 
       - name: Set up MSVC environment
         uses: TheMrMilchmann/setup-msvc-dev@v4
         with:
           arch: ${{ (matrix.arch == 'win64_msvc2022_64' && 'x64') || (matrix.arch == 'win64_msvc2022_arm64' && 'arm64') || 'amd64_arm64' }}
+
+      - name: Install host Qt for ARM64 cross-compilation
+        if: matrix.arch == 'win64_msvc2022_arm64_cross_compiled'
+        id: qt-host
+        uses: ./.github/actions/qt-install
+        with:
+          version: ${{ steps.build-setup.outputs.qt_version }}
+          host: windows
+          arch: win64_msvc2022_64
+          modules: ${{ steps.build-setup.outputs.qt_modules }}
+          export-env: 'false'
 
       - name: Fix Rust linker resolution (ARM64 native)
         if: matrix.variant == 'arm64'
@@ -114,8 +135,21 @@ jobs:
           build-type: ${{ matrix.build_type }}
           stable: ${{ (github.ref_type == 'tag' || contains(github.ref, 'Stable')) && 'true' || 'false' }}
           extra-args: >-
-            -DQGC_ENABLE_GST_VIDEOSTREAMING=${{ matrix.arch == 'win64_msvc2022_64' && 'ON' || 'OFF' }}
-            ${{ matrix.arch == 'win64_msvc2022_arm64_cross_compiled' && format('-DQT_HOST_PATH={0}/../msvc2022_64', env.QT_ROOT_DIR) || '' }}
+            -DQGC_ENABLE_GST_VIDEOSTREAMING=${{ matrix.arch != 'win64_msvc2022_arm64_cross_compiled' && 'ON' || 'OFF' }}
+            ${{ matrix.arch == 'win64_msvc2022_arm64_cross_compiled' && format('-DQT_HOST_PATH={0}', steps.qt-host.outputs.qt_root_dir) || '' }}
+
+      - name: Add GStreamer to PATH
+        if: matrix.arch != 'win64_msvc2022_arm64_cross_compiled'
+        shell: pwsh
+        run: |
+          $cacheFile = "${{ runner.temp }}\build\CMakeCache.txt"
+          $match = Select-String -Path $cacheFile -Pattern '^GStreamer_ROOT_DIR:.*=(.+)$'
+          if (-not $match) {
+            Write-Error "GStreamer_ROOT_DIR not found in CMakeCache.txt"
+            exit 1
+          }
+          $rootDir = $match.Matches[0].Groups[1].Value
+          "$rootDir\bin" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
 
       - name: Build
         uses: ./.github/actions/cmake-build
@@ -123,33 +157,90 @@ jobs:
           build-dir: ${{ runner.temp }}/build
           build-type: ${{ matrix.build_type }}
 
+      # TODO: Enable GStreamer integration tests once a Debug build is added to the matrix.
+      # Release builds strip test infrastructure; these tests require a Debug or RelWithDebInfo build.
+      # - name: Run GStreamer Integration Tests
+      #   if: matrix.arch != 'win64_msvc2022_arm64_cross_compiled'
+      #   uses: ./.github/actions/run-unit-tests
+      #   with:
+      #     build-dir: ${{ runner.temp }}/build
+      #     include-labels: 'Integration'
+
       - name: Verify Executable
         if: matrix.build_type == 'Release' && matrix.arch != 'win64_msvc2022_arm64_cross_compiled'
         uses: ./.github/actions/verify-executable
         with:
-          binary-path: ${{ runner.temp }}/build/${{ matrix.build_type }}/TitanGroundControl.exe
+          binary-path: ${{ runner.temp }}/build/${{ matrix.build_type }}/QGroundControl.exe
           type: exe
+          build-dir: ${{ runner.temp }}/build
 
       - name: Create Installer
         working-directory: ${{ runner.temp }}\build
         run: cmake --install . --config ${{ matrix.build_type }}
 
-      - name: Attest Build with SBOM
-        if: matrix.build_type == 'Release'
-        uses: ./.github/actions/attest-sbom
-        with:
-          subject-path: ${{ runner.temp }}/build/${{ matrix.package }}.exe
-          subject-name: ${{ matrix.package }}
-          scan-path: ${{ runner.temp }}/build
+      - name: Install and verify installer
+        if: matrix.build_type == 'Release' && matrix.arch != 'win64_msvc2022_arm64_cross_compiled'
+        shell: pwsh
+        run: |
+          $buildDir = "${{ runner.temp }}\build"
+          $installerExe = Get-ChildItem -Path $buildDir -Filter "*installer*.exe" | Select-Object -First 1
+          if (-not $installerExe) {
+            Write-Error "Installer .exe not found in $buildDir"
+            exit 1
+          }
+          $installDir = "${{ runner.temp }}\qgc-install-test"
+          Write-Host "Installing $($installerExe.Name) to $installDir"
+          Start-Process -FilePath $installerExe.FullName -ArgumentList "/S", "/D=$installDir" -Wait -NoNewWindow
+          $binary = Join-Path $installDir "bin\QGroundControl.exe"
+          if (-not (Test-Path $binary)) {
+            Write-Error "QGroundControl.exe not found at $binary after install"
+            Get-ChildItem -Path $installDir -Recurse | Select-Object FullName
+            exit 1
+          }
+          $pluginDir = Join-Path $installDir "lib\gstreamer-1.0"
+          if (Test-Path $pluginDir) {
+            $pluginCount = (Get-ChildItem -Path $pluginDir -Filter "*.dll" | Measure-Object).Count
+            Write-Host "GStreamer plugins found: $pluginCount"
+            if ($pluginCount -eq 0) {
+              Write-Error "No GStreamer plugin DLLs found in $pluginDir"
+              exit 1
+            }
+          } else {
+            Write-Error "GStreamer plugin directory not found: $pluginDir"
+            exit 1
+          }
 
-      - name: Upload artifact (installer)
-        if: matrix.build_type == 'Release'
-        uses: ./.github/actions/upload
+      - name: Remove build SDK from PATH for installed verification
+        if: matrix.build_type == 'Release' && matrix.arch != 'win64_msvc2022_arm64_cross_compiled'
+        shell: pwsh
+        run: |
+          $cacheFile = "${{ runner.temp }}\build\CMakeCache.txt"
+          $match = Select-String -Path $cacheFile -Pattern '^GStreamer_ROOT_DIR:.*=(.+)$'
+          if (-not $match) {
+            Write-Error "GStreamer_ROOT_DIR not found in CMakeCache.txt"
+            exit 1
+          }
+          $sdkBin = Join-Path $match.Matches[0].Groups[1].Value "bin"
+          $sanitizedPath = (($env:PATH -split ';') | Where-Object { $_ -and ($_ -ne $sdkBin) }) -join ';'
+          "QGC_VERIFY_INSTALLED_PATH=$sanitizedPath" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Verify installed executable
+        if: matrix.build_type == 'Release' && matrix.arch != 'win64_msvc2022_arm64_cross_compiled'
+        uses: ./.github/actions/verify-executable
+        env:
+          PATH: ${{ env.QGC_VERIFY_INSTALLED_PATH }}
         with:
-          artifact_name: ${{ matrix.package }}.exe
-          package_name: ${{ matrix.package }}
-          aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
-          aws_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws_distribution_id: ${{ secrets.AWS_DISTRIBUTION_ID }}
-          upload_aws: ${{ matrix.arch == 'win64_msvc2022_arm64_cross_compiled' && 'false' || 'true' }}
+          binary-path: ${{ runner.temp }}\qgc-install-test\bin\QGroundControl.exe
+          type: exe
+
+      - name: Attest and Upload
+        if: matrix.build_type == 'Release'
+        uses: ./.github/actions/attest-and-upload
+        with:
+          artifact-name: ${{ matrix.package }}.exe
+          package-name: ${{ matrix.package }}
+          aws-role-arn: ${{ secrets.AWS_ROLE_ARN }}
+          aws-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-distribution-id: ${{ secrets.AWS_DISTRIBUTION_ID }}
+          upload-aws: ${{ matrix.arch == 'win64_msvc2022_arm64_cross_compiled' && 'false' || 'true' }}

@@ -5,15 +5,7 @@ on:
     branches:
       - master
       - 'Stable*'
-    paths:
-      - 'src/**'
-      - 'test/**'
-      - '.pre-commit-config.yaml'
   pull_request:
-    paths:
-      - 'src/**'
-      - 'test/**'
-      - '.pre-commit-config.yaml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -67,14 +59,15 @@ jobs:
           version: ${{ steps.config.outputs.qt_version }}
           host: linux
           arch: linux_gcc_64
-          modules: ${{ steps.config.outputs.qt_modules }}
+          modules: ''
+          archives: qtbase qtdeclarative icu
 
       - name: Run pre-commit
         id: pre-commit
         continue-on-error: true
         env:
           PRE_COMMIT_OUTPUT: pre-commit-output.txt
-        run: ./tools/pre-commit.sh --ci
+        run: python3 ./tools/pre_commit.py --ci
 
       - name: Prepare pre-commit results artifact
         if: github.event_name == 'pull_request' && always()
@@ -83,31 +76,20 @@ jobs:
           PASSED: ${{ steps.pre-commit.outputs.passed }}
           FAILED: ${{ steps.pre-commit.outputs.failed }}
           SKIPPED: ${{ steps.pre-commit.outputs.skipped }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          mkdir -p pre-commit-results
-
-          : "${EXIT_CODE:=1}"
-          : "${PASSED:=0}"
-          : "${FAILED:=0}"
-          : "${SKIPPED:=0}"
-
-          cat > pre-commit-results/pre-commit-results.json <<EOF
-          {
-            "exit_code": "${EXIT_CODE}",
-            "passed": "${PASSED}",
-            "failed": "${FAILED}",
-            "skipped": "${SKIPPED}",
-            "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          }
-          EOF
-
-          if [[ -f pre-commit-output.txt ]]; then
-            cp pre-commit-output.txt pre-commit-results/pre-commit-output.txt
-          fi
+          python3 "${GITHUB_WORKSPACE}/.github/scripts/precommit_results.py" \
+            --output-dir pre-commit-results \
+            --exit-code "${EXIT_CODE:-1}" \
+            --passed "${PASSED:-0}" \
+            --failed "${FAILED:-0}" \
+            --skipped "${SKIPPED:-0}" \
+            --run-url "${RUN_URL}" \
+            --output-file pre-commit-output.txt
 
       - name: Upload pre-commit results artifact
         if: github.event_name == 'pull_request' && always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: pre-commit-results
           path: pre-commit-results

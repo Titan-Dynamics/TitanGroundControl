@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 
 import QGroundControl
 import QGroundControl.FactControls
@@ -12,7 +13,7 @@ SetupPage {
     Component {
         id: tuningPageComponent
 
-        Column {
+        ColumnLayout {
             width:      availableWidth
             spacing:    _margins
 
@@ -47,21 +48,14 @@ SetupPage {
                 }
             }
 
-            Rectangle {
+            QGCGroupBox {
                 id:                 atcParams
+                Layout.preferredWidth: tuningPage.availableWidth * 0.75
                 visible:            atcButton.checked
-                anchors.left:       parent.left
-                anchors.right:      parent.right
-                height:             posColumn.height + _margins*2
-                color:              qgcPal.windowShade
+                title:              qsTr("Attitude Controller Parameters")
 
                 Column {
                     id:                 posColumn
-                    width:              parent.width/2
-                    anchors.margins:    _margins
-                    anchors.left:       parent.left
-                    anchors.right:      parent.right
-                    anchors.top:        parent.top
                     spacing:            _margins*1.5
 
                     FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "ATC_ANG_PIT_P") }
@@ -80,16 +74,14 @@ SetupPage {
                     FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "ATC_RAT_YAW_IMAX") }
                     FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "ATC_RAT_YAW_D") }
 
-                } // Column - Position Controller Parameters
-            } // Rectangle - Position Controller Parameters
+                } // Column - Attitude Controller Parameters
+            } // QGCGroupBox - Attitude Controller Parameters
 
-            Rectangle {
+            QGCGroupBox {
                 id:                 posParams
+                Layout.preferredWidth: tuningPage.availableWidth * 0.75
                 visible:            posButton.checked
-                anchors.left:       parent.left
-                anchors.right:      parent.right
-                height:             velColumn.height + _margins*2
-                color:              qgcPal.windowShade
+                title:              qsTr("Position Controller Parameters")
 
                 Component {
                     id: velColumnUpTo36
@@ -100,17 +92,20 @@ SetupPage {
                         anchors.top:        parent.top
                         spacing:            _margins*1.5
 
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_POSXY_P") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_POSZ_P") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_VELXY_P") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_VELXY_I") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_VELXY_IMAX") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_VELZ_P") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_ACCZ_D") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_ACCZ_FILT") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_ACCZ_I") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_ACCZ_IMAX") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_ACCZ_P") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_POSXY_P") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_POSZ_P") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_VELXY_P") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_VELXY_I") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_VELXY_IMAX") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_VELZ_P") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_ACCZ_D") }
+                        FactTextFieldSlider2 {
+                            visible: controller.parameterExists(-1, "PSC_ACCZ_FILT")
+                            fact:    visible ? controller.getParameterFact(-1, "PSC_ACCZ_FILT") : null
+                        }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_ACCZ_I") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_ACCZ_IMAX") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_ACCZ_P") }
 
                     } // Column - VEL parameters
                 }
@@ -123,19 +118,19 @@ SetupPage {
                         anchors.top:        parent.top
                         spacing:            _margins*1.5
 
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_POSXY_P") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_POSZ_P") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_VELXY_P") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_VELXY_I") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_VELXY_IMAX") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_VELZ_P") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_ACCZ_D") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_ACCZ_FLTD") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_ACCZ_FLTE") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_ACCZ_FLTT") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_ACCZ_I") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_ACCZ_IMAX") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "r.PSC_ACCZ_P") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_NE_POS_P") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_D_POS_P") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_NE_VEL_P") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_NE_VEL_I") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_NE_VEL_IMAX") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_D_VEL_P") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_D_ACC_D") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_D_ACC_FLTD") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_D_ACC_FLTE") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_D_ACC_FLTT") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_D_ACC_I") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_D_ACC_IMAX") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "PSC_D_ACC_P") }
 
                     } // Column - VEL parameters
                 }
@@ -147,15 +142,13 @@ SetupPage {
 
                     sourceComponent: globals.activeVehicle.versionCompare(3, 6, 0) <= 0 ? velColumnUpTo36 :velColumn40
                 }
-            } // Rectangle - VEL parameters
+            } // QGCGroupBox - Position Controller Parameters
 
-            Rectangle {
+            QGCGroupBox {
                 id:                 navParams
+                Layout.preferredWidth: tuningPage.availableWidth * 0.75
                 visible:            navButton.checked
-                anchors.left:       parent.left
-                anchors.right:      parent.right
-                height:             wpnavColumn.height + _margins*2
-                color:              qgcPal.windowShade
+                title:              qsTr("Waypoint Navigation Parameters")
 
                 // WPNAV parameters up to 3.5
                 Component {
@@ -191,18 +184,36 @@ SetupPage {
                         anchors.top:        parent.top
                         spacing:            _margins*1.5
 
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "WPNAV_ACCEL") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "WPNAV_ACCEL_Z") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "WPNAV_RADIUS") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "WPNAV_SPEED") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "WPNAV_SPEED_DN") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "WPNAV_SPEED_UP") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "LOIT_SPEED") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "LOIT_ACC_MAX") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "LOIT_ANG_MAX") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "LOIT_BRK_ACCEL") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "LOIT_BRK_DELAY") }
-                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "LOIT_BRK_JERK") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "WP_ACC") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "WP_ACC_Z") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "WP_RADIUS_M") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "WP_SPD") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "WP_SPD_DN") }
+                        FactTextFieldSlider2 { fact: controller.getParameterFact(-1, "WP_SPD_UP") }
+                        FactTextFieldSlider2 {
+                            visible: controller.parameterExists(-1, "LOIT_SPEED")
+                            fact:    visible ? controller.getParameterFact(-1, "LOIT_SPEED") : null
+                        }
+                        FactTextFieldSlider2 {
+                            visible: controller.parameterExists(-1, "LOIT_ACC_MAX")
+                            fact:    visible ? controller.getParameterFact(-1, "LOIT_ACC_MAX") : null
+                        }
+                        FactTextFieldSlider2 {
+                            visible: controller.parameterExists(-1, "LOIT_ANG_MAX")
+                            fact:    visible ? controller.getParameterFact(-1, "LOIT_ANG_MAX") : null
+                        }
+                        FactTextFieldSlider2 {
+                            visible: controller.parameterExists(-1, "LOIT_BRK_ACCEL")
+                            fact:    visible ? controller.getParameterFact(-1, "LOIT_BRK_ACCEL") : null
+                        }
+                        FactTextFieldSlider2 {
+                            visible: controller.parameterExists(-1, "LOIT_BRK_DELAY")
+                            fact:    visible ? controller.getParameterFact(-1, "LOIT_BRK_DELAY") : null
+                        }
+                        FactTextFieldSlider2 {
+                            visible: controller.parameterExists(-1, "LOIT_BRK_JERK")
+                            fact:    visible ? controller.getParameterFact(-1, "LOIT_BRK_JERK") : null
+                        }
                     }
                 }
 
@@ -214,7 +225,7 @@ SetupPage {
 
                     sourceComponent: globals.activeVehicle.versionCompare(3, 6, 0) < 0 ? wpnavColumn35 : wpnavColumn36
                     }
-            } // Rectangle - WPNAV parameters
-        } // Column
+            } // QGCGroupBox - WPNAV parameters
+        } // ColumnLayout
     } // Component
-} // SetupView
+} // SetupPage

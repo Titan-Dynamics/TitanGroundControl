@@ -3,7 +3,7 @@
 #include "LinkConfiguration.h"
 
 #include <QtCore/QLoggingCategory>
-#include "MAVLinkLib.h"
+#include "MAVLinkEnums.h"
 
 Q_DECLARE_LOGGING_CATEGORY(MockConfigurationLog)
 
@@ -110,6 +110,10 @@ public:
     FailureMode_t failureMode() const { return _failureMode; }
     void setFailureMode(FailureMode_t failureMode) { _failureMode = failureMode; }
 
+    // Test-only: not persisted via loadSettings/saveSettings
+    bool startArmed() const { return _startArmed; }
+    void setStartArmed(bool armed) { _startArmed = armed; }
+
 signals:
     void firmwareChanged();
     void vehicleChanged();
@@ -144,6 +148,7 @@ private:
     bool _incrementVehicleId = true;
     uint16_t _boardVendorId = 0;
     uint16_t _boardProductId = 0;
+    bool _startArmed = false;
 
     // Camera capability flags (defaults match current Camera 1 configuration)
     bool _cameraCaptureVideo = true;
@@ -153,8 +158,8 @@ private:
     bool _cameraCanCaptureImageInVideoMode = true;
     bool _cameraCanCaptureVideoInImageMode = false;
     bool _cameraHasBasicZoom = true;
-    bool _cameraHasTrackingPoint = false;
-    bool _cameraHasTrackingRectangle = false;
+    bool _cameraHasTrackingPoint = true;
+    bool _cameraHasTrackingRectangle = true;
 
     // Gimbal capability flags (defaults - all enabled)
     bool _gimbalHasRollAxis = true;

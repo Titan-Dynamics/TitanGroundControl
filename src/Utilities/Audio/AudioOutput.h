@@ -37,15 +37,7 @@ public:
     static AudioOutput *instance();
 
     /// Initialize the Singleton
-    void init(Fact *mutedFact);
-
-    /// Checks if the audio output is muted.
-    ///     @return True if muted, false otherwise.
-    bool isMuted() const { return _muted; }
-
-    /// Sets the mute state of the audio output.
-    ///     @param enable True to mute, false to unmute.
-    void setMuted(bool muted);
+    void init(Fact *volumeFact, Fact *mutedFact);
 
     /// Stops any currently playing speech.
     void stop();
@@ -57,12 +49,27 @@ public:
     ///     @param rate Speech rate from -1.0 (slowest) to 1.0 (fastest), 0.0 is normal.
     void say(const QString &text, TextMods textMods = TextMod::None, bool ignoreMute = false, double rate = 0.0);
 
+    /// Tests the audio output. Will stop current output before test
+    void testAudioOutput();
+
 private:
     QTextToSpeech *_engine = nullptr;
     QAtomicInteger<qsizetype> _textQueueSize = 0;
     bool _initialized = false;
     std::atomic_bool _muted = false;
     std::atomic_bool _pendingMuteRestore = false;
+    Fact *_volumeFact = nullptr;
+    Fact *_mutedFact = nullptr;
+    double _lastVolume = -1.0;
+
+    /// Returns the current volume (0.0 - 100.0) from the settings Fact.
+    double _volumeSetting() const;
+
+    /// Returns the current muted state from the settings Fact.
+    bool _mutedSetting() const;
+
+    /// Sets the TTS engine volume from the current Fact value.
+    void _setVolume();
 
     static const QHash<QString, QString> _textHash;
 

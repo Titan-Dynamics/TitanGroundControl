@@ -16,6 +16,7 @@
 #include "Vehicle.h"
 
 #include <cstring>
+#include <memory>
 
 QGC_LOGGING_CATEGORY(RAIIFixturesLog, "Test.RAIIFixtures")
 
@@ -147,11 +148,6 @@ void SettingsFixture::setOfflineVehicleType(MAV_TYPE vehicleType)
 {
     AppSettings* appSettings = SettingsManager::instance()->appSettings();
     appSettings->offlineEditingVehicleClass()->setRawValue(QGCMAVLink::vehicleClass(vehicleType));
-}
-
-void SettingsFixture::setAltitudeMode(int altitudeMode)
-{
-    Q_UNUSED(altitudeMode);
 }
 
 void SettingsFixture::setFactValue(Fact* fact, const QVariant& value)

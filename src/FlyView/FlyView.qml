@@ -13,6 +13,7 @@ import QGroundControl
 import QGroundControl.Controls
 import QGroundControl.FlyView
 import QGroundControl.FlightMap
+import QGroundControl.Toolbar
 import QGroundControl.Viewer3D
 
 Item {

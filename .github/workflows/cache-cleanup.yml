@@ -23,21 +23,29 @@ jobs:
     timeout-minutes: 30
 
     steps:
+      - name: Install gh-actions-cache
+        run: |
+          if ! gh extension list | awk '{print $1}' | grep -qx 'actions/gh-actions-cache'; then
+            gh extension install actions/gh-actions-cache
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: List caches
         id: list
         env:
           INPUT_BRANCH: ${{ inputs.branch }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           echo "## Cache Summary" >> "$GITHUB_STEP_SUMMARY"
 
-          ARGS=(-R "${{ github.repository }}" --order desc -L 100)
           if [[ -n "$INPUT_BRANCH" ]]; then
             echo "Branch filter: \`$INPUT_BRANCH\`" >> "$GITHUB_STEP_SUMMARY"
-            ARGS+=(-B "$INPUT_BRANCH")
+            CACHES=$(gh actions-cache list -R "$GH_REPO" -B "$INPUT_BRANCH" --order desc --limit 100)
+          else
+            CACHES=$(gh actions-cache list -R "$GH_REPO" --order desc --limit 100)
           fi
-
-          CACHES=$(gh cache list "${ARGS[@]}")
 
           if [[ -z "$CACHES" ]]; then
             echo "No caches found" >> "$GITHUB_STEP_SUMMARY"
@@ -48,42 +56,47 @@ jobs:
           COUNT=$(echo "$CACHES" | wc -l)
           echo "count=$COUNT" >> "$GITHUB_OUTPUT"
 
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Key | Size | Branch |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|-----|------|--------|" >> "$GITHUB_STEP_SUMMARY"
-          echo "$CACHES" | while IFS=$'\t' read -r KEY SIZE BRANCH _REST; do
-            echo "| \`${KEY:0:50}\` | $SIZE | $BRANCH |" >> "$GITHUB_STEP_SUMMARY"
-          done
-
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Total: $COUNT caches**" >> "$GITHUB_STEP_SUMMARY"
+          # shellcheck disable=SC2129
+          {
+            echo ""
+            echo "| Key | Size | Branch |"
+            echo "|-----|------|--------|"
+            echo "$CACHES" | while read -r KEY SIZE BRANCH; do
+              echo "| \`${KEY:0:50}\` | $SIZE | $BRANCH |"
+            done
+            echo ""
+            echo "**Total: $COUNT caches**"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Delete caches
         if: inputs['dry-run'] == false && steps.list.outputs.count != '0'
         env:
           INPUT_BRANCH: ${{ inputs.branch }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "## Deletion Results" >> "$GITHUB_STEP_SUMMARY"
 
-          ARGS=(-R "${{ github.repository }}" -L 100)
+          BRANCH_ARGS=()
           if [[ -n "$INPUT_BRANCH" ]]; then
-            ARGS+=(-B "$INPUT_BRANCH")
+            KEYS=$(gh actions-cache list -R "$GH_REPO" -B "$INPUT_BRANCH" --limit 100 | cut -f1)
+            BRANCH_ARGS=(-B "$INPUT_BRANCH")
+          else
+            KEYS=$(gh actions-cache list -R "$GH_REPO" --limit 100 | cut -f1)
           fi
-
-          KEYS=$(gh cache list "${ARGS[@]}" | cut -f1)
 
           DELETED=0
           FAILED=0
 
-          for KEY in $KEYS; do
-            if gh cache delete "$KEY" -R "${{ github.repository }}" 2>/dev/null; then
+          while IFS= read -r KEY; do
+            [[ -z "$KEY" ]] && continue
+            if gh actions-cache delete "$KEY" -R "$GH_REPO" "${BRANCH_ARGS[@]}" --confirm 2>/dev/null; then
               ((DELETED++))
             else
               ((FAILED++))
             fi
-          done
+          done <<< "$KEYS"
 
           echo "Deleted: $DELETED" >> "$GITHUB_STEP_SUMMARY"
           if [[ $FAILED -gt 0 ]]; then

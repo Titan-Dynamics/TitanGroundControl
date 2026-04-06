@@ -18,6 +18,7 @@ MockConfiguration::MockConfiguration(const MockConfiguration *copy, QObject *par
     , _enableGimbal(copy->enableGimbal())
     , _failureMode(copy->failureMode())
     , _incrementVehicleId(copy->incrementVehicleId())
+    , _startArmed(copy->startArmed())
     , _cameraCaptureVideo(copy->cameraCaptureVideo())
     , _cameraCaptureImage(copy->cameraCaptureImage())
     , _cameraHasModes(copy->cameraHasModes())
@@ -72,6 +73,7 @@ void MockConfiguration::copyFrom(const LinkConfiguration *source)
     setGimbalHasYawLock(mockLinkSource->gimbalHasYawLock());
     setGimbalHasRetract(mockLinkSource->gimbalHasRetract());
     setGimbalHasNeutral(mockLinkSource->gimbalHasNeutral());
+    setStartArmed(mockLinkSource->startArmed());
 }
 
 void MockConfiguration::loadSettings(QSettings &settings, const QString &root)
@@ -92,8 +94,8 @@ void MockConfiguration::loadSettings(QSettings &settings, const QString &root)
     setCameraCanCaptureImageInVideoMode(settings.value(_cameraCanCaptureImageInVideoModeKey, true).toBool());
     setCameraCanCaptureVideoInImageMode(settings.value(_cameraCanCaptureVideoInImageModeKey, false).toBool());
     setCameraHasBasicZoom(settings.value(_cameraHasBasicZoomKey, true).toBool());
-    setCameraHasTrackingPoint(settings.value(_cameraHasTrackingPointKey, false).toBool());
-    setCameraHasTrackingRectangle(settings.value(_cameraHasTrackingRectangleKey, false).toBool());
+    setCameraHasTrackingPoint(settings.value(_cameraHasTrackingPointKey, true).toBool());
+    setCameraHasTrackingRectangle(settings.value(_cameraHasTrackingRectangleKey, true).toBool());
     setGimbalHasRollAxis(settings.value(_gimbalHasRollAxisKey, true).toBool());
     setGimbalHasPitchAxis(settings.value(_gimbalHasPitchAxisKey, true).toBool());
     setGimbalHasYawAxis(settings.value(_gimbalHasYawAxisKey, true).toBool());

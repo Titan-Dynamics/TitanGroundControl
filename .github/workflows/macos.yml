@@ -1,6 +1,16 @@
 name: MacOS
 
 on:
+  push:
+    branches:
+      - master
+      - 'Stable*'
+    tags:
+      - 'v*'
+    paths-ignore:
+      - 'docs/**'
+  pull_request:
+  merge_group:
   workflow_dispatch:
     inputs:
       build_type:
@@ -11,7 +21,6 @@ on:
         options:
           - Release
           - Debug
-  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -22,16 +31,22 @@ permissions:
   id-token: write
   attestations: write
   actions: read
+  security-events: write
 
 jobs:
+  changes:
+    uses: ./.github/workflows/_detect-changes.yml
+    with:
+      platform: macos
+
   build:
+    needs: changes
+    if: always() && !cancelled() && (needs.changes.outputs.should_build == 'true' || needs.changes.result == 'skipped')
     runs-on: macos-15
     timeout-minutes: 120
 
-    env:
-      HAS_SIGNING_SECRETS: ${{ secrets.MACOS_CERT_P12_BASE64 != '' }}
-
     strategy:
+      fail-fast: false
       matrix:
         build_type: ${{ inputs.build_type && fromJSON(format('["{0}"]', inputs.build_type)) || fromJSON('["Release"]') }}
 
@@ -40,26 +55,20 @@ jobs:
         shell: bash
 
     steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@v2
-        with:
-          egress-policy: audit
-
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
-          fetch-tags: true
+          fetch-depth: ${{ github.event_name == 'pull_request' && 1 || 0 }}
+          fetch-tags: ${{ github.event_name != 'pull_request' }}
 
       - name: Build Setup
         id: setup
         uses: ./.github/actions/build-setup
         with:
-          restore-timestamps: 'true'
+          restore-timestamps: ${{ github.event_name != 'pull_request' && 'true' || 'false' }}
           qt-host: mac
           qt-arch: clang_64
           build-type: ${{ matrix.build_type }}
-          save-cache: ${{ github.event_name != 'pull_request' }}
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -83,20 +92,29 @@ jobs:
           build-dir: ${{ runner.temp }}/build
           build-type: ${{ matrix.build_type }}
 
+      # TODO: Enable GStreamer integration tests once a Debug build is added to the matrix.
+      # Release builds strip test infrastructure; these tests require a Debug or RelWithDebInfo build.
+      # - name: Run GStreamer Integration Tests
+      #   uses: ./.github/actions/run-unit-tests
+      #   with:
+      #     build-dir: ${{ runner.temp }}/build
+      #     include-labels: 'Integration'
+
       - name: Verify dev build executable
         uses: ./.github/actions/verify-executable
         with:
-          binary-path: ${{ runner.temp }}/build/${{ matrix.build_type }}/TitanGroundControl.app/Contents/MacOS/TitanGroundControl
+          binary-path: ${{ runner.temp }}/build/${{ matrix.build_type }}/QGroundControl.app/Contents/MacOS/QGroundControl
+          build-dir: ${{ runner.temp }}/build
 
       - name: Import Code Signing Certificate
-        if: github.event_name != 'pull_request' && env.HAS_SIGNING_SECRETS == 'true'
+        if: github.event_name != 'pull_request'
         uses: apple-actions/import-codesign-certs@v6
         with:
           p12-file-base64: ${{ secrets.MACOS_CERT_P12_BASE64 }}
           p12-password: ${{ secrets.MACOS_CERT_P12_PASSWORD }}
 
       - name: Create signed/notarized/stapled app bundle
-        if: env.HAS_SIGNING_SECRETS == 'true'
+        if: github.event_name != 'pull_request'
         working-directory: ${{ runner.temp }}/build
         run: cmake --install . --config ${{ matrix.build_type }}
         env:
@@ -106,39 +124,31 @@ jobs:
           QGC_MACOS_NOTARIZATION_TEAM_ID: ${{ secrets.MACOS_NOTARIZATION_TEAM_ID }}
 
       - name: Create unsigned app bundle
-        if: env.HAS_SIGNING_SECRETS != 'true'
+        if: github.event_name == 'pull_request'
         working-directory: ${{ runner.temp }}/build
         run: cmake --install . --config ${{ matrix.build_type }}
 
       - name: Mount DMG
         working-directory: ${{ runner.temp }}/build
         run: |
-          if ! hdiutil attach TitanGroundControl.dmg; then
+          if ! hdiutil attach QGroundControl.dmg; then
             echo "::error::Failed to mount DMG"
-            ls -la TitanGroundControl.dmg 2>/dev/null || echo "DMG file not found"
+            ls -la QGroundControl.dmg 2>/dev/null || echo "DMG file not found"
             exit 1
           fi
 
       - name: Verify DMG executable
         uses: ./.github/actions/verify-executable
         with:
-          binary-path: /Volumes/TitanGroundControl/TitanGroundControl.app/Contents/MacOS/TitanGroundControl
+          binary-path: /Volumes/QGroundControl/QGroundControl.app/Contents/MacOS/QGroundControl
 
-      - name: Attest Build with SBOM
+      - name: Attest and Upload
         if: matrix.build_type == 'Release'
-        uses: ./.github/actions/attest-sbom
+        uses: ./.github/actions/attest-and-upload
         with:
-          subject-path: ${{ runner.temp }}/build/TitanGroundControl.dmg
-          subject-name: TitanGroundControl
-          scan-path: ${{ runner.temp }}/build
-
-      - name: Upload Build File
-        if: matrix.build_type == 'Release'
-        uses: ./.github/actions/upload
-        with:
-          artifact_name: TitanGroundControl.dmg
-          package_name: TitanGroundControl
-          aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
-          aws_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws_distribution_id: ${{ secrets.AWS_DISTRIBUTION_ID }}
+          artifact-name: QGroundControl.dmg
+          package-name: QGroundControl
+          aws-role-arn: ${{ secrets.AWS_ROLE_ARN }}
+          aws-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-distribution-id: ${{ secrets.AWS_DISTRIBUTION_ID }}

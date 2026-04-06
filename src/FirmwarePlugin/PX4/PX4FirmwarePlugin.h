@@ -37,12 +37,12 @@ public:
     void                guidedModeRTL                   (Vehicle* vehicle, bool smartRTL) const override;
     void                guidedModeLand                  (Vehicle* vehicle) const override;
     void                guidedModeTakeoff               (Vehicle* vehicle, double takeoffAltRel) const override;
-    double              maximumHorizontalSpeedMultirotor(Vehicle* vehicle) const override;
+    double              maximumHorizontalSpeedMultirotorMetersSecond(Vehicle* vehicle) const override;
     double              maximumEquivalentAirspeed(Vehicle* vehicle) const override;
     double              minimumEquivalentAirspeed(Vehicle* vehicle) const override;
     bool                mulirotorSpeedLimitsAvailable(Vehicle* vehicle) const override;
     bool                fixedWingAirSpeedLimitsAvailable(Vehicle* vehicle) const override;
-    void                guidedModeGotoLocation          (Vehicle* vehicle, const QGeoCoordinate& gotoCoord, double forwardFlightLoiterRadius) const override;
+    bool                guidedModeGotoLocation          (Vehicle* vehicle, const QGeoCoordinate& gotoCoord, double forwardFlightLoiterRadius) const override;
     void                guidedModeChangeAltitude        (Vehicle* vehicle, double altitudeRel, bool pauseVehicle) override;
     void                guidedModeChangeGroundSpeedMetersSecond(Vehicle* vehicle, double groundspeed) const override;
     void                guidedModeChangeEquivalentAirspeedMetersSecond(Vehicle* vehicle, double airspeed_equiv) const override;
@@ -59,8 +59,6 @@ public:
     QObject*            _loadParameterMetaData          (const QString& metaDataFile) final;
     bool                adjustIncomingMavlinkMessage    (Vehicle* vehicle, mavlink_message_t* message) override;
     QString             offlineEditingParamFile         (Vehicle* vehicle) const override { Q_UNUSED(vehicle); return QStringLiteral(":/FirmwarePlugin/PX4/PX4.OfflineEditing.params"); }
-    QString             brandImageIndoor                (const Vehicle* vehicle) const override { Q_UNUSED(vehicle); return QStringLiteral("/qmlimages/PX4/BrandImage"); }
-    QString             brandImageOutdoor               (const Vehicle* vehicle) const override { Q_UNUSED(vehicle); return QStringLiteral("/qmlimages/PX4/BrandImage"); }
     QString             autoDisarmParameter             (Vehicle* vehicle) const override { Q_UNUSED(vehicle); return QStringLiteral("COM_DISARM_LAND"); }
     uint32_t            highLatencyCustomModeTo32Bits   (uint16_t hlCustomMode) const override;
     bool                supportsNegativeThrust          (Vehicle* vehicle) const override;

@@ -5,7 +5,7 @@ qt_add_qml_module(FirstRunPromptDialogsModule
     VERSION 1.0
     RESOURCE_PREFIX /qml
     QML_FILES
-        OfflineVehicleFirstRunPrompt.qml
-        UnitsFirstRunPrompt.qml
+        FirstRunPrompt.qml
+        InitialSetupPrompt.qml
     NO_PLUGIN
 )

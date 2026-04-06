@@ -4,16 +4,21 @@
 #include "AutoPilotPlugin.h"
 
 class APMAirframeComponent;
+class APMAirspeedComponent;
 class APMFlightModesComponent;
 class APMRadioComponent;
 class APMTuningComponent;
-class APMSafetyComponent;
+class APMAdvancedTuningCopterComponent;
+class APMFailsafesComponent;
+class APMFlightSafetyComponent;
 class APMSensorsComponent;
+class APMESCComponent;
 class APMPowerComponent;
 class APMMotorComponent;
 class APMGimbalComponent;
 class APMLightsComponent;
 class APMSubFrameComponent;
+class APMServoComponent;
 class ESP8266Component;
 class APMHeliComponent;
 class APMRemoteSupportComponent;
@@ -39,16 +44,21 @@ public:
 protected:
     bool _incorrectParameterVersion = false; ///< true: parameter version incorrect, setup not allowed
     APMAirframeComponent *_airframeComponent = nullptr;
+    APMAirspeedComponent *_airspeedComponent = nullptr;
     APMGimbalComponent *_gimbalComponent = nullptr;
     APMLightsComponent *_lightsComponent = nullptr;
     APMSubFrameComponent *_subFrameComponent = nullptr;
     APMFlightModesComponent *_flightModesComponent = nullptr;
+    APMServoComponent *_servoComponent = nullptr;
     APMPowerComponent *_powerComponent = nullptr;
+    APMESCComponent *_escComponent = nullptr;
     APMMotorComponent *_motorComponent = nullptr;
     APMRadioComponent *_radioComponent = nullptr;
-    APMSafetyComponent *_safetyComponent = nullptr;
+    APMFailsafesComponent *_failsafesComponent = nullptr;
+    APMFlightSafetyComponent *_flightSafetyComponent = nullptr;
     APMSensorsComponent *_sensorsComponent = nullptr;
     APMTuningComponent *_tuningComponent = nullptr;
+    APMAdvancedTuningCopterComponent *_advancedTuningCopterComponent = nullptr;
     ESP8266Component *_esp8266Component = nullptr;
     APMHeliComponent *_heliComponent = nullptr;
     APMRemoteSupportComponent *_apmRemoteSupportComponent = nullptr;

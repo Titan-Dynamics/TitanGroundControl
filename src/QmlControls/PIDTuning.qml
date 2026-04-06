@@ -19,6 +19,7 @@ RowLayout {
     property double chartDisplaySec:    8 // number of seconds to display
     property bool   showAutoModeChange: false
     property bool   showAutoTuning:     false
+    property bool   useAutoTuning:      false
 
     property real   _margins:           ScreenTools.defaultFontPixelHeight / 2
     property int    _currentAxis:       0
@@ -333,13 +334,16 @@ RowLayout {
                 model: axis
 
                 Repeater {
+                    id: paramRepeater
                     model: axis[index].params
+
+                    property int axisIndex: index
 
                     SettingsGroupLayout {
                         id:                     tuningGroup
                         heading:                title
                         headingDescription:     description
-                        visible:                _currentAxis === index
+                        visible:                _currentAxis === paramRepeater.axisIndex
                         Layout.preferredWidth:  ScreenTools.defaultFontPixelWidth * 40
 
                         FactSlider {

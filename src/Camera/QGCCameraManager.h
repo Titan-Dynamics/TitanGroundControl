@@ -9,15 +9,16 @@
 #include <QtCore/QVariantList>
 #include <QtQmlIntegration/QtQmlIntegration>
 
-#include "MAVLinkLib.h"
+#include "MAVLinkMessageType.h"
 #include "QmlObjectListModel.h"
-#include "Vehicle.h"
+
+class Vehicle;
 
 Q_DECLARE_LOGGING_CATEGORY(CameraManagerLog)
 
 class CameraMetaData;
 class Joystick;
-class MavlinkCameraControl;
+class MavlinkCameraControlInterface;
 class QGCCameraManagerTest;
 class QGCVideoStreamInfo;
 class SimulatedCameraControl;
@@ -29,11 +30,11 @@ class QGCCameraManager : public QObject
     QML_ELEMENT
     QML_UNCREATABLE("")
     Q_MOC_INCLUDE("Joystick.h")
-    Q_MOC_INCLUDE("MavlinkCameraControl.h")
+    Q_MOC_INCLUDE("MavlinkCameraControlInterface.h")
 
     Q_PROPERTY(QmlObjectListModel* cameras READ cameras NOTIFY camerasChanged)
     Q_PROPERTY(QStringList cameraLabels READ cameraLabels NOTIFY cameraLabelsChanged)
-    Q_PROPERTY(MavlinkCameraControl* currentCameraInstance READ currentCameraInstance NOTIFY currentCameraChanged)
+    Q_PROPERTY(MavlinkCameraControlInterface* currentCameraInstance READ currentCameraInstance NOTIFY currentCameraChanged)
     Q_PROPERTY(int currentCamera READ currentCamera WRITE setCurrentCamera NOTIFY currentCameraChanged)
     Q_PROPERTY(int currentZoomLevel READ currentZoomLevel NOTIFY currentZoomLevelChanged)
 
@@ -54,7 +55,7 @@ public:
         int retryCount = 0;
         QElapsedTimer lastHeartbeat;
         QTimer backoffTimer;
-        QPointer<Vehicle> vehicle;
+        Vehicle* vehicle;           ///< Raw pointer is safe: CameraStruct is owned by QGCCameraManager which is a child of Vehicle
         QPointer<QGCCameraManager> manager;
 
     private:
@@ -65,7 +66,7 @@ public:
     const QmlObjectListModel* cameras() const { return &_cameras; }
     QStringList cameraLabels() const { return _cameraLabels; }
     int currentCamera() const { return _currentCameraIndex; }
-    MavlinkCameraControl* currentCameraInstance();
+    MavlinkCameraControlInterface* currentCameraInstance();
     void setCurrentCamera(int sel);
     QGCVideoStreamInfo* currentStreamInstance();
     QGCVideoStreamInfo* thermalStreamInstance();
@@ -112,7 +113,7 @@ private slots:
     void _setCurrentZoomLevel(int level);
 
 private:
-    MavlinkCameraControl* _findCamera(int id);
+    MavlinkCameraControlInterface* _findCamera(int id);
     void _requestCameraInfo(CameraStruct* cameraInfo);
     void _handleHeartbeat(const mavlink_message_t& message);
     void _handleCameraInfo(const mavlink_message_t& message);
@@ -125,10 +126,10 @@ private:
     void _handleVideoStreamStatus(const mavlink_message_t& message);
     void _handleBatteryStatus(const mavlink_message_t& message);
     void _handleTrackingImageStatus(const mavlink_message_t& message);
-    void _addCameraControlToLists(MavlinkCameraControl* cameraControl);
+    void _addCameraControlToLists(MavlinkCameraControlInterface* cameraControl);
     void _handleCameraFovStatus(const mavlink_message_t& message);
 
-    QPointer<Vehicle> _vehicle;
+    Vehicle* _vehicle;              ///< Raw pointer is safe: QGCCameraManager is a QObject child of Vehicle, so Vehicle always outlives us
     QPointer<SimulatedCameraControl> _simulatedCameraControl;
     QPointer<Joystick> _activeJoystick;
     bool _vehicleReadyState = false;

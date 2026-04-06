@@ -76,21 +76,105 @@ def print_log_group(content: str, pattern: re.Pattern[str], max_lines: int = 80)
     print("::endgroup::")
 
 
-def app_running(package_name: str) -> bool:
-    # Prefer pidof for speed, but fall back to ps parsing because some images
-    # expose app processes with a suffix (for example ":qt") or missing pidof.
-    for process_name in (package_name, f"{package_name}:qt"):
-        result = run_command(["adb", "shell", "pidof", process_name])
-        if result.returncode == 0 and _decode(result.stdout).strip():
-            return True
+_GSTREAMER_LOG_PATTERN = re.compile(
+    r"gst|GStreamer|gstreamer|gst_init|gst_plugin|GST_PLUGIN|libgst|"
+    r"GstVideoReceiver|videostreaming|qml6glsink|qgcvideosinkbin",
+    re.IGNORECASE,
+)
 
-    ps_result = run_command(["adb", "shell", "ps", "-A"])
-    if ps_result.returncode != 0:
-        return False
+_GSTREAMER_FAILURE_PATTERN = re.compile(
+    r"GStreamer library not found|"
+    r"Failed to initialize GStreamer|"
+    r"nativeInit failed; skipping GStreamer initialization|"
+    r"GStreamer Java-side init result:\s*failed|"
+    r"GStreamer initialization failed",
+    re.IGNORECASE,
+)
 
+
+def print_gstreamer_log_group(content: str, max_lines: int = 120) -> None:
+    matches = [line for line in content.splitlines() if _GSTREAMER_LOG_PATTERN.search(line)]
+    if not matches:
+        print("::notice::No GStreamer-related logcat lines found")
+        return
+    print(f"::group::GStreamer logcat ({len(matches)} lines)")
+    for line in matches[-max_lines:]:
+        print(line)
+    print("::endgroup::")
+
+
+_LOGCAT_TIME_PATTERN = re.compile(r"^(?P<timestamp>\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})")
+
+
+def _extract_logcat_timestamp(line: str) -> str | None:
+    match = _LOGCAT_TIME_PATTERN.match(line)
+    if not match:
+        return None
+    return match.group("timestamp")
+
+
+class LogcatPoller:
+    """Incrementally poll logcat output to avoid re-reading full buffers."""
+
+    def __init__(self) -> None:
+        self._last_timestamp = ""
+        self._seen_lines_at_last_timestamp: set[str] = set()
+        self._all_lines: list[str] = []
+
+    def poll(self) -> tuple[str, str]:
+        cmd = ["adb", "logcat", "-d", "-v", "time"]
+        if self._last_timestamp:
+            cmd.extend(["-T", self._last_timestamp])
+
+        result = run_command(cmd)
+        if result.returncode != 0:
+            content = "\n".join(self._all_lines)
+            return content, ""
+
+        new_lines: list[str] = []
+        latest_timestamp = self._last_timestamp
+        latest_timestamp_lines = set(self._seen_lines_at_last_timestamp)
+
+        for line in _decode(result.stdout).splitlines():
+            timestamp = _extract_logcat_timestamp(line)
+            if timestamp and self._last_timestamp and timestamp < self._last_timestamp:
+                continue
+            if timestamp == self._last_timestamp and line in self._seen_lines_at_last_timestamp:
+                continue
+
+            new_lines.append(line)
+            if not timestamp:
+                continue
+
+            if not latest_timestamp or timestamp > latest_timestamp:
+                latest_timestamp = timestamp
+                latest_timestamp_lines = {line}
+            elif timestamp == latest_timestamp:
+                latest_timestamp_lines.add(line)
+
+        if new_lines:
+            self._all_lines.extend(new_lines)
+        if latest_timestamp:
+            self._last_timestamp = latest_timestamp
+            self._seen_lines_at_last_timestamp = latest_timestamp_lines
+
+        content = "\n".join(self._all_lines)
+        delta = "\n".join(new_lines)
+        return content, delta
+
+
+def get_process_table() -> str:
+    result = run_command(["adb", "shell", "ps", "-A"])
+    if result.returncode != 0:
+        return ""
+    return _decode(result.stdout)
+
+
+def app_running_from_process_table(package_name: str, process_table: str) -> bool:
     package_prefix = f"{package_name}:"
-    for line in _decode(ps_result.stdout).splitlines():
-        if package_name in line or package_prefix in line:
+    for line in process_table.splitlines():
+        fields = line.split()
+        if any(f == package_name or f.startswith(package_prefix) for f in fields):
             return True
     return False
 
@@ -107,6 +191,7 @@ def emit_failure(
     logcat_content = read_logcat()
     write_log(log_output, logcat_content)
     print_log_group(logcat_content, log_pattern)
+    print_gstreamer_log_group(logcat_content)
     return 1
 
 
@@ -172,6 +257,7 @@ def run_boot_attempt(
 ) -> tuple[bool, str | None, str | None, str, re.Pattern[str]]:
     run_command(["adb", "shell", "am", "force-stop", package_name])
     run_command(["adb", "logcat", "-c"])
+    logcat_poller = LogcatPoller()
 
     launch_result = run_command(
         [
@@ -201,19 +287,20 @@ def run_boot_attempt(
     consecutive_not_running = 0
 
     for second in range(1, timeout + 1):
-        logcat_content = read_logcat()
-        saw_app_logs = bool(app_log_pattern.search(logcat_content))
+        logcat_content, logcat_delta = logcat_poller.poll()
+        saw_app_logs = bool(app_log_pattern.search(logcat_delta))
 
-        if "Simple boot test completed" in logcat_content:
+        if "Simple boot test completed" in logcat_delta:
             print(f"Boot test completed successfully in {second}s")
             return True, None, None, logcat_content, app_log_pattern
 
-        is_running = app_running(package_name)
+        process_table = get_process_table()
+        is_running = app_running_from_process_table(package_name, process_table)
         if is_running:
             app_seen_running_once = True
             consecutive_not_running = 0
 
-        launch_detected_in_log = bool(app_launch_pattern.search(logcat_content))
+        launch_detected_in_log = bool(app_launch_pattern.search(logcat_delta))
         if not app_launched and (launch_detected_in_log or is_running or saw_app_logs):
             app_launched = True
             app_launched_at = second
@@ -231,7 +318,7 @@ def run_boot_attempt(
         has_relevant_crash = any(
             crash_signature_pattern.search(line)
             and crash_context_pattern.search(line)
-            for line in logcat_content.splitlines()
+            for line in logcat_delta.splitlines()
         )
         if has_relevant_crash:
             return (
@@ -240,6 +327,19 @@ def run_boot_attempt(
                 None,
                 logcat_content,
                 crash_log_pattern,
+            )
+
+        gstreamer_failure = next(
+            (line for line in logcat_delta.splitlines() if _GSTREAMER_FAILURE_PATTERN.search(line)),
+            None,
+        )
+        if gstreamer_failure:
+            return (
+                False,
+                "GStreamer initialization failed during boot test",
+                gstreamer_failure,
+                logcat_content,
+                app_log_pattern,
             )
 
         if app_launched:
@@ -301,7 +401,7 @@ def main() -> int:
         re.IGNORECASE,
     )
     app_log_pattern = re.compile(
-        rf"{package_escaped}|QGroundControl|qtMainLoopThread|org\.qtproject|qt\.qml|SDL",
+        rf"{package_escaped}|QGroundControl|qtMainLoopThread|org\.qtproject|qt\.qml|SDL|GStreamer|GstVideoReceiver",
         re.IGNORECASE,
     )
     crash_log_pattern = re.compile(
@@ -348,6 +448,7 @@ def main() -> int:
         if passed:
             write_log(args.log_output, logcat_content)
             print_log_group(logcat_content, app_log_pattern)
+            print_gstreamer_log_group(logcat_content)
             print(f"Emulator boot test passed for {args.package}")
             return 0
 
@@ -372,6 +473,7 @@ def main() -> int:
     if final_notice:
         print(f"::notice::{final_notice}")
     print_log_group(final_logcat, final_log_pattern)
+    print_gstreamer_log_group(final_logcat)
     return 1
 
 

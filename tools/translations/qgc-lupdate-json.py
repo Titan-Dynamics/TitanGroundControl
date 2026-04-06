@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import json
 import os
 import sys
@@ -15,14 +15,24 @@ def parseJsonObjectForTranslateKeys(
 ):
     for translateKey in translateKeys:
         if translateKey in jsonObject:
-            locStr = jsonObject[translateKey]
-            currentHierarchy = jsonObjectHierarchy + "." + translateKey
-            if locStr in locStringDict:
-                # Duplicate of an existing string
-                locStringDict[locStr].append(currentHierarchy)
-            else:
-                # First time we are seeing this string
-                locStringDict[locStr] = [currentHierarchy]
+            value = jsonObject[translateKey]
+            if isinstance(value, list):
+                # Array of translatable strings (e.g. keywords)
+                for idx, locStr in enumerate(value):
+                    if not isinstance(locStr, str) or not locStr:
+                        continue
+                    currentHierarchy = jsonObjectHierarchy + "." + translateKey + "[" + str(idx) + "]"
+                    if locStr in locStringDict:
+                        locStringDict[locStr].append(currentHierarchy)
+                    else:
+                        locStringDict[locStr] = [currentHierarchy]
+            elif isinstance(value, str) and value:
+                locStr = value
+                currentHierarchy = jsonObjectHierarchy + "." + translateKey
+                if locStr in locStringDict:
+                    locStringDict[locStr].append(currentHierarchy)
+                else:
+                    locStringDict[locStr] = [currentHierarchy]
     for key in jsonObject:
         currentHierarchy = jsonObjectHierarchy + "." + key
         if isinstance(jsonObject[key], dict):
@@ -48,6 +58,8 @@ def parseJsonArrayForTranslateKeys(
 ):
     for index in range(0, len(jsonArray)):
         jsonObject = jsonArray[index]
+        if not isinstance(jsonObject, dict):
+            continue
         arrayIndexStr = str(index)
         for arrayIDKey in arrayIDKeys:
             if arrayIDKey in jsonObject:
@@ -69,7 +81,16 @@ def addLocKeysBasedOnQGCFileType(jsonPath, jsonDict):
             translateKeyValue = "label,enumStrings,friendlyName,description,category"
             arrayIDKeysKeyValue = "rawName,comment"
         elif qgcFileType == "FactMetaData":
-            translateKeyValue = "shortDesc,longDesc,enumStrings"
+            translateKeyValue = "shortDesc,longDesc,enumStrings,label,keywords"
+            arrayIDKeysKeyValue = "name"
+        elif qgcFileType == "VehicleConfig":
+            translateKeyValue = "title,label,text,heading,keywords"
+            arrayIDKeysKeyValue = "title"
+        elif qgcFileType == "SettingsUI":
+            translateKeyValue = "heading,sectionName,label,text,placeholder,keywords"
+            arrayIDKeysKeyValue = "heading,sectionName"
+        elif qgcFileType == "SettingsPages":
+            translateKeyValue = "name"
             arrayIDKeysKeyValue = "name"
         if translateKeysKey not in jsonDict and translateKeyValue != "":
             jsonDict[translateKeysKey] = translateKeyValue
@@ -108,7 +129,7 @@ def walkDirectoryTreeForJsonFiles(dir, multiFileLocArray):
             walkDirectoryTreeForJsonFiles(path, multiFileLocArray)
 
 
-def writeJsonTSFile(multiFileLocArray):
+def writeJsonTSFile(output_path, multiFileLocArray):
     ts_root = ET.Element("TS", version="2.1")
 
     for entry in multiFileLocArray:
@@ -132,12 +153,12 @@ def writeJsonTSFile(multiFileLocArray):
             if len(disambiguation):
                 ET.SubElement(message, "comment").text = disambiguation
 
-            extraCommentStr = ""
-            for jsonHierachy in singleFileLocStringDict[locKey]:
-                extraCommentStr += f"{jsonHierachy}, "
+            hierarchies = singleFileLocStringDict[locKey]
+            extraCommentStr = ", ".join(hierarchies)
             ET.SubElement(message, "extracomment").text = extraCommentStr
 
-            if extraCommentStr.endswith(".enumStrings, "):
+            commaSeparatedFields = {"enumStrings", "keywords"}
+            if any(h.rsplit(".", 1)[-1] in commaSeparatedFields for h in hierarchies):
                 ET.SubElement(
                     message, "translatorcomment"
                 ).text = "Only use english comma ',' to separate strings"
@@ -146,7 +167,7 @@ def writeJsonTSFile(multiFileLocArray):
             ET.SubElement(message, "source").text = sourceStr
             ET.SubElement(message, "translation", type="unfinished")
 
-    with open("translations/qgc-json.ts", "w", encoding="utf-8") as jsonTSFile:
+    with open(output_path, "w", encoding="utf-8") as jsonTSFile:
         jsonTSFile.write('<?xml version="1.0" encoding="utf-8"?>\n')
         jsonTSFile.write("<!DOCTYPE TS>\n")
         jsonTSFile.write(ET.tostring(ts_root, encoding="unicode"))
@@ -154,9 +175,13 @@ def writeJsonTSFile(multiFileLocArray):
 
 
 def main():
+    # Resolve repo root from script location so CWD doesn't matter
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    repo_root = os.path.normpath(os.path.join(script_dir, "..", ".."))
+
     multiFileLocArray = []
-    walkDirectoryTreeForJsonFiles("../src", multiFileLocArray)
-    writeJsonTSFile(multiFileLocArray)
+    walkDirectoryTreeForJsonFiles(os.path.join(repo_root, "src"), multiFileLocArray)
+    writeJsonTSFile(os.path.join(repo_root, "translations", "qgc-json.ts"), multiFileLocArray)
 
 
 if __name__ == "__main__":

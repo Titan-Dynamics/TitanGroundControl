@@ -48,14 +48,9 @@ public:
     QGCApplication(int &argc, char *argv[], const QGCCommandLineParser::CommandLineParseResult &args);
     ~QGCApplication();
 
-    /// Sets the persistent flag to delete all settings the next time QGroundControl is started.
-    static void deleteAllSettingsNextBoot();
-
-    /// Clears the persistent flag to delete all settings the next time QGroundControl is started.
-    static void clearDeleteAllSettingsNextBoot();
-
     bool runningUnitTests() const { return _runningUnitTests; }
     bool simpleBootTest() const { return _simpleBootTest; }
+    bool bootTestPassed() const { return _bootTestPassed; }
 
     /// Returns true if Qt debug output should be logged to a file
     bool logOutput() const { return _logOutput; }
@@ -125,7 +120,7 @@ private slots:
 private:
     bool compressEvent(QEvent *event, QObject *receiver, QPostEventList *postedEvents) final;
 
-    void _initVideo();
+    bool _initVideo();
 
     /// Initialize the application for normal application boot. Or in other words we are not going to run unit tests.
     void _initForNormalAppBoot();
@@ -156,6 +151,7 @@ private:
     bool _showErrorsInToolbar = false;
     QElapsedTimer _msecsElapsedTime;
     bool _videoManagerInitialized = false;
+    bool _bootTestPassed = true;
 
     QList<QPair<QString /* title */, QString /* message */>> _delayedAppMessages;
 
@@ -179,7 +175,6 @@ private:
     CompressedSignalList _compressedSignals;
 
     const QString _settingsVersionKey = QStringLiteral("SettingsVersion"); ///< Settings key which hold settings version
-    static constexpr const char *_deleteAllSettingsKey = "DeleteAllSettingsNextBoot"; ///< If this settings key is set on boot, all settings will be deleted
 
     const QString _qgcImageProviderId = QStringLiteral("QGCImages");
 };
