@@ -1,17 +1,6 @@
 name: Docs
 
 on:
-  push:
-    branches:
-      - master
-      - 'Stable*'
-    paths:
-      - 'docs/**'
-      - 'package*.json'
-  pull_request:
-    paths:
-      - 'docs/**'
-      - 'package*.json'
   workflow_dispatch:
 
 concurrency:

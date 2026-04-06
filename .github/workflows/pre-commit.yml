@@ -1,11 +1,7 @@
 name: pre-commit
 
 on:
-  push:
-    branches:
-      - master
-      - 'Stable*'
-  pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

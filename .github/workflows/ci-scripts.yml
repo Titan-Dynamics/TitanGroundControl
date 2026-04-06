@@ -1,45 +1,6 @@
 name: CI Scripts
 
 on:
-  pull_request:
-    paths:
-      - '.github/scripts/**'
-      - '.github/actions/**'
-      - '.github/workflows/**'
-      - '.github/build-config.json'
-      - 'tools/setup/**'
-      - 'tools/*.py'
-      - 'tools/uv.lock'
-      - 'tools/tests/**'
-      - 'tools/common/**'
-      - 'tools/generators/**'
-      - 'tools/analyzers/**'
-      - 'tools/locators/**'
-      - 'tools/log-analyzer/**'
-      - 'tools/lsp/**'
-      - 'tools/simulation/**'
-      - 'tools/translations/**'
-  push:
-    branches:
-      - master
-      - 'Stable*'
-    paths:
-      - '.github/scripts/**'
-      - '.github/actions/**'
-      - '.github/workflows/**'
-      - '.github/build-config.json'
-      - 'tools/setup/**'
-      - 'tools/*.py'
-      - 'tools/uv.lock'
-      - 'tools/tests/**'
-      - 'tools/common/**'
-      - 'tools/generators/**'
-      - 'tools/analyzers/**'
-      - 'tools/locators/**'
-      - 'tools/log-analyzer/**'
-      - 'tools/lsp/**'
-      - 'tools/simulation/**'
-      - 'tools/translations/**'
   workflow_dispatch:
 
 concurrency:

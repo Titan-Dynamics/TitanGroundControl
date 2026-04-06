@@ -1,16 +1,6 @@
 name: Custom Build
 
 on:
-  push:
-    branches: [master]
-    paths:
-      - 'custom-example/**'
-      - '.github/workflows/custom-build.yml'
-  pull_request:
-    branches: [master]
-    paths:
-      - 'custom-example/**'
-      - '.github/workflows/custom-build.yml'
   workflow_dispatch:
 
 concurrency:

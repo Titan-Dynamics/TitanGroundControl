@@ -3,15 +3,6 @@ name: Crowdin Translations
 # https://github.com/crowdin/github-action/tree/master
 
 on:
-  push:
-    branches: [master]
-    paths: ['docs/en/**']
-  pull_request:
-    types: [closed]
-    branches: [master]
-    paths: ['docs/en/**']
-  schedule:
-    - cron: '0 0 * * 0'  # Download translations every Sunday
   workflow_dispatch:
     inputs:
       action:
