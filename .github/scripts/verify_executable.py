@@ -86,7 +86,6 @@ def main() -> None:
         _setup_gstreamer_env(Path(args.build_dir))
 
     binary_name = binary_path.name
-    run_binary = binary_name
     headless = True
 
     # AppImages typically don't ship the "offscreen" Qt platform plugin.
@@ -100,6 +99,8 @@ def main() -> None:
         except OSError:
             pass
         run_binary = str(exe.resolve())
+    else:
+        run_binary = str(binary_path.resolve())
 
     workspace = os.environ.get("GITHUB_WORKSPACE", ".")
     cmd = [

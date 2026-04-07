@@ -75,7 +75,7 @@ jobs:
         shell: ${{ matrix.shell }}
 
     env:
-      PACKAGE: QGroundControl
+      PACKAGE: TitanGroundControl
       QT_ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/deploy/android/android_release.keystore
       QT_ANDROID_KEYSTORE_ALIAS: QGCAndroidKeyStore
       QT_ANDROID_KEYSTORE_STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -179,7 +179,7 @@ jobs:
           set -euo pipefail
 
           log_file="${BUILD_DIR}/qgc-build.log"
-          settings_json="${BUILD_DIR}/android-QGroundControl-deployment-settings.json"
+          settings_json="${BUILD_DIR}/android-TitanGroundControl-deployment-settings.json"
           retry_log="${BUILD_DIR}/qgc-build-retry.log"
 
           if [[ ! -f "${log_file}" ]]; then
@@ -188,7 +188,7 @@ jobs:
           fi
 
           # Retry only for known intermittent Qt deployment-settings truncation.
-          if ! grep -Eq "Invalid json file: .*android-QGroundControl-deployment-settings\\.json\\. Reason: unterminated object" "${log_file}"; then
+          if ! grep -Eq "Invalid json file: .*android-TitanGroundControl-deployment-settings\\.json\\. Reason: unterminated object" "${log_file}"; then
             echo "::error::Initial build failed for a non-retriable reason; skipping retry."
             exit 1
           fi
@@ -313,13 +313,13 @@ jobs:
           cp /tmp/qgc_emulator_boot.log "${OUT_DIR}/qgc_emulator_boot.log" 2>/dev/null || true
           cp "${BUILD_DIR}/qgc-build.log" "${OUT_DIR}/qgc-build.log" 2>/dev/null || true
           cp "${BUILD_DIR}/qgc-build-retry.log" "${OUT_DIR}/qgc-build-retry.log" 2>/dev/null || true
-          cp "${BUILD_DIR}/android-QGroundControl-deployment-settings.json" \
-            "${OUT_DIR}/android-QGroundControl-deployment-settings.json" 2>/dev/null || true
+          cp "${BUILD_DIR}/android-TitanGroundControl-deployment-settings.json" \
+            "${OUT_DIR}/android-TitanGroundControl-deployment-settings.json" 2>/dev/null || true
 
-          if [ -f "${OUT_DIR}/android-QGroundControl-deployment-settings.json" ]; then
-            python3 -m json.tool "${OUT_DIR}/android-QGroundControl-deployment-settings.json" \
-              > "${OUT_DIR}/android-QGroundControl-deployment-settings.pretty.json" \
-              2> "${OUT_DIR}/android-QGroundControl-deployment-settings.error.txt" || true
+          if [ -f "${OUT_DIR}/android-TitanGroundControl-deployment-settings.json" ]; then
+            python3 -m json.tool "${OUT_DIR}/android-TitanGroundControl-deployment-settings.json" \
+              > "${OUT_DIR}/android-TitanGroundControl-deployment-settings.pretty.json" \
+              2> "${OUT_DIR}/android-TitanGroundControl-deployment-settings.error.txt" || true
           fi
 
           if command -v adb >/dev/null 2>&1; then

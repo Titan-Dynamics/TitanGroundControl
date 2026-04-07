@@ -25,30 +25,30 @@ class TestDetectPlatform:
 
 class TestGetBinaryName:
     def test_linux_binary(self) -> None:
-        assert get_binary_name("linux") == "QGroundControl"
+        assert get_binary_name("linux") == "TitanGroundControl"
 
     def test_macos_binary(self) -> None:
-        assert get_binary_name("macos") == "QGroundControl.app"
+        assert get_binary_name("macos") == "TitanGroundControl.app"
 
     def test_windows_binary(self) -> None:
-        assert get_binary_name("windows") == "QGroundControl.exe"
+        assert get_binary_name("windows") == "TitanGroundControl.exe"
 
 
 class TestFindBinary:
     def test_find_single_config(self, tmp_path: Path) -> None:
         build_dir = tmp_path / "build"
-        binary = build_dir / "QGroundControl"
+        binary = build_dir / "TitanGroundControl"
         binary.parent.mkdir(parents=True)
         binary.write_text("binary", encoding="utf-8")
 
         result = find_binary(build_dir, platform="linux")
         assert result is not None
-        assert result.name == "QGroundControl"
+        assert result.name == "TitanGroundControl"
         assert result.path.exists()
 
     def test_find_multi_config_release(self, tmp_path: Path) -> None:
         build_dir = tmp_path / "build"
-        binary = build_dir / "Release" / "QGroundControl"
+        binary = build_dir / "Release" / "TitanGroundControl"
         binary.parent.mkdir(parents=True)
         binary.write_text("binary", encoding="utf-8")
 
@@ -58,8 +58,8 @@ class TestFindBinary:
 
     def test_find_with_build_type_hint(self, tmp_path: Path) -> None:
         build_dir = tmp_path / "build"
-        debug_binary = build_dir / "Debug" / "QGroundControl"
-        release_binary = build_dir / "Release" / "QGroundControl"
+        debug_binary = build_dir / "Debug" / "TitanGroundControl"
+        release_binary = build_dir / "Release" / "TitanGroundControl"
         debug_binary.parent.mkdir(parents=True)
         release_binary.parent.mkdir(parents=True)
         debug_binary.write_text("debug", encoding="utf-8")
@@ -71,22 +71,22 @@ class TestFindBinary:
 
     def test_find_windows_exe(self, tmp_path: Path) -> None:
         build_dir = tmp_path / "build"
-        binary = build_dir / "QGroundControl.exe"
+        binary = build_dir / "TitanGroundControl.exe"
         binary.parent.mkdir(parents=True)
         binary.write_text("binary", encoding="utf-8")
 
         result = find_binary(build_dir, platform="windows")
         assert result is not None
-        assert result.name == "QGroundControl.exe"
+        assert result.name == "TitanGroundControl.exe"
 
     def test_find_macos_app(self, tmp_path: Path) -> None:
         build_dir = tmp_path / "build"
-        app_dir = build_dir / "QGroundControl.app"
+        app_dir = build_dir / "TitanGroundControl.app"
         app_dir.mkdir(parents=True)
 
         result = find_binary(build_dir, platform="macos")
         assert result is not None
-        assert result.name == "QGroundControl.app"
+        assert result.name == "TitanGroundControl.app"
 
     def test_not_found_returns_none(self, tmp_path: Path) -> None:
         build_dir = tmp_path / "empty_build"
@@ -95,7 +95,7 @@ class TestFindBinary:
 
     def test_recursive_search_fallback(self, tmp_path: Path) -> None:
         build_dir = tmp_path / "build"
-        binary = build_dir / "nested" / "dir" / "QGroundControl"
+        binary = build_dir / "nested" / "dir" / "TitanGroundControl"
         binary.parent.mkdir(parents=True)
         binary.write_text("binary", encoding="utf-8")
 
@@ -108,8 +108,8 @@ class TestGitHubOutput:
     def test_output_written(self, tmp_path: Path) -> None:
         output_file = tmp_path / "github_output"
         info = BinaryInfo(
-            path=tmp_path / "QGroundControl",
-            name="QGroundControl",
+            path=tmp_path / "TitanGroundControl",
+            name="TitanGroundControl",
             directory=tmp_path,
         )
 
@@ -118,5 +118,5 @@ class TestGitHubOutput:
 
         content = output_file.read_text(encoding="utf-8")
         assert "binary_path=" in content
-        assert "binary_name=QGroundControl" in content
+        assert "binary_name=TitanGroundControl" in content
         assert "binary_dir=" in content

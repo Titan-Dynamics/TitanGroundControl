@@ -47,7 +47,7 @@ class TestResult:
 class QtTestRunner:
     """Runs QGroundControl Qt unit tests."""
 
-    BINARY_NAME = "QGroundControl"
+    BINARY_NAME = "TitanGroundControl"
     BUILD_TYPES = ("Debug", "Release", "RelWithDebInfo", "MinSizeRel")
 
     def __init__(

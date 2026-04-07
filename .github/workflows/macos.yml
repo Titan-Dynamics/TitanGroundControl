@@ -93,7 +93,7 @@ jobs:
       - name: Verify dev build executable
         uses: ./.github/actions/verify-executable
         with:
-          binary-path: ${{ runner.temp }}/build/${{ matrix.build_type }}/QGroundControl.app/Contents/MacOS/QGroundControl
+          binary-path: ${{ runner.temp }}/build/${{ matrix.build_type }}/TitanGroundControl.app/Contents/MacOS/TitanGroundControl
           build-dir: ${{ runner.temp }}/build
 
       - name: Import Code Signing Certificate
@@ -121,23 +121,23 @@ jobs:
       - name: Mount DMG
         working-directory: ${{ runner.temp }}/build
         run: |
-          if ! hdiutil attach QGroundControl.dmg; then
+          if ! hdiutil attach TitanGroundControl.dmg; then
             echo "::error::Failed to mount DMG"
-            ls -la QGroundControl.dmg 2>/dev/null || echo "DMG file not found"
+            ls -la TitanGroundControl.dmg 2>/dev/null || echo "DMG file not found"
             exit 1
           fi
 
       - name: Verify DMG executable
         uses: ./.github/actions/verify-executable
         with:
-          binary-path: /Volumes/QGroundControl/QGroundControl.app/Contents/MacOS/QGroundControl
+          binary-path: /Volumes/TitanGroundControl/TitanGroundControl.app/Contents/MacOS/TitanGroundControl
 
       - name: Attest and Upload
         if: matrix.build_type == 'Release'
         uses: ./.github/actions/attest-and-upload
         with:
-          artifact-name: QGroundControl.dmg
-          package-name: QGroundControl
+          artifact-name: TitanGroundControl.dmg
+          package-name: TitanGroundControl
           aws-role-arn: ${{ secrets.AWS_ROLE_ARN }}
           aws-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
