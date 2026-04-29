@@ -125,6 +125,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
 
       - name: Install Qt for Android
+        id: qt-android
         uses: ./.github/actions/qt-android
         with:
           host: windows
@@ -157,25 +158,25 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Configure
-        shell: bash
-        working-directory: ${{ runner.temp }}/build
-        run: |
-          QT_DIR="${QT_ROOT_DIR//\\//}"
-          WORKSPACE="${GITHUB_WORKSPACE//\\//}"
-          "${QT_DIR}/bin/qt-cmake" \
-            -S "${WORKSPACE}" \
-            -B . -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_WARN_DEPRECATED=FALSE \
-            -DQT_ANDROID_ABIS="${{ env.QT_ANDROID_ABIS }}" \
-            -DQT_HOST_PATH="${QT_DIR}/../msvc2022_64" \
-            -DQT_ANDROID_SIGN_APK=ON \
-            -DQGC_STABLE_BUILD=ON
+        uses: ./.github/actions/cmake-configure
+        with:
+          build-dir: ${{ runner.temp }}/build
+          build-type: Release
+          stable: 'true'
+          use-qt-cmake: 'false'
+          extra-args: >-
+            -DCMAKE_WARN_DEPRECATED=FALSE
+            -DCMAKE_TOOLCHAIN_FILE=${{ steps.qt-android.outputs.target_qt_root_dir }}/lib/cmake/Qt6/qt.toolchain.cmake
+            -DCMAKE_PREFIX_PATH=${{ steps.qt-android.outputs.target_qt_root_dir }}
+            -DQT_ANDROID_ABIS=${{ env.QT_ANDROID_ABIS }}
+            -DQT_HOST_PATH=${{ steps.qt-android.outputs.host_qt_root_dir }}
+            -DQT_ANDROID_SIGN_APK=ON
 
       - name: Build
-        shell: bash
-        working-directory: ${{ runner.temp }}/build
-        run: cmake --build . --target all --config Release --parallel
+        uses: ./.github/actions/cmake-build
+        with:
+          build-dir: ${{ runner.temp }}/build
+          build-type: Release
 
       - name: Prepare Artifact
         shell: bash
@@ -190,7 +191,7 @@ jobs:
           cp "${APK_DIR}"/*.apk "${TEMP_DIR}/build/${{ env.PACKAGE }}.apk"
 
       - name: Upload APK
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: TitanGroundControl-android
           path: ${{ runner.temp }}/build/${{ env.PACKAGE }}.apk
@@ -226,52 +227,36 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Restore file timestamps
-        uses: chetan/git-restore-mtime-action@v2
-
-      - name: Get build config
-        id: config
-        uses: ./.github/actions/build-config
-
-      - name: Initial Setup
-        uses: ./.github/actions/common
+      - name: Build Setup
+        id: setup
+        uses: ./.github/actions/build-setup
+        with:
+          restore-timestamps: 'true'
+          qt-host: mac
+          qt-arch: clang_64
+          build-type: Release
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: ${{ steps.config.outputs.xcode_version }}
+          xcode-version: ${{ steps.setup.outputs.xcode_version }}
 
-      - name: Install Dependencies (include GStreamer)
-        env:
-          GSTREAMER_VERSION: ${{ steps.config.outputs.gstreamer_macos_version }}
-        run: python3 ./tools/setup/install_dependencies.py --platform macos
-
-      - name: Setup Caching
-        uses: ./.github/actions/cache
-        with:
-          host: mac
-          target: clang_64
-          build-type: Release
-          cpm-modules: ${{ runner.temp }}/build/cpm_modules
-
-      - name: Install Qt
-        uses: ./.github/actions/qt-install
-        with:
-          version: ${{ steps.config.outputs.qt_version }}
-          host: mac
-          arch: clang_64
-          modules: ${{ steps.config.outputs.qt_modules }}
+      - name: Install Dependencies
+        uses: ./.github/actions/install-dependencies
 
       - name: CMake configure
-        working-directory: ${{ runner.temp }}/build
-        run: ${{ env.QT_ROOT_DIR }}/bin/qt-cmake -S ${{ github.workspace }} -B . -G Ninja
-              -DCMAKE_BUILD_TYPE=Release
-              -DQGC_STABLE_BUILD=ON
-              -DQGC_MACOS_SIGN_WITH_IDENTITY=${{ env.HAS_SIGNING_SECRETS == 'true' && 'ON' || 'OFF' }}
+        uses: ./.github/actions/cmake-configure
+        with:
+          build-dir: ${{ runner.temp }}/build
+          build-type: Release
+          stable: 'true'
+          extra-args: -DQGC_MACOS_SIGN_WITH_IDENTITY=${{ env.HAS_SIGNING_SECRETS == 'true' && 'ON' || 'OFF' }}
 
       - name: Build
-        working-directory: ${{ runner.temp }}/build
-        run: cmake --build . --target all --config Release --parallel
+        uses: ./.github/actions/cmake-build
+        with:
+          build-dir: ${{ runner.temp }}/build
+          build-type: Release
 
       - name: Import Code Signing Certificate
         if: env.HAS_SIGNING_SECRETS == 'true'
@@ -296,7 +281,7 @@ jobs:
         run: cmake --install . --config Release
 
       - name: Upload DMG
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: TitanGroundControl-macos
           path: ${{ runner.temp }}/build/TitanGroundControl.dmg
@@ -352,34 +337,13 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Get build config
-        id: config
-        uses: ./.github/actions/build-config
-
-      - name: Common setup
-        uses: ./.github/actions/common
-
-      - name: Install GStreamer
-        if: matrix.gstreamer
-        uses: ./.github/actions/install-dependencies
+      - name: Build Setup
+        id: setup
+        uses: ./.github/actions/build-setup
         with:
-          gstreamer-version: ${{ steps.config.outputs.gstreamer_windows_version }}
-
-      - name: Setup cache
-        uses: ./.github/actions/cache
-        with:
-          host: ${{ matrix.host }}
-          target: ${{ matrix.arch }}
+          qt-host: ${{ matrix.host }}
+          qt-arch: ${{ matrix.arch }}
           build-type: Release
-          cpm-modules: ${{ runner.temp }}\build\cpm_modules
-
-      - name: Install Qt
-        uses: ./.github/actions/qt-install
-        with:
-          version: ${{ steps.config.outputs.qt_version }}
-          host: ${{ matrix.host }}
-          arch: ${{ matrix.arch }}
-          modules: ${{ steps.config.outputs.qt_modules }}
 
       - name: Set up MSVC environment
         uses: TheMrMilchmann/setup-msvc-dev@v4
@@ -390,9 +354,6 @@ jobs:
         if: matrix.variant == 'arm64'
         shell: bash
         run: |
-          # Git for Windows ships /usr/bin/link (GNU coreutils) which shadows
-          # MSVC's link.exe on PATH, causing Rust/cargo builds to fail.
-          # Rename the conflicting binary so MSVC's linker is found instead.
           git_link="/c/Program Files/Git/usr/bin/link.exe"
           if [ -f "$git_link" ]; then
             mv "$git_link" "${git_link}.bak"
@@ -400,23 +361,25 @@ jobs:
           fi
 
       - name: Configure
-        working-directory: ${{ runner.temp }}\build
-        run: |
-          ${{ env.QT_ROOT_DIR }}\bin\qt-cmake -S ${{ github.workspace }} -B . -G Ninja ^
-            -DCMAKE_BUILD_TYPE=Release ^
-            -DQGC_STABLE_BUILD=ON ^
-            -DQGC_ENABLE_GST_VIDEOSTREAMING=${{ matrix.gstreamer && 'ON' || 'OFF' }}
+        uses: ./.github/actions/cmake-configure
+        with:
+          build-dir: ${{ runner.temp }}/build
+          build-type: Release
+          stable: 'true'
+          extra-args: -DQGC_ENABLE_GST_VIDEOSTREAMING=${{ matrix.gstreamer && 'ON' || 'OFF' }}
 
       - name: Build
-        working-directory: ${{ runner.temp }}\build
-        run: cmake --build . --target all --config Release --parallel
+        uses: ./.github/actions/cmake-build
+        with:
+          build-dir: ${{ runner.temp }}/build
+          build-type: Release
 
       - name: Create Installer
         working-directory: ${{ runner.temp }}\build
         run: cmake --install . --config Release
 
       - name: Upload Installer
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.package }}
           path: ${{ runner.temp }}\build\${{ matrix.package }}.exe
@@ -439,25 +402,25 @@ jobs:
           egress-policy: audit
 
       - name: Download Android APK
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: TitanGroundControl-android
           path: release-assets
 
       - name: Download macOS DMG
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: TitanGroundControl-macos
           path: release-assets
 
       - name: Download Windows AMD64 Installer
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: TitanGroundControl-installer-AMD64
           path: release-assets
 
       - name: Download Windows ARM64 Installer
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: TitanGroundControl-installer-ARM64
           path: release-assets
