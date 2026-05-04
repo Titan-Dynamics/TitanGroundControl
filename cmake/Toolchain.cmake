@@ -107,6 +107,8 @@ elseif(MSVC)
     add_link_options("$<$<CONFIG:Release>:/LTCG:INCREMENTAL>")
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug>:Embedded>")
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    # Conformant preprocessor required for __VA_OPT__ (used in test macros)
+    add_compile_options(/Zc:preprocessor)
 endif()
 
 # ----------------------------------------------------------------------------
