@@ -11,6 +11,7 @@ import QGroundControl.FlightMap
 import QGroundControl.Controls
 import QGroundControl.FactControls
 import QGroundControl.FlyView
+import QGroundControl.Geo
 import QGroundControl.Toolbar
 
 Item {
@@ -26,7 +27,7 @@ Item {
     property var    _geoFenceController: _planMasterController.geoFenceController
     property var    _rallyPointController: _planMasterController.rallyPointController
     property var    _visualItems: _missionController.visualItems
-    property bool   _singleComplexItem: _missionController.complexMissionItemNames.length === 1
+    property bool   _singleComplexItem: _missionController.complexMissionItems.length === 1
     property int    _editingLayer: _layerMission
     property var    _appSettings: QGroundControl.settingsManager.appSettings
     property var    _planViewSettings: QGroundControl.settingsManager.planViewSettings
@@ -283,7 +284,7 @@ Item {
 
                 switch (_editingLayer) {
                 case _layerMission:
-                    if (_planMasterController.readyForPlanCreation) {
+                    if (_planMasterController.showCreateFromTemplate) {
                         _missionController.setHomePosition(coordinate)
                     } else if (_addROIOnClick) {
                         _addROIOnClick = false
@@ -444,14 +445,14 @@ Item {
                         }
                     },
                     ToolStripAction {
-                        text: _singleComplexItem ? _missionController.complexMissionItemNames[0] : qsTr("Pattern")
+                        text: _singleComplexItem ? _missionController.complexMissionItems[0].translatedName : qsTr("Pattern")
                         iconSource: "/qmlimages/MapDrawShape.svg"
                         enabled: _homePositionSet && _missionController.flyThroughCommandsAllowed
                         visible: toolStrip._isMissionLayer
                         dropPanelComponent: _singleComplexItem ? undefined : patternDropPanel
                         onTriggered: {
                             if (_singleComplexItem) {
-                                insertComplexItemAfterCurrent(_missionController.complexMissionItemNames[0])
+                                insertComplexItemAfterCurrent(_missionController.complexMissionItems[0].canonicalName)
                             }
                         }
                     },
@@ -754,14 +755,14 @@ Item {
             QGCLabel { text: qsTr("Create complex pattern:") }
 
             Repeater {
-                model: _missionController.complexMissionItemNames
+                model: _missionController.complexMissionItems
 
                 QGCButton {
-                    text: modelData
+                    text: modelData.translatedName
                     Layout.fillWidth: true
 
                     onClicked: {
-                        insertComplexItemAfterCurrent(modelData)
+                        insertComplexItemAfterCurrent(modelData.canonicalName)
                         dropPanel.hide()
                     }
                 }

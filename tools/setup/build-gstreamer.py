@@ -28,7 +28,6 @@ Options:
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import platform
 import shutil
@@ -43,6 +42,8 @@ _tools_dir = Path(__file__).resolve().parents[1]
 if str(_tools_dir) not in sys.path:
     sys.path.insert(0, str(_tools_dir))
 
+from common.build_config import get_build_config_value
+from common.gh_actions import write_github_output
 from common.logging import log_info, log_ok, log_warn, log_error
 
 
@@ -86,32 +87,6 @@ def detect_host_arch() -> str:
     if machine.startswith('arm'):
         return 'armv7'
     return machine
-
-def read_config(key: str, default: str = '') -> str:
-    """Read a value from build-config.json."""
-    script_dir = Path(__file__).parent
-    config_file = script_dir.parent.parent / '.github' / 'build-config.json'
-
-    if not config_file.exists():
-        return default
-
-    try:
-        with open(config_file) as f:
-            config = json.load(f)
-        return config.get(key, default)
-    except FileNotFoundError:
-        return default
-    except json.JSONDecodeError as error:
-        log_error(f"Failed to parse JSON config '{config_file}': {error}")
-        raise
-
-def write_github_output(outputs: dict) -> None:
-    """Write outputs for GitHub Actions."""
-    github_output = os.environ.get('GITHUB_OUTPUT')
-    if github_output:
-        with open(github_output, 'a') as f:
-            for key, value in outputs.items():
-                f.write(f"{key}={value}\n")
 
 
 # ============================================================================
@@ -273,7 +248,8 @@ class MesonBuilder:
             packages.append(f"ninja=={NINJA_VERSION}")
 
         log_info(f"Installing pinned build tools: {', '.join(packages)}")
-        run_cmd([sys.executable, '-m', 'pip', 'install', '--quiet', *packages])
+        from common import pip_install
+        pip_install(packages)
 
         user_scripts = Path(site.getuserbase()) / ('Scripts' if os.name == 'nt' else 'bin')
         os.environ['PATH'] = f"{user_scripts}{os.pathsep}{os.environ['PATH']}"
@@ -638,7 +614,7 @@ def main() -> int:
     args = parse_args()
 
     # Resolve defaults
-    version = args.version or read_config('gstreamer_default_version', '1.24.13')
+    version = args.version or get_build_config_value('gstreamer_default_version', '1.24.13')
     arch = args.arch or get_default_arch(args.platform)
     prefix = Path(args.prefix) if args.prefix else None
     work_dir = Path(args.work_dir)

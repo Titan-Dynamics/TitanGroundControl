@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QtCore/QLoggingCategory>
 #include <QtCore/QObject>
 #include <QtCore/QSet>
 #include <QtQmlIntegration/QtQmlIntegration>
@@ -8,8 +7,6 @@
 #include "FactPanelController.h"
 #include "QmlObjectListModel.h"
 #include "FactMetaData.h"
-
-Q_DECLARE_LOGGING_CATEGORY(ParameterEditorControllerLog)
 
 class ParameterManager;
 
@@ -135,6 +132,7 @@ class ParameterEditorController : public FactPanelController
     Q_PROPERTY(QAbstractTableModel* parameters              MEMBER _parameters                                          NOTIFY parametersChanged)
     Q_PROPERTY(bool                 showModifiedOnly        MEMBER _showModifiedOnly                                    NOTIFY showModifiedOnlyChanged)
     Q_PROPERTY(bool                 showFavoritesOnly       MEMBER _showFavoritesOnly                                   NOTIFY showFavoritesOnlyChanged)
+    Q_PROPERTY(bool                 hideReadOnly            MEMBER _hideReadOnly                                        NOTIFY hideReadOnlyChanged)
     Q_PROPERTY(QStringList          favoriteParameterNames  READ favoriteParameterNames                                 NOTIFY favoritesChanged)
 
     // These property are related to the diff associated with a load from file
@@ -171,6 +169,7 @@ signals:
     void currentGroupChanged            (void);
     void showModifiedOnlyChanged        (void);
     void showFavoritesOnlyChanged       (void);
+    void hideReadOnlyChanged            (void);
     void favoritesChanged               (void);
     void diffOtherVehicleChanged        (bool diffOtherVehicle);
     void diffMultipleComponentsChanged  (bool diffMultipleComponents);
@@ -180,6 +179,7 @@ private slots:
     void _currentCategoryChanged(void);
     void _currentGroupChanged   (void);
     void _searchTextChanged     (void);
+    void _hideReadOnlyChanged   (void);
     void _buildLists            (void);
     void _buildListsForComponent(int compId);
     void _factAdded             (int compId, Fact* fact);
@@ -198,6 +198,7 @@ private:
     ParameterEditorGroup*       _currentGroup           = nullptr;
     bool                        _showModifiedOnly       = false;
     bool                        _showFavoritesOnly      = false;
+    bool                        _hideReadOnly           = false;
     bool                        _diffOtherVehicle       = false;
     bool                        _diffMultipleComponents = false;
     QSet<QString>               _favoriteNames;

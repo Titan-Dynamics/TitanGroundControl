@@ -7,8 +7,8 @@ generation, and path resolution. Used by the qt-install GitHub Action.
 
 Usage:
     python tools/setup/install_qt.py --version 6.8.3 --host linux --arch linux_gcc_64
-    python tools/setup/install_qt.py --version 6.8.3 --host mac --arch clang_64 --modules "qtcharts qtlocation"
-    python tools/setup/install_qt.py cache-key --arch linux_gcc_64 --modules "qtcharts"
+    python tools/setup/install_qt.py --version 6.8.3 --host mac --arch clang_64 --modules "qtgraphs qtlocation"
+    python tools/setup/install_qt.py cache-key --arch linux_gcc_64 --modules "qtgraphs"
     python tools/setup/install_qt.py resolve-arch --arch win64_msvc2022_64
 """
 
@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import os
 import shutil
 import subprocess
 import sys
@@ -84,10 +83,8 @@ def install_qt(
     """Install Qt using aqtinstall and return the resolved root directory."""
     aqt = shutil.which("aqt")
     if not aqt:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "aqtinstall", "--quiet"],
-            check=True,
-        )
+        from common import pip_install
+        pip_install(["aqtinstall"])
         aqt = shutil.which("aqt")
         if not aqt:
             print("::error::aqtinstall not found after pip install")

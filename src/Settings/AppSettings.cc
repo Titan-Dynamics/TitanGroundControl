@@ -1,6 +1,7 @@
 #include "AppSettings.h"
 #include "QGCFileHelper.h"
 #include "QGCPalette.h"
+#include "AppMessages.h"
 #include "QGCApplication.h"
 #include "QGCMAVLink.h"
 #include "LinkManager.h"
@@ -85,7 +86,7 @@ DECLARE_SETTINGGROUP(App, "")
                     qDebug() << "Save to SD card specified for application data. But no SD card present or permissions not granted. Using internal storage.";
                 } else if (!QFileInfo(rootDirPath).isWritable()) {
                     rootDirPath.clear();
-                    qgcApp()->showAppMessage(AppSettings::tr("Save to SD card specified for application data. But SD card is write protected. Using internal storage."));
+                    QGC::showAppMessage(AppSettings::tr("Save to SD card specified for application data. But SD card is write protected. Using internal storage."));
                 }
             }
         #endif
@@ -97,7 +98,7 @@ DECLARE_SETTINGGROUP(App, "")
     savePathFact->setUserVisible(false);
 #else
         QDir rootDir;
-        if (qgcApp()->runningUnitTests() || qgcApp()->simpleBootTest()) {
+        if (QGC::runningUnitTests() || qgcApp()->simpleBootTest()) {
             rootDir = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation));
         } else {
             rootDir = QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
@@ -159,6 +160,15 @@ DECLARE_SETTINGSFACT(AppSettings, clearSettingsNextBoot)
 DECLARE_SETTINGSFACT(AppSettings, disableAllPersistence)
 DECLARE_SETTINGSFACT(AppSettings, firstRunPromptIdsShown)
 DECLARE_SETTINGSFACT(AppSettings, favoriteParameters)
+DECLARE_SETTINGSFACT(AppSettings, remoteLoggingEnabled)
+DECLARE_SETTINGSFACT(AppSettings, remoteLoggingHost)
+DECLARE_SETTINGSFACT(AppSettings, remoteLoggingPort)
+DECLARE_SETTINGSFACT(AppSettings, remoteLoggingProtocol)
+DECLARE_SETTINGSFACT(AppSettings, remoteLoggingVehicleId)
+DECLARE_SETTINGSFACT(AppSettings, remoteLoggingTlsEnabled)
+DECLARE_SETTINGSFACT(AppSettings, remoteLoggingTlsVerifyPeer)
+DECLARE_SETTINGSFACT(AppSettings, remoteLoggingCompressionEnabled)
+DECLARE_SETTINGSFACT(AppSettings, remoteLoggingCompressionLevel)
 
 DECLARE_SETTINGSFACT_NO_FUNC(AppSettings, indoorPalette)
 {
@@ -203,6 +213,11 @@ DECLARE_SETTINGSFACT_NO_FUNC(AppSettings, qLocaleLanguage)
                 rgEnumValues.append(languageInfo.languageId);
             }
         }
+#endif
+#ifdef QT_DEBUG
+        // Debug builds include pseudo-localization for UI layout testing
+        rgEnumStrings.append(AppSettings::tr("Pseudo Localization (Test Only)"));
+        rgEnumValues.append(QLocale::Esperanto);
 #endif
         metaData->setEnumInfo(rgEnumStrings, rgEnumValues);
 
@@ -346,6 +361,12 @@ QLocale::Language AppSettings::_qLocaleLanguageEarlyAccess(void)
             return localeLanguage;
         }
     }
+
+#ifdef QT_DEBUG
+    if (localeLanguage == QLocale::Esperanto) {
+        return localeLanguage;
+    }
+#endif
 
     localeLanguage = QLocale::AnyLanguage;
     settings.setValue(qLocaleLanguageName, localeLanguage);

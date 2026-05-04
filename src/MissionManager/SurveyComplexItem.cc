@@ -1,11 +1,12 @@
 #include "SurveyComplexItem.h"
-#include "JsonHelper.h"
+#include "JsonParsing.h"
 #include "QGCGeo.h"
 #include "QGCQGeoCoordinate.h"
 #include "SettingsManager.h"
 #include "AppSettings.h"
 #include "PlanMasterController.h"
 #include "MissionItem.h"
+#include "AppMessages.h"
 #include "QGCApplication.h"
 #include "Vehicle.h"
 #include "QGCLoggingCategory.h"
@@ -15,8 +16,6 @@
 #include <QtCore/QLineF>
 
 QGC_LOGGING_CATEGORY(SurveyComplexItemLog, "Plan.SurveyComplexItem")
-
-const QString SurveyComplexItem::name(SurveyComplexItem::tr("Survey"));
 
 SurveyComplexItem::SurveyComplexItem(PlanMasterController* masterController, bool flyView, const QString& kmlOrShpFile)
     : TransectStyleComplexItem  (masterController, flyView, settingsGroup)
@@ -78,7 +77,7 @@ void SurveyComplexItem::_saveCommon(QJsonObject& saveObject)
 {
     TransectStyleComplexItem::_save(saveObject);
 
-    saveObject[JsonHelper::jsonVersionKey] =                    5;
+    saveObject[JsonParsing::jsonVersionKey] =                    5;
     saveObject[VisualMissionItem::jsonTypeKey] =                VisualMissionItem::jsonTypeComplexItemValue;
     saveObject[ComplexMissionItem::jsonComplexItemTypeKey] =    jsonComplexItemTypeValue;
     saveObject[_jsonGridAngleKey] =                             _gridAngleFact.rawValue().toDouble();
@@ -96,7 +95,7 @@ void SurveyComplexItem::loadPreset(const QString& presetName)
 
     QJsonObject presetObject = _loadPresetJson(presetName);
     if (!_loadV4V5(presetObject, 0, errorString, 5, true /* forPresets */)) {
-        qgcApp()->showAppMessage(QStringLiteral("Internal Error: Preset load failed. Name: %1 Error: %2").arg(presetName).arg(errorString));
+        QGC::showAppMessage(QStringLiteral("Internal Error: Preset load failed. Name: %1 Error: %2").arg(presetName).arg(errorString));
     }
     _rebuildTransects();
 }
@@ -104,14 +103,14 @@ void SurveyComplexItem::loadPreset(const QString& presetName)
 bool SurveyComplexItem::load(const QJsonObject& complexObject, int sequenceNumber, QString& errorString)
 {
     // We need to pull version first to determine what validation/conversion needs to be performed
-    QList<JsonHelper::KeyValidateInfo> versionKeyInfoList = {
-        { JsonHelper::jsonVersionKey, QJsonValue::Double, true },
+    QList<JsonParsing::KeyValidateInfo> versionKeyInfoList = {
+        { JsonParsing::jsonVersionKey, QJsonValue::Double, true },
     };
-    if (!JsonHelper::validateKeys(complexObject, versionKeyInfoList, errorString)) {
+    if (!JsonParsing::validateKeys(complexObject, versionKeyInfoList, errorString)) {
         return false;
     }
 
-    int version = complexObject[JsonHelper::jsonVersionKey].toInt();
+    int version = complexObject[JsonParsing::jsonVersionKey].toInt();
     if (version < 2 || version > 5) {
         errorString = tr("Survey items do not support version %1").arg(version);
         return false;
@@ -150,7 +149,7 @@ bool SurveyComplexItem::load(const QJsonObject& complexObject, int sequenceNumbe
 
 bool SurveyComplexItem::_loadV4V5(const QJsonObject& complexObject, int sequenceNumber, QString& errorString, int version, bool forPresets)
 {
-    QList<JsonHelper::KeyValidateInfo> keyInfoList = {
+    QList<JsonParsing::KeyValidateInfo> keyInfoList = {
         { VisualMissionItem::jsonTypeKey,               QJsonValue::String, true },
         { ComplexMissionItem::jsonComplexItemTypeKey,   QJsonValue::String, true },
         { _jsonEntryPointKey,                           QJsonValue::Double, true },
@@ -159,11 +158,11 @@ bool SurveyComplexItem::_loadV4V5(const QJsonObject& complexObject, int sequence
     };
 
     if(version == 5) {
-        JsonHelper::KeyValidateInfo jSplitPolygon = { _jsonSplitConcavePolygonsKey, QJsonValue::Bool, true };
+        JsonParsing::KeyValidateInfo jSplitPolygon = { _jsonSplitConcavePolygonsKey, QJsonValue::Bool, true };
         keyInfoList.append(jSplitPolygon);
     }
 
-    if (!JsonHelper::validateKeys(complexObject, keyInfoList, errorString)) {
+    if (!JsonParsing::validateKeys(complexObject, keyInfoList, errorString)) {
         return false;
     }
 
@@ -206,7 +205,7 @@ bool SurveyComplexItem::_loadV4V5(const QJsonObject& complexObject, int sequence
 
 bool SurveyComplexItem::_loadV3(const QJsonObject& complexObject, int sequenceNumber, QString& errorString)
 {
-    QList<JsonHelper::KeyValidateInfo> mainKeyInfoList = {
+    QList<JsonParsing::KeyValidateInfo> mainKeyInfoList = {
         { VisualMissionItem::jsonTypeKey,               QJsonValue::String, true },
         { ComplexMissionItem::jsonComplexItemTypeKey,   QJsonValue::String, true },
         { QGCMapPolygon::jsonPolygonKey,                QJsonValue::Array,  true },
@@ -219,7 +218,7 @@ bool SurveyComplexItem::_loadV3(const QJsonObject& complexObject, int sequenceNu
         { _jsonV3Refly90DegreesKey,                     QJsonValue::Bool,   false },
         { _jsonV3CameraTriggerInTurnaroundKey,          QJsonValue::Bool,   false },    // Should really be required, but it was missing from initial code due to bug
     };
-    if (!JsonHelper::validateKeys(complexObject, mainKeyInfoList, errorString)) {
+    if (!JsonParsing::validateKeys(complexObject, mainKeyInfoList, errorString)) {
         return false;
     }
 
@@ -243,7 +242,7 @@ bool SurveyComplexItem::_loadV3(const QJsonObject& complexObject, int sequenceNu
 
     bool manualGrid = complexObject[_jsonV3ManualGridKey].toBool(true);
 
-    QList<JsonHelper::KeyValidateInfo> gridKeyInfoList = {
+    QList<JsonParsing::KeyValidateInfo> gridKeyInfoList = {
         { _jsonV3GridAltitudeKey,           QJsonValue::Double, true },
         { _jsonV3GridAltitudeRelativeKey,   QJsonValue::Bool,   true },
         { _jsonV3GridAngleKey,              QJsonValue::Double, true },
@@ -252,7 +251,7 @@ bool SurveyComplexItem::_loadV3(const QJsonObject& complexObject, int sequenceNu
         { _jsonV3TurnaroundDistKey,         QJsonValue::Double, true },
     };
     QJsonObject gridObject = complexObject[_jsonV3GridObjectKey].toObject();
-    if (!JsonHelper::validateKeys(gridObject, gridKeyInfoList, errorString)) {
+    if (!JsonParsing::validateKeys(gridObject, gridKeyInfoList, errorString)) {
         _ignoreRecalc = false;
         return false;
     }
@@ -288,7 +287,7 @@ bool SurveyComplexItem::_loadV3(const QJsonObject& complexObject, int sequenceNu
             cameraObject.remove(incorrectImageSideOverlap);
         }
 
-        QList<JsonHelper::KeyValidateInfo> cameraKeyInfoList = {
+        QList<JsonParsing::KeyValidateInfo> cameraKeyInfoList = {
             { _jsonV3GroundResolutionKey,           QJsonValue::Double, true },
             { _jsonV3FrontalOverlapKey,             QJsonValue::Double, true },
             { _jsonV3SideOverlapKey,                QJsonValue::Double, true },
@@ -301,7 +300,7 @@ bool SurveyComplexItem::_loadV3(const QJsonObject& complexObject, int sequenceNu
             { _jsonV3CameraOrientationLandscapeKey, QJsonValue::Bool,   true },
             { _jsonV3CameraMinTriggerIntervalKey,   QJsonValue::Double, false },
         };
-        if (!JsonHelper::validateKeys(cameraObject, cameraKeyInfoList, errorString)) {
+        if (!JsonParsing::validateKeys(cameraObject, cameraKeyInfoList, errorString)) {
             _ignoreRecalc = false;
             return false;
         }

@@ -113,7 +113,7 @@ Item {
             let allHaveChargeState = true
             for (var i = 0; i < _activeVehicle.batteries.count; i++) {
                 let battery = _activeVehicle.batteries.get(i)
-                if (battery.chargeState.rawValue === MAVLink.MAV_BATTERY_CHARGE_STATE_UNDEFINED) {
+                if (battery.chargeState.rawValue === MAVLinkEnums.MAV_BATTERY_CHARGE_STATE_UNDEFINED) {
                     allHaveChargeState = false
                     break
                 }
@@ -225,17 +225,17 @@ Item {
 
             function getBatteryColor() {
                 switch (battery.chargeState.rawValue) {
-                    case MAVLink.MAV_BATTERY_CHARGE_STATE_OK:
+                    case MAVLinkEnums.MAV_BATTERY_CHARGE_STATE_OK:
                         if (!isNaN(battery.percentRemaining.rawValue)) {
                             return _colorFromPercentage()
                         }
                         return qgcPal.text
-                    case MAVLink.MAV_BATTERY_CHARGE_STATE_LOW:
+                    case MAVLinkEnums.MAV_BATTERY_CHARGE_STATE_LOW:
                         return qgcPal.colorOrange
-                    case MAVLink.MAV_BATTERY_CHARGE_STATE_CRITICAL:
-                    case MAVLink.MAV_BATTERY_CHARGE_STATE_EMERGENCY:
-                    case MAVLink.MAV_BATTERY_CHARGE_STATE_FAILED:
-                    case MAVLink.MAV_BATTERY_CHARGE_STATE_UNHEALTHY:
+                    case MAVLinkEnums.MAV_BATTERY_CHARGE_STATE_CRITICAL:
+                    case MAVLinkEnums.MAV_BATTERY_CHARGE_STATE_EMERGENCY:
+                    case MAVLinkEnums.MAV_BATTERY_CHARGE_STATE_FAILED:
+                    case MAVLinkEnums.MAV_BATTERY_CHARGE_STATE_UNHEALTHY:
                         return qgcPal.colorRed
                     default:
                         if (!isNaN(battery.percentRemaining.rawValue)) {
@@ -247,18 +247,18 @@ Item {
 
             function getBatterySvgSource() {
                 switch (battery.chargeState.rawValue) {
-                    case MAVLink.MAV_BATTERY_CHARGE_STATE_OK:
+                    case MAVLinkEnums.MAV_BATTERY_CHARGE_STATE_OK:
                         if (!isNaN(battery.percentRemaining.rawValue)) {
                             return _svgFromPercentage()
                         }
                         return "/qmlimages/Battery.svg"
-                    case MAVLink.MAV_BATTERY_CHARGE_STATE_LOW:
+                    case MAVLinkEnums.MAV_BATTERY_CHARGE_STATE_LOW:
                         return "/qmlimages/BatteryOrange.svg"
-                    case MAVLink.MAV_BATTERY_CHARGE_STATE_CRITICAL:
+                    case MAVLinkEnums.MAV_BATTERY_CHARGE_STATE_CRITICAL:
                         return "/qmlimages/BatteryCritical.svg"
-                    case MAVLink.MAV_BATTERY_CHARGE_STATE_EMERGENCY:
-                    case MAVLink.MAV_BATTERY_CHARGE_STATE_FAILED:
-                    case MAVLink.MAV_BATTERY_CHARGE_STATE_UNHEALTHY:
+                    case MAVLinkEnums.MAV_BATTERY_CHARGE_STATE_EMERGENCY:
+                    case MAVLinkEnums.MAV_BATTERY_CHARGE_STATE_FAILED:
+                    case MAVLinkEnums.MAV_BATTERY_CHARGE_STATE_UNHEALTHY:
                         return "/qmlimages/BatteryEMERGENCY.svg"
                     default:
                         if (!isNaN(battery.percentRemaining.rawValue)) {
@@ -277,7 +277,7 @@ Item {
                     }
                 } else if (!isNaN(battery.voltage.rawValue)) {
                     return battery.voltage.valueString + battery.voltage.units
-                } else if (battery.chargeState.rawValue !== MAVLink.MAV_BATTERY_CHARGE_STATE_UNDEFINED) {
+                } else if (battery.chargeState.rawValue !== MAVLinkEnums.MAV_BATTERY_CHARGE_STATE_UNDEFINED) {
                     return battery.chargeState.enumStringValue
                 }
                 return qsTr("n/a")
@@ -286,7 +286,7 @@ Item {
             function getBatteryVoltageText() {
                 if (!isNaN(battery.voltage.rawValue)) {
                     return battery.voltage.valueString + battery.voltage.units
-                } else if (battery.chargeState.rawValue !== MAVLink.MAV_BATTERY_CHARGE_STATE_UNDEFINED) {
+                } else if (battery.chargeState.rawValue !== MAVLinkEnums.MAV_BATTERY_CHARGE_STATE_UNDEFINED) {
                     return battery.chargeState.enumStringValue
                 }
                 return qsTr("n/a")
@@ -366,14 +366,14 @@ Item {
                 id: batteryValuesAvailableComponent
 
                 QtObject {
-                    property bool functionAvailable:         battery.function.rawValue !== MAVLink.MAV_BATTERY_FUNCTION_UNKNOWN
-                    property bool showFunction:              functionAvailable && battery.function.rawValue != MAVLink.MAV_BATTERY_FUNCTION_ALL
+                    property bool functionAvailable:         battery.function.rawValue !== MAVLinkEnums.MAV_BATTERY_FUNCTION_UNKNOWN
+                    property bool showFunction:              functionAvailable && battery.function.rawValue != MAVLinkEnums.MAV_BATTERY_FUNCTION_ALL
                     property bool temperatureAvailable:      !isNaN(battery.temperature.rawValue)
                     property bool currentAvailable:          !isNaN(battery.current.rawValue)
                     property bool mahConsumedAvailable:      !isNaN(battery.mahConsumed.rawValue)
                     property bool timeRemainingAvailable:    !isNaN(battery.timeRemaining.rawValue)
                     property bool percentRemainingAvailable: !isNaN(battery.percentRemaining.rawValue)
-                    property bool chargeStateAvailable:      battery.chargeState.rawValue !== MAVLink.MAV_BATTERY_CHARGE_STATE_UNDEFINED
+                    property bool chargeStateAvailable:      battery.chargeState.rawValue !== MAVLinkEnums.MAV_BATTERY_CHARGE_STATE_UNDEFINED
                 }
             }
 

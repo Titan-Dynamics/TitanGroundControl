@@ -1,29 +1,46 @@
 #include "UnitTest.h"
 
+#include <QtCore/QCoreApplication>
 #include <QtCore/QDateTime>
 #include <QtCore/QDir>
 #include <QtCore/QElapsedTimer>
 #include <QtCore/QEvent>
 #include <QtCore/QHash>
-#include <QtCore/QCoreApplication>
 #include <QtCore/QStandardPaths>
+#include <QtCore/QRegularExpression>
+#include <QtCore/QTemporaryDir>
+#include <QtCore/QTemporaryFile>
+#include <QtPositioning/QGeoCoordinate>
 #include <QtTest/QSignalSpy>
 #include <QtTest/QTest>
 
+#include <atomic>
+#include <cstring>
 #include <iterator>
 
 #include "AppSettings.h"
 #include "Fact.h"
 #include "LinkManager.h"
+#include "LogEntry.h"
 #include "MissionItem.h"
 #include "MultiVehicleManager.h"
-#include "QGC.h"
+#include "QGCMath.h"
 #include "QGCApplication.h"
-#include "QGCLogging.h"
+#include "LogManager.h"
 #include "QGCLoggingCategory.h"
 #include "QmlObjectListModel.h"
 #include "SettingsManager.h"
 #include "Vehicle.h"
+
+struct UnitTest::ExpectedLogMessages
+{
+    struct Entry
+    {
+        LogEntry::Level level;
+        QRegularExpression pattern;
+    };
+    QList<Entry> list;
+};
 
 QGC_LOGGING_CATEGORY(UnitTestLog, "Test.UnitTest")
 
@@ -33,7 +50,8 @@ QGC_LOGGING_CATEGORY(UnitTestLog, "Test.UnitTest")
 
 QStringList& TestContext::stack()
 {
-    static thread_local QStringList s_stack;
+    // QTest runs test functions sequentially on the main thread — no TLS needed.
+    static QStringList s_stack;
     return s_stack;
 }
 
@@ -74,7 +92,7 @@ void TestContext::pop()
 
 QStringList& TestDebug::messages()
 {
-    static thread_local QStringList s_messages;
+    static QStringList s_messages;
     return s_messages;
 }
 
@@ -254,7 +272,9 @@ QStringList availableLabelNames()
 // UnitTest Implementation
 // ============================================================================
 
-UnitTest::UnitTest(QObject* parent) : QObject(parent)
+UnitTest::UnitTest(QObject* parent)
+    : QObject(parent)
+    , _expectedLogMessages(std::make_unique<ExpectedLogMessages>())
 {
 }
 
@@ -471,10 +491,10 @@ bool UnitTest::waitForDeleted(const QPointer<QObject>& objectPtr, int timeoutMs,
 void UnitTest::settleEventLoopForCleanup(int iterations, int waitMs)
 {
     if (iterations <= 0) {
-        iterations = TestTimeout::isCI() ? 10 : 5;
+        iterations = TestTimeout::isCI() ? 6 : 3;
     }
     if (waitMs < 0) {
-        waitMs = TestTimeout::isCI() ? 20 : 10;
+        waitMs = TestTimeout::isCI() ? 10 : 5;
     }
 
     for (int i = 0; i < iterations; ++i) {
@@ -631,22 +651,23 @@ int UnitTest::run(QStringView singleTest, const QString& outputFile, TestLabels 
 // Test‑time capture handler
 // ============================================================================
 // QTest::qExec() replaces the application message handler with its own.
-// Our QGCLogging::msgHandler is therefore NOT called during test execution.
+// Our LogManager::msgHandler is therefore NOT called during test execution.
 // We work around this by installing a thin wrapper ON TOP of QTest's handler
 // inside initTestCase() and restoring it in cleanupTestCase().
 // The wrapper captures messages for the test log‑capture API and then chains
 // to QTest's handler so QWARN / QCRITICAL output keeps working.
 
-static QtMessageHandler s_qtestHandler = nullptr;
+static std::atomic<QtMessageHandler> s_qtestHandler{nullptr};
 
 static void testCaptureHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     // Capture for unit‑test introspection
-    QGCLogging::captureIfEnabled(type, context, msg);
+    LogManager::captureIfEnabled(type, context, msg);
 
     // Chain to QTest's handler for normal test output
-    if (s_qtestHandler) {
-        s_qtestHandler(type, context, msg);
+    const QtMessageHandler handler = s_qtestHandler.load(std::memory_order_acquire);
+    if (handler) {
+        handler(type, context, msg);
     }
 }
 
@@ -656,32 +677,32 @@ void UnitTest::initTestCase()
     _resetTestState();
 
     // Install the capture wrapper on top of QTest's handler
-    s_qtestHandler = qInstallMessageHandler(testCaptureHandler);
+    s_qtestHandler.store(qInstallMessageHandler(testCaptureHandler), std::memory_order_release);
 }
 
 void UnitTest::cleanupTestCase()
 {
     // Restore QTest's handler so qExec teardown stays consistent
-    if (s_qtestHandler) {
-        (void) qInstallMessageHandler(s_qtestHandler);
-        s_qtestHandler = nullptr;
+    const QtMessageHandler prev = s_qtestHandler.exchange(nullptr, std::memory_order_acq_rel);
+    if (prev) {
+        (void)qInstallMessageHandler(prev);
     }
 }
 
 void UnitTest::expectLogMessage(QtMsgType type, const QRegularExpression &pattern)
 {
-    _expectedLogMessages.append({type, pattern});
+    _expectedLogMessages->list.append({LogEntry::fromQtMsgType(type), pattern});
 }
 
 void UnitTest::init()
 {
     _initCalled = true;
     _failureContextDumped = false;
-    _expectedLogMessages.clear();
+    _expectedLogMessages->list.clear();
 
     // Start capturing log messages for this test (cleared from previous test)
-    QGCLogging::clearCapturedMessages();
-    QGCLogging::setCaptureEnabled(true);
+    LogManager::clearCapturedMessages();
+    LogManager::setCaptureEnabled(true);
 
     // Force offline vehicle back to defaults
     AppSettings* const appSettings = SettingsManager::instance()->appSettings();
@@ -697,7 +718,7 @@ void UnitTest::cleanup()
     dumpFailureContextIfTestFailed(QStringLiteral("cleanup"));
 
     // Stop capturing log messages after the test finishes
-    QGCLogging::setCaptureEnabled(false);
+    LogManager::setCaptureEnabled(false);
 
     _cleanupTempFiles();
 
@@ -710,28 +731,28 @@ void UnitTest::cleanup()
         QString uncategorizedDetails;
         QString criticalDetails;
 
-        auto isExpected = [this](const CapturedLogMessage &m) {
-            for (const auto &e : _expectedLogMessages) {
-                if (e.type == m.type && e.pattern.match(m.message).hasMatch()) {
+        auto isExpected = [this](const LogEntry &m) {
+            for (const auto &e : _expectedLogMessages->list) {
+                if (e.level == m.level && e.pattern.match(m.message).hasMatch()) {
                     return true;
                 }
             }
             return false;
         };
 
-        const auto allMsgs = QGCLogging::capturedMessages();
+        const auto allMsgs = LogManager::capturedMessages();
         for (const auto &m : allMsgs) {
             if (isExpected(m)) {
                 continue;
             }
             if (m.category.isEmpty() || m.category == QStringLiteral("default")) {
-                const char *level = (m.type == QtDebugMsg)   ? "debug"
-                                  : (m.type == QtWarningMsg) ? "warning"
-                                  : (m.type == QtInfoMsg)    ? "info"
-                                                             : "other";
-                uncategorizedDetails += QStringLiteral("  [%1] %2\n").arg(QLatin1String(level), m.message);
+                const char *lvl = (m.level == LogEntry::Debug)   ? "debug"
+                                : (m.level == LogEntry::Warning) ? "warning"
+                                : (m.level == LogEntry::Info)    ? "info"
+                                                                 : "other";
+                uncategorizedDetails += QStringLiteral("  [%1] %2\n").arg(QLatin1String(lvl), m.message);
             }
-            if (m.type == QtCriticalMsg) {
+            if (m.level == LogEntry::Critical) {
                 criticalDetails += QStringLiteral("  [%1] %2\n").arg(m.category, m.message);
             }
         }
@@ -815,10 +836,7 @@ QString UnitTest::failureContextSummary() const
 
 void UnitTest::_cleanupTempFiles()
 {
-    qDeleteAll(_tempFiles);
     _tempFiles.clear();
-
-    qDeleteAll(_tempDirs);
     _tempDirs.clear();
 }
 
@@ -831,14 +849,6 @@ void UnitTest::_resetTestState()
 
 bool UnitTest::fileCompare(const QString& file1, const QString& file2)
 {
-    const QFileInfo info1(file1);
-    const QFileInfo info2(file2);
-
-    if (info1.size() != info2.size()) {
-        qCWarning(UnitTestLog) << "fileCompare: sizes differ -" << info1.size() << "vs" << info2.size();
-        return false;
-    }
-
     QFile f1(file1);
     QFile f2(file2);
 
@@ -851,14 +861,42 @@ bool UnitTest::fileCompare(const QString& file1, const QString& file2)
         return false;
     }
 
-    // Use buffered comparison for efficiency
+    const qint64 size1 = f1.size();
+    const qint64 size2 = f2.size();
+    if (size1 != size2) {
+        qCWarning(UnitTestLog) << "fileCompare: sizes differ -" << size1 << "vs" << size2;
+        return false;
+    }
+
+    if (size1 == 0) {
+        return true;
+    }
+
+    // Memory-map both files for zero-copy comparison
+    const uchar* m1 = f1.map(0, size1);
+    const uchar* m2 = f2.map(0, size2);
+
+    if (m1 && m2) {
+        if (std::memcmp(m1, m2, static_cast<size_t>(size1)) == 0) {
+            return true;
+        }
+        // Find exact mismatch position for diagnostics
+        for (qint64 i = 0; i < size1; ++i) {
+            if (m1[i] != m2[i]) {
+                qCWarning(UnitTestLog) << "fileCompare: mismatch at offset" << i << "- got"
+                                       << static_cast<int>(m1[i]) << "expected" << static_cast<int>(m2[i]);
+                return false;
+            }
+        }
+        return false;
+    }
+
+    // Fallback to buffered read if mapping fails (e.g. special filesystems)
     qint64 offset = 0;
     while (!f1.atEnd()) {
         const QByteArray buf1 = f1.read(kFileCompareBufferSize);
         const QByteArray buf2 = f2.read(kFileCompareBufferSize);
-
         if (buf1 != buf2) {
-            // Find exact mismatch position
             for (int i = 0; i < buf1.size() && i < buf2.size(); ++i) {
                 if (buf1[i] != buf2[i]) {
                     qCWarning(UnitTestLog) << "fileCompare: mismatch at offset" << (offset + i) << "- got"
@@ -931,31 +969,32 @@ QGeoCoordinate UnitTest::changeCoordinateValue(const QGeoCoordinate& coordinate)
 
 QTemporaryFile* UnitTest::createTempFile(const QString& templateName)
 {
-    auto* tempFile = templateName.isEmpty() ? new QTemporaryFile(this)
-                                            : new QTemporaryFile(QDir::tempPath() + "/" + templateName, this);
+    auto tempFile = templateName.isEmpty()
+                        ? std::make_unique<QTemporaryFile>(this)
+                        : std::make_unique<QTemporaryFile>(QDir::tempPath() + "/" + templateName, this);
 
     if (!tempFile->open()) {
         qCWarning(UnitTestLog) << "createTempFile: failed to create temp file:" << tempFile->errorString();
-        delete tempFile;
         return nullptr;
     }
 
-    _tempFiles.append(tempFile);
-    return tempFile;
+    QTemporaryFile* ptr = tempFile.get();
+    _tempFiles.push_back(std::move(tempFile));
+    return ptr;
 }
 
 QTemporaryDir* UnitTest::createTempDir()
 {
-    auto* tempDir = new QTemporaryDir();
+    auto tempDir = std::make_unique<QTemporaryDir>();
 
     if (!tempDir->isValid()) {
         qCWarning(UnitTestLog) << "createTempDir: failed to create temp directory";
-        delete tempDir;
         return nullptr;
     }
 
-    _tempDirs.append(tempDir);
-    return tempDir;
+    QTemporaryDir* ptr = tempDir.get();
+    _tempDirs.push_back(std::move(tempDir));
+    return ptr;
 }
 
 QString UnitTest::testResourcePath(const QString& relativePath)

@@ -9,6 +9,8 @@ target_sources(${CMAKE_PROJECT_NAME}
         FactGroupTest.h
         FactMetaDataTest.cc
         FactMetaDataTest.h
+        PX4ParameterMetaDataTest.cc
+        PX4ParameterMetaDataTest.h
         FactSystemTestBase.cc
         FactSystemTestBase.h
         FactSystemTestGeneric.cc
@@ -23,29 +25,15 @@ target_sources(${CMAKE_PROJECT_NAME}
         HashCheckTest.h
         ParameterManagerTest.cc
         ParameterManagerTest.h
+        ParameterMetaDataTestHelper.h
 )
+
+if(NOT QGC_DISABLE_APM_PLUGIN)
+    target_sources(${CMAKE_PROJECT_NAME}
+        PRIVATE
+            APMParameterMetaDataTest.cc
+            APMParameterMetaDataTest.h
+    )
+endif()
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-
-# ----------------------------------------------------------------------------
-# Test Data Resources
-# ----------------------------------------------------------------------------
-qt_add_resources(${CMAKE_PROJECT_NAME} "FactSystemTest_res"
-    PREFIX "/unittest"
-    FILES
-        FactSystemTest.qml
-)
-
-# TODO: Enable QML module for fact system tests
-# qt_add_library(FactSystemTestModule STATIC)
-#
-# qt_add_qml_module(FactSystemTestModule
-#     URI QGroundControl.Test.FactSystem
-#     VERSION 1.0
-#     RESOURCE_PREFIX /unittest
-#     QML_FILES
-#         FactSystemTest.qml
-#     NO_PLUGIN
-# )
-#
-# target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE FactSystemTestModule)

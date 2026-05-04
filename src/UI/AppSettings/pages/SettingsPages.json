@@ -49,7 +49,7 @@
         },
         {
             "name": "Logging",
-            "url": "qrc:/qml/QGroundControl/Controls/AppLogging.qml",
+            "url": "qrc:/qml/QGroundControl/LogManager/AppLogging.qml",
             "icon": "qrc:/InstrumentValueIcons/conversation.svg"
         },
         {

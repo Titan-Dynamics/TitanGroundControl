@@ -1,4 +1,5 @@
 #include "SettingsManager.h"
+#include "AppMessages.h"
 #include "QGCLoggingCategory.h"
 #include "ADSBVehicleManagerSettings.h"
 #include "AISettings.h"
@@ -25,13 +26,10 @@
 #include "MavlinkSettings.h"
 #include "JoystickManagerSettings.h"
 #include "Viewer3DSettings.h"
-#include "JsonHelper.h"
 #include "JsonParsing.h"
 #include "QGCCorePlugin.h"
-#include "QGCApplication.h"
 
 #include <QtCore/QApplicationStatic>
-#include <QtQml/qqml.h>
 
 QGC_LOGGING_CATEGORY(SettingsManagerLog, "Utilities.SettingsManager")
 
@@ -51,13 +49,6 @@ SettingsManager::~SettingsManager()
 SettingsManager *SettingsManager::instance()
 {
     return _settingsManagerInstance();
-}
-
-void SettingsManager::registerQmlTypes()
-{
-    (void) qmlRegisterUncreatableType<SettingsManager>("QGroundControl.SettingsManager", 1, 0, "SettingsManager", "Reference only");
-    (void) qmlRegisterUncreatableType<NTRIPSettings>("QGroundControl", 1, 0, "NTRIPSettings", "Reference only");
-
 }
 
 void SettingsManager::init()
@@ -164,7 +155,7 @@ void SettingsManager::_loadSettingsFiles()
 
         // Validate the settings file
         int version;
-        if (!JsonHelper::validateInternalQGCJsonFile(jsonObject, "Settings", 1, 1, version, errorString)) {
+        if (!JsonParsing::validateInternalQGCJsonFile(jsonObject, "Settings", 1, 1, version, errorString)) {
             qCWarning(SettingsManagerLog) << "Settings file failed validation:" << fileInfo.absoluteFilePath() << errorString;
             continue;
         }
@@ -172,10 +163,10 @@ void SettingsManager::_loadSettingsFiles()
         // Validate the remainder of the file
 
         // groups key is an object
-        static const QList<JsonHelper::KeyValidateInfo> keyInfoList = {
+        static const QList<JsonParsing::KeyValidateInfo> keyInfoList = {
             { kJsonGroupsObjectKey, QJsonValue::Object, true },
         };
-        if (!JsonHelper::validateKeys(jsonObject, keyInfoList, errorString)) {
+        if (!JsonParsing::validateKeys(jsonObject, keyInfoList, errorString)) {
             qCWarning(SettingsManagerLog) << "Settings file incorrect format:" << fileInfo.absoluteFilePath() << errorString;
             continue;
         }
@@ -219,7 +210,7 @@ void SettingsManager::adjustSettingMetaData(const QString &settingsGroup, FactMe
         return;
     }
 
-    if (!qgcApp()->runningUnitTests()) {
+    if (!QGC::runningUnitTests()) {
         // Apply settings file overrides
         const auto &groupOverrides = settingsManager->_settingsFileOverrides;
         if (groupOverrides.contains(settingsGroup) && groupOverrides[settingsGroup].contains(metaData.name())) {

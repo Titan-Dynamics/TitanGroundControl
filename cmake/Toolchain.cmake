@@ -34,7 +34,6 @@ endif()
 # ----------------------------------------------------------------------------
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 # Include compiler warnings configuration
 include(CompilerWarnings)
@@ -81,6 +80,25 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     # Use faster alternative linkers on non-Apple platforms
     if(NOT APPLE)
         qgc_set_linker()
+    endif()
+
+    # Split-DWARF for faster Debug links. Must run after qgc_set_linker()
+    # so QGC_LINKER is populated when deciding whether to add --gdb-index.
+    qgc_enable_split_dwarf()
+
+    # Build profiling: -ftime-trace emits per-TU Chrome-tracing JSON next to each .o.
+    # Aggregate with ClangBuildAnalyzer; see docs in tools/README.md.
+    if(QGC_TIME_TRACE)
+        if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            add_compile_options(-ftime-trace -ftime-trace-granularity=100)
+            # ccache rejects -ftime-trace; clear the launcher so profile builds
+            # don't pay fork overhead per TU only to be marked unsupported.
+            set(CMAKE_C_COMPILER_LAUNCHER "")
+            set(CMAKE_CXX_COMPILER_LAUNCHER "")
+            message(STATUS "QGC: -ftime-trace enabled (granularity=100us); compiler launcher disabled")
+        else()
+            message(WARNING "QGC_TIME_TRACE requires Clang; ignoring with ${CMAKE_CXX_COMPILER_ID}")
+        endif()
     endif()
 
     # LTO is handled by qgc_enable_ipo() above

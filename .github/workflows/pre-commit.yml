@@ -90,3 +90,11 @@ jobs:
           name: pre-commit-results
           path: pre-commit-results
           retention-days: 7
+
+      # Hook failures are surfaced via the PR comment; only fail the job when
+      # the runner script itself didn't complete (no exit_code output written).
+      - name: Fail job on pre-commit script crash
+        if: always() && steps.pre-commit.outcome == 'failure' && steps.pre-commit.outputs.exit_code == ''
+        run: |
+          echo "::error::pre-commit runner crashed before writing results"
+          exit 1

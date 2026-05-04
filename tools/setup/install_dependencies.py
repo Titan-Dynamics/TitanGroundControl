@@ -14,7 +14,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import re
 import shlex
@@ -22,9 +21,14 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+
+_tools_dir = Path(__file__).resolve().parents[1]
+if str(_tools_dir) not in sys.path:
+    sys.path.insert(0, str(_tools_dir))
+
+from common.build_config import get_build_config_value  # noqa: E402
 
 # Package categories for Debian/Ubuntu
 DEBIAN_PACKAGES: dict[str, list[str]] = {
@@ -160,33 +164,10 @@ APT_BASE_OPTIONS: list[str] = [
 PACKAGE_NAME_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9.+-]*$")
 
 
-def get_repo_root() -> Path:
-    """Find repository root directory."""
-    current = Path(__file__).resolve()
-    for parent in [current] + list(current.parents):
-        if (parent / ".git").exists():
-            return parent
-    return Path.cwd()
-
-
-def load_build_config() -> dict:
-    """Load build configuration from .github/build-config.json."""
-    config_path = get_repo_root() / ".github" / "build-config.json"
-    if config_path.exists():
-        try:
-            with open(config_path) as f:
-                return json.load(f)
-        except json.JSONDecodeError as e:
-            print(f"Error: invalid JSON in {config_path}: {e}", file=sys.stderr)
-            return {}
-    return {}
-
-
 def get_config_value(key: str) -> str | None:
-    """Get a top-level value from build config by key name."""
-    config = load_build_config()
-    value = config.get(key)
-    return value if isinstance(value, str) else None
+    """Get a top-level string value from build config by key name."""
+    value = get_build_config_value(key)
+    return value or None
 
 
 def detect_platform() -> str | None:
@@ -290,7 +271,11 @@ def check_apt_package_available(package: str) -> bool:
 
 def get_available_debian_packages(category: str) -> list[str]:
     """Return packages in *category* that exist in apt metadata."""
-    return [pkg for pkg in get_debian_packages(category) if check_apt_package_available(pkg)]
+    from concurrent.futures import ThreadPoolExecutor
+    packages = get_debian_packages(category)
+    with ThreadPoolExecutor() as pool:
+        available = list(pool.map(check_apt_package_available, packages))
+    return [pkg for pkg, ok in zip(packages, available) if ok]
 
 
 def validate_extra_packages(packages: list[str]) -> list[str]:
@@ -390,32 +375,36 @@ def download_file(
     retries: int = 3,
 ) -> bool:
     """Download a file from a URL."""
-    import urllib.error
-    import urllib.request
-
     if dry_run:
         print(f"  Would download: {url} -> {dest.name}")
         return True
 
-    req = urllib.request.Request(url, headers={"User-Agent": "qgc-deps-installer/1.0"})
-    for attempt in range(1, retries + 1):
-        print(f"  Downloading {dest.name} (attempt {attempt}/{retries})...")
-        try:
-            with urllib.request.urlopen(req, timeout=timeout) as response, open(dest, "wb") as out:
-                shutil.copyfileobj(response, out)
-            return True
-        except (TimeoutError, urllib.error.URLError, OSError) as e:
-            if attempt == retries:
-                print(f"Failed to download {url}: {e}", file=sys.stderr)
-                return False
-            backoff_seconds = attempt * 2
-            print(
-                f"  Download attempt {attempt} failed for {dest.name}: {e}. "
-                f"Retrying in {backoff_seconds}s...",
-                file=sys.stderr,
-            )
-            time.sleep(backoff_seconds)
-    return False
+    try:
+        import httpx
+        transport = httpx.HTTPTransport(retries=retries)
+        with httpx.Client(
+            transport=transport,
+            timeout=timeout,
+            headers={"User-Agent": "qgc-deps-installer/1.0"},
+            follow_redirects=True,
+        ) as client:
+            print(f"  Downloading {dest.name}...")
+            with client.stream("GET", url) as response:
+                response.raise_for_status()
+                with open(dest, "wb") as out:
+                    for chunk in response.iter_bytes(chunk_size=65536):
+                        out.write(chunk)
+        return True
+    except ImportError:
+        import urllib.request
+        req = urllib.request.Request(url, headers={"User-Agent": "qgc-deps-installer/1.0"})
+        print(f"  Downloading {dest.name}...")
+        with urllib.request.urlopen(req, timeout=timeout) as response, open(dest, "wb") as out:
+            shutil.copyfileobj(response, out)
+        return True
+    except Exception as e:
+        print(f"Failed to download {url}: {e}", file=sys.stderr)
+        return False
 
 
 def install_debian(
@@ -511,8 +500,9 @@ def install_macos(dry_run: bool = False) -> bool:
                 print("Failed to install Homebrew", file=sys.stderr)
                 return False
 
-    # Update Homebrew
-    run_command(["brew", "update"], dry_run)
+    # CI runner images are refreshed weekly; `brew update` adds 30-60s for nothing.
+    if os.environ.get("HOMEBREW_NO_UPDATE") != "1" and not os.environ.get("CI"):
+        run_command(["brew", "update"], dry_run)
 
     # Install packages
     packages = get_macos_packages()
@@ -522,9 +512,14 @@ def install_macos(dry_run: bool = False) -> bool:
 
     # Install GStreamer
     gst_version = get_config_value("gstreamer_macos_version")
+    macos_gst_root = Path("/Library/Frameworks/GStreamer.framework")
     if not gst_version:
         print("\nWarning: GSTREAMER_MACOS_VERSION not found in build-config.json")
         print("Skipping GStreamer installation")
+    elif macos_gst_root.exists():
+        # Cache restore (actions/cache wrapping this script) puts the framework
+        # back; skip the .pkg download+installer round-trip.
+        print(f"GStreamer already installed at {macos_gst_root}; skipping")
     else:
         print(f"\nInstalling GStreamer {gst_version}...")
         runtime_url, devel_url = get_gstreamer_macos_urls(gst_version)
@@ -572,6 +567,16 @@ def install_windows_gstreamer(version: str, dry_run: bool = False) -> bool:
     arch = os.environ.get("PROCESSOR_ARCHITECTURE", "")
     if arch != "AMD64":
         print(f"Skipping GStreamer: only supported on AMD64 (detected: {arch or 'unknown'})")
+        return True
+
+    prefix = WINDOWS_GSTREAMER_PREFIX
+    # Cache restore (actions/cache wrapping this script) leaves the install tree
+    # intact; skip download+msiexec but still publish env vars so the build sees it.
+    if Path(prefix, "bin", "gst-launch-1.0.exe").exists():
+        print(f"GStreamer already installed at {prefix}; skipping download+install")
+        set_env_var("GSTREAMER_1_0_ROOT_MSVC_X86_64", prefix)
+        set_env_var("GSTREAMER_1_0_ROOT_X86_64", prefix)
+        add_to_path(f"{prefix}\\bin")
         return True
 
     base_url = f"{WINDOWS_GSTREAMER_BASE_URL}/{version}"

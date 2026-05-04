@@ -26,17 +26,11 @@ Item {
     signal clicked(int sequenceNumber)
 
     function hideItemVisuals() {
-        if (_itemVisualShowing) {
-            itemVisualLoader.active = false
-            _itemVisualShowing = false
-        }
+        _hideItemVisuals()
     }
 
     function showItemVisuals() {
-        if (!_itemVisualShowing) {
-            itemVisualLoader.active = true
-            _itemVisualShowing = true
-        }
+        _showItemVisuals()
     }
 
     function hideDragArea() {
@@ -58,6 +52,20 @@ Item {
             showDragArea()
         } else {
             hideDragArea()
+        }
+    }
+
+    function _hideItemVisuals() {
+        if (_itemVisualShowing) {
+            itemVisualLoader.active = false
+            _itemVisualShowing = false
+        }
+    }
+
+    function _showItemVisuals() {
+        if (!_itemVisualShowing) {
+            itemVisualLoader.active = true
+            _itemVisualShowing = true
         }
     }
 

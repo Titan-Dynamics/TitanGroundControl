@@ -3,7 +3,6 @@
 #include <QtCore/QProcess>
 #include <QtCore/QString>
 #include <QtCore/QByteArray>
-#include <QtTest/QTest>
 
 void BluetoothEmulatedAdapterTest::_testOptionalEmulatorHarness()
 {
@@ -26,7 +25,11 @@ void BluetoothEmulatedAdapterTest::_testOptionalEmulatorHarness()
         QSKIP(skipMsg.constData());
     }
 
-    QTest::qWait(1000);
+    // Give the emulator up to 1s to exit early with an error; if it is still
+    // Running when the timeout expires, fall through and verify that below.
+    (void) QTest::qWaitFor([&process]() {
+        return process.state() == QProcess::NotRunning;
+    }, 1000);
 
     if (process.state() != QProcess::Running) {
         (void) process.waitForFinished(2000);

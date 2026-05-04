@@ -10,11 +10,11 @@ set(SETTINGS_METADATA_DIR      "${CMAKE_SOURCE_DIR}/src/Settings")
 set(SETTINGS_QML_GEN_DIR       "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 # Generator source files (changes here should trigger regeneration)
-file(GLOB _generator_sources "${SETTINGS_QML_GENERATOR_DIR}/*.py")
+file(GLOB _generator_sources CONFIGURE_DEPENDS "${SETTINGS_QML_GENERATOR_DIR}/*.py")
 
 # JSON inputs: page definitions + settings metadata
-file(GLOB _page_definitions  "${SETTINGS_PAGES_DIR}/*.json")
-file(GLOB _settings_metadata "${SETTINGS_METADATA_DIR}/*.SettingsGroup.json")
+file(GLOB _page_definitions  CONFIGURE_DEPENDS "${SETTINGS_PAGES_DIR}/*.json")
+file(GLOB _settings_metadata CONFIGURE_DEPENDS "${SETTINGS_METADATA_DIR}/*.SettingsGroup.json")
 
 # Generated QML outputs (must match what generate_pages.py produces)
 set(_generated_qml_names
@@ -106,4 +106,11 @@ qt_add_qml_module(AppSettingsModule
         TcpSettings.qml
         UdpSettings.qml
     NO_PLUGIN
+)
+
+qt_add_resources(${CMAKE_PROJECT_NAME} appsettings_resources
+    PREFIX "/res"
+    BASE "${CMAKE_SOURCE_DIR}/resources"
+    FILES
+        "${CMAKE_SOURCE_DIR}/resources/pencil.svg"
 )

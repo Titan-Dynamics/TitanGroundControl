@@ -4,11 +4,8 @@
 #include "FollowMe.h"
 #include "QGCMAVLink.h"
 
-#include <QtCore/QLoggingCategory>
 #include <QtCore/QMutex>
 #include <QtNetwork/QAbstractSocket>
-
-Q_DECLARE_LOGGING_CATEGORY(APMFirmwarePluginLog)
 
 struct APMCustomMode
 {
@@ -56,9 +53,8 @@ public:
     bool sendHomePositionToVehicle() const override { return true; }
     QString missionCommandOverrides(QGCMAVLink::VehicleClass_t vehicleClass) const override;
     QString _internalParameterMetaDataFile(const Vehicle* vehicle) const override;
-    FactMetaData *_getMetaDataForFact(QObject *parameterMetaData, const QString &name, FactMetaData::ValueType_t type, MAV_TYPE vehicleType) const override;
-    void _getParameterMetaDataVersionInfo(const QString &metaDataFile, int &majorVersion, int &minorVersion) const override;
-    QObject *_loadParameterMetaData(const QString &metaDataFile) override;
+    MAV_AUTOPILOT _autopilotType() const override { return MAV_AUTOPILOT_ARDUPILOTMEGA; }
+    ParameterMetaData *_createParameterMetaData() override;
     QString getHobbsMeter(Vehicle *vehicle) const override;
     bool hasGripper(const Vehicle *vehicle) const override;
     const QVariantList &toolIndicators(const Vehicle *vehicle) override;

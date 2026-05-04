@@ -2,7 +2,7 @@
 #include "TerrainQuery.h"
 #include "PlanMasterController.h"
 #include "Vehicle.h"
-#include "QGC.h"
+#include "QGCMath.h"
 
 // All VisualMissionItem derived classes are parented to masterController in order to tie their lifecycles together.
 
@@ -135,7 +135,7 @@ void VisualMissionItem::setAzimuth(double azimuth)
     }
 }
 
-void VisualMissionItem::setMissionFlightStatus(MissionController::MissionFlightStatus_t& missionFlightStatus)
+void VisualMissionItem::setMissionFlightStatus(MissionFlightStatus_t& missionFlightStatus)
 {
     if (!QGC::fuzzyCompare(missionFlightStatus.gimbalYaw, _missionGimbalYaw)) {
         _missionGimbalYaw = missionFlightStatus.gimbalYaw;

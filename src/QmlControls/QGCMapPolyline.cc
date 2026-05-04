@@ -1,8 +1,9 @@
 #include "QGCMapPolyline.h"
 #include "QGCGeo.h"
-#include "JsonHelper.h"
+#include "GeoJsonHelper.h"
 #include "JsonParsing.h"
 #include "QGCQGeoCoordinate.h"
+#include "AppMessages.h"
 #include "QGCApplication.h"
 #include "QGCLoggingCategory.h"
 #include "ShapeFileHelper.h"
@@ -165,7 +166,7 @@ void QGCMapPolyline::saveToJson(QJsonObject& json)
 {
     QJsonValue jsonValue;
 
-    JsonHelper::saveGeoCoordinateArray(_polylinePath, false /* writeAltitude*/, jsonValue);
+    GeoJsonHelper::saveGeoCoordinateArray(_polylinePath, false /* writeAltitude*/, jsonValue);
     json.insert(jsonPolylineKey, jsonValue);
     setDirty(false);
 }
@@ -183,7 +184,7 @@ bool QGCMapPolyline::loadFromJson(const QJsonObject& json, bool required, QStrin
         return true;
     }
 
-    if (!JsonHelper::loadGeoCoordinateArray(json[jsonPolylineKey], false /* altitudeRequired */, _polylinePath, errorString)) {
+    if (!GeoJsonHelper::loadGeoCoordinateArray(json[jsonPolylineKey], false /* altitudeRequired */, _polylinePath, errorString)) {
         return false;
     }
 
@@ -377,11 +378,11 @@ bool QGCMapPolyline::loadKMLOrSHPFile(const QString &file)
     QString errorString;
     QList<QList<QGeoCoordinate>> polylines;
     if (!ShapeFileHelper::loadPolylinesFromFile(file, polylines, errorString)) {
-        qgcApp()->showAppMessage(errorString);
+        QGC::showAppMessage(errorString);
         return false;
     }
     if (polylines.isEmpty()) {
-        qgcApp()->showAppMessage(tr("No polylines found in file"));
+        QGC::showAppMessage(tr("No polylines found in file"));
         return false;
     }
     const QList<QGeoCoordinate>& rgCoords = polylines.first();

@@ -5,8 +5,10 @@
 
 add_subdirectory(Audio)
 add_subdirectory(Compression)
+add_subdirectory(Database)
 add_subdirectory(FileSystem)
 add_subdirectory(Geo)
+add_subdirectory(Logging)
 add_subdirectory(Network)
 add_subdirectory(Parsing)
 add_subdirectory(Platform)
@@ -14,6 +16,8 @@ add_subdirectory(StateMachine)
 
 target_sources(${CMAKE_PROJECT_NAME}
     PRIVATE
+        QGCCommandLineParserTest.cc
+        QGCCommandLineParserTest.h
         QGCMathTest.cc
         QGCMathTest.h
 )

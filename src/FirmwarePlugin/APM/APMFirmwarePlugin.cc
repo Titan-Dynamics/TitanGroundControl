@@ -1,6 +1,7 @@
 #include "APMFirmwarePlugin.h"
 #include "APMAutoPilotPlugin.h"
 #include "QGCMAVLink.h"
+#include "AppMessages.h"
 #include "QGCApplication.h"
 #include "MissionManager.h"
 #include "ParameterManager.h"
@@ -16,12 +17,14 @@
 #include "APMParameterMetaData.h"
 #include "LinkManager.h"
 #include "Vehicle.h"
+#include "VehicleLinkManager.h"
 #include "StatusTextHandler.h"
 #include "MAVLinkProtocol.h"
 #include "QGCLoggingCategory.h"
-#include "DeviceInfo.h"
+#include "QGCSensors.h"
 
 #include <QtNetwork/QTcpSocket>
+
 #include <QtCore/QRegularExpression>
 #include <QtCore/QRegularExpressionMatch>
 
@@ -513,24 +516,6 @@ void APMFirmwarePlugin::initializeVehicle(Vehicle *vehicle)
     }
 }
 
-FactMetaData* APMFirmwarePlugin::_getMetaDataForFact(QObject* parameterMetaData, const QString& name, FactMetaData::ValueType_t type, MAV_TYPE vehicleType) const
-{
-    APMParameterMetaData *const apmMetaData = qobject_cast<APMParameterMetaData*>(parameterMetaData);
-
-    if (apmMetaData) {
-        return apmMetaData->getMetaDataForFact(name, vehicleType, type);
-    } else {
-        qWarning() << "Internal error: pointer passed to APMFirmwarePlugin::addMetaDataToFact not APMParameterMetaData";
-    }
-
-    return nullptr;
-}
-
-void APMFirmwarePlugin::_getParameterMetaDataVersionInfo(const QString& metaDataFile, int& majorVersion, int& minorVersion) const
-{
-    APMParameterMetaData::getParameterMetaDataVersionInfo(metaDataFile, majorVersion, minorVersion);
-}
-
 QList<MAV_CMD> APMFirmwarePlugin::supportedMissionCommands(QGCMAVLink::VehicleClass_t vehicleClass) const
 {
     QList<MAV_CMD> supportedCommands = {
@@ -611,13 +596,9 @@ QString APMFirmwarePlugin::missionCommandOverrides(QGCMAVLink::VehicleClass_t ve
     }
 }
 
-QObject *APMFirmwarePlugin::_loadParameterMetaData(const QString &metaDataFile)
+ParameterMetaData *APMFirmwarePlugin::_createParameterMetaData()
 {
-    Q_UNUSED(metaDataFile);
-
-    APMParameterMetaData *const metaData = new APMParameterMetaData(this);
-    metaData->loadParameterFactMetaDataFile(metaDataFile);
-    return metaData;
+    return new APMParameterMetaData(this);
 }
 
 QString APMFirmwarePlugin::getHobbsMeter(Vehicle* vehicle) const
@@ -634,7 +615,7 @@ QString APMFirmwarePlugin::getHobbsMeter(Vehicle* vehicle) const
     const int minutes = (hobbsTimeSeconds % 3600) / 60;
     const int seconds = hobbsTimeSeconds % 60;
     const QString timeStr = QString::asprintf("%04d:%02d:%02d", hours, minutes, seconds);
-    qCDebug(VehicleLog) << "Hobbs Meter string:" << timeStr;
+    qCDebug(APMFirmwarePluginLog) << "Hobbs Meter string:" << timeStr;
     return timeStr;
 }
 
@@ -695,7 +676,7 @@ void APMFirmwarePlugin::_soloVideoHandshake()
 
 void APMFirmwarePlugin::_artooSocketError(QAbstractSocket::SocketError socketError)
 {
-    qgcApp()->showAppMessage(tr("Error during Solo video link setup: %1").arg(socketError));
+    QGC::showAppMessage(tr("Error during Solo video link setup: %1").arg(socketError));
 }
 
 QString APMFirmwarePlugin::_vehicleClassToString(QGCMAVLink::VehicleClass_t vehicleClass) const
@@ -721,34 +702,32 @@ QString APMFirmwarePlugin::_internalParameterMetaDataFile(const Vehicle *vehicle
     const QGCMAVLink::VehicleClass_t vehicleClass = QGCMAVLink::vehicleClass(vehicle->vehicleType());
 
     const QString vehicleName = _vehicleClassToString(vehicleClass);
-    if(vehicleName.isEmpty()) {
+    if (vehicleName.isEmpty()) {
         qCWarning(APMFirmwarePluginLog) << Q_FUNC_INFO << "called with bad VehicleClass_t:" << vehicleClass;
         return QString();
     }
 
-    const QString fileNameFormat = QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.%1.%2.%3.xml");
     int currMajor = vehicle->firmwareMajorVersion();
     int currMinor = vehicle->firmwareMinorVersion();
 
     // Find next newest version available
     while ((currMajor >= 4) && (currMinor > 0)) {
-        const QString tempFileName = fileNameFormat.arg(vehicleName).arg(currMajor).arg(currMinor);
-        if (QFileInfo::exists(tempFileName)) {
-            return tempFileName;
+        const QString file = QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.%1.%2.%3.json").arg(vehicleName).arg(currMajor).arg(currMinor);
+        if (QFileInfo::exists(file)) {
+            return file;
         }
         currMinor--;
         if (currMinor == 0) {
-            currMinor = 10; // Some suitably high possible minor version.
+            currMinor = 10;
             currMajor--;
         }
     }
-    // currMajor or currMinor were likely invalid (-1)
 
-    // Use oldest version available which should be equivalent to offline params
+    // Fallback: use oldest version available
     for (int i = 0; i < 10; i++) {
-        const QString tempFileName = fileNameFormat.arg(vehicleName).arg(4).arg(i);
-        if (QFileInfo::exists(tempFileName)) {
-            return tempFileName;
+        const QString file = QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.%1.%2.%3.json").arg(vehicleName).arg(4).arg(i);
+        if (QFileInfo::exists(file)) {
+            return file;
         }
     }
 
@@ -796,7 +775,7 @@ out:
 bool APMFirmwarePlugin::guidedModeGotoLocation(Vehicle *vehicle, const QGeoCoordinate &gotoCoord, double forwardFlightLoiterRadius) const
 {
     if (qIsNaN(vehicle->altitudeRelative()->rawValue().toDouble())) {
-        qgcApp()->showAppMessage(QStringLiteral("Unable to go to location, vehicle position not known."));
+        QGC::showAppMessage(QStringLiteral("Unable to go to location, vehicle position not known."));
         return false;
     }
 
@@ -867,12 +846,12 @@ void APMFirmwarePlugin::guidedModeRTL(Vehicle *vehicle, bool smartRTL) const
 void APMFirmwarePlugin::guidedModeChangeAltitude(Vehicle *vehicle, double altitudeChange, bool pauseVehicle)
 {
     if (qIsNaN(vehicle->altitudeRelative()->rawValue().toDouble())) {
-        qgcApp()->showAppMessage(tr("Unable to change altitude, vehicle altitude not known."));
+        QGC::showAppMessage(tr("Unable to change altitude, vehicle altitude not known."));
         return;
     }
 
     if (pauseVehicle && !_setFlightModeAndValidate(vehicle, pauseFlightMode())) {
-        qgcApp()->showAppMessage(tr("Unable to pause vehicle."));
+        QGC::showAppMessage(tr("Unable to pause vehicle."));
         return;
     }
 
@@ -958,7 +937,7 @@ void APMFirmwarePlugin::guidedModeTakeoff(Vehicle *vehicle, double altitudeRel) 
 void APMFirmwarePlugin::guidedModeChangeHeading(Vehicle *vehicle, const QGeoCoordinate &headingCoord) const
 {
     if (!isCapable(vehicle, FirmwarePlugin::ChangeHeadingCapability)) {
-        qgcApp()->showAppMessage(tr("Vehicle does not support guided rotate"));
+        QGC::showAppMessage(tr("Vehicle does not support guided rotate"));
         return;
     }
 
@@ -1029,13 +1008,13 @@ double APMFirmwarePlugin::minimumTakeoffAltitudeMeters(Vehicle* vehicle) const
 bool APMFirmwarePlugin::_guidedModeTakeoff(Vehicle *vehicle, double altitudeRel) const
 {
     if (!vehicle->multiRotor() && !vehicle->vtol()) {
-        qgcApp()->showAppMessage(tr("Vehicle does not support guided takeoff"));
+        QGC::showAppMessage(tr("Vehicle does not support guided takeoff"));
         return false;
     }
 
     const double vehicleAltitudeAMSL = vehicle->altitudeAMSL()->rawValue().toDouble();
     if (qIsNaN(vehicleAltitudeAMSL)) {
-        qgcApp()->showAppMessage(tr("Unable to takeoff, vehicle position not known."));
+        QGC::showAppMessage(tr("Unable to takeoff, vehicle position not known."));
         return false;
     }
 
@@ -1045,12 +1024,12 @@ bool APMFirmwarePlugin::_guidedModeTakeoff(Vehicle *vehicle, double altitudeRel)
     }
 
     if (!_setFlightModeAndValidate(vehicle, guidedFlightMode())) {
-        qgcApp()->showAppMessage(tr("Unable to takeoff: Vehicle failed to change to Guided mode."));
+        QGC::showAppMessage(tr("Unable to takeoff: Vehicle failed to change to Guided mode."));
         return false;
     }
 
     if (!_armVehicleAndValidate(vehicle)) {
-        qgcApp()->showAppMessage(tr("Unable to takeoff: Vehicle failed to arm."));
+        QGC::showAppMessage(tr("Unable to takeoff: Vehicle failed to arm."));
         return false;
     }
 
@@ -1068,18 +1047,18 @@ bool APMFirmwarePlugin::_guidedModeTakeoff(Vehicle *vehicle, double altitudeRel)
 void APMFirmwarePlugin::startTakeoff(Vehicle *vehicle) const
 {
     if (vehicle->flying()) {
-        qgcApp()->showAppMessage(tr("Unable to start takeoff: Vehicle is already in the air."));
+        QGC::showAppMessage(tr("Unable to start takeoff: Vehicle is already in the air."));
         return;
     }
 
     if (!vehicle->armed()) {
         if (!_setFlightModeAndValidate(vehicle, takeOffFlightMode())) {
-            qgcApp()->showAppMessage(tr("Unable to start takeoff: Vehicle failed to change to Takeoff mode."));
+            QGC::showAppMessage(tr("Unable to start takeoff: Vehicle failed to change to Takeoff mode."));
             return;
         }
 
         if (!_armVehicleAndValidate(vehicle)) {
-            qgcApp()->showAppMessage(tr("Unable to start takeoff: Vehicle failed to arm."));
+            QGC::showAppMessage(tr("Unable to start takeoff: Vehicle failed to arm."));
             return;
         }
     }
@@ -1090,7 +1069,7 @@ void APMFirmwarePlugin::startMission(Vehicle *vehicle) const
     if (vehicle->flying()) {
         // Vehicle already in the air, we just need to switch to auto
         if (!_setFlightModeAndValidate(vehicle, missionFlightMode())) {
-            qgcApp()->showAppMessage(tr("Unable to start mission: Vehicle failed to change to Auto mode."));
+            QGC::showAppMessage(tr("Unable to start mission: Vehicle failed to change to Auto mode."));
         }
         return;
     }
@@ -1101,18 +1080,18 @@ void APMFirmwarePlugin::startMission(Vehicle *vehicle) const
         // If the vehicle has tilt rotors, it will arm them in forward flight position, being dangerous.
         if (vehicle->fixedWing()) {
             if (!_setFlightModeAndValidate(vehicle, missionFlightMode())) {
-                qgcApp()->showAppMessage(tr("Unable to start mission: Vehicle failed to change to Auto mode."));
+                QGC::showAppMessage(tr("Unable to start mission: Vehicle failed to change to Auto mode."));
                 return;
             }
         } else {
             if (!_setFlightModeAndValidate(vehicle, guidedFlightMode())) {
-                qgcApp()->showAppMessage(tr("Unable to start mission: Vehicle failed to change to Guided mode."));
+                QGC::showAppMessage(tr("Unable to start mission: Vehicle failed to change to Guided mode."));
                 return;
             }
         }
 
         if (!_armVehicleAndValidate(vehicle)) {
-            qgcApp()->showAppMessage(tr("Unable to start mission: Vehicle failed to arm."));
+            QGC::showAppMessage(tr("Unable to start mission: Vehicle failed to arm."));
             return;
         }
     }
@@ -1190,7 +1169,7 @@ void APMFirmwarePlugin::sendGCSMotionReport(Vehicle *vehicle, const FollowMe::GC
         static bool sentOnce = false;
         if (!sentOnce) {
             sentOnce = true;
-            qgcApp()->showAppMessage(QStringLiteral("Follow failed: Home position not set."));
+            QGC::showAppMessage(QStringLiteral("Follow failed: Home position not set."));
         }
         return;
     }
@@ -1200,7 +1179,7 @@ void APMFirmwarePlugin::sendGCSMotionReport(Vehicle *vehicle, const FollowMe::GC
         if (!sentOnce) {
             sentOnce = true;
             qCWarning(APMFirmwarePluginLog) << "estimateCapabilities" << estimationCapabilities;
-            qgcApp()->showAppMessage(QStringLiteral("Follow failed: Ground station cannot provide required position information."));
+            QGC::showAppMessage(QStringLiteral("Follow failed: Ground station cannot provide required position information."));
         }
         return;
     }
@@ -1352,7 +1331,7 @@ qreal APMFirmwarePlugin::calcAltOffsetP(uint32_t atmospheric1, uint32_t atmosphe
 QPair<QMetaObject::Connection,QMetaObject::Connection> APMFirmwarePlugin::startCompensatingBaro(Vehicle *vehicle)
 {
     // TODO: Running Average?
-    const QMetaObject::Connection baroPressureUpdater = QObject::connect(QGCDeviceInfo::QGCPressure::instance(), &QGCDeviceInfo::QGCPressure::pressureUpdated, vehicle, [vehicle](qreal pressure, qreal temperature){
+    const QMetaObject::Connection baroPressureUpdater = QObject::connect(QGCSensors::QGCPressure::instance(), &QGCSensors::QGCPressure::pressureUpdated, vehicle, [vehicle](qreal pressure, qreal temperature){
         if (!vehicle || !vehicle->flying()) {
             return;
         }
@@ -1378,7 +1357,7 @@ QPair<QMetaObject::Connection,QMetaObject::Connection> APMFirmwarePlugin::startC
         APMFirmwarePlugin::_setBaroAltOffset(vehicle, offset);
     });
 
-    const QMetaObject::Connection baroTempUpdater = connect(QGCDeviceInfo::QGCAmbientTemperature::instance(), &QGCDeviceInfo::QGCAmbientTemperature::temperatureUpdated, vehicle, [vehicle](qreal temperature){
+    const QMetaObject::Connection baroTempUpdater = connect(QGCSensors::QGCAmbientTemperature::instance(), &QGCSensors::QGCAmbientTemperature::temperatureUpdated, vehicle, [vehicle](qreal temperature){
         if (!vehicle || !vehicle->flying()) {
            return;
         }

@@ -1,8 +1,9 @@
 #include "QGCMapPolygon.h"
 #include "QGCGeo.h"
-#include "JsonHelper.h"
+#include "GeoJsonHelper.h"
 #include "JsonParsing.h"
 #include "QGCQGeoCoordinate.h"
+#include "AppMessages.h"
 #include "QGCApplication.h"
 #include "QGCLoggingCategory.h"
 #include "ShapeFileHelper.h"
@@ -208,7 +209,7 @@ void QGCMapPolygon::saveToJson(QJsonObject& json)
 {
     QJsonValue jsonValue;
 
-    JsonHelper::saveGeoCoordinateArray(_polygonPath, false /* writeAltitude*/, jsonValue);
+    GeoJsonHelper::saveGeoCoordinateArray(_polygonPath, false /* writeAltitude*/, jsonValue);
     json.insert(jsonPolygonKey, jsonValue);
     setDirty(false);
 }
@@ -226,7 +227,7 @@ bool QGCMapPolygon::loadFromJson(const QJsonObject& json, bool required, QString
         return true;
     }
 
-    if (!JsonHelper::loadGeoCoordinateArray(json[jsonPolygonKey], false /* altitudeRequired */, _polygonPath, errorString)) {
+    if (!GeoJsonHelper::loadGeoCoordinateArray(json[jsonPolygonKey], false /* altitudeRequired */, _polygonPath, errorString)) {
         return false;
     }
 
@@ -572,11 +573,11 @@ bool QGCMapPolygon::loadKMLOrSHPFile(const QString& file)
     QString errorString;
     QList<QList<QGeoCoordinate>> polygons;
     if (!ShapeFileHelper::loadPolygonsFromFile(file, polygons, errorString)) {
-        qgcApp()->showAppMessage(errorString);
+        QGC::showAppMessage(errorString);
         return false;
     }
     if (polygons.isEmpty()) {
-        qgcApp()->showAppMessage(tr("No polygons found in file"));
+        QGC::showAppMessage(tr("No polygons found in file"));
         return false;
     }
     const QList<QGeoCoordinate>& rgCoords = polygons.first();

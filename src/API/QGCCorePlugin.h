@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QtCore/QLoggingCategory>
 #include <QtCore/QObject>
 #include <QtCore/QVariantList>
 #include <QtQmlIntegration/QtQmlIntegration>
@@ -9,6 +8,7 @@
 
 class FactMetaData;
 class LinkInterface;
+class PlanCreator;
 class PlanMasterController;
 class QFile;
 class QGCOptions;
@@ -21,8 +21,6 @@ class VideoReceiver;
 class VideoSink;
 class FactValueGrid;
 typedef struct __mavlink_message mavlink_message_t;
-
-Q_DECLARE_LOGGING_CATEGORY(QGCCorePluginLog)
 
 class QGCCorePlugin : public QObject
 {
@@ -136,10 +134,23 @@ public:
     /// Custom builds must override to provide their own location.
     virtual QString stableDownloadLocation() const { return QStringLiteral("github.com/Titan-Dynamics/TitanGroundControl/releases"); }
 
-    /// Returns the complex mission items to display in the Plan UI
-    /// @param complexMissionItemNames Default set of complex items
+    /// Returns the complex mission items to display in the Plan UI.
+    /// Each entry in the list is a QVariantMap with keys:
+    ///   "canonicalName"  - untranslated key used with insertComplexMissionItem()
+    ///   "translatedName" - user-visible display string (already translated)
+    /// The base class builds and returns the default set. Custom builds should
+    /// override this method, call the base class to get the defaults, modify as
+    /// needed, and return the result. When adding a new entry, set both keys and
+    /// override insertComplexMissionItem() to handle the new canonicalName.
+    /// @param vehicle Vehicle for which the list is being built
     /// @return Complex items to be made available to user
-    virtual QStringList complexMissionItemNames(Vehicle *vehicle, const QStringList &complexMissionItemNames) { Q_UNUSED(vehicle); return complexMissionItemNames; }
+    virtual QVariantList complexMissionItemNames(Vehicle *vehicle);
+
+    /// Returns the list of plan creators to show when creating a new plan.
+    /// Custom builds can override to provide their own set of plan creators.
+    /// @param planMasterController The plan master controller for the plan being created
+    /// @return Plan creators to show. Caller takes ownership.
+    virtual QList<PlanCreator*> planCreators(PlanMasterController *planMasterController);
 
     /// Returns the standard list of first run prompt ids for possible display. Actual display is based on the
     /// current AppSettings::firstRunPromptIds value. The order of this list also determines the order the prompts

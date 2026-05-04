@@ -1,5 +1,4 @@
 #include "QGCCorePlugin.h"
-#include "QGCLogging.h"
 #include "AppSettings.h"
 #include "MavlinkSettings.h"
 #include "FactMetaData.h"
@@ -10,7 +9,7 @@
 #include "HorizontalFactValueGrid.h"
 #include "InstrumentValueData.h"
 #include "JoystickManager.h"
-#include "MAVLinkLib.h"
+#include "MAVLinkMessageType.h"
 #include "QGCLoggingCategory.h"
 #include "QGCOptions.h"
 #include "QmlComponentInfo.h"
@@ -20,6 +19,15 @@
 #endif
 #include "SettingsManager.h"
 #include "VideoReceiver.h"
+#include "SurveyPlanCreator.h"
+#include "CorridorScanPlanCreator.h"
+#include "StructureScanPlanCreator.h"
+#include "SurveyComplexItem.h"
+#include "CorridorScanComplexItem.h"
+#include "StructureScanComplexItem.h"
+#include "Vehicle.h"
+#include "BlankPlanCreator.h"
+#include "PlanMasterController.h"
 
 #ifdef QGC_CUSTOM_BUILD
 #include CUSTOMHEADER
@@ -27,7 +35,6 @@
 
 #include <QtCore/QApplicationStatic>
 #include <QtCore/QFile>
-#include <QtQml/qqml.h>
 #include <QtQml/QQmlApplicationEngine>
 #include <QtQml/QQmlContext>
 #include <QtQuick/QQuickItem>
@@ -66,6 +73,11 @@ const QVariantList &QGCCorePlugin::analyzePages()
         QVariant::fromValue(new QmlComponentInfo(
             tr("Onboard Logs"),
             QUrl::fromUserInput(QStringLiteral("qrc:/qml/QGroundControl/AnalyzeView/OnboardLogs/OnboardLogPage.qml")),
+            QUrl::fromUserInput(QStringLiteral("qrc:/qmlimages/OnboardLogIcon.svg")),
+            nullptr, true /* requiresVehicle */)),
+        QVariant::fromValue(new QmlComponentInfo(
+            tr("Onboard Logs (FTP)"),
+            QUrl::fromUserInput(QStringLiteral("qrc:/qml/QGroundControl/AnalyzeView/OnboardLogsFtp/OnboardLogFtpPage.qml")),
             QUrl::fromUserInput(QStringLiteral("qrc:/qmlimages/OnboardLogIcon.svg")),
             nullptr, true /* requiresVehicle */)),
         QVariant::fromValue(new QmlComponentInfo(
@@ -255,7 +267,6 @@ QQmlApplicationEngine *QGCCorePlugin::createQmlApplicationEngine(QObject *parent
     QQmlApplicationEngine *const qmlEngine = new QQmlApplicationEngine(parent);
     qmlEngine->addImportPath(QStringLiteral("qrc:/qml"));
     qmlEngine->rootContext()->setContextProperty(QStringLiteral("joystickManager"), JoystickManager::instance());
-    qmlEngine->rootContext()->setContextProperty(QStringLiteral("debugMessageModel"), QGCLogging::instance());
     return qmlEngine;
 }
 
@@ -271,6 +282,7 @@ VideoReceiver *QGCCorePlugin::createVideoReceiver(QObject *parent)
 #elif defined(QGC_QT_STREAMING)
     return QtMultimediaReceiver::createVideoReceiver(parent);
 #else
+    Q_UNUSED(parent);
     return nullptr;
 #endif
 }
@@ -352,4 +364,33 @@ void QGCCorePlugin::_setShowAdvancedUI(bool show)
         _showAdvancedUI = show;
         emit showAdvancedUIChanged(show);
     }
+}
+
+QVariantList QGCCorePlugin::complexMissionItemNames(Vehicle *vehicle)
+{
+    auto makeEntry = [](const char* canonical, const QString& translated) {
+        QVariantMap entry;
+        entry[QStringLiteral("canonicalName")]  = QString(canonical);
+        entry[QStringLiteral("translatedName")] = translated;
+        return entry;
+    };
+
+    QVariantList items;
+    items.append(makeEntry(SurveyComplexItem::canonicalName,       SurveyComplexItem::tr(SurveyComplexItem::canonicalName)));
+    items.append(makeEntry(CorridorScanComplexItem::canonicalName, CorridorScanComplexItem::tr(CorridorScanComplexItem::canonicalName)));
+    if (vehicle->multiRotor() || vehicle->vtol()) {
+        items.append(makeEntry(StructureScanComplexItem::canonicalName, StructureScanComplexItem::tr(StructureScanComplexItem::canonicalName)));
+    }
+    // Note: Landing pattern items are not added here — they have their own dedicated button
+    return items;
+}
+
+QList<PlanCreator*> QGCCorePlugin::planCreators(PlanMasterController *planMasterController)
+{
+    return {
+        new SurveyPlanCreator(planMasterController),
+        new CorridorScanPlanCreator(planMasterController),
+        new StructureScanPlanCreator(planMasterController),
+        new BlankPlanCreator(planMasterController),
+    };
 }

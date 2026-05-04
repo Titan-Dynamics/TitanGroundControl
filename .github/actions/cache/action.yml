@@ -10,6 +10,10 @@ inputs:
   build-type:
     description: Build Type
     required: true
+  variant:
+    description: Optional discriminator (e.g. coverage|asan) — distinct compile flags must not share a ccache key.
+    required: false
+    default: ''
   cpm-modules:
     description: Path to CPM Modules
     required: false
@@ -53,10 +57,10 @@ runs:
           --target "${{ inputs.target }}" \
           --conf "${GITHUB_WORKSPACE}/tools/configs/ccache.conf"
 
-    - name: Cache ccache binary (Linux)
+    - name: Restore ccache binary (Linux)
       if: runner.os == 'Linux'
       id: ccache-binary
-      uses: actions/cache@v5
+      uses: actions/cache/restore@v5
       with:
         path: /usr/local/bin/ccache
         key: ccache-binary-${{ steps.ccache-config.outputs.version }}-linux-${{ steps.ccache-config.outputs.arch }}
@@ -68,6 +72,13 @@ runs:
         python3 "${GITHUB_WORKSPACE}/.github/scripts/ccache_helper.py" install \
           --version "${{ steps.ccache-config.outputs.version }}" \
           --arch "${{ steps.ccache-config.outputs.arch }}"
+
+    - name: Save ccache binary (Linux)
+      if: runner.os == 'Linux' && steps.cache-policy.outputs.save == 'true' && steps.ccache-binary.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v5
+      with:
+        path: /usr/local/bin/ccache
+        key: ${{ steps.ccache-binary.outputs.cache-primary-key }}
 
     - name: Install ccache (macOS)
       if: runner.os == 'macOS'
@@ -84,10 +95,10 @@ runs:
       shell: bash
       run: python3 "${GITHUB_WORKSPACE}/.github/scripts/ccache_helper.py" windows-config --host "${{ inputs.host }}" --target "${{ inputs.target }}"
 
-    - name: Cache ccache binary (Windows)
+    - name: Restore ccache binary (Windows)
       if: runner.os == 'Windows'
       id: ccache-binary-win
-      uses: actions/cache@v5
+      uses: actions/cache/restore@v5
       with:
         path: ${{ runner.temp }}/ccache-${{ steps.ccache-config.outputs.version }}-windows-${{ steps.win-ccache.outputs.arch }}/ccache.exe
         key: ccache-binary-${{ steps.ccache-config.outputs.version }}-windows-${{ steps.win-ccache.outputs.arch }}
@@ -105,6 +116,13 @@ runs:
           --arch "${CCACHE_ARCH}" \
           --sha256 "${CCACHE_WIN_SHA256}" \
           --runner-temp "${RUNNER_TEMP//\\//}"
+
+    - name: Save ccache binary (Windows)
+      if: runner.os == 'Windows' && steps.cache-policy.outputs.save == 'true' && steps.ccache-binary-win.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v5
+      with:
+        path: ${{ runner.temp }}/ccache-${{ steps.ccache-config.outputs.version }}-windows-${{ steps.win-ccache.outputs.arch }}/ccache.exe
+        key: ${{ steps.ccache-binary-win.outputs.cache-primary-key }}
 
     - name: Add ccache to PATH (Windows)
       if: runner.os == 'Windows'
@@ -132,34 +150,39 @@ runs:
       shell: bash
       run: python3 "${GITHUB_WORKSPACE}/.github/scripts/ccache_helper.py" fingerprint --root "${GITHUB_WORKSPACE}"
 
+    # `variant` separates compile-flag-distinct entries (coverage vs ASan vs UBSan)
+    # so parallel saves don't last-writer-wins onto the same key.
     - name: Restore Build Cache (ccache, save)
       if: steps.cache-policy.outputs.save == 'true'
       uses: actions/cache@v5
       with:
         path: ${{ github.workspace }}/.ccache
-        key: ccache-${{ inputs.host }}-${{ inputs.target }}-${{ inputs.build-type }}-${{ steps.cache-scope.outputs.scope }}-${{ hashFiles('.github/build-config.json', 'tools/configs/ccache.conf') }}-${{ github.run_id }}
+        key: ccache-${{ inputs.host }}-${{ inputs.target }}-${{ inputs.build-type }}${{ inputs.variant && format('-{0}', inputs.variant) }}-${{ steps.cache-scope.outputs.scope }}-${{ hashFiles('.github/build-config.json', 'tools/configs/ccache.conf') }}
         restore-keys: |
-          ccache-${{ inputs.host }}-${{ inputs.target }}-${{ inputs.build-type }}-${{ steps.cache-scope.outputs.scope }}-
+          ccache-${{ inputs.host }}-${{ inputs.target }}-${{ inputs.build-type }}${{ inputs.variant && format('-{0}', inputs.variant) }}-${{ steps.cache-scope.outputs.scope }}-
+          ccache-${{ inputs.host }}-${{ inputs.target }}-${{ inputs.build-type }}${{ inputs.variant && format('-{0}', inputs.variant) }}-shared-
           ccache-${{ inputs.host }}-${{ inputs.target }}-${{ inputs.build-type }}-shared-
-          ccache-${{ inputs.host }}-${{ inputs.target }}-${{ inputs.build-type }}-
 
     - name: Restore Build Cache (ccache, read-only)
       if: steps.cache-policy.outputs.save != 'true'
       uses: actions/cache/restore@v5
       with:
         path: ${{ github.workspace }}/.ccache
-        key: ccache-${{ inputs.host }}-${{ inputs.target }}-${{ inputs.build-type }}-${{ steps.cache-scope.outputs.scope }}-${{ hashFiles('.github/build-config.json', 'tools/configs/ccache.conf') }}-${{ github.run_id }}
+        key: ccache-${{ inputs.host }}-${{ inputs.target }}-${{ inputs.build-type }}${{ inputs.variant && format('-{0}', inputs.variant) }}-${{ steps.cache-scope.outputs.scope }}-${{ hashFiles('.github/build-config.json', 'tools/configs/ccache.conf') }}
         restore-keys: |
-          ccache-${{ inputs.host }}-${{ inputs.target }}-${{ inputs.build-type }}-${{ steps.cache-scope.outputs.scope }}-
+          ccache-${{ inputs.host }}-${{ inputs.target }}-${{ inputs.build-type }}${{ inputs.variant && format('-{0}', inputs.variant) }}-${{ steps.cache-scope.outputs.scope }}-
+          ccache-${{ inputs.host }}-${{ inputs.target }}-${{ inputs.build-type }}${{ inputs.variant && format('-{0}', inputs.variant) }}-shared-
           ccache-${{ inputs.host }}-${{ inputs.target }}-${{ inputs.build-type }}-shared-
-          ccache-${{ inputs.host }}-${{ inputs.target }}-${{ inputs.build-type }}-
 
     - name: Initialize ccache stats
       shell: bash
       run: ccache -z
 
+    # CPM is content-identical across build types; only Release writes the
+    # cache. Debug + sanitizer + coverage jobs are read-only to avoid parallel
+    # save races on the same key (last-writer-wins waste).
     - name: Cache CPM Modules (restore and save)
-      if: inputs.cpm-modules != '' && steps.cache-policy.outputs.save == 'true'
+      if: inputs.cpm-modules != '' && steps.cache-policy.outputs.save == 'true' && inputs.build-type == 'Release'
       uses: actions/cache@v5
       with:
         path: ${{ steps.cpm-cache.outputs.path }}
@@ -167,10 +190,9 @@ runs:
         restore-keys: |
           cpm-modules-${{ steps.cache-scope.outputs.scope }}-
           cpm-modules-shared-
-          cpm-modules-
 
     - name: Cache CPM Modules (restore only)
-      if: inputs.cpm-modules != '' && steps.cache-policy.outputs.save != 'true'
+      if: inputs.cpm-modules != '' && (steps.cache-policy.outputs.save != 'true' || inputs.build-type != 'Release')
       uses: actions/cache/restore@v5
       with:
         path: ${{ steps.cpm-cache.outputs.path }}
@@ -178,4 +200,3 @@ runs:
         restore-keys: |
           cpm-modules-${{ steps.cache-scope.outputs.scope }}-
           cpm-modules-shared-
-          cpm-modules-

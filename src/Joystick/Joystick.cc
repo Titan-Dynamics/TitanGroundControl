@@ -1,4 +1,5 @@
 #include "Joystick.h"
+#include "Fact.h"
 #include "MavlinkAction.h"
 #include "MavlinkActionManager.h"
 #include "MavlinkActionsSettings.h"
@@ -14,12 +15,24 @@
 #include "MultiVehicleManager.h"
 
 #include <QtCore/QCoreApplication>
+#include <QtCore/QSet>
 #include <algorithm>
 #include <QtCore/QSettings>
 #include <QtCore/QThread>
 
 QGC_LOGGING_CATEGORY(JoystickLog, "Joystick.Joystick")
 QGC_LOGGING_CATEGORY(JoystickVerboseLog, "Joystick.Joystick:verbose")
+
+static QDebug operator<<(QDebug debug, Joystick::ButtonEvent_t event)
+{
+    switch (event) {
+    case Joystick::ButtonEventDownTransition: return debug << "Down";
+    case Joystick::ButtonEventUpTransition:   return debug << "Up";
+    case Joystick::ButtonEventRepeat:         return debug << "Repeat";
+    case Joystick::ButtonEventNone:           return debug << "None";
+    }
+    return debug << static_cast<int>(event);
+}
 
 namespace
 {
@@ -41,15 +54,17 @@ AssignedButtonAction::AssignedButtonAction(const QString &actionName_, bool repe
     : actionName(actionName_)
     , repeat(repeat_)
 {
-    qCDebug(JoystickLog) << this;
+    qCDebug(JoystickVerboseLog) << this;
 }
 
-AvailableButtonAction::AvailableButtonAction(const QString &actionName_, bool canRepeat_, QObject *parent)
+AvailableButtonAction::AvailableButtonAction(const QString &actionName_, std::function<void()> onDown_, std::function<void()> onUp_, std::function<void()> onRepeat_, QObject *parent)
     : QObject(parent)
     , _actionName(actionName_)
-    , _repeat(canRepeat_)
+    , _onDown(std::move(onDown_))
+    , _onRepeat(std::move(onRepeat_))
+    , _onUp(std::move(onUp_))
 {
-    qCDebug(JoystickLog) << this;
+    qCDebug(JoystickVerboseLog) << this;
 }
 
 /*===========================================================================*/
@@ -145,7 +160,7 @@ Joystick::Joystick(const QString &name, int axisCount, int buttonCount, int hatC
 
 Joystick::~Joystick()
 {
-    _exitThread = true;
+    _exitPollingThread = true;
     if (isRunning()) {
         if (QThread::currentThread() == this) {
             qCWarning(JoystickLog) << "Skipping wait() on joystick thread";
@@ -302,6 +317,11 @@ void Joystick::_loadAxisSettings(bool joystickCalibrated, int transmitterMode)
         const int axisFunction = axisSettings.value(functionKey, maxAxisFunction).toInt();
         if (axisFunction < 0 || axisFunction > maxAxisFunction) {
             qCWarning(JoystickLog) << "Invalid function" << axisFunction << "for axis" << axis;
+            axisSettings.endGroup();
+            continue;
+        }
+        if (axisFunction == maxAxisFunction) {
+            // Older code would save unassigned axes with maxAxisFunction, we now skip loading those since that is not a valid function assignment
             axisSettings.endGroup();
             continue;
         }
@@ -471,6 +491,11 @@ void Joystick::_saveAxisSettings(int transmitterMode)
     const QString reversedKey = QString::fromLatin1(kAxisReversedKey);
 
     for (int axis = 0; axis < _axisCount; axis++) {
+        AxisFunction_t function = _getAxisFunctionForJoystickAxis(axis);
+        if (function == maxAxisFunction) {
+            // No function assigned to axis, nothing to save
+            continue;
+        }
         AxisCalibration_t *const calibration = &_rgCalibration[axis];
         axisSettings.beginGroup(QString::number(axis));
 
@@ -479,7 +504,6 @@ void Joystick::_saveAxisSettings(int transmitterMode)
         axisSettings.setValue(maxKey, calibration->max);
         axisSettings.setValue(deadbandKey, calibration->deadband);
         axisSettings.setValue(reversedKey, calibration->reversed);
-        AxisFunction_t function = _getAxisFunctionForJoystickAxis(axis);
         axisSettings.setValue(functionKey, static_cast<int>(function));
 
         qCDebug(JoystickLog)
@@ -639,7 +663,7 @@ void Joystick::run()
             }
         }
 
-        while (!_exitThread) {
+        while (!_exitPollingThread) {
             if (!_update()) {
                 qCWarning(JoystickLog) << "Joystick disconnected or update failed:" << _name;
                 updateFailed = true;
@@ -662,7 +686,7 @@ void Joystick::run()
         _close();
     }
 
-    if ((openFailed || updateFailed) && !_exitThread) {
+    if ((openFailed || updateFailed) && !_exitPollingThread) {
         qCDebug(JoystickLog) << "Triggering joystick rescan after failure";
         QMetaObject::invokeMethod(JoystickManager::instance(), "_checkForAddedOrRemovedJoysticks", Qt::QueuedConnection);
     }
@@ -717,14 +741,14 @@ void Joystick::_updateButtonEventStates(QVector<ButtonEvent_t> &buttonEventState
 
 void Joystick::_handleButtons()
 {
-    if (_currentPollingType == NotPolling) {
+    if (_pollingFlags == PollingNone) {
         qCWarning(JoystickLog) << "Internal Error: Joystick not polling!";
         return;
     }
 
     _updateButtonEventStates(_buttonEventStates);
 
-    if (_currentPollingType == PollingForConfiguration) {
+    if (_pollingFlags.testFlag(PollingForConfiguration)) {
         for (int buttonIndex = 0; buttonIndex < _totalButtonCount; buttonIndex++) {
             if (_buttonEventStates[buttonIndex] == ButtonEventDownTransition) {
                 qCDebug(JoystickLog) << "Button pressed - button" << buttonIndex;
@@ -734,7 +758,7 @@ void Joystick::_handleButtons()
                 emit rawButtonPressedChanged(buttonIndex, false);
             }
         }
-    } else if (_currentPollingType == PollingForVehicle) {
+    } else if (_pollingFlags.testFlag(PollingForVehicle)) {
         Vehicle *const vehicle = _pollingVehicle;
         if (!vehicle) {
             qCWarning(JoystickLog) << "Internal Error: No vehicle for joystick!";
@@ -750,6 +774,7 @@ void Joystick::_handleButtons()
 
         //-- Process button press/release
         const int buttonDelay = static_cast<int>(1000.0 / _joystickSettings.buttonFrequencyHz()->rawValue().toDouble());
+        QSet<QString> executedActions;
         for (int buttonIndex = 0; buttonIndex < _totalButtonCount; buttonIndex++) {
             if (!_assignedButtonActions[buttonIndex]) {
                 continue;
@@ -767,24 +792,35 @@ void Joystick::_handleButtons()
                     if (assignedAction->buttonElapsedTimer.elapsed() > buttonDelay) {
                         assignedAction->buttonElapsedTimer.start();
                         qCDebug(JoystickLog) << "Repeat - button:action" << buttonIndex << buttonAction;
-                        _executeButtonAction(buttonAction, ButtonEventRepeat);
+                        // Post to the GUI thread for safe access to class members.
+                        QMetaObject::invokeMethod(this, [this, buttonAction]() {
+                            _executeButtonAction(buttonAction, ButtonEventRepeat);
+                        }, Qt::QueuedConnection);
                     }
                 } else {
                     if (buttonEventState == ButtonEventDownTransition) {
                         // Check for multi-button action
                         QList<int> multiActionButtons = { buttonIndex };
+                        bool allActionButtonsPressed = true;
                         for (int multiIndex = 0; multiIndex < _totalButtonCount; multiIndex++) {
+                            if (multiIndex == buttonIndex) {
+                                continue;
+                            }
                             if (_assignedButtonActions[multiIndex] && (_assignedButtonActions[multiIndex]->actionName == buttonAction)) {
                                 // We found a multi-button action
                                 if (_buttonEventStates[multiIndex] == ButtonEventDownTransition || _buttonEventStates[multiIndex] == ButtonEventRepeat) {
                                     // So far so good
                                     multiActionButtons.append(multiIndex);
-                                    continue;
                                 } else {
-                                    // We are missing a press we need
-                                    return;
+                                    // We are missing a press we need, skip this multi-button action only
+                                    allActionButtonsPressed = false;
+                                    break;
                                 }
                             }
+                        }
+
+                        if (!allActionButtonsPressed) {
+                            continue;
                         }
 
                         if (multiActionButtons.size() > 1) {
@@ -792,14 +828,29 @@ void Joystick::_handleButtons()
                         } else {
                             qCDebug(JoystickLog) << "Action triggered - button:Action" << buttonIndex << buttonAction;
                         }
-                        _executeButtonAction(buttonAction, ButtonEventDownTransition);
-                        return;
+                        // Multiple buttons can share the same action name (multi-button feature).
+                        // Guard against executing the action more than once per poll cycle when
+                        // several such buttons are all in the same event state simultaneously.
+                        if (!executedActions.contains(buttonAction)) {
+                            // Post to the GUI thread for safe access to class members.
+                            QMetaObject::invokeMethod(this, [this, buttonAction]() {
+                                _executeButtonAction(buttonAction, ButtonEventDownTransition);
+                            }, Qt::QueuedConnection);
+                            executedActions.insert(buttonAction);
+                        }
+                        continue;
                     }
                 }
             } else if (buttonEventState == ButtonEventUpTransition) {
-                qCDebug(JoystickLog) << "Button up - button:action" << buttonIndex << buttonAction;
-                _executeButtonAction(buttonAction, ButtonEventUpTransition);
-                return;
+                // Same deduplication guard for release events.
+                if (!executedActions.contains(buttonAction)) {
+                    // Post to the GUI thread for safe access to class members.
+                    QMetaObject::invokeMethod(this, [this, buttonAction]() {
+                        _executeButtonAction(buttonAction, ButtonEventUpTransition);
+                    }, Qt::QueuedConnection);
+                    executedActions.insert(buttonAction);
+                }
+                continue;
             }
         }
     }
@@ -851,12 +902,12 @@ void Joystick::_handleAxis()
 
     _axisElapsedTimer.start();
 
-    if (_currentPollingType == NotPolling) {
+    if (_pollingFlags == PollingNone) {
         qCWarning(JoystickLog) << "Internal Error: Joystick not polling!";
         return;
     }
 
-    if (_currentPollingType == PollingForConfiguration) {
+    if (_pollingFlags.testFlag(PollingForConfiguration)) {
         // Signal the axis values to Joystick Config/Cal. Axes in Joystick terminology are the same as Channels in
         // RemoteControlCalibrationController terminology.
         QVector<int> channelValues(_axisCount);
@@ -864,7 +915,7 @@ void Joystick::_handleAxis()
             channelValues[axisIndex] = _getAxisValue(axisIndex);
         }
         emit rawChannelValuesChanged(channelValues);
-    } else if (_currentPollingType == PollingForVehicle) {
+    } else if (_pollingFlags.testFlag(PollingForVehicle)) {
         Vehicle *const vehicle = _pollingVehicle;
         if (!vehicle) {
             qCWarning(JoystickLog) << "Internal Error: No vehicle for joystick!";
@@ -1057,20 +1108,13 @@ void Joystick::_startPollingForActiveVehicle()
 
 void Joystick::_startPollingForVehicle(Vehicle &vehicle)
 {
-    if (_currentPollingType == PollingForVehicle) {
+    qCDebug(JoystickLog) << "Starting joystick polling for vehicle. Vehicle id:" << vehicle.id() << "Current flags:" << _pollingFlagsToString(_pollingFlags);
+
+    if (_pollingFlags.testFlag(PollingForVehicle)) {
         qCWarning(JoystickLog) << "Internal Error: Joystick already polling for vehicle!";
         return;
     }
-    if (_previousPollingType != NotPolling) {
-        qCWarning(JoystickLog) << "Internal Error: Joystick previous polling type not None:" << _pollingTypeToString(_previousPollingType);
-        return;
-    }
-    if (_currentPollingType == NotPolling && isRunning()) {
-        qCWarning(JoystickLog) << "Internal Error: Joystick polling should not be running!";
-        return;
-    }
 
-    _currentPollingType = PollingForVehicle;
     _pollingVehicle = &vehicle;
 
     _buildAvailableButtonsActionList(_pollingVehicle);
@@ -1095,88 +1139,131 @@ void Joystick::_startPollingForVehicle(Vehicle &vehicle)
         (void) connect(this, &Joystick::gimbalYawStop,      gimbal, &GimbalController::gimbalYawStop);
     }
 
-    qDebug(JoystickLog) << "Started joystick polling for vehicle" << _pollingVehicle->id();
-
-    start();
+    _pollingFlags |= PollingForVehicle;
+    _startPollingThread();
 }
 
 void Joystick::_startPollingForConfiguration()
 {
-    if (_currentPollingType == PollingForConfiguration) {
+    qCDebug(JoystickLog) << "Starting joystick polling for configuration. Current flags:" << _pollingFlagsToString(_pollingFlags);
+
+    if (_pollingFlags.testFlag(PollingForConfiguration)) {
         qCWarning(JoystickLog) << "Internal Error: Joystick already polling for configuration!";
         return;
     }
-    if (_previousPollingType != NotPolling) {
-        qCWarning(JoystickLog) << "Internal Error: Joystick previous polling type not None:" << _pollingTypeToString(_previousPollingType);
-        return;
-    }
 
-    qCDebug(JoystickLog) << "Started joystick polling for configuration. Saved previous polling type:" << _pollingTypeToString(_currentPollingType);
-
-    _previousPollingType = _currentPollingType;
-    _currentPollingType = PollingForConfiguration;
-
-    if (!isRunning()) {
-        start();
-    }
+    _pollingFlags |= PollingForConfiguration;
+    _startPollingThread();
 }
 
 void Joystick::_stopPollingForConfiguration()
 {
-    if (_currentPollingType != PollingForConfiguration) {
+    qCDebug(JoystickLog) << "Stopping joystick polling for configuration. Current flags:" << _pollingFlagsToString(_pollingFlags);
+
+    if (!_pollingFlags.testFlag(PollingForConfiguration)) {
         qCWarning(JoystickLog) << "Internal Error: Joystick not polling for configuration!";
         return;
     }
+
     if (!isRunning()) {
-        qCWarning(JoystickLog) << "Internal Error: Joystick polling not running!";
-        return;
+        qCWarning(JoystickLog) << "Internal Error: Joystick polling thread not running!";
     }
 
-    qCDebug(JoystickLog) << "Stopped joystick polling for configuration. Restored previous polling type:" << _pollingTypeToString(_previousPollingType);
+    const PollingFlags remainingFlags = _pollingFlags & ~PollingFlags(PollingForConfiguration);
 
-    _currentPollingType = _previousPollingType;
-    _previousPollingType = NotPolling;
+    // Stop the thread BEFORE updating _pollingFlags. If we cleared the flags first and the
+    // thread was still running, _handleButtons()/_handleAxis() would see PollingNone and
+    // fire a spurious "Internal Error: Joystick not polling!" warning.
+    if (remainingFlags == PollingNone) {
+        _stopPollingThread();
+    }
 
-    if (_currentPollingType == NotPolling) {
-        _exitThread = true;
+    _pollingFlags = remainingFlags;
+    qCDebug(JoystickLog) << "Remaining flags:" << _pollingFlagsToString(_pollingFlags);
+
+    if (remainingFlags.testFlag(PollingForVehicle) && !isRunning()) {
+        qCWarning(JoystickLog) << "Internal Error: Joystick polling not running! Forcing start of polling thread. Continuing polling for vehicle.";
+        _startPollingThread();
     }
 }
 
-void Joystick::_stopAllPolling()
+void Joystick::_stopAllPollingForVehicle()
 {
+    qCDebug(JoystickLog) << "Stopping all joystick polling for vehicle. Current flags:" << _pollingFlagsToString(_pollingFlags);
+
     if (_pollingVehicle) {
         (void) disconnect(this, nullptr, _pollingVehicle, nullptr);
         (void) disconnect(_pollingVehicle, &Vehicle::flightModesChanged, this, &Joystick::_flightModesChanged);
         if (GimbalController *const gimbal = _pollingVehicle->gimbalController()) {
             (void) disconnect(this, nullptr, gimbal, nullptr);
         }
-        _pollingVehicle = nullptr;
+        if (!isRunning()) {
+            qCWarning(JoystickLog) << "Joystick polling thread not running even though _pollingVehicle was set.";
+        }
     }
 
-    qCDebug(JoystickLog) << "Stopped all joystick polling";
+    const PollingFlags remainingFlags = _pollingFlags & ~PollingFlags(PollingForVehicle);
 
-    _currentPollingType = NotPolling;
-    _previousPollingType = NotPolling;
+    // Stop the thread BEFORE updating _pollingFlags. If we cleared the flags first and the
+    // thread was still running, _handleButtons()/_handleAxis() would see PollingNone and
+    // fire a spurious "Internal Error: Joystick not polling!" warning.
+    if (remainingFlags == PollingNone) {
+        _stopPollingThread();
+    }
 
-    if (isRunning()) {
-        _exitThread = true;
+    // Clear _pollingVehicle AFTER updating _pollingFlags so the polling thread never sees
+    // PollingForVehicle set with a null _pollingVehicle, which would fire spurious
+    // "Internal Error: No vehicle for joystick!" warnings.
+    _pollingVehicle = nullptr;
+    _pollingFlags = remainingFlags;
+    qCDebug(JoystickLog) << "Remaining flags:" << _pollingFlagsToString(_pollingFlags);
+
+    if (remainingFlags.testFlag(PollingForConfiguration) && !isRunning()) {
+        qCWarning(JoystickLog) << "Joystick polling thread not running but configuration polling flag set. Forcing start.";
+        _startPollingThread();
     }
 }
 
-QString Joystick::_pollingTypeToString(PollingType pollingType) const
+void Joystick::_startPollingThread()
 {
-    switch (pollingType) {
-    case NotPolling:
-        return QStringLiteral("NotPolling");
-    case PollingForConfiguration:
-        return QStringLiteral("PollingForConfiguration");
-    case PollingForVehicle:
-        return QStringLiteral("PollingForVehicle");
-    default:
-        break;
+    if (isRunning()) {
+        qCDebug(JoystickLog) << "Polling thread already running. Flags:" << _pollingFlagsToString(_pollingFlags);
+    } else {
+        qCDebug(JoystickLog) << "Starting polling thread. Flags:" << _pollingFlagsToString(_pollingFlags);
+        _exitPollingThread = false;
+        start();
     }
+}
 
-    return QStringLiteral("UnknownPollingType");
+void Joystick::_stopPollingThread()
+{
+    if (isRunning()) {
+        qCDebug(JoystickLog) << "Stopping polling thread. Flags:" << _pollingFlagsToString(_pollingFlags);
+        _exitPollingThread = true;
+        if (QThread::currentThread() == this) {
+            qCWarning(JoystickLog) << "Skipping wait() on joystick thread to avoid deadlock";
+        } else {
+            wait();
+        }
+        // _exitPollingThread is reset to false in _startPollingThread() before the next start()
+    } else {
+        qCDebug(JoystickLog) << "Polling thread already stopped. Flags:" << _pollingFlagsToString(_pollingFlags);
+    }
+}
+
+QString Joystick::_pollingFlagsToString(PollingFlags flags) const
+{
+    if (flags == PollingNone) {
+        return QStringLiteral("None");
+    }
+    QStringList parts;
+    if (flags.testFlag(PollingForVehicle)) {
+        parts << QStringLiteral("PollingForVehicle");
+    }
+    if (flags.testFlag(PollingForConfiguration)) {
+        parts << QStringLiteral("PollingForConfiguration");
+    }
+    return parts.join(QStringLiteral("|"));
 }
 
 void Joystick::setAxisCalibration(int axis, const AxisCalibration_t &calibration)
@@ -1421,80 +1508,53 @@ void Joystick::_executeButtonAction(const QString &action, const ButtonEvent_t b
         return;
     }
 
-    struct ActionInfo {
-        const QString action;
-        const ButtonEvent_t event;
-        std::function<void()> func;
-    };
-    auto actionInfo = std::to_array<ActionInfo>({
-        { _buttonActionArm,                     ButtonEventDownTransition,  [this]() { emit setArmed(true); } },
-        { _buttonActionDisarm,                  ButtonEventDownTransition,  [this]() { emit setArmed(false); } },
-        { _buttonActionToggleArm,               ButtonEventDownTransition,  [this, vehicle]() { emit setArmed(!vehicle->armed()); } },
-        { _buttonActionVTOLFixedWing,           ButtonEventDownTransition,  [this]() { emit setVtolInFwdFlight(true); } },
-        { _buttonActionVTOLMultiRotor,          ButtonEventDownTransition,  [this]() { emit setVtolInFwdFlight(false); } },
-        { _buttonActionTriggerCamera,           ButtonEventDownTransition,  [this]() { emit triggerCamera(); } },
-        { _buttonActionContinuousZoomIn,        ButtonEventDownTransition,  [this]() { emit startContinuousZoom(1); } },
-        { _buttonActionContinuousZoomIn,        ButtonEventRepeat,          [this]() { emit startContinuousZoom(1); } },
-        { _buttonActionContinuousZoomOut,       ButtonEventDownTransition,  [this]() { emit startContinuousZoom(-1); } },
-        { _buttonActionContinuousZoomOut,       ButtonEventRepeat,          [this]() { emit startContinuousZoom(-1); } },
-        { _buttonActionStepZoomIn,              ButtonEventDownTransition,  [this]() { emit stepZoom(1); } },
-        { _buttonActionStepZoomIn,              ButtonEventRepeat,          [this]() { emit stepZoom(1); } },
-        { _buttonActionStepZoomOut,             ButtonEventDownTransition,  [this]() { emit stepZoom(-1); } },
-        { _buttonActionStepZoomOut,             ButtonEventRepeat,          [this]() { emit stepZoom(-1); } },
-        { _buttonActionNextStream,              ButtonEventDownTransition,  [this]() { emit stepStream(1); } },
-        { _buttonActionPreviousStream,          ButtonEventDownTransition,  [this]() { emit stepStream(-1); } },
-        { _buttonActionNextCamera,              ButtonEventDownTransition,  [this]() { emit stepCamera(1); } },
-        { _buttonActionPreviousCamera,          ButtonEventDownTransition,  [this]() { emit stepCamera(-1); } },
-        { _buttonActionGimbalUp,                ButtonEventDownTransition,  [this]() { emit gimbalPitchStart(1); } },
-        { _buttonActionGimbalUp,                ButtonEventUpTransition,    [this]() { emit gimbalPitchStop(); } },
-        { _buttonActionGimbalDown,              ButtonEventDownTransition,  [this]() { emit gimbalPitchStart(-1); } },
-        { _buttonActionGimbalDown,              ButtonEventUpTransition,    [this]() { emit gimbalPitchStop(); } },
-        { _buttonActionGimbalLeft,              ButtonEventDownTransition,  [this]() { emit gimbalYawStart(-1); } },
-        { _buttonActionGimbalLeft,              ButtonEventUpTransition,    [this]() { emit gimbalYawStop(); } },
-        { _buttonActionGimbalRight,             ButtonEventDownTransition,  [this]() { emit gimbalYawStart(1); } },
-        { _buttonActionGimbalRight,             ButtonEventUpTransition,    [this]() { emit gimbalYawStop(); } },
-        { _buttonActionStartVideoRecord,        ButtonEventDownTransition,  [this]() { emit startVideoRecord(); } },
-        { _buttonActionStopVideoRecord,         ButtonEventDownTransition,  [this]() { emit stopVideoRecord(); } },
-        { _buttonActionToggleVideoRecord,       ButtonEventDownTransition,  [this]() { emit toggleVideoRecord(); } },
-        { _buttonActionGimbalCenter,            ButtonEventDownTransition,  [this]() { emit centerGimbal(); } },
-        { _buttonActionGimbalYawLock,           ButtonEventDownTransition,  [this]() { emit gimbalYawLock(true); } },
-        { _buttonActionGimbalYawFollow,         ButtonEventDownTransition,  [this]() { emit gimbalYawLock(false); } },
-        { _buttonActionEmergencyStop,           ButtonEventDownTransition,  [this]() { emit emergencyStop(); } },
-        { _buttonActionGripperGrab,             ButtonEventDownTransition,  [this]() { emit gripperAction(QGCMAVLink::GripperActionGrab); } },
-        { _buttonActionGripperRelease,          ButtonEventDownTransition,  [this]() { emit gripperAction(QGCMAVLink::GripperActionRelease); } },
-        { _buttonActionGripperHold,             ButtonEventDownTransition,  [this]() { emit gripperAction(QGCMAVLink::GripperActionHold); } },
-        { _buttonActionLandingGearDeploy,       ButtonEventDownTransition,  [this]() { emit landingGearDeploy(); } },
-        { _buttonActionLandingGearRetract,      ButtonEventDownTransition,  [this]() { emit landingGearRetract(); } },
-        { _buttonActionMotorInterlockEnable,    ButtonEventDownTransition,  [this]() { emit motorInterlock(true); } },
-        { _buttonActionMotorInterlockDisable,   ButtonEventDownTransition,  [this]() { emit motorInterlock(false); } },
-    });
-
-    // First check for flight mode match
-    if (vehicle->flightModes().contains(action)) {
-        if (buttonEvent == ButtonEventDownTransition) {
-            emit setFlightMode(action);
+    const int idx = _findAvailableButtonActionIndex(action);
+    if (idx >= 0) {
+        const AvailableButtonAction *const availAction = qobject_cast<const AvailableButtonAction*>(_availableButtonActions->get(idx));
+        std::function<void()> handler;
+        switch (buttonEvent) {
+        case ButtonEventDownTransition:
+            handler = availAction->onDown();
+            break;
+        case ButtonEventRepeat:
+            handler = availAction->onRepeat();
+            break;
+        case ButtonEventUpTransition:
+            handler = availAction->onUp();
+            break;
+        default:
+            return;
+        }
+        if (handler) {
+            qCDebug(JoystickLog) << "Button Action:" << action << buttonEvent;
+            handler();
+            return;
+        }
+        // No lambda for this event — only DownTransition falls through to flight mode / MAVLink handling
+        if (buttonEvent != ButtonEventDownTransition) {
             return;
         }
     }
 
-    // Now look for an action match
-    auto it = std::find_if(actionInfo.begin(), actionInfo.end(), [&action, &buttonEvent](const ActionInfo &info) {
-        return (info.action == action) && (info.event == buttonEvent);
-    });
-    if (it != actionInfo.end()) {
-        it->func();
+    if (buttonEvent != ButtonEventDownTransition) {
         return;
     }
 
-    // Finally let mavlink actions have a go
-    if (buttonEvent == ButtonEventDownTransition) {
-        emit unknownAction(action);
-        for (int i = 0; i<_mavlinkActionManager->actions()->count(); i++) {
-            MavlinkAction *const mavlinkAction = _mavlinkActionManager->actions()->value<MavlinkAction*>(i);
-            if (action == mavlinkAction->label()) {
-                mavlinkAction->sendTo(vehicle);
-                return;
-            }
+    // Flight mode check
+    if (vehicle->flightModes().contains(action)) {
+        qCDebug(JoystickLog) << "Button Action: Switching flight mode to" << action;
+        emit setFlightMode(action);
+        return;
+    }
+
+    // MAVLink actions
+    emit unknownAction(action);
+    for (int i = 0; i < _mavlinkActionManager->actions()->count(); i++) {
+        MavlinkAction *const mavlinkAction = _mavlinkActionManager->actions()->value<MavlinkAction*>(i);
+        if (action == mavlinkAction->label()) {
+            qCDebug(JoystickLog) << "Button Action: Sending MAVLink action" << action;
+            mavlinkAction->sendTo(vehicle);
+            return;
         }
     }
 }
@@ -1538,57 +1598,117 @@ void Joystick::_buildAvailableButtonsActionList(Vehicle *vehicle)
     }
     _availableActionTitles.clear();
 
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionNone, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionArm, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionDisarm, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionToggleArm, false));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionNone, nullptr));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionArm,
+        [this]() { emit setArmed(true); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionDisarm,
+        [this]() { emit setArmed(false); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionToggleArm,
+        [this]() { emit setArmed(!_pollingVehicle->armed()); }));
     if (vehicle) {
         const QStringList list = vehicle->flightModes();
         for (const QString &mode : list) {
-            _availableButtonActions->append(new AvailableButtonAction(mode, false));
+            _availableButtonActions->append(new AvailableButtonAction(mode, nullptr));
         }
     }
 
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionVTOLFixedWing, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionVTOLMultiRotor, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionContinuousZoomIn, true));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionContinuousZoomOut, true));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionStepZoomIn, true));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionStepZoomOut, true));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionNextStream, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionPreviousStream, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionNextCamera, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionPreviousCamera, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionTriggerCamera, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionStartVideoRecord, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionStopVideoRecord, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionToggleVideoRecord, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGimbalDown, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGimbalUp, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGimbalLeft, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGimbalRight, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGimbalCenter, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGimbalYawLock, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGimbalYawFollow, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionEmergencyStop, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGripperGrab, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGripperRelease, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGripperHold, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionLandingGearDeploy, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionLandingGearRetract, false));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionVTOLFixedWing,
+        [this]() { emit setVtolInFwdFlight(true); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionVTOLMultiRotor,
+        [this]() { emit setVtolInFwdFlight(false); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionContinuousZoomIn,
+        [this]() { emit startContinuousZoom(1); },
+        [this]() { emit stopContinuousZoom(); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionContinuousZoomOut,
+        [this]() { emit startContinuousZoom(-1); },
+        [this]() { emit stopContinuousZoom(); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionStepZoomIn,
+        [this]() { emit stepZoom(1); },
+        nullptr,
+        [this]() { emit stepZoom(1); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionStepZoomOut,
+        [this]() { emit stepZoom(-1); },
+        nullptr,
+        [this]() { emit stepZoom(-1); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionContinuousFocusIn,
+        [this]() { emit startContinuousFocus(1); },
+        [this]() { emit stopContinuousFocus(); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionContinuousFocusOut,
+        [this]() { emit startContinuousFocus(-1); },
+        [this]() { emit stopContinuousFocus(); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionStepFocusIn,
+        [this]() { emit stepFocus(1); },
+        nullptr,
+        [this]() { emit stepFocus(1); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionStepFocusOut,
+        [this]() { emit stepFocus(-1); },
+        nullptr,
+        [this]() { emit stepFocus(-1); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionNextStream,
+        [this]() { emit stepStream(1); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionPreviousStream,
+        [this]() { emit stepStream(-1); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionNextCamera,
+        [this]() { emit stepCamera(1); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionPreviousCamera,
+        [this]() { emit stepCamera(-1); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionTriggerCamera,
+        [this]() { emit triggerCamera(); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionStartVideoRecord,
+        [this]() { emit startVideoRecord(); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionStopVideoRecord,
+        [this]() { emit stopVideoRecord(); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionToggleVideoRecord,
+        [this]() { emit toggleVideoRecord(); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGimbalDown,
+        [this]() { emit gimbalPitchStart(-1); },
+        [this]() { emit gimbalPitchStop(); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGimbalUp,
+        [this]() { emit gimbalPitchStart(1); },
+        [this]() { emit gimbalPitchStop(); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGimbalLeft,
+        [this]() { emit gimbalYawStart(-1); },
+        [this]() { emit gimbalYawStop(); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGimbalRight,
+        [this]() { emit gimbalYawStart(1); },
+        [this]() { emit gimbalYawStop(); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGimbalCenter,
+        [this]() { emit centerGimbal(); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGimbalYawLock,
+        [this]() { emit gimbalYawLock(true); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGimbalYawFollow,
+        [this]() { emit gimbalYawLock(false); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionEmergencyStop,
+        [this]() { emit emergencyStop(); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGripperGrab,
+        [this]() { emit gripperAction(GRIPPER_ACTION_GRAB); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGripperRelease,
+        [this]() { emit gripperAction(GRIPPER_ACTION_RELEASE); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionGripperHold,
+        [this]() { emit gripperAction(GRIPPER_ACTION_HOLD); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionLandingGearDeploy,
+        [this]() { emit landingGearDeploy(); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionLandingGearRetract,
+        [this]() { emit landingGearRetract(); }));
 #ifndef QGC_NO_ARDUPILOT_DIALECT
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionMotorInterlockEnable, false));
-    _availableButtonActions->append(new AvailableButtonAction(_buttonActionMotorInterlockDisable, false));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionMotorInterlockEnable,
+        [this]() { emit motorInterlock(true); }));
+    _availableButtonActions->append(new AvailableButtonAction(_buttonActionMotorInterlockDisable,
+        [this]() { emit motorInterlock(false); }));
 #endif
 
     const auto customActions = QGCCorePlugin::instance()->joystickActions();
     for (const auto &action : customActions) {
-        _availableButtonActions->append(new AvailableButtonAction(action.name, action.canRepeat));
+        // onDown is nullptr — dispatch falls through to unknownAction (DownTransition only).
+        // A non-null onRepeat makes canRepeat() return true, preserving the UI toggle,
+        // but custom plugin repeat dispatch is not supported (unknownAction carries no event type).
+        std::function<void()> repeatFn = action.canRepeat ? std::function<void()>([]{}) : nullptr;
+        _availableButtonActions->append(new AvailableButtonAction(action.name, nullptr, nullptr, repeatFn));
     }
 
     for (int i = 0; i < _mavlinkActionManager->actions()->count(); i++) {
         const MavlinkAction *const mavlinkAction = _mavlinkActionManager->actions()->value<const MavlinkAction*>(i);
-        _availableButtonActions->append(new AvailableButtonAction(mavlinkAction->label(), false));
+        _availableButtonActions->append(new AvailableButtonAction(mavlinkAction->label(), nullptr));
     }
 
     for (int i = 0; i < _availableButtonActions->count(); i++) {
@@ -1660,7 +1780,7 @@ Joystick::AxisFunction_t Joystick::_getAxisFunctionForJoystickAxis(int joystickA
 
 void Joystick::stop()
 {
-    _exitThread = true;
+    _exitPollingThread = true;
     if (isRunning()) {
         if (QThread::currentThread() == this) {
             qCWarning(JoystickLog) << "Skipping wait() on joystick thread";

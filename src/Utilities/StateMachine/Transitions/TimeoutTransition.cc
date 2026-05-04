@@ -4,9 +4,14 @@
 #include <QtStateMachine/QStateMachine>
 
 TimeoutTransition::TimeoutTransition(int timeoutMsecs, QAbstractState* target)
-    : QGCSignalTransition(this, &TimeoutTransition::timeout)
-    , _timeoutMsecs(timeoutMsecs)
+    : _timeoutMsecs(timeoutMsecs)
 {
+    // Wire the QSignalTransition sender/signal after the base ctor returns.
+    // Passing `this` to the base ctor while members are still uninitialized
+    // trips GCC's `-Wmaybe-uninitialized` analyzer (false positive).
+    setSenderObject(this);
+    setSignal(SIGNAL(timeout()));
+
     if (target) {
         setTargetState(target);
     }
@@ -28,7 +33,6 @@ void TimeoutTransition::attachToSourceState(QState* source)
 
 void TimeoutTransition::_onAddedToState()
 {
-    // Connect to source state's entered/exited signals for timer control
     attachToSourceState(qobject_cast<QState*>(sourceState()));
 }
 
@@ -44,12 +48,11 @@ void TimeoutTransition::_onSourceStateExited()
 
 bool TimeoutTransition::event(QEvent* e)
 {
-    // Detect when transition is added to a state (parent changes)
     if (e->type() == QEvent::ParentChange) {
         _onAddedToState();
 
-        // In some addTransition paths sourceState() is not finalized yet during
-        // the immediate ParentChange callback. Retry once on the next turn.
+        // sourceState() may not be finalized during the immediate ParentChange
+        // callback in some addTransition paths; retry once on the next turn.
         if (!_sourceAttached) {
             QTimer::singleShot(0, this, [this]() { _onAddedToState(); });
         }
@@ -60,5 +63,4 @@ bool TimeoutTransition::event(QEvent* e)
 void TimeoutTransition::onTransition(QEvent* event)
 {
     Q_UNUSED(event);
-    // Timer already stopped by _onSourceStateExited or will be stopped when we leave
 }

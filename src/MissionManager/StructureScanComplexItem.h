@@ -6,10 +6,6 @@
 #include "QGCMapPolygon.h"
 #include "CameraCalc.h"
 
-#include <QtCore/QLoggingCategory>
-
-Q_DECLARE_LOGGING_CATEGORY(StructureScanComplexItemLog)
-
 class PlanMasterController;
 
 class StructureScanComplexItem : public ComplexMissionItem
@@ -53,7 +49,7 @@ public:
     Q_INVOKABLE void rotateEntryPoint(void);
 
     // Overrides from ComplexMissionItem
-    QString patternName         (void) const final { return name; }
+    QString patternName         (void) const final { return tr(canonicalName); }
     double  complexDistance     (void) const final { return _scanDistance; }
     int     lastSequenceNumber  (void) const final;
     bool    load                (const QJsonObject& complexObject, int sequenceNumber, QString& errorString) final;
@@ -77,7 +73,7 @@ public:
     double              specifiedGimbalYaw          (void) final { return std::numeric_limits<double>::quiet_NaN(); }
     double              specifiedGimbalPitch        (void) final { return std::numeric_limits<double>::quiet_NaN(); }
     void                appendMissionItems          (QList<MissionItem*>& items, QObject* missionItemParent) final;
-    void                setMissionFlightStatus      (MissionController::MissionFlightStatus_t& missionFlightStatus) final;
+    void                setMissionFlightStatus      (MissionFlightStatus_t& missionFlightStatus) final;
     void                applyNewAltitude            (double newAltitude) final;
     double              additionalTimeDelay         (void) const final { return 0; }
     ReadyForSaveState   readyForSaveState           (void) const final;
@@ -92,7 +88,7 @@ public:
     double              minAMSLAltitude             (void) const final;
     double              maxAMSLAltitude             (void) const final;
 
-    static const QString name;
+    static constexpr const char* canonicalName = QT_TR_NOOP("Structure Scan");
 
     static constexpr const char* settingsGroup =               "StructureScan";
     static constexpr const char* scanBottomAltName =           "ScanBottomAlt";
@@ -143,7 +139,6 @@ private:
     double          _timeBetweenShots;
     double          _vehicleSpeed;
     CameraCalc      _cameraCalc;
-
 
     SettingsFact    _scanBottomAltFact;
     SettingsFact    _structureHeightFact;

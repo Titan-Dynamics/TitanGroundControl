@@ -1,15 +1,11 @@
 #pragma once
 
-#include <QtCore/QLoggingCategory>
 #include <QtCore/QElapsedTimer>
 #include <QtQmlIntegration/QtQmlIntegration>
 #include <QtQuick/QQuickItem>
 
 #include "FactPanelController.h"
 #include "QGCMAVLink.h"
-
-Q_DECLARE_LOGGING_CATEGORY(RemoteControlCalibrationControllerLog)
-Q_DECLARE_LOGGING_CATEGORY(RemoteControlCalibrationControllerVerboseLog)
 
 /// Abstract base class for calibrating RC and Joystick controller.
 class RemoteControlCalibrationController : public FactPanelController
@@ -398,7 +394,7 @@ private:
     bool _joystickMode = false;
     bool _calibrating = false;
     bool _singleStickDisplay = false;
-    QMap<StateMachineStepFunction, QString> _stepFunctionToMsgStringMap;
+    QMap<StateMachineStepFunction, const char*> _stepFunctionToMsgStringMap;
     QMap<StateMachineStepFunction, QMap<int, BothSticksDisplayPositions>> _bothStickDisplayPositionThrottleCenteredMap;
     QMap<StateMachineStepFunction, QMap<int, BothSticksDisplayPositions>> _bothStickDisplayPositionThrottleDownMap;
 

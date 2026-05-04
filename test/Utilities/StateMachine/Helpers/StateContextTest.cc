@@ -5,8 +5,6 @@
 #include "StateContext.h"
 
 #include <QtCore/QTimer>
-#include <QtTest/QSignalSpy>
-#include <QtTest/QTest>
 
 
 void StateContextTest::_testSetAndGet()
@@ -149,7 +147,7 @@ void StateContextTest::_testContextFromState()
     QSignalSpy finishedSpy(&machine, &QStateMachine::finished);
     machine.start();
 
-    QVERIFY(finishedSpy.wait(500));
+    QVERIFY(finishedSpy.wait(TestTimeout::shortMs()));
 
     // Verify state set the context
     auto result = machine.context().get<bool>("fromState");
@@ -185,7 +183,7 @@ void StateContextTest::_testDataPassingBetweenStates()
     QSignalSpy finishedSpy(&machine, &QStateMachine::finished);
     machine.start();
 
-    QVERIFY(finishedSpy.wait(500));
+    QVERIFY(finishedSpy.wait(TestTimeout::shortMs()));
 
     // Consumer should have received the value from producer
     QCOMPARE(receivedValue, 42);
@@ -221,7 +219,7 @@ void StateContextTest::_testStateContextAccessor()
     QSignalSpy finishedSpy(&machine, &QStateMachine::finished);
     machine.start();
 
-    QVERIFY(finishedSpy.wait(500));
+    QVERIFY(finishedSpy.wait(TestTimeout::shortMs()));
     QVERIFY(contextAccessedViaState);
 
     auto result = machine.context().get<bool>("accessedViaState");
