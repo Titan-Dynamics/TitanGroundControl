@@ -45,6 +45,7 @@ Button {
             text:                   control.text
             color:                  control.textColor
             horizontalAlignment:    QGCLabel.AlignLeft
+            elide:                  Text.ElideRight
         }
 
         QGCColoredImage {

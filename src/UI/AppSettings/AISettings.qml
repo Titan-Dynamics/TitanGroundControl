@@ -21,6 +21,7 @@ SettingsPage {
     SettingsGroupLayout {
         Layout.fillWidth: true
         heading: qsTr("Claude API Configuration")
+        visible: sectionFilter === -1 || sectionFilter === 0
 
         LabelledFactTextField {
             Layout.fillWidth:   true
@@ -44,6 +45,7 @@ SettingsPage {
     SettingsGroupLayout {
         Layout.fillWidth: true
         heading: qsTr("Voice Input (Whisper)")
+        visible: sectionFilter === -1 || sectionFilter === 1
 
         LabelledFactTextField {
             Layout.fillWidth:   true
@@ -82,6 +84,7 @@ SettingsPage {
     SettingsGroupLayout {
         Layout.fillWidth: true
         heading: qsTr("Safety Settings")
+        visible: sectionFilter === -1 || sectionFilter === 2
 
         FactCheckBoxSlider {
             Layout.fillWidth:   true
@@ -102,6 +105,7 @@ SettingsPage {
     SettingsGroupLayout {
         Layout.fillWidth: true
         heading: qsTr("AI Context")
+        visible: sectionFilter === -1 || sectionFilter === 3
 
         FactCheckBoxSlider {
             Layout.fillWidth:   true
@@ -122,6 +126,7 @@ SettingsPage {
     SettingsGroupLayout {
         Layout.fillWidth: true
         heading: qsTr("Usage Tips")
+        visible: sectionFilter === -1 || sectionFilter === 4
 
         QGCLabel {
             Layout.fillWidth:   true
@@ -141,6 +146,7 @@ SettingsPage {
     SettingsGroupLayout {
         Layout.fillWidth: true
         heading: qsTr("Custom AI Context")
+        visible: sectionFilter === -1 || sectionFilter === 5
 
         QGCLabel {
             Layout.fillWidth:   true

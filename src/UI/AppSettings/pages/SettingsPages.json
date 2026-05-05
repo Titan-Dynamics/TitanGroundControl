@@ -45,7 +45,15 @@
         {
             "name": "Titan AI",
             "qml": "AISettings.qml",
-            "icon": "qrc:/InstrumentValueIcons/conversation.svg"
+            "icon": "qrc:/InstrumentValueIcons/conversation.svg",
+            "sections": [
+                { "name": "Claude API Configuration", "keywords": ["claude", "api key", "anthropic", "console"] },
+                { "name": "Voice Input (Whisper)", "keywords": ["voice", "whisper", "groq", "speech", "text-to-speech", "tts"] },
+                { "name": "Safety Settings", "keywords": ["safety", "confirmation", "dangerous", "arm", "takeoff", "emergency"] },
+                { "name": "AI Context", "keywords": ["context", "vehicle state", "position", "altitude"] },
+                { "name": "Usage Tips", "keywords": ["tips", "examples", "commands"] },
+                { "name": "Custom AI Context", "keywords": ["custom context", "ardupilot", "documentation", "mavlink", "instructions"] }
+            ]
         },
         {
             "name": "Logging",

@@ -24,7 +24,7 @@ Rectangle {
     property bool   allowUsingMinMax:   false ///< true: fall back to fact.min/max when userMin/Max not set
     property var    sliderMin:          undefined ///< explicit slider minimum, overrides fact.userMin/min
     property var    sliderMax:          undefined ///< explicit slider maximum, overrides fact.userMax/max
-    property color  backgroundColor:    _ftfsBackgroundColor
+    property color  backgroundColor:    "transparent"
 
     signal enableCheckboxClicked
 
@@ -35,7 +35,6 @@ Rectangle {
 
     property bool _loadComplete:            false
     property bool _showSlider:              _sliderMin !== undefined && _sliderMax !== undefined
-    property color _ftfsBackgroundColor:    Qt.rgba(qgcPal.windowShadeLight.r, qgcPal.windowShadeLight.g, qgcPal.windowShadeLight.b, 0.2)
     property var  _sliderMin:               sliderMin !== undefined ? sliderMin : (fact.userMin !== undefined ? fact.userMin : (allowUsingMinMax ? fact.min : undefined))
     property var  _sliderMax:               sliderMax !== undefined ? sliderMax : (fact.userMax !== undefined ? fact.userMax : (allowUsingMinMax ? fact.max : undefined))
 

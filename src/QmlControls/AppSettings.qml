@@ -151,7 +151,9 @@ Rectangle {
 
     ColumnLayout {
         id:                 leftPanel
-        width:              Math.max(buttonColumn.implicitWidth + _horizontalMargin, ScreenTools.defaultFontPixelWidth * 22)
+        // Fixed width prevents the panel from reflowing when long sub-section
+        // names are revealed by expanding a page.
+        width:              ScreenTools.defaultFontPixelWidth * 26
         anchors.topMargin:  _verticalMargin
         anchors.top:        parent.top
         anchors.bottom:     parent.bottom
@@ -163,6 +165,15 @@ Rectangle {
             id:                 searchField
             Layout.fillWidth:   true
             placeholderText:    qsTr("Search settings...")
+            color:              qgcPal.text
+            placeholderTextColor: Qt.rgba(qgcPal.text.r, qgcPal.text.g, qgcPal.text.b, 0.5)
+
+            background: Rectangle {
+                radius:         ScreenTools.defaultFontPixelWidth / 4
+                color:          qgcPal.windowShade
+                border.width:   searchField.activeFocus ? 1 : 0
+                border.color:   qgcPal.text
+            }
 
             onTextChanged: {
                 settingsView._searchQuery = text
@@ -179,7 +190,8 @@ Rectangle {
 
         ColumnLayout {
             id:         buttonColumn
-            spacing:    0
+            width:      buttonList.width
+            spacing:    _verticalMargin / 2
 
             Repeater {
                 id:     buttonRepeater
@@ -187,7 +199,7 @@ Rectangle {
 
                 ColumnLayout {
                     id:     pageColumn
-                    spacing: 0
+                    spacing: _verticalMargin / 4
                     Layout.fillWidth: true
 
                     required property int index
@@ -308,6 +320,7 @@ Rectangle {
                                 color: sectionBtn.textColor
                                 font.pointSize: ScreenTools.defaultFontPointSize * 0.9
                                 horizontalAlignment: Text.AlignLeft
+                                elide: Text.ElideRight
                             }
 
                             onClicked: {

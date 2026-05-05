@@ -542,7 +542,44 @@ def generate_pages_model_qml(pages_json_path: Path) -> str:
         # translatableTerms: list of {section: index, context: "file.json", terms: ["Original Case", ...]}
         translatable_terms: list[dict] = []
         page_def_name = entry.get("pageDefinition")
-        if page_def_name:
+        # Hand-coded pages can declare sections inline in SettingsPages.json:
+        #   "sections": [ { "name": "Heading", "keywords": ["foo", "bar"] }, ... ]
+        # The translation context is the page's QML filename (qml_name).
+        inline_sections = entry.get("sections")
+        if inline_sections and not page_def_name:
+            qml_name = entry.get("qml") or ""
+            tr_context = qml_name or "SettingsPages.json"
+            for grp_idx, sec in enumerate(inline_sections):
+                section_name = sec["name"]
+                sections.append(section_name)
+                keywords = sec.get("keywords", [])
+
+                terms_parts = [name.lower(), section_name.lower()]
+                terms_parts.extend(kw.lower() for kw in keywords)
+                seen: set[str] = set()
+                unique_terms: list[str] = []
+                for t in terms_parts:
+                    if t not in seen:
+                        seen.add(t)
+                        unique_terms.append(t)
+                search_terms.append({
+                    "section": grp_idx,
+                    "terms": " ".join(unique_terms),
+                })
+
+                tr_parts = [section_name, *keywords]
+                seen_tr: set[str] = set()
+                unique_tr: list[str] = []
+                for t in tr_parts:
+                    if t not in seen_tr:
+                        seen_tr.add(t)
+                        unique_tr.append(t)
+                translatable_terms.append({
+                    "section": grp_idx,
+                    "context": tr_context,
+                    "terms": unique_tr,
+                })
+        elif page_def_name:
             page_def_path = pages_dir / page_def_name
             if page_def_path.exists():
                 page_def = load_page_def(page_def_path)

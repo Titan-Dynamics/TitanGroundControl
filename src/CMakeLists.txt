@@ -23,6 +23,14 @@ qt_add_qml_module(QGroundControlModule
     NO_PLUGIN
 )
 
+# MainWindow's split toggle uses /res/wind-rose-arrow.svg
+qt_add_resources(${CMAKE_PROJECT_NAME} mainwindow_resources
+    PREFIX "/res"
+    BASE "${CMAKE_SOURCE_DIR}/resources"
+    FILES
+        "${CMAKE_SOURCE_DIR}/resources/wind-rose-arrow.svg"
+)
+
 # ============================================================================
 # Subdirectories
 # ============================================================================
