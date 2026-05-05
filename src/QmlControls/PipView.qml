@@ -44,6 +44,9 @@ Item {
         id:         _placementTimer
         interval:   200
         onTriggered: {
+            // Snapshot the initial size so subsequent parent resizes do not
+            // propagate through the parent.width-based binding.
+            _pipSize = _pipSize
             _root.x = _margin
             _root.y = _root.parent.height - _root.height - _margin
             _prevHeight = _root.height
@@ -270,22 +273,18 @@ Item {
         sourceSize.height:  height
     }
 
-    // Check min/max constraints on pip size when parent is resized
+    // Reposition (but never resize) the PiP when its parent is resized — e.g.
+    // when the settings drawer takes over part of the FlyView. The user-chosen
+    // size is preserved; only x/y are nudged to keep it inside the viewport.
     Connections {
         target: _root.parent
 
         function onWidthChanged() {
             if (!_componentComplete) return
             var parentWidth = _root.parent.width
-            var minWidth = Math.max(parentWidth * _minSize, _minAbsoluteWidth)
-            if (_root.width > parentWidth * _maxSize) {
-                _pipSize = parentWidth * _maxSize
-            } else if (_root.width < minWidth) {
-                _pipSize = minWidth
-            }
             // Keep snapped to the same edge during parent resize
             if (_isOnRight) {
-                _root.x = parentWidth - _root.width - _margin
+                _root.x = Math.max(_margin, parentWidth - _root.width - _margin)
             } else {
                 _root.x = _margin
             }
