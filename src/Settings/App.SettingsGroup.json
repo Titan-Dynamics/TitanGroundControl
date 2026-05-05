@@ -124,7 +124,7 @@
             "shortDesc": "Mute audio output",
             "longDesc": "Mutes all audio output without changing the volume level.",
             "type": "bool",
-            "default": false,
+            "default": true,
             "label": "Mute Audio Output",
             "keywords": "audio,mute,sound"
         },
