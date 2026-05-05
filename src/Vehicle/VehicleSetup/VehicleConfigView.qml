@@ -314,7 +314,9 @@ Rectangle {
 
     ColumnLayout {
         id:                 leftPanel
-        width:              Math.max(buttonColumn.implicitWidth + _horizontalMargin, ScreenTools.defaultFontPixelWidth * 22)
+        // Fixed width prevents the panel from reflowing when long sub-section
+        // names are revealed by expanding a component.
+        width:              ScreenTools.defaultFontPixelWidth * 26
         anchors.topMargin:  _verticalMargin
         anchors.top:        parent.top
         anchors.bottom:     parent.bottom
@@ -327,6 +329,15 @@ Rectangle {
             Layout.fillWidth:   true
             placeholderText:    qsTr("Search configuration...")
             visible:            _fullParameterVehicleAvailable
+            color:              qgcPal.text
+            placeholderTextColor: Qt.rgba(qgcPal.text.r, qgcPal.text.g, qgcPal.text.b, 0.5)
+
+            background: Rectangle {
+                radius:         ScreenTools.defaultFontPixelWidth / 4
+                color:          qgcPal.windowShade
+                border.width:   searchField.activeFocus ? 1 : 0
+                border.color:   qgcPal.text
+            }
 
             onTextChanged: {
                 vehicleConfigView._searchQuery = text
@@ -343,7 +354,7 @@ Rectangle {
             ColumnLayout {
                 id:         buttonColumn
                 width:      parent.width
-                spacing:    0
+                spacing:    _verticalMargin / 2
 
                 // Summary button
                 ConfigButton {
@@ -370,7 +381,7 @@ Rectangle {
 
                     ColumnLayout {
                         id:             compColumn
-                        spacing:        0
+                        spacing:        _verticalMargin / 4
                         Layout.fillWidth: true
 
                         required property int index
@@ -474,6 +485,7 @@ Rectangle {
                                         font.pointSize: ScreenTools.defaultFontPointSize * 0.9
                                         horizontalAlignment: Text.AlignLeft
                                         Layout.fillWidth: true
+                                        elide: Text.ElideRight
                                     }
                                 }
 
