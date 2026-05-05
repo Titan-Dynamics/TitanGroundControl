@@ -56,7 +56,7 @@ SetupPage {
             readonly property int _calTypeCompass:  1   ///< Calibrate compass
             readonly property int _calTypeAccel:    2   ///< Calibrate accel
             readonly property int _calTypeSet:      3   ///< Set orientations only
-            readonly property int _buttonWidth:     ScreenTools.defaultFontPixelWidth * 15
+            readonly property int _buttonWidth:     ScreenTools.defaultFontPixelWidth * 24
 
             property bool   _orientationsDialogShowCompass: true
             property string _orientationDialogHelp:         orientationHelpSet
