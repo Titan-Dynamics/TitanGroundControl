@@ -177,7 +177,6 @@ qt_add_qml_module(QGroundControlControlsModule
         SettingsButton.qml
         SettingsGroupLayout.qml
         SetupPage.qml
-        SigningKeyManager.qml
         SliderSwitch.qml
         SubMenuButton.qml
         TimedProgressTracker.qml
