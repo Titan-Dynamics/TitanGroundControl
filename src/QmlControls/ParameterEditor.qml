@@ -43,6 +43,7 @@ Item {
             text:           qsTr("Refresh")
             onTriggered:	controller.refresh()
         }
+        QGCMenuSeparator { }
         QGCMenuItem {
             text:           qsTr("Reset all to firmware's defaults")
             onTriggered:    QGroundControl.showMessageDialog(_root, qsTr("Reset All"),
@@ -78,7 +79,6 @@ Item {
             text:           qsTr("Clear all favorites")
             onTriggered:    controller.clearAllFavorites()
         }
-        QGCMenuSeparator { visible: _showRCToParam }
         QGCMenuItem {
             text:           qsTr("Clear all RC to Param")
             onTriggered:	_activeVehicle.clearAllParamMapRC()
@@ -154,6 +154,7 @@ Item {
             QGCTextField {
                 id:                     searchText
                 placeholderText:        qsTr("Search")
+                Layout.preferredWidth:  ScreenTools.implicitTextFieldWidth * 2
                 onDisplayTextChanged:   controller.searchText = displayText
             }
 
@@ -271,15 +272,15 @@ Item {
         clip:               true
 
         delegate: Rectangle {
-            implicitWidth:  column === 0 ? ScreenTools.implicitCheckBoxHeight + ScreenTools.defaultFontPixelWidth
-                                         : headerLabel.contentWidth + ScreenTools.defaultFontPixelWidth
-            implicitHeight: headerLabel.contentHeight + ScreenTools.defaultFontPixelHeight * 0.5
+            implicitWidth:  column === 0 ? ScreenTools.implicitCheckBoxHeight + ScreenTools.defaultFontPixelWidth * 2
+                                         : headerLabel.contentWidth + ScreenTools.defaultFontPixelWidth * 2
+            implicitHeight: headerLabel.contentHeight + ScreenTools.defaultFontPixelHeight
             color:          qgcPal.windowShade
 
             QGCLabel {
                 id:                     headerLabel
                 anchors.left:           parent.left
-                anchors.leftMargin:     ScreenTools.defaultFontPixelWidth / 2
+                anchors.leftMargin:     ScreenTools.defaultFontPixelWidth
                 anchors.verticalCenter: parent.verticalCenter
                 text:                   display
                 font.bold:              true
@@ -333,6 +334,15 @@ Item {
         contentWidth:       width
         clip:               true
 
+        // Stretch the Description column to fill any remaining horizontal space
+        columnWidthProvider: function (column) {
+            if (column === 3) {
+                var otherColumnsWidth = implicitColumnWidth(0) + implicitColumnWidth(1) + implicitColumnWidth(2)
+                return Math.max(implicitColumnWidth(3), width - otherColumnsWidth)
+            }
+            return implicitColumnWidth(column)
+        }
+
         // Qt is supposed to adjust column widths automatically when larger widths come into view.
         // But it doesn't work. So we have to do it force a layout manually when we scroll.
         Timer {
@@ -349,11 +359,11 @@ Item {
         }
 
         delegate: Rectangle {
-            implicitWidth:  column === 0 ? ScreenTools.implicitCheckBoxHeight + ScreenTools.defaultFontPixelWidth
-                                         : column === 1 ? nameRow.implicitWidth + ScreenTools.defaultFontPixelWidth
-                                         : column === 2 ? ScreenTools.defaultFontPixelWidth * 16
-                                                        : label.contentWidth + ScreenTools.defaultFontPixelWidth
-            implicitHeight: label.contentHeight + ScreenTools.defaultFontPixelHeight * 0.5
+            implicitWidth:  column === 0 ? ScreenTools.implicitCheckBoxHeight + ScreenTools.defaultFontPixelWidth * 2
+                                         : column === 1 ? nameRow.implicitWidth + ScreenTools.defaultFontPixelWidth * 2
+                                         : column === 2 ? ScreenTools.defaultFontPixelWidth * 18
+                                                        : label.contentWidth + ScreenTools.defaultFontPixelWidth * 2
+            implicitHeight: label.contentHeight + ScreenTools.defaultFontPixelHeight
             color:          row % 2 === 0 ? "transparent" : qgcPal.windowShade
             clip:           true
 
@@ -394,7 +404,7 @@ Item {
                 id:                     nameRow
                 visible:                column === 1
                 anchors.left:           parent.left
-                anchors.leftMargin:     ScreenTools.defaultFontPixelWidth / 2
+                anchors.leftMargin:     ScreenTools.defaultFontPixelWidth
                 anchors.verticalCenter: parent.verticalCenter
                 spacing:               lockIcon.visible ? ScreenTools.defaultFontPixelWidth / 3 : 0
 
@@ -419,9 +429,9 @@ Item {
                 id:                 label
                 visible:            column !== 0 && column !== 1
                 anchors.left:       parent.left
-                anchors.leftMargin: ScreenTools.defaultFontPixelWidth / 2
+                anchors.leftMargin: ScreenTools.defaultFontPixelWidth
                 anchors.verticalCenter: parent.verticalCenter
-                width:              column == 2 ? ScreenTools.defaultFontPixelWidth * 15 : implicitWidth
+                width:              column == 2 ? ScreenTools.defaultFontPixelWidth * 16 : implicitWidth
                 text:               column == 2 ? col1String() : display
                 color:              column == 2 && fact.defaultValueAvailable && !fact.valueEqualsDefault ? qgcPal.modifiedParamValue : qgcPal.text
                 font.bold:          column == 2 && fact.defaultValueAvailable && !fact.valueEqualsDefault
