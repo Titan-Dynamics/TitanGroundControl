@@ -16,6 +16,7 @@ SetupPage {
 
         ColumnLayout {
             id: mainLayout
+            width: airspeedPage.availableWidth
             spacing: ScreenTools.defaultFontPixelHeight
 
             // Sensor type constants
@@ -70,9 +71,11 @@ SetupPage {
                 QGCTabButton {
                     text: qsTr("Basic")
                     checked: true
+                    Layout.preferredWidth: 1
                 }
                 QGCTabButton {
                     text: qsTr("Advanced")
+                    Layout.preferredWidth: 1
                 }
             }
 

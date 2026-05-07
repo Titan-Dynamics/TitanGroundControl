@@ -1027,13 +1027,10 @@ def generate_config_page_qml(page: PageDef) -> str:
     lines.append("                return true")
     lines.append("            }")
     lines.append("")
-    lines.append("            property real _maxLeftMargin: ScreenTools.defaultFontPixelWidth * 20")
-    lines.append("")
     lines.append("            ColumnLayout {")
     lines.append("                id: outerColumn")
     lines.append("                spacing: _margins * 1.25")
     lines.append("                anchors.left: parent.left")
-    lines.append("                anchors.leftMargin: Math.min((parent.width - width) / 2, _maxLeftMargin)")
 
     tr_ctx = page.json_filename
     for sec_idx, sec in enumerate(page.sections):
