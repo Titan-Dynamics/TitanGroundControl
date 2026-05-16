@@ -125,7 +125,7 @@
             "type": "string",
             "enumStrings": "Integrated Compass & Attitude,Horizontal Compass & Attitude,Large Vertical",
             "enumValues": "qrc:/qml/QGroundControl/FlightMap/Widgets/IntegratedCompassAttitude.qml,qrc:/qml/QGroundControl/FlightMap/Widgets/HorizontalCompassAttitude.qml,qrc:/qml/QGroundControl/FlightMap/Widgets/VerticalCompassAttitude.qml",
-            "default": "qrc:/qml/QGroundControl/FlightMap/Widgets/IntegratedCompassAttitude.qml",
+            "default": "qrc:/qml/QGroundControl/FlightMap/Widgets/HorizontalCompassAttitude.qml",
             "label": "Qml file for instrument panel",
             "keywords": "instrument,hud"
         },
