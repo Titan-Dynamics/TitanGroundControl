@@ -374,11 +374,76 @@ jobs:
           compression-level: 0
 
   # ─────────────────────────────────────────────────────────────────────
-  # Job 5: Create GitHub Release with all artifacts
+  # Job 5: Build Linux AppImage (x86_64)
+  # ─────────────────────────────────────────────────────────────────────
+  build-linux:
+    name: Build Linux
+    needs: prepare
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Build Setup
+        uses: ./.github/actions/build-setup
+        with:
+          qt-host: linux
+          qt-arch: linux_gcc_64
+          build-type: Release
+
+      - name: Install Dependencies
+        uses: ./.github/actions/install-dependencies
+
+      - name: Configure
+        uses: ./.github/actions/cmake-configure
+        with:
+          build-dir: ${{ runner.temp }}/build
+          build-type: Release
+          stable: 'true'
+
+      - name: Build
+        uses: ./.github/actions/cmake-build
+        with:
+          build-dir: ${{ runner.temp }}/build
+          build-type: Release
+
+      - name: Create AppImage
+        working-directory: ${{ runner.temp }}/build
+        run: cmake --install . --config Release
+
+      - name: Package AppImage as zip
+        working-directory: ${{ runner.temp }}/build
+        run: zip -j TitanGroundControl-Linux-x86_64.zip TitanGroundControl-x86_64.AppImage
+
+      - name: Upload Linux AppImage
+        uses: actions/upload-artifact@v7
+        with:
+          name: TitanGroundControl-Linux-x86_64
+          path: ${{ runner.temp }}/build/TitanGroundControl-Linux-x86_64.zip
+          retention-days: 7
+          compression-level: 0
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Job 6: Create GitHub Release with all artifacts
   # ─────────────────────────────────────────────────────────────────────
   release:
     name: Create Release
-    needs: [prepare, build-android, build-macos, build-windows]
+    needs: [prepare, build-android, build-macos, build-windows, build-linux]
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -412,6 +477,12 @@ jobs:
           name: TitanGroundControl-installer-ARM64
           path: release-assets
 
+      - name: Download Linux AppImage
+        uses: actions/download-artifact@v8
+        with:
+          name: TitanGroundControl-Linux-x86_64
+          path: release-assets
+
       - name: List release assets
         run: ls -lhR release-assets/
 
@@ -434,4 +505,5 @@ jobs:
             release-assets/TitanGroundControl.dmg
             release-assets/TitanGroundControl-installer-AMD64.exe
             release-assets/TitanGroundControl-installer-ARM64.exe
+            release-assets/TitanGroundControl-Linux-x86_64.zip
           fail_on_unmatched_files: true
