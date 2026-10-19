@@ -7,7 +7,7 @@ import QGroundControl.Controls
 Item {
     id:         _root
     width:      _pipSize
-    height:     _pipSize / QGroundControl.settingsManager.videoSettings.aspectRatio.rawValue
+    height:     _pipSize / _aspectRatio
     visible:    item2 && item2.pipState !== item2.pipState.window && show
 
     property var    item1:                  null    // Required
@@ -27,6 +27,15 @@ Item {
     property alias  _pipContentItem:    pipContent
     property bool   _isExpanded:        true
     property real   _pipSize:           parent.width * 0.35
+    // A configured ratio of 0 means auto-detect: use the stream's ratio, or 16:9 until one is known
+    readonly property real _aspectRatio: {
+        const configured = QGroundControl.settingsManager.videoSettings.aspectRatio.rawValue
+        if (configured > 0) {
+            return configured
+        }
+        const detected = QGroundControl.videoManager.aspectRatio
+        return detected > 0 ? detected : 16 / 9
+    }
     property real   _maxSize:           0.75                // Percentage of parent control size
     property real   _minSize:           0.10
     property real   _minAbsoluteWidth:  ScreenTools.defaultFontPixelWidth * 30
