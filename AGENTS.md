@@ -2,6 +2,9 @@
 
 Instructions for AI coding agents (Codex, Claude Code, etc.) working on QGroundControl.
 
+> **Titan Ground Control fork:** also read [TITAN_AGENTS.md](TITAN_AGENTS.md) for fork features,
+> deliberate behavior changes, CI, and the upstream sync procedure.
+
 ## Quick References
 
 - [CODING_STYLE.md](CODING_STYLE.md) — Naming, formatting, C++20 features, QML style, logging
