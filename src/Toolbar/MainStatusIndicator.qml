@@ -210,8 +210,11 @@ RowLayout {
             }
         }
 
+        // With a vehicle connected the drawer opens from the toolbar messages icon;
+        // the status text stays clickable only for "Click to manually connect"
         QGCMouseArea {
             anchors.fill:   parent
+            enabled:        !_activeVehicle
             onClicked:      dropMainStatusIndicator()
         }
     }
