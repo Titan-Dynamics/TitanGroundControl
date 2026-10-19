@@ -32,6 +32,7 @@ Configure it under **Application Settings → Titan AI** (Claude API key require
 ### 🛠️ Redesigned Fly View toolbar
 
 - **Arm / Disarm** button right on the toolbar, colored red for visibility.
+- **Vehicle messages icon** with an Error / Warning / Info badge for unread messages; one click opens the message list.
 - **Quick flight-mode buttons** sourced from your `FLTMODE1`–`FLTMODE6` parameters.
 - **Guided action confirmations** as a clear centered popup instead of a cramped toolbar control.
 - **Frosted-glass blur** and reduced opacity for a cleaner overlay on top of the map and video.
