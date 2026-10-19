@@ -111,9 +111,10 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
    Qt `qnumeric.h` debug assertion in offscreen mode.
 7. Commit the merge as `chore(sync): merge upstream QGroundControl master`, summarizing the adaptations in
    the body. Put unrelated fixes found along the way in separate commits.
-8. Fast-forward `master`. **Never push upstream tags to origin** (no `--tags` / `--follow-tags`): upstream's
-   `v5.2.0-dev` marker tag would become the nearest `v*` tag and `td-release` would compute the wrong
-   version.
+8. Fast-forward `development` to the sync branch and delete the sync branch. Pushing `development` runs
+   TD_Dev (dev prerelease); `development` is merged into `master` later. **Never push upstream tags to
+   origin** (no `--tags` / `--follow-tags`): upstream's `v5.2.0-dev` marker tag would become the nearest
+   `v*` tag and `td-release` would compute the wrong version.
 
 ## Known Issues
 
