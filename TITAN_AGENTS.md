@@ -117,7 +117,8 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
 
 ## Known Issues
 
-- `.version.txt` (read by the in-app update check) is not bumped by `td-release` and lags the latest tag.
+- `.version.txt` drives the in-app update prompt and is read from `master`. `td-release` does not bump
+  it, so set it to the new tag by hand after each release and merge that to `master`.
 - `AIChatWidget.qml` and `AISettings.qml` reference `qgcPal.textHighlight` / `textHighlightForeground`,
   which do not exist in `QGCPalette`. Text selection falls back to default colors and QML logs a warning.
 
