@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
-import pytest
+from typing import TYPE_CHECKING
 
 import collect_build_status as mod
-from common.gh_actions import write_github_output
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    import pytest
 
 
 def _run(
@@ -39,16 +41,13 @@ def test_latest_runs_by_name_filters_by_event_and_picks_latest() -> None:
         _run("Windows", created_at="2026-02-24T01:00:00Z"),
     ]
 
-    latest = mod.latest_runs_by_name(runs, {"Linux", "Windows"}, "pull_request")
+    latest = mod.select_latest_runs_by_name(runs, {"Linux", "Windows"}, event="pull_request")
 
     assert latest["Linux"]["conclusion"] == "failure"
     assert latest["Windows"]["status"] == "completed"
 
 
-def test_main_writes_expected_outputs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    out_path = tmp_path / "out.txt"
-    monkeypatch.setenv("GITHUB_OUTPUT", str(out_path))
-
+def test_main_writes_expected_outputs(gh_output: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     runs = [
         _run("Linux", html_url="https://example.test/linux"),
         _run("Windows", html_url="https://example.test/windows"),
@@ -72,22 +71,9 @@ def test_main_writes_expected_outputs(tmp_path: Path, monkeypatch: pytest.Monkey
     )
     assert rc == 0
 
-    text = out_path.read_text(encoding="utf-8")
+    text = gh_output.read_text(encoding="utf-8")
     assert "all_complete=true" in text
     assert "summary=All builds passed." in text
     assert "precommit_status=Passed" in text
     assert "precommit_run_id=99" in text
     assert "| Linux | Passed | [View](https://example.test/linux) |" in text
-
-
-def test_write_output_uses_collision_resistant_delimiter(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    out_path = tmp_path / "out.txt"
-    monkeypatch.setenv("GITHUB_OUTPUT", str(out_path))
-
-    value = "line1\nEOF_table_deadbeef\ntail"
-    write_github_output({"table": value})
-
-    text = out_path.read_text(encoding="utf-8")
-    assert "table<<EOF_table_" in text
-    assert "EOF_table\n" not in text
-    assert "line1\nEOF_table_deadbeef\ntail" in text

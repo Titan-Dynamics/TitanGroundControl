@@ -82,9 +82,9 @@ public:
     Q_PROPERTY(int                  batteryChangePoint              READ batteryChangePoint             NOTIFY batteryChangePointChanged)
     Q_PROPERTY(int                  batteriesRequired               READ batteriesRequired              NOTIFY batteriesRequiredChanged)
     Q_PROPERTY(QGCGeoBoundingCube*  travelBoundingCube              READ travelBoundingCube             NOTIFY missionBoundingCubeChanged)
-    Q_PROPERTY(bool                 onlyInsertTakeoffValid          MEMBER _onlyInsertTakeoffValid      NOTIFY planViewStateChanged)
     Q_PROPERTY(bool                 isInsertTakeoffValid            MEMBER _isInsertTakeoffValid        NOTIFY planViewStateChanged)
     Q_PROPERTY(bool                 isInsertLandValid               MEMBER _isInsertLandValid           NOTIFY planViewStateChanged)
+    Q_PROPERTY(bool                 isInsertROIValid                MEMBER _isInsertROIValid            NOTIFY planViewStateChanged)
     Q_PROPERTY(bool                 hasLandItem                     MEMBER _hasLandItem                 NOTIFY hasLandItemChanged)
     Q_PROPERTY(bool                 multipleLandPatternsAllowed     READ multipleLandPatternsAllowed    NOTIFY multipleLandPatternsAllowedChanged)
     Q_PROPERTY(bool                 isROIActive                     MEMBER _isROIActive                 NOTIFY planViewStateChanged)
@@ -95,6 +95,10 @@ public:
 
     Q_PROPERTY(QGroundControlQmlGlobal::AltitudeFrame globalAltitudeFrame         READ globalAltitudeFrame         WRITE setGlobalAltitudeFrame NOTIFY globalAltitudeFrameChanged)
     Q_PROPERTY(QGroundControlQmlGlobal::AltitudeFrame globalAltitudeFrameDefault  READ globalAltitudeFrameDefault  NOTIFY globalAltitudeFrameChanged)                               ///< Default to use for newly created items
+
+    /// true: Default altitude changed while the mission had items which applyDefaultMissionAltitude can update
+    Q_PROPERTY(bool applyDefaultMissionAltitudeAvailable READ applyDefaultMissionAltitudeAvailable NOTIFY
+                   applyDefaultMissionAltitudeAvailableChanged)
 
     Q_INVOKABLE void removeVisualItem(int viIndex);
 
@@ -117,6 +121,14 @@ public:
     ///     @param makeCurrentItem: true: Make this item the current item
     /// @return Newly created item
     Q_INVOKABLE VisualMissionItem* insertTakeoffItem(QGeoCoordinate coordinate, int visualItemIndex, bool makeCurrentItem = false);
+
+    /// Add a multicopter takeoff item for a VTOL which supports remaining in multicopter mode
+    ///     @param coordinate: Coordinate for item
+    ///     @param visualItemIndex: index to insert at, -1 for end of list
+    ///     @param makeCurrentItem: true: Make this item the current item
+    /// @return Newly created item, or nullptr if the vehicle does not support this command behavior
+    Q_INVOKABLE VisualMissionItem* insertVTOLMulticopterTakeoffItem(
+        QGeoCoordinate coordinate, int visualItemIndex, bool makeCurrentItem = false);
 
     /// Add a new land item to the list
     ///     @param coordinate: Coordinate for item
@@ -157,7 +169,7 @@ public:
 
     Q_INVOKABLE void resumeMission(int resumeIndex);
 
-    /// Updates the altitudes of the items in the current mission to the new default altitude
+    /// Updates the altitudes of mission items which use the plan altitude frame to the new default altitude
     Q_INVOKABLE void applyDefaultMissionAltitude(void);
 
     /// Sets a new current mission item (PlanView).
@@ -270,6 +282,8 @@ public:
     double              minAMSLAltitude             (void) const { return _minAMSLAltitude; }
     double              maxAMSLAltitude             (void) const { return _maxAMSLAltitude; }
 
+    bool applyDefaultMissionAltitudeAvailable(void) const { return _applyDefaultMissionAltitudeAvailable; }
+
     int currentMissionIndex         (void) const;
     int resumeMissionIndex          (void) const;
     int currentPlanViewSeqNum       (void) const { return _currentPlanViewSeqNum; }
@@ -336,6 +350,7 @@ signals:
     void _recalcMissionFlightStatusSignal   (void);
     void _recalcFlightPathSegmentsSignal    (void);
     void globalAltitudeFrameChanged          (void);
+    void applyDefaultMissionAltitudeAvailableChanged(void);
 
 private slots:
     void _newMissionItemsAvailableFromVehicle   (bool removeAllRequested);
@@ -352,7 +367,8 @@ private slots:
     void _complexBoundingBoxChanged             (void);
     void _recalcAll                             (void);
     void _managerVehicleChanged                 (Vehicle* managerVehicle);
-    void _forceRecalcOfAllowedBits              (void);
+    void _recalcPlanViewState                   (void);
+    void _defaultMissionAltitudeChanged(void);
     // Incremental tree model sync slots
     void _syncTreeMissionItemsInserted                (const QModelIndex& parent, int first, int last);
     void _syncTreeMissionItemsAboutToBeRemoved         (const QModelIndex& parent, int first, int last);
@@ -385,12 +401,14 @@ private:
     void                    _initLoadedVisualItems              (QmlObjectListModel* loadedVisualItems);
     FlightPathSegment*      _addFlightPathSegment               (FlightPathSegmentHashTable& prevItemPairHashTable, VisualItemPair& pair, bool mavlinkTerrainFrame);
     VisualMissionItem*      _insertSimpleMissionItemWorker      (QGeoCoordinate coordinate, MAV_CMD command, int visualItemIndex, bool makeCurrentItem);
+    VisualMissionItem*      _insertTakeoffItemWorker            (MAV_CMD command, int visualItemIndex, bool makeCurrentItem);
     void                    _insertComplexMissionItemWorker     (const QGeoCoordinate& mapCenterCoordinate, ComplexMissionItem* complexItem, int visualItemIndex, bool makeCurrentItem);
     bool                    _isROIBeginItem                     (SimpleMissionItem* simpleItem);
     bool                    _isROICancelItem                    (SimpleMissionItem* simpleItem);
     FlightPathSegment*      _createFlightPathSegmentWorker      (VisualItemPair& pair, bool mavlinkTerrainFrame);
     void                    _allItemsRemoved                    (void);
     void                    _firstItemAdded                     (void);
+    void _setApplyDefaultMissionAltitudeAvailable(bool available);
 
     static double           _normalizeLat                       (double lat);
     static double           _normalizeLon                       (double lon);
@@ -440,17 +458,17 @@ private:
     QGeoCoordinate              _takeoffCoordinate;
     QGeoCoordinate              _previousCoordinate;
     FlightPathSegment*          _splitSegment =                 nullptr;
-    bool                        _delayedSplitSegmentUpdate =    false;
-    bool                        _onlyInsertTakeoffValid =       true;
     bool                        _isInsertTakeoffValid =         true;
     bool                        _isInsertLandValid =            false;
+    bool                        _isInsertROIValid =             false;
     bool                        _hasLandItem =                  false;
     bool                        _isROIActive =                  false;
     bool                        _flyThroughCommandsAllowed =    false;
     bool                        _isROIBeginCurrentItem =        false;
     double                      _minAMSLAltitude =              0;
     double                      _maxAMSLAltitude =              0;
-    bool                        _missionContainsVTOLTakeoff =   false;
+    bool                        _missionStartsInVTOLMulticopterMode = false;
+    bool _applyDefaultMissionAltitudeAvailable = false;
 
     QGroundControlQmlGlobal::AltitudeFrame _globalAltFrame = QGroundControlQmlGlobal::AltitudeFrameRelative;
 

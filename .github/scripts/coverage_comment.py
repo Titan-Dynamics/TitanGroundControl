@@ -4,35 +4,27 @@
 import argparse
 import os
 import sys
-from pathlib import Path
+from typing import TypedDict
 
-from xml_utils import XMLParseError, xml_parse
+from ci_bootstrap import ensure_tools_dir
+
+ensure_tools_dir(__file__)
+
+from common.cobertura import CoberturaError, read_cobertura
+from common.markdown import md_table
 
 
-def parse_coverage(xml_path: str) -> dict | None:
+class CoverageData(TypedDict):
+    line: float
+    branch: float | None
+
+
+def parse_coverage(xml_path: str) -> CoverageData | None:
     """Parse coverage.xml and return line/branch coverage percentages."""
     try:
-        root = xml_parse(xml_path).getroot()
-
-        line_rate = root.get("line-rate")
-        branch_rate = root.get("branch-rate")
-
-        if line_rate:
-            return {
-                "line": float(line_rate) * 100,
-                "branch": float(branch_rate) * 100 if branch_rate else None,
-            }
-
-        for pkg in root.findall(".//package"):
-            line_rate = pkg.get("line-rate")
-            if line_rate:
-                return {
-                    "line": float(line_rate) * 100,
-                    "branch": float(pkg.get("branch-rate", 0)) * 100,
-                }
-
-        return None
-    except (XMLParseError, OSError, ValueError) as e:
+        metrics = read_cobertura(xml_path)
+        return {"line": metrics.line_percent, "branch": metrics.branch_percent}
+    except CoberturaError as e:
         print(f"Error parsing {xml_path}: {e}", file=sys.stderr)
         return None
 
@@ -89,7 +81,7 @@ def main() -> int:
 
     if not coverage_xml or not os.path.exists(coverage_xml):
         print("Coverage XML not found", file=sys.stderr)
-        with open(args.output, "w") as f:
+        with open(args.output, "w", encoding="utf-8") as f:
             f.write("## Code Coverage Report\n\n*Coverage data not available*\n")
         return 0
 
@@ -102,27 +94,24 @@ def main() -> int:
 
     if pr_cov:
         line_badge = coverage_badge(pr_cov["line"])
-        lines.extend(
-            ["| Metric | Coverage | \u0394 from master |", "|--------|----------|---------------|"]
-        )
+        pr_branch = pr_cov["branch"]
 
         if baseline_cov:
             line_delta = delta_str(baseline_cov["line"], pr_cov["line"])
-            branch_delta = (
-                delta_str(baseline_cov.get("branch"), pr_cov.get("branch"))
-                if pr_cov.get("branch") is not None
-                else "N/A"
-            )
+            if pr_branch is None:
+                branch_delta = "N/A"
+            else:
+                branch_delta = delta_str(baseline_cov.get("branch"), pr_branch)
         else:
             line_delta = "*No baseline*"
             branch_delta = "*No baseline*"
 
-        lines.append(f"| {line_badge} Lines | {pr_cov['line']:.2f}% | {line_delta} |")
+        rows = [[f"{line_badge} Lines", f"{pr_cov['line']:.2f}%", line_delta]]
+        if pr_branch is not None:
+            branch_badge = coverage_badge(pr_branch)
+            rows.append([f"{branch_badge} Branches", f"{pr_branch:.2f}%", branch_delta])
 
-        if pr_cov.get("branch") is not None:
-            branch_badge = coverage_badge(pr_cov["branch"])
-            lines.append(f"| {branch_badge} Branches | {pr_cov['branch']:.2f}% | {branch_delta} |")
-
+        lines.append(md_table(["Metric", "Coverage", "\u0394 from master"], rows))
         lines.append("")
 
         if pr_cov["line"] < 60:
@@ -139,7 +128,7 @@ def main() -> int:
         ]
     )
 
-    with open(args.output, "w") as f:
+    with open(args.output, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
 
     print("\n".join(lines))

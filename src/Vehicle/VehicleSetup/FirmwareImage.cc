@@ -239,7 +239,6 @@ bool FirmwareImage::_px4Load(const QString& imageFilename)
 
     // What firmware type is this?
     MAV_AUTOPILOT firmwareType = (MAV_AUTOPILOT)px4Json[_jsonMavAutopilotKey].toInt(MAV_AUTOPILOT_PX4);
-    emit statusMessage(QString("MAV_AUTOPILOT = %1").arg(firmwareType));
 
     // NOTE: PX4 firmware currently embeds parameter metadata as XML
     // ("parameter_xml" key), but the metadata system now expects JSON.
@@ -396,8 +395,6 @@ bool FirmwareImage::_decompressJsonValue(const QJsonObject&	jsonObject,			///< J
         return false;
     }
 
-    emit statusMessage(tr("Successfully decompressed %1").arg(bytesKey));
-
     return true;
 }
 
@@ -424,7 +421,7 @@ bool FirmwareImage::_binLoad(const QString& imageFilename)
 {
     QFile binFile(imageFilename);
     if (!binFile.open(QIODevice::ReadOnly)) {
-        emit statusMessage(tr("Unabled to open firmware file %1, %2").arg(imageFilename, binFile.errorString()));
+        emit statusMessage(tr("Unable to open firmware file %1, %2").arg(imageFilename, binFile.errorString()));
         return false;
     }
 

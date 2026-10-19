@@ -3,6 +3,10 @@ name: Android
 on:
   workflow_dispatch:
     inputs:
+      debug_runner:
+        description: 'Open an actor-only SSH session after a failure (up to 15 minutes, branches only)'
+        type: boolean
+        default: false
       build_type:
         description: 'Build type'
         required: false
@@ -18,73 +22,89 @@ concurrency:
 
 permissions:
   contents: read
-  id-token: write
-  attestations: write
   actions: read
-  security-events: write
-
-env:
-  IS_STABLE_BUILD: ${{ (github.ref_type == 'tag' || contains(github.ref, 'Stable')) && 'true' || 'false' }}
 
 jobs:
   changes:
-    if: github.event_name == 'pull_request'
     uses: ./.github/workflows/_detect-changes.yml
     with:
       platform: android
 
+  # The windows leg is the PR long pole by a decent amount; android_matrix.py drops it
+  # for pull requests and keeps it for push / merge queue / dispatch.
+  build-matrix:
+    needs: changes
+    if: needs.changes.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    outputs:
+      include: ${{ steps.build.outputs.include }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            .github/scripts/android_matrix.py
+            .github/scripts/ci_bootstrap.py
+            tools/_bootstrap.py
+            tools/common
+            tools/qgc_tools
+          sparse-checkout-cone-mode: false
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Build matrix
+        id: build
+        env:
+          IS_PR: ${{ github.event_name == 'pull_request' && '1' || '0' }}
+        run: python3 .github/scripts/android_matrix.py
+
   build:
     name: Android (${{ matrix.host }})
-    needs: changes
-    if: always() && !cancelled() && (needs.changes.outputs.should_build == 'true' || needs.changes.result == 'skipped')
-    runs-on: ${{ matrix.runner }}
+    needs: [changes, build-matrix]
+    if: needs.changes.outputs.should_build == 'true'
+    # Use RunsOn for upstream jobs when the platform defines a runner.
+    runs-on: >-
+      ${{
+        github.repository_owner == 'mavlink' &&
+        matrix.runson_runner != '' &&
+        format('runs-on={0}/{1}', github.run_id,
+          matrix.host == 'windows' && vars.RUNS_ON_WINDOWS_POOL != '' &&
+            format('pool={0}', vars.RUNS_ON_WINDOWS_POOL) ||
+          matrix.host == 'linux' &&
+            format('runner={0}', vars.RUNS_ON_LINUX_BUILDER || matrix.runson_runner) ||
+          format('runner={0}', matrix.runson_runner)) ||
+        matrix.fallback_runner
+      }}
     timeout-minutes: 120
+
+    # id-token/attestations scoped here: only the "Attest and Upload" step needs them.
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+      attestations: write
 
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - host: linux
-            runner: ubuntu-latest
-            arch: linux_gcc_64
-            qt_host_path: gcc_64
-            shell: bash
-            primary: true
-            emulator: false
-          - host: mac
-            runner: macos-latest
-            arch: clang_64
-            qt_host_path: macos
-            shell: bash
-            primary: false
-            emulator: false
-          - host: windows
-            runner: windows-latest
-            arch: win64_msvc2022_64
-            qt_host_path: msvc2022_64
-            shell: pwsh
-            primary: false
-            emulator: false
-          - host: linux-emulator
-            qt_host: linux
-            runner: ubuntu-latest
-            arch: linux_gcc_64
-            qt_host_path: gcc_64
-            shell: bash
-            primary: false
-            emulator: true
+        include: ${{ fromJSON(needs.build-matrix.outputs.include) }}
 
     defaults:
       run:
         shell: ${{ matrix.shell }}
 
     env:
+      BUILD_TYPE: ${{ inputs.build_type || 'Release' }}
       PACKAGE: TitanGroundControl
       QT_ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/deploy/android/android_release.keystore
       QT_ANDROID_KEYSTORE_ALIAS: QGCAndroidKeyStore
       QT_ANDROID_KEYSTORE_STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       QT_ANDROID_KEYSTORE_KEY_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-      QT_ANDROID_ABIS: ${{ matrix.emulator && 'x86_64' || matrix.primary && 'arm64-v8a;armeabi-v7a' || 'arm64-v8a' }}
+      QT_ANDROID_ABIS: ${{ matrix.android_abis }}
       HAS_PLAYSTORE_SECRET: ${{ secrets.GOOGLE_SERVICE_ACCOUNT != '' }}
 
     steps:
@@ -93,10 +113,34 @@ jobs:
         with:
           egress-policy: audit
 
+      - name: Record build timeline
+        uses: Kesin11/actions-timeline@v3
+        continue-on-error: true
+        with:
+          show-waiting-runner: true
+
+      - name: Enable RunsOn magic cache
+        if: github.repository_owner == 'mavlink' && matrix.host != 'mac'
+        uses: runs-on/action@v2
+        with:
+          metrics: cpu,network,memory,disk,io
+          show_costs: summary
+
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: ${{ github.event_name == 'pull_request' && 1 || 0 }}
+          persist-credentials: false
+
+      # RunsOn images ship no Android SDK and don't preset ANDROID_SDK_ROOT (unlike
+      # GitHub-hosted images), so setup-android@v4 has no install target. Point it
+      # at a writable path. macOS stays GitHub-hosted with its preinstalled SDK.
+      - name: Set Android SDK location
+        if: matrix.host != 'mac'
+        shell: bash
+        run: |
+          echo "ANDROID_SDK_ROOT=${RUNNER_TEMP}/android-sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=${RUNNER_TEMP}/android-sdk" >> "$GITHUB_ENV"
 
       - name: Build Setup (Android)
         id: setup
@@ -106,17 +150,16 @@ jobs:
           qt-host: ${{ matrix.qt_host || matrix.host }}
           qt-arch: ${{ matrix.arch }}
           abis: ${{ env.QT_ANDROID_ABIS }}
-          build-type: ${{ inputs.build_type || 'Release' }}
-          cpm-modules: ${{ runner.temp }}/build/cpm_modules
+          build-type: ${{ env.BUILD_TYPE }}
+          # matrix.host is unique per leg; linux and linux-emulator otherwise
+          # resolve to identical cache inputs and would race on the moccache
+          # save key.
+          cache-key-suffix: ${{ matrix.host }}
+          cpm-modules: .cache/CPM
 
       - name: Install host build dependencies
         if: runner.os == 'Linux'
         uses: ./.github/actions/install-dependencies
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
-        with:
-          cache-read-only: ${{ github.event_name == 'pull_request' }}
 
       - name: Create Debug Keystore
         if: ${{ env.QT_ANDROID_KEYSTORE_STORE_PASS == '' || !matrix.primary }}
@@ -138,8 +181,8 @@ jobs:
         uses: ./.github/actions/cmake-configure
         with:
           build-dir: ${{ runner.temp }}/build
-          build-type: ${{ inputs.build_type || 'Release' }}
-          stable: ${{ env.IS_STABLE_BUILD }}
+          build-type: ${{ env.BUILD_TYPE }}
+          preset: ${{ env.BUILD_TYPE == 'Debug' && 'Android-debug' || 'Android' }}
           use-qt-cmake: 'false'
           extra-args: >-
             -DCMAKE_WARN_DEPRECATED=FALSE
@@ -152,51 +195,49 @@ jobs:
       - name: Build
         id: build
         continue-on-error: ${{ matrix.emulator }}
+        timeout-minutes: 75
+        # Disable Gradle daemon on CI — Windows runners hang for 30+ min after BUILD SUCCESSFUL waiting for daemon shutdown.
+        env:
+          GRADLE_OPTS: -Dorg.gradle.daemon=false
         uses: ./.github/actions/cmake-build
         with:
           build-dir: ${{ runner.temp }}/build
-          build-type: ${{ inputs.build_type || 'Release' }}
+          build-type: ${{ env.BUILD_TYPE }}
           parallel-jobs: ${{ matrix.emulator && '2' || '' }}
-          output-file: ${{ matrix.emulator && 'qgc-build.log' || '' }}
+          output-file: qgc-build.log
 
       - name: Retry Build (emulator JSON truncation recovery)
         id: build-retry
         if: ${{ matrix.emulator && steps.build.outcome == 'failure' }}
         shell: bash
-        env:
-          BUILD_DIR: ${{ runner.temp }}/build
-          BUILD_TYPE: ${{ inputs.build_type || 'Release' }}
         run: |
-          set -euo pipefail
+          python3 "${GITHUB_WORKSPACE}/.github/scripts/android_build_retry.py" \
+            --build-dir "${{ runner.temp }}/build" \
+            --build-type "${BUILD_TYPE}"
 
-          log_file="${BUILD_DIR}/qgc-build.log"
-          settings_json="${BUILD_DIR}/android-TitanGroundControl-deployment-settings.json"
-          retry_log="${BUILD_DIR}/qgc-build-retry.log"
-
-          if [[ ! -f "${log_file}" ]]; then
-            echo "::error::Build failed and '${log_file}' is missing."
-            exit 1
-          fi
-
-          # Retry only for known intermittent Qt deployment-settings truncation.
-          if ! grep -Eq "Invalid json file: .*android-TitanGroundControl-deployment-settings\\.json\\. Reason: unterminated object" "${log_file}"; then
-            echo "::error::Initial build failed for a non-retriable reason; skipping retry."
-            exit 1
-          fi
-
-          echo "::warning::Detected truncated android deployment settings JSON. Retrying build with --parallel 1."
-
-          if [[ -f "${settings_json}" ]]; then
-            python3 -m json.tool "${settings_json}" >/dev/null 2>&1 || true
-            rm -f "${settings_json}"
-          fi
-
-          cmake --build "${BUILD_DIR}" --target all --config "${BUILD_TYPE}" --parallel 1 2>&1 | tee "${retry_log}"
+      - name: Save recovered build caches
+        if: steps.build-retry.outcome == 'success'
+        uses: ./.github/actions/save-build-cache
 
       # `failure()` is required: build's continue-on-error makes outcome alone insufficient.
       - name: Annotate emulator build retry failure
         if: ${{ failure() && matrix.emulator && steps.build.outcome == 'failure' && steps.build-retry.outcome == 'failure' }}
         run: echo "::error::Android emulator build failed (initial + retry). See logs for the truncation root cause."
+
+      - name: Upload build log on failure
+        if: ${{ failure() && steps.build.outcome == 'failure' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-${{ matrix.host }}-build-log
+          path: |
+            ${{ runner.temp }}/build/qgc-build.log
+            ${{ runner.temp }}/build/qgc-build-retry.log
+            ${{ runner.temp }}/build/CMakeFiles/CMakeOutput.log
+            ${{ runner.temp }}/build/CMakeFiles/CMakeError.log
+            ${{ runner.temp }}/build/.ninja_log
+            ${{ runner.temp }}/build/android-TitanGroundControl-deployment-settings.json
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Android Lint
         if: ${{ matrix.host == 'linux' }}
@@ -222,156 +263,21 @@ jobs:
           fi
           cp "${APK_DIR}"/*.apk "${TEMP_DIR}/build/${{ env.PACKAGE }}.apk"
 
-      - name: Enable KVM
-        if: ${{ matrix.emulator }}
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-
-      - name: Restore AVD cache
-        if: ${{ matrix.emulator }}
-        id: avd-cache
-        uses: actions/cache/restore@v5
-        with:
-          path: |
-            ~/.android/avd/*
-            ~/.android/adb*
-          key: >-
-            avd-${{ runner.os }}-${{ runner.arch }}-api${{ steps.setup.outputs.android_platform }}
-            -x86_64-google_apis-pixel_6-qt${{ steps.setup.outputs.qt_version }}
-            -ndk${{ steps.setup.outputs.ndk_full_version }}-v2
-
-      - name: Create AVD Snapshot
-        id: avd-snapshot
-        if: ${{ matrix.emulator && steps.avd-cache.outputs.cache-hit != 'true' }}
-        timeout-minutes: 15
-        continue-on-error: true
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: ${{ steps.setup.outputs.android_platform }}
-          system-image-api-level: ${{ steps.setup.outputs.android_platform }}
-          arch: x86_64
-          target: google_apis
-          profile: pixel_6
-          cores: 4
-          ram-size: 4096M
-          heap-size: 1024M
-          avd-name: qgc-ci
-          force-avd-creation: false
-          emulator-boot-timeout: 420
-          disable-animations: true
-          disable-spellchecker: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-          script: echo "Generated AVD snapshot for cache."
-
-      - name: Save AVD cache
-        if: ${{ matrix.emulator && github.event_name != 'pull_request' && steps.avd-cache.outputs.cache-hit != 'true' && steps.avd-snapshot.outcome == 'success' }}
-        uses: actions/cache/save@v5
-        with:
-          path: |
-            ~/.android/avd/*
-            ~/.android/adb*
-          key: ${{ steps.avd-cache.outputs.cache-primary-key }}
-
-      - name: Kill Stale Emulator
-        if: ${{ matrix.emulator && steps.avd-snapshot.outcome == 'failure' }}
-        shell: bash
-        run: |
-          pkill -9 -f qemu-system || true
-          adb kill-server 2>/dev/null || true
-          sleep 5
-
       - name: Emulator Boot Test
         if: ${{ matrix.emulator }}
-        timeout-minutes: 20
-        uses: reactivecircus/android-emulator-runner@v2
+        uses: ./.github/actions/android-emulator-test
         with:
-          api-level: ${{ steps.setup.outputs.android_platform }}
-          system-image-api-level: ${{ steps.setup.outputs.android_platform }}
-          arch: x86_64
-          target: google_apis
-          profile: pixel_6
-          cores: 4
-          ram-size: 4096M
-          heap-size: 1024M
-          avd-name: qgc-ci
-          force-avd-creation: false
-          emulator-boot-timeout: 420
-          disable-animations: true
-          disable-spellchecker: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot-save
-          script: |
-            timeout 20s adb start-server >/dev/null 2>&1 || true
-            timeout 180s adb wait-for-device || (echo "::error::adb wait-for-device timed out before boot test." && exit 1)
-            python3 .github/scripts/android_boot_test.py --apk "${{ runner.temp }}/build/${{ env.PACKAGE }}.apk" --package org.mavlink.qgroundcontrol --timeout 120 --stability-window 20 --adb-ready-timeout 180 --install-retries 4 --install-retry-delay 5 --launch-retries 2 --log-output /tmp/qgc_emulator_boot.log
-
-      - name: Collect Emulator Diagnostics
-        if: ${{ failure() && matrix.emulator }}
-        timeout-minutes: 5
-        shell: bash
-        run: |
-          OUT_DIR="${RUNNER_TEMP}/emulator-diagnostics"
-          BUILD_DIR="${RUNNER_TEMP}/build"
-          mkdir -p "${OUT_DIR}"
-
-          cp /tmp/qgc_emulator_boot.log "${OUT_DIR}/qgc_emulator_boot.log" 2>/dev/null || true
-          cp "${BUILD_DIR}/qgc-build.log" "${OUT_DIR}/qgc-build.log" 2>/dev/null || true
-          cp "${BUILD_DIR}/qgc-build-retry.log" "${OUT_DIR}/qgc-build-retry.log" 2>/dev/null || true
-          cp "${BUILD_DIR}/android-TitanGroundControl-deployment-settings.json" \
-            "${OUT_DIR}/android-TitanGroundControl-deployment-settings.json" 2>/dev/null || true
-
-          if [ -f "${OUT_DIR}/android-TitanGroundControl-deployment-settings.json" ]; then
-            python3 -m json.tool "${OUT_DIR}/android-TitanGroundControl-deployment-settings.json" \
-              > "${OUT_DIR}/android-TitanGroundControl-deployment-settings.pretty.json" \
-              2> "${OUT_DIR}/android-TitanGroundControl-deployment-settings.error.txt" || true
-          fi
-
-          if command -v adb >/dev/null 2>&1; then
-            timeout 20s adb start-server >/dev/null 2>&1 || true
-            timeout 20s adb devices > "${OUT_DIR}/adb-devices.txt" 2>&1 || true
-
-            if grep -Eq '^emulator-[0-9]+\s+device$' "${OUT_DIR}/adb-devices.txt"; then
-              timeout 30s adb -e logcat -d > "${OUT_DIR}/adb-logcat-full.txt" 2>/dev/null || true
-              timeout 30s adb -e shell dumpsys activity > "${OUT_DIR}/dumpsys-activity.txt" 2>/dev/null || true
-              timeout 30s adb -e shell getprop > "${OUT_DIR}/getprop.txt" 2>/dev/null || true
-
-              # Extract GStreamer-specific lines for quick diagnosis
-              if [ -f "${OUT_DIR}/adb-logcat-full.txt" ]; then
-                grep -iE 'gst|gstreamer|libgst|GST_PLUGIN|GstVideoReceiver|qml6glsink|qgcvideosinkbin' \
-                  "${OUT_DIR}/adb-logcat-full.txt" > "${OUT_DIR}/gstreamer-logcat.txt" 2>/dev/null || true
-                grep -iE 'dlopen.*gst|UnsatisfiedLinkError.*gst|cannot.*load.*gst' \
-                  "${OUT_DIR}/adb-logcat-full.txt" > "${OUT_DIR}/gstreamer-load-errors.txt" 2>/dev/null || true
-              fi
-            else
-              echo "No online emulator device found; skipping adb diagnostics." > "${OUT_DIR}/adb-skipped.txt"
-            fi
-          else
-            echo "adb not found; skipping adb diagnostics." > "${OUT_DIR}/adb-skipped.txt"
-          fi
-
-          if [ -d "${HOME}/.android/avd" ]; then
-            find "${HOME}/.android/avd" -maxdepth 3 -type f \( -name "*.log" -o -name "*.ini" \) \
-              -exec cp --parents {} "${OUT_DIR}" \; 2>/dev/null || true
-          fi
-
-          ls -la "${OUT_DIR}" || true
-
-      - name: Upload Emulator Diagnostics
-        if: ${{ failure() && matrix.emulator }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: emulator-diagnostics-${{ matrix.host }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/emulator-diagnostics
-          if-no-files-found: warn
-          retention-days: 14
+          apk-path: ${{ runner.temp }}/build/${{ env.PACKAGE }}.apk
+          package: org.mavlink.qgroundcontrol
+          android-platform: ${{ steps.setup.outputs.android_platform }}
+          diagnostics-name: ${{ matrix.host }}
 
       - name: Attest and Upload
         if: ${{ !matrix.emulator }}
         uses: ./.github/actions/attest-and-upload
         with:
           artifact-name: ${{ env.PACKAGE }}.apk
-          package-name: ${{ format('{0}-{1}', env.PACKAGE, matrix.host) }}
+          package-name: ${{ format('{0}-{1}-{2}', env.PACKAGE, matrix.host, matrix.artifact_abi_suffix) }}
           subject-name: ${{ env.PACKAGE }}-${{ matrix.host }}
           aws-role-arn: ${{ secrets.AWS_ROLE_ARN }}
           aws-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -379,9 +285,32 @@ jobs:
           aws-distribution-id: ${{ secrets.AWS_DISTRIBUTION_ID }}
           upload-aws: ${{ matrix.primary }}
 
+      # Shell conditional, not a `&& x || y` GHA ternary whose `||` arm misfires
+      # if the truthy arm ever evaluates falsy. tag -> production; master -> beta.
+      - name: Compute Play Store rollout
+        id: playstore_rollout
+        if: ${{ !matrix.emulator && matrix.primary && env.HAS_PLAYSTORE_SECRET == 'true' && (github.ref_type == 'tag' || github.ref == 'refs/heads/master') }}
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+        run: |
+          if [ "${REF_TYPE}" = "tag" ]; then
+            { echo "track=production"; echo "status=inProgress"; echo "user_fraction=0.2"; } >> "${GITHUB_OUTPUT}"
+          else
+            { echo "track=beta"; echo "status=completed"; echo "user_fraction="; } >> "${GITHUB_OUTPUT}"
+          fi
+
       - name: Deploy to Play Store
-        if: ${{ !matrix.emulator && matrix.primary && github.ref_type == 'tag' && env.HAS_PLAYSTORE_SECRET == 'true' }}
+        if: ${{ !matrix.emulator && matrix.primary && env.HAS_PLAYSTORE_SECRET == 'true' && (github.ref_type == 'tag' || github.ref == 'refs/heads/master') }}
         uses: ./.github/actions/playstore
         with:
           artifact: ${{ runner.temp }}/build/${{ env.PACKAGE }}.apk
           service_account_json: ${{ secrets.GOOGLE_SERVICE_ACCOUNT }}
+          track: ${{ steps.playstore_rollout.outputs.track }}
+          status: ${{ steps.playstore_rollout.outputs.status }}
+          user_fraction: ${{ steps.playstore_rollout.outputs.user_fraction }}
+          whats_new_directory: ${{ github.workspace }}/deploy/android/whatsnew
+
+      - name: Debug failed runner
+        if: ${{ failure() && !cancelled() && github.event_name == 'workflow_dispatch' && inputs.debug_runner && github.ref_type == 'branch' }}
+        timeout-minutes: 15
+        uses: ./.github/actions/debug-runner

@@ -1,5 +1,6 @@
 #include "ComponentInformationManagerTest.h"
 
+#include <QtCore/QRegularExpression>
 #include <QtStateMachine/QStateMachine>
 #include <QtTest/QSignalSpy>
 

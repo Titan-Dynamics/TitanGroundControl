@@ -6,8 +6,10 @@
 
 #include "QGCPalette.h"
 
+class ComplexMissionItem;
 class FactMetaData;
 class LinkInterface;
+class LinkManager;
 class PlanCreator;
 class PlanMasterController;
 class QFile;
@@ -16,12 +18,23 @@ class QGeoPositionInfoSource;
 class QmlObjectListModel;
 class QQmlApplicationEngine;
 class QQuickItem;
+class SettingsManager;
 class Vehicle;
 class VideoReceiver;
 class VideoSink;
 class FactValueGrid;
 typedef struct __mavlink_message mavlink_message_t;
 
+/// \brief Extension mechanism for generic, non-firmware-specific customization of QGC.
+///
+/// QGCCorePlugin is the extension point for custom builds that need to modify QGC
+/// as a whole, rather than for behavior that varies by firmware type (which belongs
+/// in FirmwarePlugin). Override its virtual methods to add or replace UI pages,
+/// Flight Map items, toolbar indicators, video pipeline components, plan file
+/// hooks, and other application-level behavior. The base class provides the
+/// standard QGC implementation; custom builds subclass it and register the
+/// subclass before \c QGCApplication starts up.
+///
 class QGCCorePlugin : public QObject
 {
     Q_OBJECT
@@ -30,11 +43,15 @@ class QGCCorePlugin : public QObject
     Q_MOC_INCLUDE("QmlObjectListModel.h")
     Q_PROPERTY(bool showAdvancedUI                      READ showAdvancedUI                     WRITE _setShowAdvancedUI    NOTIFY showAdvancedUIChanged)
     Q_PROPERTY(bool showTouchAreas                      READ showTouchAreas                     WRITE _setShowTouchAreas    NOTIFY showTouchAreasChanged)
+    Q_PROPERTY(bool showInitialSetupVehiclePreferences  READ showInitialSetupVehiclePreferences                              CONSTANT)
+    Q_PROPERTY(bool showInitialSetupMeasurementUnits    READ showInitialSetupMeasurementUnits                                CONSTANT)
     Q_PROPERTY(int defaultSettings                      READ defaultSettings                                                CONSTANT)
     Q_PROPERTY(int initialSetupPromptId                 MEMBER kInitialSetupPromptId                                       CONSTANT)
     Q_PROPERTY(const QGCOptions *options                READ options                                                        CONSTANT)
     Q_PROPERTY(const QmlObjectListModel *customMapItems READ customMapItems                                                 CONSTANT)
+    Q_PROPERTY(const QmlObjectListModel* customGeoMapItems READ customGeoMapItems CONSTANT)
     Q_PROPERTY(QString showAdvancedUIMessage            READ showAdvancedUIMessage                                          CONSTANT)
+    Q_PROPERTY(QString stableDownloadUrl                READ stableDownloadUrl                                              CONSTANT)
     Q_PROPERTY(QVariantList analyzePages                READ analyzePages                                                   CONSTANT)
     Q_PROPERTY(QVariantList toolBarIndicators           READ toolBarIndicators                                              CONSTANT)
 
@@ -46,6 +63,9 @@ public:
 
     virtual void init() { }
     virtual void cleanup() { }
+
+    /// Called at boot after saved link configurations are loaded and before auto-connect links are started
+    virtual void linkConfigurationsLoaded(LinkManager* linkManager) { Q_UNUSED(linkManager); }
 
     /// The list of pages/buttons under the Analyze Menu
     /// @return A list of QmlPageInfo
@@ -71,8 +91,19 @@ public:
     /// If not overridden, metaData and userVisible are left unchanged.
     virtual void adjustSettingMetaData(const QString &settingsGroup, FactMetaData &metaData, bool &userVisible);
 
+    /// Called at the end of SettingsManager::init. Override to register custom build
+    /// settings groups via SettingsManager::registerCustomSettingsGroup so generated
+    /// settings pages can reference them as QGroundControl.settingsManager.<accessor>.
+    virtual void registerCustomSettings(SettingsManager *settingsManager) { Q_UNUSED(settingsManager); }
+
     /// @return The message to show to the user when they are prompted to confirm turning on advanced ui.
     virtual QString showAdvancedUIMessage() const;
+
+    /// @return true if the initial setup prompt should show vehicle preferences.
+    virtual bool showInitialSetupVehiclePreferences() const;
+
+    /// @return true if the initial setup prompt should show measurement units.
+    virtual bool showInitialSetupMeasurementUnits() const;
 
     /// @return An instance of an alternate position source (or NULL if not available)
     virtual QGeoPositionInfoSource *createPositionSource(QObject *parent) { Q_UNUSED(parent); return nullptr; }
@@ -85,6 +116,11 @@ public:
     /// Allows the plugin to override or get access to the QmlApplicationEngine to do things like add import
     /// path or stuff things into the context prior to window creation.
     virtual QQmlApplicationEngine *createQmlApplicationEngine(QObject *parent);
+
+    /// Symmetric counterpart to createQmlApplicationEngine. Engines obtained from the create hook
+    /// must be destroyed through this hook so the plugin can release any per-engine state it
+    /// attached at creation (url interceptors, etc) before the engine goes away.
+    virtual void destroyQmlApplicationEngine(QQmlApplicationEngine *qmlEngine);
 
     /// Allows the plugin to override the creation of the root (native) window.
     virtual void createRootWindow(QQmlApplicationEngine *qmlEngine);
@@ -102,6 +138,11 @@ public:
 
     /// Allows custom builds to add custom items to the FlightMap. Objects put into QmlObjectListModel should derive from QmlComponentInfo and set the url property.
     virtual const QmlObjectListModel *customMapItems();
+
+    /// GeoMap counterpart of customMapItems, shown when the Fly View uses the GeoMap engine. Same QmlComponentInfo/url
+    /// contract; each component is created in the map with its customMapObject, scene and surfaceModel properties set,
+    /// so its root should be a GeoMapItem (or declare those properties and pass scene/surfaceModel on to GeoMap items).
+    virtual const QmlObjectListModel* customGeoMapItems();
 
     /// Allows custom builds to add custom items to the plan file before the document is created.
     virtual void preSaveToJson(PlanMasterController *pController, QJsonObject &json) { Q_UNUSED(pController); Q_UNUSED(json); }
@@ -130,9 +171,9 @@ public:
     virtual QString stableVersionCheckFileUrl() const { return QStringLiteral("https://raw.githubusercontent.com/Titan-Dynamics/TitanGroundControl/master/.version.txt"); }
 #endif
 
-    /// Returns the user visible url to show user where to download new stable builds from.
+    /// Returns the full URL (including scheme) opened by the Update button and the new version dialog link.
     /// Custom builds must override to provide their own location.
-    virtual QString stableDownloadLocation() const { return QStringLiteral("github.com/Titan-Dynamics/TitanGroundControl/releases"); }
+    virtual QString stableDownloadUrl() const { return QStringLiteral("https://github.com/Titan-Dynamics/TitanGroundControl/releases"); }
 
     /// Returns the complex mission items to display in the Plan UI.
     /// Each entry in the list is a QVariantMap with keys:
@@ -141,10 +182,25 @@ public:
     /// The base class builds and returns the default set. Custom builds should
     /// override this method, call the base class to get the defaults, modify as
     /// needed, and return the result. When adding a new entry, set both keys and
-    /// override insertComplexMissionItem() to handle the new canonicalName.
+    /// override createComplexMissionItem() to handle the new canonicalName.
     /// @param vehicle Vehicle for which the list is being built
     /// @return Complex items to be made available to user
     virtual QVariantList complexMissionItemNames(Vehicle *vehicle);
+
+    /// Factory for creating custom complex mission items.
+    /// Called by MissionController when the canonicalName/complexItemType is not one of the
+    /// built-in types (Survey, CorridorScan, StructureScan, FixedWingLanding, VTOLLanding).
+    /// For JSON load, the returned item has load() called on it immediately afterward.
+    ///     @param complexItemType  The canonicalName / jsonComplexItemTypeValue identifying the item
+    ///     @param masterController PlanMasterController for the item
+    ///     @param flyView          true if creating for fly view (read-only)
+    ///     @param kmlOrShpFile     Optional KML/SHP file to initialize from; QString() if none
+    /// @return New item (caller takes ownership), or nullptr if the type is not handled
+    virtual ComplexMissionItem *createComplexMissionItem(
+        const QString &complexItemType,
+        PlanMasterController *masterController,
+        bool flyView,
+        const QString &kmlOrShpFile = QString());
 
     /// Returns the list of plan creators to show when creating a new plan.
     /// Custom builds can override to provide their own set of plan creators.
@@ -155,7 +211,7 @@ public:
     /// Returns the standard list of first run prompt ids for possible display. Actual display is based on the
     /// current AppSettings::firstRunPromptIds value. The order of this list also determines the order the prompts
     /// will be displayed in.
-    virtual QList<int> firstRunPromptStdIds() { return QList<int>({ kInitialSetupPromptId }); }
+    virtual QList<int> firstRunPromptStdIds();
 
     /// Returns the custom build list of first run prompt ids for possible display. Actual display is based on the
     /// current AppSettings::firstRunPromptIds value. The order of this list also determines the order the prompts

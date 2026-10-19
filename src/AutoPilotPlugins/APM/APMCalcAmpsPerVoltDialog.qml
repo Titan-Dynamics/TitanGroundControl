@@ -6,6 +6,7 @@ import QGroundControl.FactControls
 import QGroundControl.Controls
 
 QGCPopupDialog {
+    id:         popupDialog
     title:      qsTr("Calculate Amps per Volt")
     buttons:    Dialog.Close
 
@@ -16,7 +17,7 @@ QGCPopupDialog {
     APMBatteryParams {
         id:             batParams
         controller:     _controller
-        batteryIndex:   parent.batteryIndex
+        batteryIndex:   popupDialog.batteryIndex
     }
 
     ColumnLayout {
@@ -33,7 +34,7 @@ QGCPopupDialog {
             wrapMode:               Text.WordWrap
             visible:                !_batteryFactGroup || _batteryFactGroup.current.value === 0
             text:                   qsTr("Vehicle current telemetry is not available. Connect to a vehicle with a powered battery to enable automatic calculation.")
-            color:                  qgcPal.warningText
+            color:                  qgcPal.errorText
         }
 
         GridLayout {

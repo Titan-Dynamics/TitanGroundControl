@@ -9,7 +9,6 @@
 #include "FTPManager.h"
 #include "QGCCompression.h"
 #include "QGCCorePlugin.h"
-#include "QGCFileHelper.h"
 #include "AppMessages.h"
 #include "QGCFormat.h"
 #include "Vehicle.h"
@@ -122,6 +121,8 @@ VehicleCameraControl::VehicleCameraControl(const mavlink_camera_information_t *i
                                     _modelName.toStdString().c_str(),
                                     static_cast<int>(_mavlinkCameraInfo.cam_definition_version));
 
+    connect(this, &VehicleCameraControl::dataReady, this, &VehicleCameraControl::_dataReady);
+
     if(info->cam_definition_uri[0] != 0) {
         //-- Process camera definition file
         _handleDefinitionFile(info->cam_definition_uri);
@@ -140,11 +141,21 @@ VehicleCameraControl::VehicleCameraControl(const mavlink_camera_information_t *i
     _videoRecordTimeUpdateTimer.setInterval(333);
     connect(&_videoRecordTimeUpdateTimer, &QTimer::timeout, this, &VehicleCameraControl::_recTimerHandler);
 
+    // Cameras are not required to broadcast CAMERA_SETTINGS when zoom/focus changes,
+    // so re-request it after an accepted zoom/focus command to keep zoom level and
+    // FOV current. The delay also coalesces bursts of zoom/focus commands into a
+    // single request.
+    constexpr int kCameraSettingsRefreshDelayMsecs = 1000;
+    _cameraSettingsRefreshTimer.setSingleShot(true);
+    _cameraSettingsRefreshTimer.setInterval(kCameraSettingsRefreshDelayMsecs);
+    connect(&_cameraSettingsRefreshTimer, &QTimer::timeout, this, [this]() {
+        _cameraSettingsRetries = 0; // Start a fresh request/retry cycle
+        _requestCameraSettings();
+    });
+
     //-- Tracking capabilities
     _hasTrackingRectCapability = _mavlinkCameraInfo.flags & CAMERA_CAP_FLAGS_HAS_TRACKING_RECTANGLE;
     _hasTrackingPointCapability = _mavlinkCameraInfo.flags & CAMERA_CAP_FLAGS_HAS_TRACKING_POINT;
-
-    connect(this, &VehicleCameraControl::dataReady, this, &VehicleCameraControl::_dataReady);
 
     qCDebug(VehicleCameraControlLog) << "Camera Info:";
     qCDebug(VehicleCameraControlLog) << "   vendor:" << vendor();
@@ -173,6 +184,7 @@ VehicleCameraControl::~VehicleCameraControl()
     _streamInfoTimer.stop();
     _streamStatusTimer.stop();
     _cameraSettingsTimer.stop();
+    _cameraSettingsRefreshTimer.stop();
     _storageInfoTimer.stop();
 
     delete _netManager;
@@ -446,14 +458,16 @@ bool VehicleCameraControl::takePhoto()
         (_cameraMode != CAM_MODE_VIDEO || photosInVideoMode());
 
     if (canUseMavlinkImageCapture) {
+        const bool timelapse = _photoCaptureMode == PHOTO_CAPTURE_TIMELAPSE;
         _vehicle->sendMavCommand(
             _compID,
             MAV_CMD_IMAGE_START_CAPTURE,
-            true,                           // ShowError
-            0,                              // All cameras
-            static_cast<float>(_photoCaptureMode == PHOTO_CAPTURE_SINGLE ? 0 : _photoLapse),   // Duration between two consecutive pictures (in seconds--ignored if single image)
-            _photoCaptureMode == PHOTO_CAPTURE_SINGLE ? 1 : _photoLapseCount);                 // Number of images to capture total - 0 for unlimited capture
-        _setPhotoCaptureStatus(PHOTO_CAPTURE_IN_PROGRESS);
+            true,                                           // ShowError
+            0,                                              // All cameras
+            static_cast<float>(timelapse ? _photoLapse : 0),   // Duration between two consecutive pictures (in seconds--ignored if single image)
+            timelapse ? _photoLapseCount : 1);              // Number of images to capture total - 0 for unlimited capture
+        // Interval state must be visible immediately so the shutter can stop the sequence before the camera reports status
+        _setPhotoCaptureStatus(timelapse ? PHOTO_CAPTURE_INTERVAL_IDLE : PHOTO_CAPTURE_IN_PROGRESS);
         _captureInfoRetries = 0;
         return true;
     } else {
@@ -782,6 +796,10 @@ void VehicleCameraControl::_mavCommandResult(int vehicleId, int component, int c
                 break;
             case MAV_CMD_IMAGE_START_CAPTURE:
                 _captureStatusTimer.start(1000);
+                break;
+            case MAV_CMD_SET_CAMERA_ZOOM:
+            case MAV_CMD_SET_CAMERA_FOCUS:
+                _cameraSettingsRefreshTimer.start();
                 break;
         }
     } else {
@@ -1655,17 +1673,12 @@ void VehicleCameraControl::handleCameraCaptureStatus(const mavlink_camera_captur
     //-- Keep asking for it once in a while when recording
     if(_videoCaptureStatus() == VIDEO_CAPTURE_STATUS_RUNNING) {
         _captureStatusTimer.start(5000);
-    //-- Same while (single) image capture is busy
-    } else if(_photoCaptureStatus() != PHOTO_CAPTURE_IDLE && photoCaptureMode() == PHOTO_CAPTURE_SINGLE) {
+    //-- Same while a single image capture is busy
+    } else if(_photoCaptureStatus() == PHOTO_CAPTURE_IN_PROGRESS) {
         _captureStatusTimer.start(1000);
-    }
-    //-- Time Lapse
-    if(_photoCaptureStatus() == PHOTO_CAPTURE_INTERVAL_IDLE || _photoCaptureStatus() == PHOTO_CAPTURE_INTERVAL_IN_PROGRESS) {
-        //-- Capture local image as well
-        const QString photoDir = SettingsManager::instance()->appSettings()->savePath()->rawValue().toString() + QStringLiteral("/Photo");
-        QGCFileHelper::ensureDirectoryExists(photoDir);
-        const QString photoPath = photoDir + "/" + QDateTime::currentDateTime().toString("yyyy-MM-dd_hh.mm.ss.zzz") + ".jpg";
-        VideoManager::instance()->grabImage(photoPath);
+    //-- Interval capture can run for hours; poll at the video cadence
+    } else if(_photoCaptureStatus() == PHOTO_CAPTURE_INTERVAL_IDLE || _photoCaptureStatus() == PHOTO_CAPTURE_INTERVAL_IN_PROGRESS) {
+        _captureStatusTimer.start(5000);
     }
 }
 
@@ -1800,7 +1813,8 @@ void VehicleCameraControl::setCurrentStream(int stream)
     if (stream != _currentStream && stream >= 0 && stream < _streamLabels.count()) {
         QGCVideoStreamInfo* pInfo = currentStreamInstance();
         if(pInfo) {
-            qCDebug(VehicleCameraControlLog) << "Stopping stream:" << pInfo->uri();
+            qCDebug(VehicleCameraControlLog)
+                << "Stopping stream:" << QGCNetworkHelper::redactedUrlForLogging(pInfo->uri());
             //-- Stop current stream
             _vehicle->sendMavCommand(
                 _compID,                                // Target component
@@ -1812,7 +1826,8 @@ void VehicleCameraControl::setCurrentStream(int stream)
         pInfo = currentStreamInstance();
         if(pInfo) {
             //-- Start new stream
-            qCDebug(VehicleCameraControlLog) << "Starting stream:" << pInfo->uri();
+            qCDebug(VehicleCameraControlLog)
+                << "Starting stream:" << QGCNetworkHelper::redactedUrlForLogging(pInfo->uri());
             _vehicle->sendMavCommand(
                 _compID,                                // Target component
                 MAV_CMD_VIDEO_START_STREAMING,          // Command id

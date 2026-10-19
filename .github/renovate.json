@@ -3,74 +3,106 @@
   "extends": [
     "config:recommended",
     ":dependencyDashboard",
-    ":semanticCommitTypeAll(chore)"
+    ":enablePreCommit",
+    ":semanticCommitTypeAll(deps)"
   ],
-  "git-submodules": {
-    "enabled": true
-  },
   "labels": [
     "dependencies"
   ],
   "ignorePaths": [
     ".github/workflows/**"
   ],
-  "description": "Manages npm, git-submodules, pip, pre-commit. GitHub Actions are handled by Dependabot (see dependabot.yml).",
+  "description": "Manages npm, Python, pre-commit, development environments, Gradle dependencies and Wrapper, Node versions, Dockerfiles, and composite actions. Dependabot owns .github/workflows, which are excluded here.",
   "enabledManagers": [
+    "devcontainer",
+    "dockerfile",
+    "github-actions",
+    "gradle-wrapper",
     "npm",
-    "git-submodules",
-    "pip_requirements",
-    "pip_setup",
     "pep621",
-    "pre-commit"
+    "pre-commit",
+    "gradle",
+    "nvm"
   ],
   "packageRules": [
     {
       "description": "Auto-merge patch updates after CI passes",
-      "matchUpdateTypes": ["patch"],
+      "matchManagers": [
+        "npm",
+        "pep621",
+        "pre-commit"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
       "automerge": true
     },
     {
-      "description": "Group all git submodule updates",
-      "groupName": "Git Submodules",
+      "description": "Combine npm, python, and pre-commit updates into a single PR",
+      "groupName": "all dependencies",
       "matchManagers": [
-        "git-submodules"
-      ],
-      "schedule": [
-        "before 6am on monday"
-      ]
-    },
-    {
-      "description": "Group Node.js updates (docs)",
-      "groupName": "Node.js Dependencies",
-      "matchManagers": [
-        "npm"
-      ],
-      "schedule": [
-        "before 6am on monday"
-      ]
-    },
-    {
-      "description": "Group Python updates (tools)",
-      "groupName": "Python Dependencies",
-      "matchManagers": [
-        "pip_requirements",
-        "pip_setup"
-      ],
-      "schedule": [
-        "before 6am on monday"
-      ]
-    },
-    {
-      "description": "Group pre-commit hook updates",
-      "groupName": "pre-commit hooks",
-      "matchManagers": [
+        "npm",
+        "pep621",
         "pre-commit"
       ],
       "schedule": [
         "before 6am on monday"
       ]
+    },
+    {
+      "description": "Group composite GitHub Action updates not covered by Dependabot",
+      "groupName": "composite action dependencies",
+      "matchManagers": [
+        "github-actions"
+      ]
+    },
+    {
+      "description": "Group development environment and build bootstrap updates",
+      "groupName": "development environment dependencies",
+      "matchManagers": [
+        "devcontainer",
+        "dockerfile",
+        "nvm"
+      ]
+    },
+    {
+      "description": "Group Android build updates; the Android Gradle Plugin, Kotlin, and Gradle versions are coupled",
+      "groupName": "android dependencies",
+      "matchManagers": [
+        "gradle",
+        "gradle-wrapper"
+      ]
+    },
+    {
+      "description": "Keep formatter and Python lint tool pins synchronized",
+      "matchPackageNames": [
+        "clang-format",
+        "pre-commit/mirrors-clang-format",
+        "ruff",
+        "astral-sh/ruff-pre-commit",
+        "pyright",
+        "RobertCraigie/pyright-python"
+      ],
+      "groupName": "code quality tools"
+    },
+    {
+      "description": "Keep lock file maintenance in one PR instead of one per group",
+      "matchUpdateTypes": [
+        "lockFileMaintenance"
+      ],
+      "groupName": null
+    },
+    {
+      "description": "Newer androidx.core releases require a compileSdk newer than the one Qt supports",
+      "matchPackageNames": [
+        "androidx.core:core"
+      ],
+      "enabled": false
     }
   ],
+  "major": {
+    "dependencyDashboardApproval": true
+  },
   "prConcurrentLimit": 5,
   "prHourlyLimit": 2,
   "schedule": [
@@ -84,6 +116,12 @@
     ],
     "schedule": [
       "at any time"
+    ]
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": [
+      "before 6am on monday"
     ]
   }
 }

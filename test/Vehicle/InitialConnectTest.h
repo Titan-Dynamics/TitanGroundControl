@@ -14,9 +14,9 @@ private slots:
     void _highLatencySkipsPlanRequests();
     void _genericAutopilotVersionFailureSkipsUnsupportedPlanTypes();
     void _multipleReconnects();
-    void _rallyTimeoutPathDoesNotLeakCompletionHandler();
-    void _stateTimeoutFallsThrough_data();
-    void _stateTimeoutFallsThrough();
+    void _rallyFailurePathDoesNotLeakCompletionHandler();
+    void _subsystemFailureFallsThrough_data();
+    void _subsystemFailureFallsThrough();
     void _stateRunMatrix_data();
     void _stateRunMatrix();
 };

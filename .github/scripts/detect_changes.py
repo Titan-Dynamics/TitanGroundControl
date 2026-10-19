@@ -13,20 +13,24 @@ from __future__ import annotations
 import argparse
 import os
 import re
-import subprocess
-import sys
-from typing import Sequence
 
 from ci_bootstrap import ensure_tools_dir
 
 ensure_tools_dir(__file__)
 
-from common.gh_actions import write_github_output
+from typing import TYPE_CHECKING
+
+from common.gh_actions import gh_warning, write_github_output
+from common.git import run_git
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 # Patterns that trigger a build for ANY platform
 _COMMON_PATTERNS: list[str] = [
     r"^src/",
     r"^CMakeLists\.txt$",
+    r"^CMakePresets\.json$",
     r"^cmake/",
     r"^libs/",
     r"^resources/",
@@ -36,25 +40,39 @@ _COMMON_PATTERNS: list[str] = [
     r"^\.github/actions/",
     r"^\.github/scripts/",
     r"^\.github/build-config\.json$",
+    r"^\.github/workflows/_detect-changes\.yml$",
+    r"^tools/(?!setup/|tests/)",
+    r"^tools/setup/(install_qt\.py|install_python\.py|read_config\.py|install_dependencies/)",
 ]
 
 # Per-platform additional patterns
 _PLATFORM_PATTERNS: dict[str, list[str]] = {
     "android": [r"^android/"],
+    "custom-build": [r"^custom-example/"],
     "docker-linux": [
-        r"^deploy/docker/Dockerfile-build-ubuntu$",
+        # Single multi-stage Dockerfile builds every variant; any change rebuilds.
+        r"^deploy/docker/Dockerfile$",
+        r"^deploy/docker/entrypoint\.(sh|py)$",
+        r"^deploy/docker/install_sysroot_aarch64\.py$",
+        r"^deploy/docker/validate_native_package\.py$",
+        r"^deploy/docker/run-docker\.sh$",
+        r"^deploy/docker/run_docker\.py$",
+        r"^deploy/docker/lib/",
         r"^deploy/linux/",
     ],
     "docker-android": [
-        r"^deploy/docker/Dockerfile-build-android$",
+        r"^deploy/docker/Dockerfile$",
+        r"^deploy/docker/entrypoint\.(sh|py)$",
+        r"^deploy/docker/run_docker\.py$",
+        r"^deploy/docker/run-docker\.sh$",
+        r"^deploy/docker/lib/",
         r"^android/",
         r"^deploy/android/",
     ],
 }
 
-# Per-platform tools/setup patterns
 _SETUP_PATTERNS: dict[str, list[str]] = {
-    "linux": [r"^tools/setup/.*debian", r"^tools/setup/install_dependencies\.py$"],
+    "linux": [r"^tools/setup/.*debian", r"^tools/setup/install_dependencies/"],
     "windows": [r"^tools/setup/.*windows"],
     "macos": [r"^tools/setup/.*macos"],
     "android": [r"^tools/setup/"],
@@ -68,6 +86,8 @@ def workflow_name_for_platform(platform: str) -> str:
     """Map a platform to its workflow YAML filename (without extension)."""
     if platform.startswith("docker-"):
         return "docker"
+    if platform == "custom-build":
+        return "custom-build"
     return platform
 
 
@@ -79,6 +99,10 @@ def build_patterns(platform: str) -> list[re.Pattern[str]]:
     raw.append(rf"^\.github/workflows/{re.escape(wf)}\.yml$")
     raw.extend(_PLATFORM_PATTERNS.get(platform, []))
     raw.extend(_SETUP_PATTERNS.get(platform, []))
+    if platform.startswith("docker-"):
+        raw.append(
+            r"^deploy/docker/(_variants\.py|run_docker\.py|variants\.json|docker_helper\.py)$"
+        )
     return [re.compile(p) for p in raw]
 
 
@@ -101,29 +125,19 @@ def has_relevant_changes(files: Sequence[str], platform: str) -> bool:
 _NULL_SHA = "0" * 40
 
 
-def _run_git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["git", *args],
-        capture_output=True,
-        text=True,
-        check=check,
-    )
-
-
 def _ensure_commit(sha: str) -> bool:
     """Ensure a commit exists locally; fetch it shallowly if needed."""
     if not sha:
         return True
-    r = _run_git("cat-file", "-e", f"{sha}^{{commit}}", check=False)
-    if r.returncode == 0:
+    if run_git("cat-file", "-e", f"{sha}^{{commit}}").returncode == 0:
         return True
-    _run_git("fetch", "--no-tags", "--depth=1", "origin", sha, check=False)
-    return _run_git("cat-file", "-e", f"{sha}^{{commit}}", check=False).returncode == 0
+    run_git("fetch", "--no-tags", "--depth=1", "origin", sha)
+    return run_git("cat-file", "-e", f"{sha}^{{commit}}").returncode == 0
 
 
 def _diff_names(sha_a: str, sha_b: str) -> list[str] | None:
     """Return changed file names between two commits, or None on failure."""
-    r = _run_git("diff", "--name-only", sha_a, sha_b, check=False)
+    r = run_git("diff", "--name-only", sha_a, sha_b)
     if r.returncode != 0:
         return None
     return r.stdout.strip().splitlines()
@@ -131,7 +145,7 @@ def _diff_names(sha_a: str, sha_b: str) -> list[str] | None:
 
 def _tree_names(sha: str) -> list[str]:
     """List files changed in a single commit."""
-    r = _run_git("diff-tree", "--no-commit-id", "--name-only", "-r", sha, check=False)
+    r = run_git("diff-tree", "--no-commit-id", "--name-only", "-r", sha)
     return r.stdout.strip().splitlines() if r.returncode == 0 else []
 
 
@@ -170,21 +184,57 @@ def get_changed_files() -> list[str] | None:
     return _tree_names(current) if current else None
 
 
+# Output keys emitted by `_detect-changes.yml` for non-PR events. Names match the
+# reusable workflow's `outputs:` block (note: `docker_linux`, not `docker-linux`).
+_NON_PR_PASSTHROUGH_KEYS = (
+    "should_build",
+    "linux",
+    "windows",
+    "macos",
+    "android",
+    "docker_linux",
+    "docker_android",
+)
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Detect CI-relevant file changes for a platform.")
-    parser.add_argument("--platform", required=True, nargs="+",
-                        help="Platform(s) (linux, windows, macos, android, ios, docker-linux, docker-android)")
-    return parser.parse_args(argv)
+    parser.add_argument(
+        "--platform",
+        nargs="+",
+        help="Platform(s) (linux, windows, macos, android, ios, docker-linux, docker-android)",
+    )
+    parser.add_argument(
+        "--non-pr-passthrough",
+        action="store_true",
+        help="Emit the reusable workflow's full output set as a single value "
+        "(used by _detect-changes.yml on push/merge_group/workflow_dispatch)",
+    )
+    parser.add_argument(
+        "--passthrough-value",
+        choices=("true", "false"),
+        default="true",
+        help="Value emitted for every output with --non-pr-passthrough (default: true)",
+    )
+    args = parser.parse_args(argv)
+    if not args.non_pr_passthrough and not args.platform:
+        parser.error("--platform is required unless --non-pr-passthrough is given")
+    return args
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+
+    if args.non_pr_passthrough:
+        write_github_output(dict.fromkeys(_NON_PR_PASSTHROUGH_KEYS, args.passthrough_value))
+        return 0
+
     platforms: list[str] = args.platform
 
     changed = get_changed_files()
     if changed is None:
-        print("::warning::Unable to compute changed files reliably; forcing build for safety.")
-        outputs = {p: "true" for p in platforms}
+        gh_warning("Unable to compute changed files reliably; forcing build for safety.")
+        outputs = dict.fromkeys(platforms, "true")
         outputs["any"] = "true"
         write_github_output(outputs)
         return 0

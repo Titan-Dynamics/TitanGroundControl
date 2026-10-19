@@ -10,11 +10,14 @@ qt_add_qml_module(FlightMapModule
     VERSION 1.0
     RESOURCE_PREFIX /qml
     QML_FILES
+        MapItems/ADSBVehicleMapItem.qml
         MapItems/CameraTriggerIndicator.qml
         MapItems/CustomMapItems.qml
         MapItems/MapLineArrow.qml
         MapItems/MissionItemIndicator.qml
         MapItems/MissionItemIndicatorDrag.qml
+        MapItems/MissionItemIndicatorGroup.qml
+        MapItems/MissionItemSelectionPanel.qml
         MapItems/MissionLineView.qml
         MapItems/PlanMapItems.qml
         MapItems/ProximityRadarMapView.qml

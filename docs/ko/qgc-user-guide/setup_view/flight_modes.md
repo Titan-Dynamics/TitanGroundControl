@@ -16,7 +16,7 @@ _비행 모드_ 섹션을 사용하면 비행 모드를 무선 채널에 매핑�
 
 ## 송신기 설정
 
-비행 모드를 설정하려면, 먼저 모드 스위치의 물리적 위치를 단일 채널로 인코딩하도록 _송신기_를 설정합니다.
+비행 모드를 설정하려면, 먼저 모드 스위치의 물리적 위치를 단일 채널로 인코딩하도록 _송신&#xAE30;_&#xB97C; 설정합니다.
 
 6개의 비행 모드를 나타내기 위해 송신기의 2-및 3-위치 스위치의 위치를 사용하는 것이 일반적입니다.
 그런 다음 각 스위치 조합은 단일 채널에서 전송될 특정 PWM 값으로 인코딩됩니다.
@@ -39,11 +39,7 @@ _비행 모드_ 섹션을 사용하면 비행 모드를 무선 채널에 매핑�
 
 Taranis UI **MIXER** 페이지를 열고 아래와 같이 **CH5**까지 아래로 스크롤합니다.
 
-![Taranis - 전환 채널 매핑](../../../assets/setup/flight_modes/taranis_single_channel_mode_selection_1.png)
-
 \*\*ENT(ER)\*\*를 눌러 **CH5** 구성을 편집한 다음 **소스**를 _SD_ 버튼으로 변경합니다.
-
-![Taranis - 채널 설정](../../../assets/setup/flight_modes/taranis_single_channel_mode_selection_2.png)
 
 That's it!
 채널 5는 이제 3개의 다른 **SD** 스위치 위치에 대해 3개의 다른 PWM 값을 출력합니다.
@@ -56,6 +52,6 @@ That's it!
 FrSky Taranis에서 이 프로세스는 두 개의 실제 스위치 위치의 각 조합에 "논리적 스위치"를 할당하는 것을 포함합니다.
 그런 다음 각 논리적 스위치는 동일한 채널에서 다른 PWM 값에 할당됩니다.
 
-이 비디오는 _FrSky Taranis_ 송신기를 사용한 수행과정을 나타냅니다: https://youtu.be/TFEjEQZqdVA
+This video shows how this is done with the _FrSky Taranis_ transmitter: <https://youtu.be/TFEjEQZqdVA>
 
 <!-- @[youtube](https://youtu.be/BNzeVGD8IZI?t=427) - video showing how to set the QGC side - at about 7mins and 3 secs -->

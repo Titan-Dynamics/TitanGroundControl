@@ -18,9 +18,10 @@ target_sources(${CMAKE_PROJECT_NAME}
         MockLinkWorker.h
         MockLinkMissionItemHandler.cc
         MockLinkMissionItemHandler.h
+        MockLinkPX4Calibration.cc
+        MockLinkPX4Calibration.h
 )
 
-# Add resource files
 set_source_files_properties(MockLink.General.MetaData.json PROPERTIES QT_RESOURCE_ALIAS General.MetaData.json)
 set_source_files_properties(MockLink.General.MetaData.json.xz PROPERTIES QT_RESOURCE_ALIAS General.MetaData.json.xz)
 set_source_files_properties(MockLink.Parameter.MetaData.json.xz PROPERTIES QT_RESOURCE_ALIAS Parameter.MetaData.json.xz)
@@ -28,6 +29,7 @@ set_source_files_properties(MockLink.Parameter.MetaData.json PROPERTIES QT_RESOU
 qt_add_resources(${CMAKE_PROJECT_NAME} mocklink_resources
     PREFIX "/MockLink"
     FILES
+        GenericMockLink.params
         PX4MockLink.params
         MockLink.General.MetaData.json
         MockLink.General.MetaData.json.xz

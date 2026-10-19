@@ -1,9 +1,12 @@
 #include "CustomPlugin.h"
-#include "QmlComponentInfo.h"
+#include "CustomSettings.h"
+#include "PerimeterScanComplexItem.h"
+#include "PerimeterScanPlanCreator.h"
 #include "QGCLoggingCategory.h"
 #include "QGCPalette.h"
 #include "QGCMAVLink.h"
 #include "AppSettings.h"
+#include "SettingsManager.h"
 
 #include <QtCore/QApplicationStatic>
 #include <QtQml/QQmlApplicationEngine>
@@ -44,33 +47,15 @@ QGCCorePlugin *CustomPlugin::instance()
     return _customPluginInstance();
 }
 
-void CustomPlugin::cleanup()
-{
-    if (_qmlEngine) {
-        _qmlEngine->removeUrlInterceptor(_selector);
-    }
-
-    delete _selector;
-}
-
 void CustomPlugin::_advancedChanged(bool changed)
 {
     // Firmware Upgrade page is only show in Advanced mode
     emit _options->showFirmwareUpgradeChanged(changed);
 }
 
-void CustomPlugin::_addSettingsEntry(const QString &title, const char *qmlFile, const char *iconFile)
+void CustomPlugin::registerCustomSettings(SettingsManager *settingsManager)
 {
-    Q_CHECK_PTR(qmlFile);
-    // 'this' instance will take ownership on the QmlComponentInfo instance
-    _customSettingsList.append(QVariant::fromValue(
-        new QmlComponentInfo(
-            title,
-            QUrl::fromUserInput(qmlFile),
-            !iconFile ? QUrl() : QUrl::fromUserInput(iconFile),
-            this)
-        )
-    );
+    settingsManager->registerCustomSettingsGroup(QStringLiteral("customSettings"), new CustomSettings());
 }
 
 void CustomPlugin::adjustSettingMetaData(const QString& settingsGroup, FactMetaData& metaData, bool &userVisible)
@@ -114,11 +99,21 @@ void CustomPlugin::paletteOverride(const QString &colorName, QGCPalette::Palette
         colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupDisabled]  = QColor("#777c89");
         colorInfo[QGCPalette::Light][QGCPalette::ColorGroupEnabled]  = QColor("#212529");
         colorInfo[QGCPalette::Light][QGCPalette::ColorGroupDisabled] = QColor("#9d9d9d");
-    } else if (colorName == QStringLiteral("warningText")) {
-        colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupEnabled]   = QColor("#e03131");
-        colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupDisabled]  = QColor("#e03131");
-        colorInfo[QGCPalette::Light][QGCPalette::ColorGroupEnabled]  = QColor("#cc0808");
+    } else if (colorName == QStringLiteral("errorText")) {
+        colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupEnabled] = QColor("#ff6b6b");
+        colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupDisabled] = QColor("#ff6b6b");
+        colorInfo[QGCPalette::Light][QGCPalette::ColorGroupEnabled] = QColor("#cc0808");
         colorInfo[QGCPalette::Light][QGCPalette::ColorGroupDisabled] = QColor("#cc0808");
+    } else if (colorName == QStringLiteral("warningText")) {
+        colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupEnabled] = QColor("#f7b24a");
+        colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupDisabled] = QColor("#f6921e");
+        colorInfo[QGCPalette::Light][QGCPalette::ColorGroupEnabled] = QColor("#b95604");
+        colorInfo[QGCPalette::Light][QGCPalette::ColorGroupDisabled] = QColor("#b95604");
+    } else if (colorName == QStringLiteral("successText")) {
+        colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupEnabled] = QColor("#27bf89");
+        colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupDisabled] = QColor("#0ca678");
+        colorInfo[QGCPalette::Light][QGCPalette::ColorGroupEnabled] = QColor("#006b22");
+        colorInfo[QGCPalette::Light][QGCPalette::ColorGroupDisabled] = QColor("#006b22");
     } else if (colorName == QStringLiteral("button")) {
         colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupEnabled]   = QColor("#495057");
         colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupDisabled]  = QColor("#495057");
@@ -159,6 +154,11 @@ void CustomPlugin::paletteOverride(const QString &colorName, QGCPalette::Palette
         colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupDisabled]  = QColor("#777c89");
         colorInfo[QGCPalette::Light][QGCPalette::ColorGroupEnabled]  = QColor("#212529");
         colorInfo[QGCPalette::Light][QGCPalette::ColorGroupDisabled] = QColor("#808080");
+    } else if (colorName == QStringLiteral("textFieldErrorText")) {
+        colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupEnabled] = QColor("#ff6b6b");
+        colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupDisabled] = QColor("#ff6b6b");
+        colorInfo[QGCPalette::Light][QGCPalette::ColorGroupEnabled] = QColor("#c92a2a");
+        colorInfo[QGCPalette::Light][QGCPalette::ColorGroupDisabled] = QColor("#c92a2a");
     } else if (colorName == QStringLiteral("mapButton")) {
         colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupEnabled]   = QColor("#000000");
         colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupDisabled]  = QColor("#585858");
@@ -239,12 +239,12 @@ void CustomPlugin::paletteOverride(const QString &colorName, QGCPalette::Palette
         colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupDisabled]  = QColor("#000000");
         colorInfo[QGCPalette::Light][QGCPalette::ColorGroupEnabled]  = QColor("#212529");
         colorInfo[QGCPalette::Light][QGCPalette::ColorGroupDisabled] = QColor("#000000");
-    } else if (colorName == QStringLiteral("brandingPurple")) {
+    } else if (colorName == QStringLiteral("brandPrimary")) {
         colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupEnabled]   = QColor("#4a2c6d");
         colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupDisabled]  = QColor("#4a2c6d");
         colorInfo[QGCPalette::Light][QGCPalette::ColorGroupEnabled]  = QColor("#4a2c6d");
         colorInfo[QGCPalette::Light][QGCPalette::ColorGroupDisabled] = QColor("#4a2c6d");
-    } else if (colorName == QStringLiteral("brandingBlue")) {
+    } else if (colorName == QStringLiteral("brandAccent")) {
         colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupEnabled]   = QColor("#6045c5");
         colorInfo[QGCPalette::Dark][QGCPalette::ColorGroupDisabled]  = QColor("#48d6ff");
         colorInfo[QGCPalette::Light][QGCPalette::ColorGroupEnabled]  = QColor("#6045c5");
@@ -256,12 +256,25 @@ QQmlApplicationEngine* CustomPlugin::createQmlApplicationEngine(QObject* parent)
 {
     _qmlEngine = QGCCorePlugin::createQmlApplicationEngine(parent);
     _qmlEngine->addImportPath("qrc:/qml/Custom/Widgets");
+    _qmlEngine->addImportPath("qrc:/qml/Custom/Plan");
     // TODO: Investigate _qmlEngine->setExtraSelectors({"custom"})
 
-    _selector = new CustomOverrideInterceptor();
-    _qmlEngine->addUrlInterceptor(_selector);
+    _urlInterceptor = new CustomOverrideInterceptor();
+    _qmlEngine->addUrlInterceptor(_urlInterceptor);
 
     return _qmlEngine;
+}
+
+void CustomPlugin::destroyQmlApplicationEngine(QQmlApplicationEngine *qmlEngine)
+{
+    if (qmlEngine && (qmlEngine == _qmlEngine)) {
+        qmlEngine->removeUrlInterceptor(_urlInterceptor);
+        delete _urlInterceptor;
+        _urlInterceptor = nullptr;
+        _qmlEngine = nullptr;
+    }
+
+    QGCCorePlugin::destroyQmlApplicationEngine(qmlEngine);
 }
 
 /*===========================================================================*/
@@ -294,4 +307,40 @@ QUrl CustomOverrideInterceptor::intercept(const QUrl &url, QQmlAbstractUrlInterc
     }
 
     return url;
+}
+
+/*===========================================================================*/
+
+QVariantList CustomPlugin::complexMissionItemNames(Vehicle *vehicle)
+{
+    // Start with the standard set, then append our custom item.
+    QVariantList items = QGCCorePlugin::complexMissionItemNames(vehicle);
+
+    QVariantMap entry;
+    entry[QStringLiteral("canonicalName")]  = QString(PerimeterScanComplexItem::canonicalName);
+    entry[QStringLiteral("translatedName")] = PerimeterScanComplexItem::tr(PerimeterScanComplexItem::canonicalName);
+    items.append(entry);
+
+    return items;
+}
+
+ComplexMissionItem *CustomPlugin::createComplexMissionItem(const QString &complexItemType,
+                                                            PlanMasterController *masterController,
+                                                            bool flyView,
+                                                            const QString &kmlOrShpFile)
+{
+    if (complexItemType == PerimeterScanComplexItem::canonicalName
+            || complexItemType == PerimeterScanComplexItem::jsonComplexItemTypeValue) {
+        return new PerimeterScanComplexItem(masterController, flyView, kmlOrShpFile);
+    }
+    // Fall back to the built-in factory for all standard item types.
+    return QGCCorePlugin::createComplexMissionItem(complexItemType, masterController, flyView, kmlOrShpFile);
+}
+
+QList<PlanCreator *> CustomPlugin::planCreators(PlanMasterController *planMasterController)
+{
+    // Start with the standard creators, then add ours.
+    QList<PlanCreator *> creators = QGCCorePlugin::planCreators(planMasterController);
+    creators.append(new PerimeterScanPlanCreator(planMasterController));
+    return creators;
 }

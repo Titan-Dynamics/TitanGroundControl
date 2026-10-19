@@ -38,6 +38,22 @@ QList<QGCMAVLink::FirmwareClass_t> FirmwarePluginManager::supportedFirmwareClass
     return _supportedFirmwareClasses;
 }
 
+bool FirmwarePluginManager::firmwareClassSupported(QGCMAVLink::FirmwareClass_t firmwareClass)
+{
+    return supportedFirmwareClasses().contains(firmwareClass);
+}
+
+bool FirmwarePluginManager::singleFirmwareSupport()
+{
+    return supportedFirmwareClasses().count() == 1;
+}
+
+bool FirmwarePluginManager::singleVehicleSupport()
+{
+    const QList<QGCMAVLink::FirmwareClass_t> firmwareClasses = supportedFirmwareClasses();
+    return (firmwareClasses.count() == 1) && (supportedVehicleClasses(firmwareClasses[0]).count() == 1);
+}
+
 QList<QGCMAVLink::VehicleClass_t> FirmwarePluginManager::supportedVehicleClasses(QGCMAVLink::FirmwareClass_t firmwareClass)
 {
     QList<QGCMAVLink::VehicleClass_t> vehicleClasses;

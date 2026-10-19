@@ -3,12 +3,14 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDir>
 #include <QtCore/QFile>
+#include <QtCore/QRegularExpression>
 #include <QtTest/QSignalSpy>
 #include <QtTest/QTest>
 
 #include "LinkManager.h"
 #include "MAVLinkLib.h"
 #include "MockConfiguration.h"
+#include "MockLinkFTP.h"
 #include "MultiVehicleManager.h"
 #include "ParameterManager.h"
 #include "Vehicle.h"
@@ -40,26 +42,22 @@ void HashCheckTest::_connectAndWaitForParams()
     MultiVehicleManager *const vehicleMgr = MultiVehicleManager::instance();
     QVERIFY(vehicleMgr);
 
-    QSignalSpy spyVehicle(vehicleMgr, &MultiVehicleManager::activeVehicleAvailableChanged);
-    QVERIFY_SIGNAL_WAIT(spyVehicle, TestTimeout::mediumMs());
+    QTRY_VERIFY_WITH_TIMEOUT(vehicleMgr->activeVehicle() != nullptr, TestTimeout::mediumMs());
 
     Vehicle *const vehicle = vehicleMgr->activeVehicle();
     QVERIFY(vehicle);
 
-    QSignalSpy spyParamsReady(vehicleMgr, &MultiVehicleManager::parameterReadyVehicleAvailableChanged);
-    QVERIFY_SIGNAL_WAIT(spyParamsReady, TestTimeout::longMs());
-
-    const QList<QVariant> arguments = spyParamsReady.takeFirst();
-    QCOMPARE(arguments.count(), 1);
-    QCOMPARE(arguments.at(0).toBool(), true);
+    auto* parameterManager = vehicle->parameterManager();
+    QVERIFY(parameterManager);
+    QTRY_VERIFY_WITH_TIMEOUT(parameterManager->parametersReady(), TestTimeout::longMs());
 }
 
 void HashCheckTest::_disconnectAndSettle()
 {
+    QSignalSpy spyDisconnect(MultiVehicleManager::instance(), &MultiVehicleManager::activeVehicleChanged);
     _mockLink->disconnect();
     _mockLink = nullptr;
-    QSignalSpy spyDisconnect(MultiVehicleManager::instance(), &MultiVehicleManager::activeVehicleChanged);
-    QVERIFY(UnitTest::waitForSignal(spyDisconnect, TestTimeout::longMs(), QStringLiteral("activeVehicleChanged")));
+    QTRY_VERIFY_WITH_TIMEOUT(!spyDisconnect.isEmpty(), TestTimeout::longMs());
     UnitTest::settleEventLoopForCleanup();
 }
 
@@ -96,24 +94,24 @@ MockLink *HashCheckTest::_startPX4MockLinkHighLatency()
 
 // Data-driven test matrix for all _HASH_CHECK parameter cache scenarios.
 //
-// FirstConnect_NoCache:   First PX4 connection with no cache. Sends _HASH_CHECK, gets full param list.
-// Reconnect_CacheHit:     Reconnect after populating cache. Hash matches so no PARAM_REQUEST_LIST needed.
-// Reconnect_CacheMiss:    Reconnect after a parameter changed. Hash mismatch triggers full param reload.
-// HashTimeout_CacheHit:   Vehicle never responds to _HASH_CHECK. Falls back to PARAM_REQUEST_LIST, cache still valid.
-// HashTimeout_NoCache:    Vehicle never responds to _HASH_CHECK and no cache exists. Falls back to full param list.
-// HashTimeout_CacheStale: Vehicle never responds to _HASH_CHECK and cache is stale. Falls back to full param list.
-// BothTimersExhaust:      Vehicle responds to neither _HASH_CHECK nor PARAM_REQUEST_LIST. Params never become ready.
-// CacheDeleted_Between:   Cache populated then deleted before reconnect. Forces full param reload despite same vehicle.
-// ManualRefresh:          User-triggered refreshAllParameters() bypasses _HASH_CHECK and requests full param list.
+// FirstConnect_NoCache:   First PX4 connection with no cache. Sends _HASH_CHECK, then FTP param.pck.
+// Reconnect_CacheHit:     Reconnect after populating cache. Hash matches so no download needed.
+// Reconnect_CacheMiss:    Reconnect after a parameter changed. Hash mismatch, FTP param.pck.
+// HashTimeout_CacheHit:   Vehicle never responds to _HASH_CHECK. Falls back to FTP param.pck.
+// HashTimeout_NoCache:    Vehicle never responds to _HASH_CHECK and no cache exists. Falls back to FTP.
+// HashTimeout_CacheStale: Vehicle never responds to _HASH_CHECK and cache is stale. Falls back to FTP.
+// BothTimersExhaust:      No hash, FTP file missing, PARAM_REQUEST_LIST ignored. Params never become ready.
+// CacheDeleted_Between:   Cache populated then deleted before reconnect. FTP param.pck.
+// ManualRefresh:          User-triggered refreshAllParameters() bypasses _HASH_CHECK and uses FTP.
 // ArduPilot:              ArduPilot uses FTP for parameters, so no _HASH_CHECK or PARAM_REQUEST_LIST traffic.
 // HighLatency:            High-latency links skip parameter download entirely; params marked as missing.
-// LogReplay:              Log replay shares the high-latency code path; params marked as missing.
 //
-// PARAM_REQUEST_LIST (xPRL) is only asserted for PX4 vehicles; ArduPilot uses FTP.
+// PARAM_REQUEST_LIST (xPRL) is asserted for PX4 only when the hash miss falls back
+// to the conventional stream (FTP @PARAM/param.pck unavailable). A hash miss with
+// FTP enabled does not send PARAM_REQUEST_LIST.
+// A cache hit (xCache) is the only path that sends PARAM_SET during connect: it answers
+// the vehicle with _HASH_CHECK instead of downloading.
 // missingParameters (xMiss) is only asserted when expectParametersReady (xReady) is true.
-// Scenarios 11 and 12 exercise the same code path via setHighLatency(true).
-// MockLink doesn't support isLogReplay(), so high latency serves as proxy for the
-// shared guard: if (isHighLatency || _logReplay) { signal ready immediately }.
 
 void HashCheckTest::_hashCheckMatrix_data()
 {
@@ -129,27 +127,36 @@ void HashCheckTest::_hashCheckMatrix_data()
 
     // Expected outcomes
     QTest::addColumn<bool>("xHashCheck");
+    QTest::addColumn<bool>("xCacheHit");
     QTest::addColumn<bool>("xPRL");
     QTest::addColumn<bool>("xReady");
     QTest::addColumn<bool>("xMissing");
 
-    //                                          px4      hl       popC     chgP     delC     noResp   failNR   manRef    xHC      xPRL     xReady   xMiss
-    QTest::newRow("FirstConnect_NoCache")    << true  << false << false << false << false << false << false << false  << true  << true  << true  << false;
-    QTest::newRow("Reconnect_CacheHit")      << true  << false << true  << false << false << false << false << false  << true  << false << true  << false;
-    QTest::newRow("Reconnect_CacheMiss")     << true  << false << true  << true  << false << false << false << false  << true  << true  << true  << false;
-    QTest::newRow("HashTimeout_CacheHit")    << true  << false << true  << false << false << true  << false << false  << true  << true  << true  << false;
-    QTest::newRow("HashTimeout_NoCache")     << true  << false << false << false << false << true  << false << false  << true  << true  << true  << false;
-    QTest::newRow("HashTimeout_CacheStale")  << true  << false << true  << true  << false << true  << false << false  << true  << true  << true  << false;
-    QTest::newRow("BothTimersExhaust")       << true  << false << false << false << false << true  << true  << false  << true  << true  << false << false;
-    QTest::newRow("CacheDeleted_Between")    << true  << false << true  << false << true  << false << false << false  << true  << true  << true  << false;
-    QTest::newRow("ManualRefresh")           << true  << false << false << false << false << false << false << true   << false << true  << true  << false;
-    QTest::newRow("ArduPilot")              << false  << false << false << false << false << false << false << false  << false << false << true  << false;
-    QTest::newRow("HighLatency")             << true  << true  << false << false << false << false << false << false  << false << false << true  << true;
-    QTest::newRow("LogReplay")               << true  << true  << false << false << false << false << false << false  << false << false << true  << true;
+    //                                          px4      hl       popC     chgP     delC     noResp   failNR   manRef    xHC      xCache   xPRL     xReady   xMiss
+    QTest::newRow("FirstConnect_NoCache")    << true  << false << false << false << false << false << false << false  << true  << false << false << true  << false;
+    QTest::newRow("Reconnect_CacheHit")      << true  << false << true  << false << false << false << false << false  << true  << true  << false << true  << false;
+    QTest::newRow("Reconnect_CacheMiss")     << true  << false << true  << true  << false << false << false << false  << true  << false << false << true  << false;
+    QTest::newRow("HashTimeout_CacheHit")    << true  << false << true  << false << false << true  << false << false  << true  << false << false << true  << false;
+    QTest::newRow("HashTimeout_NoCache")     << true  << false << false << false << false << true  << false << false  << true  << false << false << true  << false;
+    QTest::newRow("HashTimeout_CacheStale")  << true  << false << true  << true  << false << true  << false << false  << true  << false << false << true  << false;
+    QTest::newRow("BothTimersExhaust")       << true  << false << false << false << false << true  << true  << false  << true  << false << true  << false << false;
+    QTest::newRow("CacheDeleted_Between")    << true  << false << true  << false << true  << false << false << false  << true  << false << false << true  << false;
+    QTest::newRow("ManualRefresh")           << true  << false << false << false << false << false << false << true   << false << false << false << true  << false;
+    QTest::newRow("ArduPilot")              << false  << false << false << false << false << false << false << false  << false << false << false << true  << false;
+    QTest::newRow("HighLatency")             << true  << true  << false << false << false << false << false << false  << false << false << false << true  << true;
 }
 
 void HashCheckTest::_hashCheckMatrix()
 {
+    // ArduPilot and high-latency variants do not have a metadata source;
+    // the resulting warning is expected for those rows.
+    ignoreLogMessage("ComponentInformation.RequestMetaDataTypeStateMachine", QtWarningMsg,
+                     QRegularExpression("failed to load metadata"));
+    // BothTimersExhaust row: parameters never become ready, producing a showAppMessage for the timeout.
+    ignoreLogMessage("API.QGCApplication.AppMessage", QtDebugMsg,
+                     QRegularExpression("did not respond to request for parameters"));
+    ignoreLogMessage("FactSystem.ParameterManager", QtWarningMsg,
+                     QRegularExpression("did not respond to request for parameters"));
     QFETCH(bool, px4);
     QFETCH(bool, highLatency);
     QFETCH(bool, populateCache);
@@ -159,6 +166,7 @@ void HashCheckTest::_hashCheckMatrix()
     QFETCH(bool, failNoResponse);
     QFETCH(bool, manualRefresh);
     QFETCH(bool, xHashCheck);
+    QFETCH(bool, xCacheHit);
     QFETCH(bool, xPRL);
     QFETCH(bool, xReady);
     QFETCH(bool, xMissing);
@@ -203,18 +211,7 @@ void HashCheckTest::_hashCheckMatrix()
 
     } else if (highLatency) {
         _mockLink = _startPX4MockLinkHighLatency();
-
-        MultiVehicleManager *const vehicleMgr = MultiVehicleManager::instance();
-        QVERIFY(vehicleMgr);
-
-        QSignalSpy spyVehicle(vehicleMgr, &MultiVehicleManager::activeVehicleAvailableChanged);
-        QVERIFY_SIGNAL_WAIT(spyVehicle, TestTimeout::mediumMs());
-
-        Vehicle *const vehicle = vehicleMgr->activeVehicle();
-        QVERIFY(vehicle);
-
-        QSignalSpy spyParamsReady(vehicleMgr, &MultiVehicleManager::parameterReadyVehicleAvailableChanged);
-        QVERIFY_SIGNAL_WAIT(spyParamsReady, TestTimeout::longMs());
+        _connectAndWaitForParams();
 
     } else if (!px4) {
         _connectMockLink(firmwareType);
@@ -223,6 +220,9 @@ void HashCheckTest::_hashCheckMatrix()
     } else if (xReady) {
         // PX4 normal path — params will become ready
         _mockLink = _startPX4MockLinkNoIncrement(failMode);
+        if (failNoResponse) {
+            _mockLink->mockLinkFTP()->setParamPckEnabled(false);
+        }
         if (changeParam) {
             _mockLink->setMockParamValue(MAV_COMP_ID_AUTOPILOT1, QStringLiteral("BAT1_V_CHARGED"), 99.0f);
         }
@@ -232,8 +232,11 @@ void HashCheckTest::_hashCheckMatrix()
         _connectAndWaitForParams();
 
     } else {
-        // PX4 path where params never become ready (both timers exhaust)
+        // PX4 path where params never become ready (hash, FTP, and PARAM_REQUEST_LIST all fail)
         _mockLink = _startPX4MockLinkNoIncrement(failMode);
+        if (failNoResponse) {
+            _mockLink->mockLinkFTP()->setParamPckEnabled(false);
+        }
         if (hashCheckNoResponse) {
             _mockLink->setHashCheckNoResponse(true);
         }
@@ -248,7 +251,7 @@ void HashCheckTest::_hashCheckMatrix()
         QVERIFY(vehicle);
 
         QSignalSpy spyParamsReady(vehicleMgr, &MultiVehicleManager::parameterReadyVehicleAvailableChanged);
-        const int maxWaitMs = ParameterManager::kHashCheckTimeoutMs
+        const int maxWaitMs = ParameterManager::kTestHashCheckTimeoutMs
                             + ParameterManager::kTestMaxInitialRequestTimeMs
                             + TestTimeout::shortMs();
         QVERIFY_NO_SIGNAL_WAIT(spyParamsReady, maxWaitMs);
@@ -256,6 +259,8 @@ void HashCheckTest::_hashCheckMatrix()
 
     // Phase 4: Verify outcomes
     QCOMPARE(_mockLink->hashCheckRequestCount() > 0, xHashCheck);
+    // The PARAM_SET reply is the last thing a cache hit sends, so it may still be in flight
+    QCOMPARE_TRUE_WAIT(_mockLink->receivedMavlinkMessageCount(MAVLINK_MSG_ID_PARAM_SET) > 0, xCacheHit, TestTimeout::shortMs());
 
     if (xReady) {
         Vehicle *const vehicle = MultiVehicleManager::instance()->activeVehicle();

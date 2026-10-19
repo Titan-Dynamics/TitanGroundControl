@@ -1,6 +1,8 @@
 #include "APMAirframeComponentControllerTest.h"
 
 #include <QtCore/QFile>
+#include <QtCore/QRegularExpression>
+#include <QtCore/QTemporaryDir>
 #include <QtGui/QGuiApplication>
 
 #include "APMAirframeComponentController.h"
@@ -12,6 +14,15 @@ APMAirframeComponentControllerTest::APMAirframeComponentControllerTest()
 
 void APMAirframeComponentControllerTest::_downloadCompleteSlotsRestoreCursor()
 {
+    // The test explicitly injects download and parse errors; all resulting showAppMessage logs are expected.
+    ignoreLogMessage("API.QGCApplication.AppMessage", QtDebugMsg,
+                     QRegularExpression("Param file.*failed"));
+    // Invalid JSON parse warning from APMAirframeComponentController is expected.
+    ignoreLogMessage("AutoPilotPlugins.APMAirframeComponentController", QtWarningMsg,
+                     QRegularExpression("Unable to open json document"));
+    // Empty URL warning from QGCFileDownload when download_url is missing from JSON.
+    ignoreLogMessage("Utilities.QGCFileDownload", QtWarningMsg,
+                     QRegularExpression("Empty URL provided"));
     APMAirframeComponentController controller(this);
 
     // Failure path for github metadata download should restore wait cursor.
@@ -20,9 +31,9 @@ void APMAirframeComponentControllerTest::_downloadCompleteSlotsRestoreCursor()
     QVERIFY(QGuiApplication::overrideCursor() == nullptr);
 
     // Success path with invalid JSON should also restore wait cursor.
-    QTemporaryDir* const tempDir = createTempDir();
-    QVERIFY(tempDir && tempDir->isValid());
-    const QString invalidJsonFile = tempDir->path() + QStringLiteral("/invalid.json");
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    const QString invalidJsonFile = tempDir.path() + QStringLiteral("/invalid.json");
     QFile jsonFile(invalidJsonFile);
     QVERIFY(jsonFile.open(QIODevice::WriteOnly | QIODevice::Truncate));
     jsonFile.write("{ invalid json");
@@ -33,7 +44,7 @@ void APMAirframeComponentControllerTest::_downloadCompleteSlotsRestoreCursor()
     QVERIFY(QGuiApplication::overrideCursor() == nullptr);
 
     // Success path with missing download_url should fail start and restore wait cursor.
-    const QString missingDownloadUrlJsonFile = tempDir->path() + QStringLiteral("/missing_download_url.json");
+    const QString missingDownloadUrlJsonFile = tempDir.path() + QStringLiteral("/missing_download_url.json");
     QFile missingUrlFile(missingDownloadUrlJsonFile);
     QVERIFY(missingUrlFile.open(QIODevice::WriteOnly | QIODevice::Truncate));
     missingUrlFile.write("{}");

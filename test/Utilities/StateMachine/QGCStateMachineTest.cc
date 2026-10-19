@@ -54,10 +54,7 @@ void QGCStateMachineTest::_testQGCStateMachineFactories()
 
     machine.setInitialState(funcState);
 
-    QSignalSpy finishedSpy(&machine, &QStateMachine::finished);
-    machine.start();
-
-    QVERIFY(finishedSpy.wait(TestTimeout::shortMs()));
+    QVERIFY(startAndWaitForFinished(&machine));
     QVERIFY(functionCalled);
 }
 
@@ -72,7 +69,7 @@ void QGCStateMachineTest::_testGlobalErrorState()
     machine.setGlobalErrorState(errorState);
 
     // The async state has no completion connection and no timeout — expected critical
-    expectLogMessage(QtCriticalMsg, QRegularExpression("has no completion connection"));
+    expectLogMessage("Utilities.QGCStateMachine", QtCriticalMsg, QRegularExpression("has no completion connection"));
 
     auto* asyncState = machine.addAsyncFunctionState(QStringLiteral("Async"), [](AsyncFunctionState* state) {
         QTimer::singleShot(50, state, [state]() { state->fail(); });
@@ -84,10 +81,8 @@ void QGCStateMachineTest::_testGlobalErrorState()
 
     machine.setInitialState(asyncState);
 
-    QSignalSpy finishedSpy(&machine, &QStateMachine::finished);
-    machine.start();
-
-    QVERIFY(finishedSpy.wait(TestTimeout::shortMs()));
+    QVERIFY(startAndWaitForFinished(&machine));
+    verifyExpectedLogMessage();
     QVERIFY(errorHandled);
 }
 
@@ -141,7 +136,7 @@ void QGCStateMachineTest::_testLocalErrorState()
     });
 
     // The async state has no completion connection and no timeout — expected critical
-    expectLogMessage(QtCriticalMsg, QRegularExpression("has no completion connection"));
+    expectLogMessage("Utilities.QGCStateMachine", QtCriticalMsg, QRegularExpression("has no completion connection"));
 
     auto* asyncState = new AsyncFunctionState(QStringLiteral("Async"), &machine, [](AsyncFunctionState* state) {
         QTimer::singleShot(50, state, [state]() { state->fail(); });
@@ -156,10 +151,8 @@ void QGCStateMachineTest::_testLocalErrorState()
 
     machine.setInitialState(asyncState);
 
-    QSignalSpy finishedSpy(&machine, &QStateMachine::finished);
-    machine.start();
-
-    QVERIFY(finishedSpy.wait(TestTimeout::shortMs()));
+    QVERIFY(startAndWaitForFinished(&machine));
+    verifyExpectedLogMessage();
     QVERIFY(!globalErrorHandled);  // Global error should NOT be called
     QVERIFY(localErrorHandled);    // Local error should be called
 }
@@ -177,7 +170,7 @@ void QGCStateMachineTest::_testPropertyAssignment()
     state1->setProperty(&target, "testProp", 42);
 
     auto* state2 = new QGCState(QStringLiteral("State2"), &machine);
-    auto* finalState = new QFinalState(&machine);
+    auto* finalState = addFinalState(&machine);
 
     // Use event-based transitions instead of entered signal
     machine.addEventTransition(state1, QStringLiteral("next"), state2);
@@ -224,16 +217,18 @@ void QGCStateMachineTest::_testTimeoutTransitionBuilder()
     QVERIFY(timeout != nullptr);
     QCOMPARE(timeout->timeoutMsecs(), 50);
 
-    QSignalSpy finishedSpy(&machine, &QStateMachine::finished);
-    machine.start();
-
-    QVERIFY(finishedSpy.wait(TestTimeout::shortMs()));
+    QVERIFY(startAndWaitForFinished(&machine));
 }
 
 void QGCStateMachineTest::_testRetryTransitionBuilder()
 {
+    ignoreTimeoutWarnings();
     QGCStateMachine machine(QStringLiteral("RetryBuilderTest"), nullptr);
     int retryCount = 0;
+
+    expectLogMessage("Utilities.StateMachine.RetryTransition",
+                     QtWarningMsg,
+                     QRegularExpression("timeout after 2 retries, advancing"));
 
     auto* state1 = new MinimalTestWaitState(QStringLiteral("State1"), &machine, 50);
     auto* finalState = machine.addFinalState();
@@ -247,10 +242,8 @@ void QGCStateMachineTest::_testRetryTransitionBuilder()
     QVERIFY(retry != nullptr);
     QCOMPARE(retry->maxRetries(), 2);
 
-    QSignalSpy finishedSpy(&machine, &QStateMachine::finished);
-    machine.start();
-
-    QVERIFY(finishedSpy.wait(TestTimeout::shortMs()));
+    QVERIFY(startAndWaitForFinished(&machine));
+    verifyExpectedLogMessage();
     // Should have retried twice before advancing
     QCOMPARE(retryCount, 2);
 }
@@ -322,8 +315,8 @@ void QGCStateMachineTest::_testErrorHandlerFactories()
         machine.setGlobalErrorState(errorState);
 
         // Expected: async state critical (no completion connection) + error handler warning
-        expectLogMessage(QtCriticalMsg, QRegularExpression("has no completion connection"));
-        expectLogMessage(QtWarningMsg, QRegularExpression("error handled in"));
+        expectLogMessage("Utilities.QGCStateMachine", QtCriticalMsg, QRegularExpression("has no completion connection"));
+        expectLogMessage("Utilities.QGCStateMachine", QtWarningMsg, QRegularExpression("error handled in"));
 
         auto* failingState = machine.addAsyncFunctionState(QStringLiteral("Failing"), [](AsyncFunctionState* state) {
             QTimer::singleShot(0, state, [state]() { state->fail(); });
@@ -334,6 +327,8 @@ void QGCStateMachineTest::_testErrorHandlerFactories()
         QSignalSpy finishedSpy(&machine, &QStateMachine::finished);
         machine.start();
         QVERIFY(spyTriggered(finishedSpy, TestTimeout::shortMs()));
+        verifyExpectedLogMessage();
+        verifyExpectedLogMessage();
     }
 
     {
@@ -343,8 +338,8 @@ void QGCStateMachineTest::_testErrorHandlerFactories()
         machine.setGlobalErrorState(errorState);
 
         // Expected: async state critical (no completion connection) + error handler warning
-        expectLogMessage(QtCriticalMsg, QRegularExpression("has no completion connection"));
-        expectLogMessage(QtWarningMsg, QRegularExpression("stopping due to error in"));
+        expectLogMessage("Utilities.QGCStateMachine", QtCriticalMsg, QRegularExpression("has no completion connection"));
+        expectLogMessage("Utilities.QGCStateMachine", QtWarningMsg, QRegularExpression("stopping due to error in"));
 
         auto* failingState = machine.addAsyncFunctionState(QStringLiteral("Failing"), [](AsyncFunctionState* state) {
             QTimer::singleShot(0, state, [state]() { state->fail(); });
@@ -355,6 +350,8 @@ void QGCStateMachineTest::_testErrorHandlerFactories()
         QSignalSpy stoppedSpy(&machine, &QStateMachine::stopped);
         machine.start();
         QVERIFY(spyTriggered(stoppedSpy, TestTimeout::shortMs()));
+        verifyExpectedLogMessage();
+        verifyExpectedLogMessage();
     }
 }
 
@@ -600,10 +597,7 @@ void QGCStateMachineTest::_testTimedActionStateWithCallbacks()
 
     machine.setInitialState(timedState);
 
-    QSignalSpy finishedSpy(&machine, &QStateMachine::finished);
-    machine.start();
-
-    QVERIFY(finishedSpy.wait(TestTimeout::shortMs()));
+    QVERIFY(startAndWaitForFinished(&machine));
     QVERIFY(entryActionCalled);
     QVERIFY(exitActionCalled);
 }

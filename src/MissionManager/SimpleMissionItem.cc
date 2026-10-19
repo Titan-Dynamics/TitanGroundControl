@@ -107,19 +107,19 @@ SimpleMissionItem::SimpleMissionItem(PlanMasterController* masterController, boo
 void SimpleMissionItem::_connectSignals(void)
 {
     // Connect to change signals to track dirty state
-    connect(&_missionItem._param1Fact,          &Fact::valueChanged,                        this, &SimpleMissionItem::_setDirty);
-    connect(&_missionItem._param2Fact,          &Fact::valueChanged,                        this, &SimpleMissionItem::_setDirty);
-    connect(&_missionItem._param3Fact,          &Fact::valueChanged,                        this, &SimpleMissionItem::_setDirty);
-    connect(&_missionItem._param4Fact,          &Fact::valueChanged,                        this, &SimpleMissionItem::_setDirty);
-    connect(&_missionItem._param5Fact,          &Fact::valueChanged,                        this, &SimpleMissionItem::_setDirty);
-    connect(&_missionItem._param6Fact,          &Fact::valueChanged,                        this, &SimpleMissionItem::_setDirty);
-    connect(&_missionItem._param7Fact,          &Fact::valueChanged,                        this, &SimpleMissionItem::_setDirty);
-    connect(&_missionItem._frameFact,           &Fact::valueChanged,                        this, &SimpleMissionItem::_setDirty);
-    connect(&_missionItem._commandFact,         &Fact::valueChanged,                        this, &SimpleMissionItem::_setDirty);
+    connect(&_missionItem._param1Fact,          &Fact::rawValueChanged,                     this, &SimpleMissionItem::_setDirty);
+    connect(&_missionItem._param2Fact,          &Fact::rawValueChanged,                     this, &SimpleMissionItem::_setDirty);
+    connect(&_missionItem._param3Fact,          &Fact::rawValueChanged,                     this, &SimpleMissionItem::_setDirty);
+    connect(&_missionItem._param4Fact,          &Fact::rawValueChanged,                     this, &SimpleMissionItem::_setDirty);
+    connect(&_missionItem._param5Fact,          &Fact::rawValueChanged,                     this, &SimpleMissionItem::_setDirty);
+    connect(&_missionItem._param6Fact,          &Fact::rawValueChanged,                     this, &SimpleMissionItem::_setDirty);
+    connect(&_missionItem._param7Fact,          &Fact::rawValueChanged,                     this, &SimpleMissionItem::_setDirty);
+    connect(&_missionItem._frameFact,           &Fact::rawValueChanged,                     this, &SimpleMissionItem::_setDirty);
+    connect(&_missionItem._commandFact,         &Fact::rawValueChanged,                     this, &SimpleMissionItem::_setDirty);
     connect(&_missionItem,                      &MissionItem::sequenceNumberChanged,        this, &SimpleMissionItem::_setDirty);
     connect(this,                               &SimpleMissionItem::altitudeFrameChanged,    this, &SimpleMissionItem::_setDirty);
 
-    connect(&_altitudeFact,                     &Fact::valueChanged,                        this, &SimpleMissionItem::_altitudeChanged);
+    connect(&_altitudeFact,                     &Fact::rawValueChanged,                     this, &SimpleMissionItem::_altitudeChanged);
     connect(this,                               &SimpleMissionItem::altitudeFrameChanged,    this, &SimpleMissionItem::_altitudeFrameChanged);
     connect(this,                               &SimpleMissionItem::terrainAltitudeChanged, this, &SimpleMissionItem::_terrainAltChanged);
 
@@ -313,6 +313,14 @@ bool SimpleMissionItem::load(const QJsonObject& json, int sequenceNumber, QStrin
     _connectSignals();
     _updateOptionalSections();
     _rebuildFacts();
+
+    // Terrain-frame AMSL altitude, and calculated AMSL missing from the plan file, need a terrain query
+    const bool calcMissingAmsl =
+        (_altitudeFrame == QGroundControlQmlGlobal::AltitudeFrameCalcAboveTerrain) && qIsNaN(_missionItem.param7());
+    if (specifiesAltitude() && ((_altitudeFrame == QGroundControlQmlGlobal::AltitudeFrameTerrain) || calcMissingAmsl)) {
+        emit coordinateChanged(coordinate());
+    }
+
     setDirty(false);
 
     return true;
@@ -643,6 +651,17 @@ void SimpleMissionItem::_rebuildComboBoxFacts(void)
 
 void SimpleMissionItem::_rebuildFacts(void)
 {
+    // Reset param metadata to defaults so stale min/max from a previous command
+    // does not cause setRawMin/setRawMax to spuriously reject sentinel values.
+    const FactMetaData kDefaultDouble(FactMetaData::valueTypeDouble);
+    _param1MetaData = kDefaultDouble;
+    _param2MetaData = kDefaultDouble;
+    _param3MetaData = kDefaultDouble;
+    _param4MetaData = kDefaultDouble;
+    _param5MetaData = kDefaultDouble;
+    _param6MetaData = kDefaultDouble;
+    _param7MetaData = kDefaultDouble;
+
     _rebuildTextFieldFacts();
     _rebuildNaNFacts();
     _rebuildComboBoxFacts();
@@ -1037,6 +1056,11 @@ void SimpleMissionItem::applyNewAltitude(double newAltitude)
             break;
         }
     }
+}
+
+bool SimpleMissionItem::usesAltitudeFrame(QGroundControlQmlGlobal::AltitudeFrame altitudeFrame) const
+{
+    return altitudeFrame == _altitudeFrame;
 }
 
 void SimpleMissionItem::setMissionFlightStatus(MissionFlightStatus_t& missionFlightStatus)

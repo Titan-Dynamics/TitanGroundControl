@@ -1,202 +1,162 @@
 #include "NTRIPSourceTable.h"
-#include "QGCLoggingCategory.h"
-#include "QGCNetworkHelper.h"
-#include "QmlObjectListModel.h"
 
 #include <algorithm>
-#include <QtNetwork/QNetworkAccessManager>
+#include <utility>
 
-QGC_LOGGING_CATEGORY(NTRIPSourceTableLog, "GPS.NTRIPSourceTable")
+#include <QtCore/QCoreApplication>
+#include <QtCore/QStringList>
+#include <QtCore/qnumeric.h>
 
-NTRIPMountpointModel* NTRIPMountpointModel::fromSourceTableLine(const QString& line, QObject* parent)
+bool ntripSourceTableComplete(QByteArrayView body, qsizetype checkedSize)
 {
-    const QStringList fields = line.split(';');
-    if (fields.size() < 18 || fields.at(0).trimmed().toUpper() != QStringLiteral("STR")) {
-        return nullptr;
+    static constexpr QByteArrayView terminator("ENDSOURCETABLE");
+    // A terminator the earlier check missed ends past its data, so it starts no earlier than this.
+    const qsizetype from = (std::max) (qsizetype(0), checkedSize - terminator.size());
+    for (qsizetype offset = body.indexOf(terminator, from); offset >= 0;
+         offset = body.indexOf(terminator, offset + 1)) {
+        const qsizetype end = offset + terminator.size();
+        if ((offset == 0 || body.at(offset - 1) == '\n') &&
+            (end == body.size() || body.at(end) == '\r' || body.at(end) == '\n')) {
+            return true;
+        }
     }
-
-    auto* model = new NTRIPMountpointModel(parent);
-    model->_mountpoint     = fields.at(1).trimmed();
-    model->_identifier     = fields.at(2).trimmed();
-    model->_format         = fields.at(3).trimmed();
-    model->_formatDetails  = fields.at(4).trimmed();
-    model->_carrier        = fields.at(5).trimmed().toInt();
-    model->_navSystem      = fields.at(6).trimmed();
-    model->_network        = fields.at(7).trimmed();
-    model->_country        = fields.at(8).trimmed();
-    model->_latitude       = fields.at(9).trimmed().toDouble();
-    model->_longitude      = fields.at(10).trimmed().toDouble();
-    model->_nmea           = fields.at(11).trimmed() == QStringLiteral("1");
-    model->_solution       = fields.at(12).trimmed() == QStringLiteral("1");
-    model->_generator      = fields.at(13).trimmed();
-    model->_compression    = fields.at(14).trimmed();
-    model->_authentication = fields.at(15).trimmed();
-    model->_fee            = fields.at(16).trimmed() == QStringLiteral("Y");
-    model->_bitrate        = fields.at(17).trimmed().toInt();
-
-    return model;
+    return false;
 }
 
-void NTRIPMountpointModel::updateDistance(const QGeoCoordinate& from)
+std::optional<NTRIPMountpoint> NTRIPMountpoint::fromSourceTableLine(const QString& line)
 {
-    if (!from.isValid() || (_latitude == 0.0 && _longitude == 0.0)) {
-        return;
+    // Need >= 18 fields; split keeps empty fields, so a trailing ';' is harmless
+    // (the extra empty field parses as 0 / "" for its column).
+    const QStringList fields = line.split(';');
+    if (fields.size() < 18 || fields.at(0).trimmed().toUpper() != QStringLiteral("STR")) {
+        return std::nullopt;
     }
 
-    const QGeoCoordinate mountCoord(_latitude, _longitude);
-    const double dist = from.distanceTo(mountCoord) / 1000.0;
-    if (qFuzzyCompare(_distanceKm, dist)) {
+    NTRIPMountpoint mp;
+    mp.mountpoint = fields.at(1).trimmed();
+    mp.format = fields.at(3).trimmed();
+    mp.navSystem = fields.at(6).trimmed();
+    mp.country = fields.at(8).trimmed();
+    const auto parseCoord = [](const QString& s, double limit) -> double {
+        bool ok = false;
+        const double v = s.trimmed().toDouble(&ok);
+        return (ok && qIsFinite(v) && qAbs(v) <= limit) ? v : qQNaN();
+    };
+    mp.latitude = parseCoord(fields.at(9), 90.0);
+    mp.longitude = parseCoord(fields.at(10), 180.0);
+    mp.bitrate = fields.at(17).trimmed().toInt();
+    return mp;
+}
+
+void NTRIPMountpoint::updateDistance(const QGeoCoordinate& from)
+{
+    const QGeoCoordinate mountCoord(latitude, longitude);
+    if (!from.isValid() || !mountCoord.isValid() || (latitude == 0.0 && longitude == 0.0)) {
+        distanceKm = -1.0;
         return;
     }
-    _distanceKm = dist;
-    emit distanceKmChanged();
+    distanceKm = from.distanceTo(mountCoord) / 1000.0;
+}
+
+QString NTRIPMountpoint::details() const
+{
+    QStringList parts;
+    for (const QString& part : {format, navSystem, country}) {
+        if (!part.isEmpty()) {
+            parts.append(part);
+        }
+    }
+    if (bitrate > 0) {
+        //: Mountpoint bitrate in bits per second
+        parts.append(QCoreApplication::translate("NTRIPMountpoint", "%1 bps").arg(bitrate));
+    }
+    if (distanceKm >= 0) {
+        //: Distance to the mountpoint in kilometers
+        parts.append(QCoreApplication::translate("NTRIPMountpoint", "%1 km").arg(distanceKm, 0, 'f', 1));
+    }
+    //: Separator between mountpoint details
+    return parts.join(QCoreApplication::translate("NTRIPMountpoint", " · "));
 }
 
 // ---------------------------------------------------------------------------
 // NTRIPSourceTableModel
 // ---------------------------------------------------------------------------
 
+// A const range keeps the model read-only; the base only records its address and reads rows after construction.
 NTRIPSourceTableModel::NTRIPSourceTableModel(QObject* parent)
-    : QObject(parent)
-    , _mountpoints(new QmlObjectListModel(this))
-{
-}
+    : QRangeModel(&std::as_const(_mountpoints), parent)
+{}
 
-int NTRIPSourceTableModel::count() const
+void NTRIPSourceTableModel::parseSourceTable(const QString& raw, const QGeoCoordinate& from)
 {
-    return _mountpoints ? _mountpoints->count() : 0;
-}
-
-void NTRIPSourceTableModel::parseSourceTable(const QString& raw)
-{
-    clear();
-
+    QList<NTRIPMountpoint> mountpoints;
     const QStringList lines = raw.split('\n');
     for (const QString& line : lines) {
-        const QString trimmed = line.trimmed();
-        if (trimmed.isEmpty() || trimmed.startsWith(QStringLiteral("ENDSOURCETABLE"))) {
-            continue;
-        }
-        NTRIPMountpointModel* mp = NTRIPMountpointModel::fromSourceTableLine(trimmed, _mountpoints);
-        if (mp) {
-            _mountpoints->append(mp);
+        if (auto mp = NTRIPMountpoint::fromSourceTableLine(line.trimmed())) {
+            mp->updateDistance(from);
+            mountpoints.append(*mp);
         }
     }
-
+    beginResetModel();
+    _mountpoints = std::move(mountpoints);
+    endResetModel();
     emit countChanged();
 }
 
 void NTRIPSourceTableModel::updateDistances(const QGeoCoordinate& from)
 {
-    if (!_mountpoints) {
-        return;
-    }
-    for (int i = 0; i < _mountpoints->count(); ++i) {
-        auto* mp = qobject_cast<NTRIPMountpointModel*>(_mountpoints->get(i));
-        if (mp) {
-            mp->updateDistance(from);
+    qsizetype firstChanged = -1;
+    qsizetype lastChanged = -1;
+    for (qsizetype row = 0; row < _mountpoints.size(); ++row) {
+        NTRIPMountpoint& mountpoint = _mountpoints[row];
+        const double previous = mountpoint.distanceKm;
+        mountpoint.updateDistance(from);
+        if (mountpoint.distanceKm != previous) {
+            firstChanged = firstChanged < 0 ? row : firstChanged;
+            lastChanged = row;
         }
     }
-    sortByDistance();
-}
-
-void NTRIPSourceTableModel::sortByDistance()
-{
-    if (!_mountpoints || _mountpoints->count() < 2) {
-        return;
+    if (firstChanged >= 0) {
+        emit dataChanged(index(static_cast<int>(firstChanged), 0), index(static_cast<int>(lastChanged), 0),
+                         {DistanceKmRole, DetailsRole});
     }
-
-    QObjectList sorted = *_mountpoints->objectList();
-    std::sort(sorted.begin(), sorted.end(), [](QObject* a, QObject* b) {
-        auto* ma = qobject_cast<NTRIPMountpointModel*>(a);
-        auto* mb = qobject_cast<NTRIPMountpointModel*>(b);
-        if (!ma || !mb) return false;
-        const double da = ma->distanceKm();
-        const double db = mb->distanceKm();
-        if (da < 0 && db < 0) return false;
-        if (da < 0) return false;
-        if (db < 0) return true;
-        return da < db;
-    });
-    _mountpoints->swapObjectList(sorted);
 }
 
 void NTRIPSourceTableModel::clear()
 {
-    if (_mountpoints) {
-        _mountpoints->clearAndDeleteContents();
-        emit countChanged();
+    if (_mountpoints.isEmpty()) {
+        return;
     }
+    beginResetModel();
+    _mountpoints.clear();
+    endResetModel();
+    emit countChanged();
 }
 
 // ---------------------------------------------------------------------------
-// NTRIPSourceTableFetcher
+// NTRIPSourceTableSortModel
 // ---------------------------------------------------------------------------
 
-NTRIPSourceTableFetcher::NTRIPSourceTableFetcher(const QString& host, int port,
-                                                   const QString& username, const QString& password,
-                                                   bool useTls,
-                                                   QObject* parent)
-    : QObject(parent)
-    , _host(host)
-    , _port(port)
-    , _username(username)
-    , _password(password)
-    , _useTls(useTls)
+NTRIPSourceTableSortModel::NTRIPSourceTableSortModel(NTRIPSourceTableModel* source, QObject* parent)
+    : QSortFilterProxyModel(parent)
 {
-    _networkManager = QGCNetworkHelper::createNetworkManager(this);
+    setSourceModel(source);
+    setSortRole(NTRIPSourceTableModel::DistanceKmRole);
+    sort(0);
+    // Nothing is filtered, and the source announces its count after the proxy has processed the reset.
+    connect(source, &NTRIPSourceTableModel::countChanged, this, &NTRIPSourceTableSortModel::countChanged);
 }
 
-void NTRIPSourceTableFetcher::fetch()
+bool NTRIPSourceTableSortModel::lessThan(const QModelIndex& left, const QModelIndex& right) const
 {
-    QUrl url;
-    url.setScheme(_useTls ? QStringLiteral("https") : QStringLiteral("http"));
-    url.setHost(_host);
-    url.setPort(_port);
-    url.setPath(QStringLiteral("/"));
-
-    QGCNetworkHelper::RequestConfig config;
-    config.timeoutMs = kFetchTimeoutMs;
-    config.userAgent = QStringLiteral("QGC-NTRIP");
-    config.http2Allowed = false;
-    config.cacheEnabled = false;
-
-    QNetworkRequest request = QGCNetworkHelper::createRequest(url, config);
-    request.setRawHeader("Ntrip-Version", "Ntrip/2.0");
-    if (!_username.isEmpty() || !_password.isEmpty()) {
-        QGCNetworkHelper::setBasicAuth(request, _username, _password);
+    const double leftKm = left.data(sortRole()).toDouble();
+    const double rightKm = right.data(sortRole()).toDouble();
+    if ((leftKm < 0) != (rightKm < 0)) {
+        return rightKm < 0;
     }
-
-    _reply = _networkManager->get(request);
-    connect(_reply, &QNetworkReply::finished, this, &NTRIPSourceTableFetcher::_onReplyFinished);
-}
-
-void NTRIPSourceTableFetcher::_onReplyFinished()
-{
-    if (!_reply) {
-        emit error(tr("No reply received"));
-        emit finished();
-        return;
+    if (leftKm >= 0 && leftKm != rightKm) {
+        return leftKm < rightKm;
     }
-
-    const QString body = QString::fromUtf8(_reply->readAll());
-
-    if (_reply->error() != QNetworkReply::NoError && !body.contains(QStringLiteral("ENDSOURCETABLE"))) {
-        emit error(QGCNetworkHelper::errorMessage(_reply));
-        _reply->deleteLater();
-        _reply = nullptr;
-        emit finished();
-        return;
-    }
-    _reply->deleteLater();
-    _reply = nullptr;
-
-    if (!body.contains(QStringLiteral("ENDSOURCETABLE"))) {
-        emit error(tr("Response does not contain a valid source table"));
-        emit finished();
-        return;
-    }
-
-    emit sourceTableReceived(body);
-    emit finished();
+    // A strict order keeps equal distances in caster order, also when a distance update reinserts rows.
+    return left.row() < right.row();
 }

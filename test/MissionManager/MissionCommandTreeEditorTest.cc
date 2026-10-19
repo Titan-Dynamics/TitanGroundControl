@@ -1,5 +1,6 @@
 #include "MissionCommandTreeEditorTest.h"
 
+#include <QtCore/QRegularExpression>
 #include <QtCore/QStandardPaths>
 #include <QtQml/QQmlApplicationEngine>
 #include <QtQml/QQmlContext>
@@ -46,11 +47,14 @@ void MissionCommandTreeEditorTest::_testEditorsWorker(QGCMAVLinkTypes::FirmwareC
                               vehicleClassString));
     qmlAppEngine->load(QUrl(QStringLiteral("qrc:/qml/MissionCommandTreeEditorTestWindow.qml")));
     QVERIFY_TRUE_WAIT(!qmlAppEngine->rootObjects().isEmpty(), TestTimeout::mediumMs());
-    delete qmlAppEngine;
+    QGCCorePlugin::instance()->destroyQmlApplicationEngine(qmlAppEngine);
 }
 
 void MissionCommandTreeEditorTest::testEditors()
 {
+    // RTL_CONE_SLOPE has an invalid enum value of 0 in ArduPilot metadata; skip warning is expected.
+    ignoreLogMessage("FirmwarePlugin.ParameterMetaData", QtWarningMsg,
+                     QRegularExpression("Skipping invalid enum value"));
     for (const QGCMAVLink::FirmwareClass_t& firmwareClass : QGCMAVLink::allFirmwareClasses()) {
         for (const QGCMAVLink::VehicleClass_t& vehicleClass : QGCMAVLink::allVehicleClasses()) {
             _testEditorsWorker(firmwareClass, vehicleClass);

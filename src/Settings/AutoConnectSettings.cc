@@ -28,7 +28,6 @@ DECLARE_SETTINGSFACT(AutoConnectSettings, autoConnectUDP)
 DECLARE_SETTINGSFACT(AutoConnectSettings, udpListenPort)
 DECLARE_SETTINGSFACT(AutoConnectSettings, udpTargetHostIP)
 DECLARE_SETTINGSFACT(AutoConnectSettings, udpTargetHostPort)
-DECLARE_SETTINGSFACT(AutoConnectSettings, nmeaUdpPort)
 
 DECLARE_SETTINGSFACT_NO_FUNC(AutoConnectSettings, autoConnectPixhawk)
 {
@@ -52,17 +51,6 @@ DECLARE_SETTINGSFACT_NO_FUNC(AutoConnectSettings, autoConnectSiKRadio)
     return _autoConnectSiKRadioFact;
 }
 
-DECLARE_SETTINGSFACT_NO_FUNC(AutoConnectSettings, autoConnectRTKGPS)
-{
-    if (!_autoConnectRTKGPSFact) {
-        _autoConnectRTKGPSFact = _createSettingsFact(autoConnectRTKGPSName);
-#ifdef Q_OS_IOS
-        _autoConnectRTKGPSFact->setUserVisible(false);
-#endif
-    }
-    return _autoConnectRTKGPSFact;
-}
-
 DECLARE_SETTINGSFACT_NO_FUNC(AutoConnectSettings, autoConnectLibrePilot)
 {
     if (!_autoConnectLibrePilotFact) {
@@ -73,27 +61,3 @@ DECLARE_SETTINGSFACT_NO_FUNC(AutoConnectSettings, autoConnectLibrePilot)
     }
     return _autoConnectLibrePilotFact;
 }
-
-DECLARE_SETTINGSFACT_NO_FUNC(AutoConnectSettings, autoConnectNmeaPort)
-{
-    if (!_autoConnectNmeaPortFact) {
-        _autoConnectNmeaPortFact = _createSettingsFact(autoConnectNmeaPortName);
-#ifdef Q_OS_IOS
-        _autoConnectNmeaPortFact->setUserVisible(false);
-#endif
-    }
-    return _autoConnectNmeaPortFact;
-}
-
-DECLARE_SETTINGSFACT_NO_FUNC(AutoConnectSettings, autoConnectNmeaBaud)
-{
-    if (!_autoConnectNmeaBaudFact) {
-        _autoConnectNmeaBaudFact = _createSettingsFact(autoConnectNmeaBaudName);
-#ifdef Q_OS_IOS
-        _autoConnectNmeaBaudFact->setUserVisible(false);
-#endif
-    }
-    return _autoConnectNmeaBaudFact;
-}
-
-

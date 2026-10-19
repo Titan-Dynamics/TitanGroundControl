@@ -1,143 +1,111 @@
 #pragma once
 
-#include <QtCore/QObject>
-#include <QtNetwork/QNetworkReply>
+#include <optional>
+
+#include <QtCore/QByteArrayView>
+#include <QtCore/QList>
+#include <QtCore/QRangeModel>
+#include <QtCore/QSortFilterProxyModel>
+#include <QtCore/QString>
+#include <QtCore/qnumeric.h>
 #include <QtPositioning/QGeoCoordinate>
 
-class QmlObjectListModel;
-class QNetworkAccessManager;
+/// True once an ENDSOURCETABLE line arrives, with CRLF, LF, or no final line ending. When the first @a checkedSize
+/// bytes were already checked, only a terminator that may have completed since is searched for.
+[[nodiscard]] bool ntripSourceTableComplete(QByteArrayView body, qsizetype checkedSize = 0);
 
-class NTRIPMountpointModel : public QObject
+/// The parsed fields of an NTRIP source-table STR row that the mountpoint list shows or sorts by. All fields are
+/// immutable after parse except distanceKm, which is recomputed by updateDistances(). Each property is a model role of
+/// the same name.
+struct NTRIPMountpoint
 {
-    Q_OBJECT
-    Q_PROPERTY(QString mountpoint   READ mountpoint   CONSTANT)
-    Q_PROPERTY(QString identifier   READ identifier   CONSTANT)
-    Q_PROPERTY(QString format       READ format       CONSTANT)
-    Q_PROPERTY(QString formatDetails READ formatDetails CONSTANT)
-    Q_PROPERTY(int     carrier      READ carrier      CONSTANT)
-    Q_PROPERTY(QString navSystem    READ navSystem    CONSTANT)
-    Q_PROPERTY(QString network      READ network      CONSTANT)
-    Q_PROPERTY(QString country      READ country      CONSTANT)
-    Q_PROPERTY(double  latitude     READ latitude     CONSTANT)
-    Q_PROPERTY(double  longitude    READ longitude    CONSTANT)
-    Q_PROPERTY(bool    nmea         READ nmea         CONSTANT)
-    Q_PROPERTY(bool    solution     READ solution     CONSTANT)
-    Q_PROPERTY(QString generator    READ generator    CONSTANT)
-    Q_PROPERTY(QString compression  READ compression  CONSTANT)
-    Q_PROPERTY(QString authentication READ authentication CONSTANT)
-    Q_PROPERTY(bool    fee          READ fee          CONSTANT)
-    Q_PROPERTY(int     bitrate      READ bitrate      CONSTANT)
-    Q_PROPERTY(double  distanceKm   READ distanceKm   NOTIFY distanceKmChanged)
+    Q_GADGET
+    Q_PROPERTY(QString mountpoint MEMBER mountpoint FINAL)
+    Q_PROPERTY(QString format MEMBER format FINAL)
+    Q_PROPERTY(QString navSystem MEMBER navSystem FINAL)
+    Q_PROPERTY(QString country MEMBER country FINAL)
+    Q_PROPERTY(int bitrate MEMBER bitrate FINAL)
+    Q_PROPERTY(double distanceKm MEMBER distanceKm FINAL)
+    /// The format, navigation systems, country, bitrate and distance that are known, as one line.
+    Q_PROPERTY(QString details READ details FINAL)
 
 public:
-    explicit NTRIPMountpointModel(QObject* parent = nullptr) : QObject(parent) {}
+    QString mountpoint;
+    QString format;
+    QString navSystem;
+    QString country;
+    int bitrate = 0;
+    double distanceKm = -1.0;
+    double latitude = qQNaN();
+    double longitude = qQNaN();
 
-    QString mountpoint()     const { return _mountpoint; }
-    QString identifier()     const { return _identifier; }
-    QString format()         const { return _format; }
-    QString formatDetails()  const { return _formatDetails; }
-    int     carrier()        const { return _carrier; }
-    QString navSystem()      const { return _navSystem; }
-    QString network()        const { return _network; }
-    QString country()        const { return _country; }
-    double  latitude()       const { return _latitude; }
-    double  longitude()      const { return _longitude; }
-    bool    nmea()           const { return _nmea; }
-    bool    solution()       const { return _solution; }
-    QString generator()      const { return _generator; }
-    QString compression()    const { return _compression; }
-    QString authentication() const { return _authentication; }
-    bool    fee()            const { return _fee; }
-    int     bitrate()        const { return _bitrate; }
-    double  distanceKm()     const { return _distanceKm; }
+    /// Parses one source-table line ("STR;..."); none unless it is a valid STR row.
+    static std::optional<NTRIPMountpoint> fromSourceTableLine(const QString& line);
 
-    static NTRIPMountpointModel* fromSourceTableLine(const QString& line, QObject* parent = nullptr);
+    /// Recompute distanceKm, or mark it unknown for invalid reference/mountpoint coordinates.
     void updateDistance(const QGeoCoordinate& from);
 
-signals:
-    void distanceKmChanged();
-
-private:
-    QString _mountpoint;
-    QString _identifier;
-    QString _format;
-    QString _formatDetails;
-    int     _carrier = 0;
-    QString _navSystem;
-    QString _network;
-    QString _country;
-    double  _latitude = 0.0;
-    double  _longitude = 0.0;
-    bool    _nmea = false;
-    bool    _solution = false;
-    QString _generator;
-    QString _compression;
-    QString _authentication;
-    bool    _fee = false;
-    int     _bitrate = 0;
-    double  _distanceKm = -1.0;
+    QString details() const;
 };
 
-// ---------------------------------------------------------------------------
-// NTRIPSourceTableModel
-// ---------------------------------------------------------------------------
+template <>
+struct QRangeModel::RowOptions<NTRIPMountpoint>
+{
+    static constexpr auto rowCategory = QRangeModel::RowCategory::MultiRoleItem;
+};
 
-class NTRIPSourceTableModel : public QObject
+/// Read-only list model over the parsed source table in caster order; NTRIPSourceTableSortModel orders it by
+/// distance. QML binds to the NTRIPMountpoint property names.
+class NTRIPSourceTableModel : public QRangeModel
 {
     Q_OBJECT
-    Q_PROPERTY(QmlObjectListModel* mountpoints READ mountpoints CONSTANT)
-    Q_PROPERTY(int count READ count NOTIFY countChanged)
+    Q_PROPERTY(int count READ count NOTIFY countChanged FINAL)
 
 public:
+    /// Roles follow the NTRIPMountpoint property order, as QRangeModel assigns them.
+    enum Roles
+    {
+        MountpointRole = Qt::UserRole,
+        FormatRole,
+        NavSystemRole,
+        CountryRole,
+        BitrateRole,
+        DistanceKmRole,
+        DetailsRole,
+    };
+
     explicit NTRIPSourceTableModel(QObject* parent = nullptr);
 
-    QmlObjectListModel* mountpoints() const { return _mountpoints; }
-    int count() const;
+    int count() const { return static_cast<int>(_mountpoints.size()); }
 
-    void parseSourceTable(const QString& raw);
+    /// Publish the parsed rows and their distances in a single reset.
+    void parseSourceTable(const QString& raw, const QGeoCoordinate& from = {});
+    /// Recompute distances; one dataChanged for DistanceKmRole spans the rows whose distance changed.
     void updateDistances(const QGeoCoordinate& from);
-    void sortByDistance();
     void clear();
 
 signals:
     void countChanged();
 
 private:
-    QmlObjectListModel* _mountpoints = nullptr;
+    QList<NTRIPMountpoint> _mountpoints;
 };
 
-// ---------------------------------------------------------------------------
-// NTRIPSourceTableFetcher
-// ---------------------------------------------------------------------------
-
-class NTRIPSourceTableFetcher : public QObject
+/// Distance-ordered view of a source table: known distances ascending, unknown distances last, and caster order
+/// among equal distances. Distance updates reorder rows without resetting the view.
+class NTRIPSourceTableSortModel : public QSortFilterProxyModel
 {
     Q_OBJECT
+    Q_PROPERTY(int count READ count NOTIFY countChanged FINAL)
 
 public:
-    static constexpr int kFetchTimeoutMs = 10000;
+    explicit NTRIPSourceTableSortModel(NTRIPSourceTableModel* source, QObject* parent = nullptr);
 
-    NTRIPSourceTableFetcher(const QString& host, int port,
-                            const QString& username, const QString& password,
-                            bool useTls = false,
-                            QObject* parent = nullptr);
-    ~NTRIPSourceTableFetcher() override = default;
-
-    void fetch();
+    int count() const { return rowCount(); }
 
 signals:
-    void sourceTableReceived(const QString& table);
-    void error(const QString& errorMsg);
-    void finished();
+    void countChanged();
 
-private:
-    void _onReplyFinished();
-
-    QNetworkAccessManager* _networkManager = nullptr;
-    QNetworkReply* _reply = nullptr;
-    QString _host;
-    int _port;
-    QString _username;
-    QString _password;
-    bool _useTls = false;
+protected:
+    bool lessThan(const QModelIndex& left, const QModelIndex& right) const override;
 };

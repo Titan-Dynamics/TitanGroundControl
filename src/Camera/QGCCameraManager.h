@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QtCore/QElapsedTimer>
+#include <QtCore/QHash>
 #include <QtCore/QMap>
 #include <QtCore/QObject>
 #include <QtCore/QPointer>
@@ -20,7 +21,8 @@ class QGCCameraManagerTest;
 class QGCVideoStreamInfo;
 class SimulatedCameraControl;
 
-/// Camera Manager
+/// \brief Camera Manager
+///
 class QGCCameraManager : public QObject
 {
     Q_OBJECT
@@ -58,6 +60,18 @@ public:
     private:
         Q_DISABLE_COPY_MOVE(CameraStruct)
     };
+
+    /// Stable context passed as opaque handler data to async camera info request
+    /// callbacks. Owned by the manager and kept alive for its full lifetime so a
+    /// callback firing after the CameraStruct was deleted (lost camera) never
+    /// dereferences freed memory (issue #13251).
+    struct CameraInfoRequestContext {
+        QPointer<QGCCameraManager> manager;
+        uint8_t compID = 0;
+    };
+
+    /// Returns the lazily created, manager-lifetime context for compId.
+    CameraInfoRequestContext* cameraInfoContext(uint8_t compId);
 
     QmlObjectListModel* cameras() { return &_cameras; }
     const QmlObjectListModel* cameras() const { return &_cameras; }
@@ -142,6 +156,7 @@ private:
     QElapsedTimer _lastCameraChange;
     QTimer _camerasLostHeartbeatTimer;
     QMap<QString, CameraStruct*> _cameraInfoRequest;
+    QHash<uint8_t, CameraInfoRequestContext*> _cameraInfoContexts;
     static QVariantList _cameraList;
     bool _initialConnectComplete = false;
 

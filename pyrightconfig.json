@@ -1,15 +1,28 @@
 {
-  "$schema": "https://json.schemastore.org/pyrightconfig.json",
+  "venvPath": "tools",
+  "venv": ".venv",
   "exclude": [
     "build",
-    "**/__pycache__"
+    "**/__pycache__",
+    "**/.venv",
+    "**/node_modules",
+    "tools/skills"
   ],
   "include": [
     "tools/**/*.py",
     "test/**/*.py",
-    ".github/scripts/**/*.py"
+    ".github/scripts/**/*.py",
+    ".github/runner-images/**/*.py",
+    "deploy/**/*.py",
+    ".clusterfuzzlite/**/*.py"
   ],
-  "pythonVersion": "3.12",
+  "extraPaths": [
+    "tools",
+    "tools/translations",
+    ".github/scripts",
+    ".github/scripts/tests"
+  ],
+  "pythonVersion": "3.10",
   "reportMissingImports": "warning",
   "reportMissingTypeStubs": false,
   "reportUnusedImport": "warning",

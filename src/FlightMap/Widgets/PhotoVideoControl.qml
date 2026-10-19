@@ -49,6 +49,7 @@ Rectangle {
             }
 
             QGCSlider {
+                objectName: "photoVideoControl_zoomSlider"
                 Layout.alignment: Qt.AlignHCenter
                 Layout.fillHeight: true
                 orientation: Qt.Vertical
@@ -56,7 +57,7 @@ Rectangle {
                 from: 0
                 value: _camera.zoomLevel
                 live: true
-                onValueChanged: _camera.zoomLevel = value
+                onMoved: _camera.zoomLevel = value
             }
         }
 
@@ -219,6 +220,7 @@ Rectangle {
                 // Take Photo button
                 Rectangle {
                     id: photoCaptureButton
+                    objectName: "photoVideoControl_photoCaptureButton"
                     Layout.alignment: Qt.AlignHCenter
                     color: photoCaptureButtonPalette.button
                     width: ScreenTools.defaultFontPixelWidth * 6
@@ -523,6 +525,7 @@ Rectangle {
                                 property bool _isCombo: !_isBool && _fact.enumStrings.length > 0
                                 property bool _isSlider: _fact && !isNaN(_fact.increment)
                                 property bool _isEdit: !_isBool && !_isSlider && _fact.enumStrings.length < 1
+                                property bool _isReadOnly: _fact && _fact.readOnly
 
                                 FactComboBox {
                                     Layout.fillWidth: true
@@ -530,11 +533,13 @@ Rectangle {
                                     fact: parent._fact
                                     indexModel: false
                                     visible: parent._isCombo
+                                    enabled: !parent._isReadOnly
                                 }
                                 FactTextField {
                                     Layout.fillWidth: true
                                     fact: parent._fact
                                     visible: parent._isEdit
+                                    enabled: !parent._isReadOnly
                                 }
                                 QGCSlider {
                                     Layout.fillWidth: true
@@ -542,6 +547,7 @@ Rectangle {
                                     from: parent._fact.min
                                     stepSize: parent._fact.increment
                                     visible: parent._isSlider
+                                    enabled: !parent._isReadOnly
                                     live: false
                                     property bool initialized: false
 
@@ -560,6 +566,7 @@ Rectangle {
                                 QGCCheckBoxSlider {
                                     checked: parent._fact ? parent._fact.value : false
                                     visible: parent._isBool
+                                    enabled: !parent._isReadOnly
                                     onClicked: parent._fact.value = checked ? 1 : 0
                                 }
                             }

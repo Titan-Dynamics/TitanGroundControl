@@ -7,6 +7,29 @@
 
 QGC_LOGGING_CATEGORY(StatusTextHandlerLog, "MAVLink.StatusTextHandler")
 
+namespace {
+
+// Placeholders inside the formatted text; _displayText() turns them into <b> for unread messages
+const QString kUnreadStart = QStringLiteral("<#U>");
+const QString kUnreadEnd = QStringLiteral("</#U>");
+
+// Raw bytes up to the first NUL. A NUL anywhere in the field marks the last chunk of a chunked sequence.
+QByteArray statusTextBytes(const mavlink_statustext_t& statusText, bool& includesNullTerminator)
+{
+    constexpr int textLength = MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN;
+    const char* const textEnd = static_cast<const char*>(memchr(statusText.text, '\0', textLength));
+    includesNullTerminator = (textEnd != nullptr);
+    return QByteArray(statusText.text, includesNullTerminator ? (textEnd - statusText.text) : textLength);
+}
+
+// resize() default-constructs the slot in place; append(std::nullopt) trips GCC 13 -Wmaybe-uninitialized
+void appendMissingChunk(QList<std::optional<QByteArray>>& chunks)
+{
+    chunks.resize(chunks.size() + 1);
+}
+
+}  // namespace
+
 StatusText::StatusText(MAV_COMPONENT componentid, MAV_SEVERITY severity, const QString &text)
     : m_compId(componentid)
     , m_severity(severity)
@@ -22,6 +45,18 @@ bool StatusText::severityIsError() const
         case MAV_SEVERITY_ALERT:
         case MAV_SEVERITY_CRITICAL:
         case MAV_SEVERITY_ERROR:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+bool StatusText::severityIsWarning() const
+{
+    switch (m_severity) {
+        case MAV_SEVERITY_WARNING:
+        case MAV_SEVERITY_NOTICE:
             return true;
 
         default:
@@ -55,18 +90,23 @@ QString StatusTextHandler::getMessageText(const mavlink_message_t &message)
     mavlink_statustext_t statusText;
     mavlink_msg_statustext_decode(&message, &statusText);
 
-    char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN + 1];
-    memcpy(buffer, statusText.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
-    buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = '\0';
+    bool includesNullTerminator;
+    return QString::fromUtf8(statusTextBytes(statusText, includesNullTerminator));
+}
 
-    return QString(buffer);
+QString StatusTextHandler::_displayText(const StatusText& message)
+{
+    QString text = message.getFormattedText();
+    (void) text.replace(kUnreadStart, message.isRead() ? QString() : QStringLiteral("<b>"));
+    (void) text.replace(kUnreadEnd, message.isRead() ? QString() : QStringLiteral("</b>"));
+    return text;
 }
 
 QString StatusTextHandler::formattedMessages() const
 {
     QString result;
     for (const StatusText *message: messages()) {
-        (void) result.prepend(message->getFormattedText());
+        (void) result.prepend(_displayText(*message));
     }
 
     return result;
@@ -74,58 +114,53 @@ QString StatusTextHandler::formattedMessages() const
 
 void StatusTextHandler::clearMessages()
 {
+    const bool hadMessages = !m_messages.isEmpty();
+
     qDeleteAll(m_messages);
     m_messages.clear();
 
-    m_errorCount = 0;
-    m_warningCount = 0;
-    m_normalCount = 0;
+    _resetUnreadSeverityCounts();
 
-    _handleTextMessage(0);
-}
-
-void StatusTextHandler::resetAllMessages()
-{
-    const uint32_t count = messageCount();
-    const MessageType type = m_messageType;
-
-    m_errorCount = 0;
-    m_warningCount = 0;
-    m_normalCount = 0;
-    m_messageCount = 0;
-    m_messageType = MessageType::MessageNone;
-
-    if (count != messageCount()) {
-        emit messageCountChanged(0);
+    if (m_unreadMessageCount != 0) {
+        m_unreadMessageCount = 0;
+        emit hasUnreadMessagesChanged();
+        emit unreadMessageCountChanged();
     }
 
-    if (type != m_messageType) {
-        emit messageTypeChanged();
+    if (hadMessages) {
+        emit formattedMessagesChanged();
     }
 }
 
-void StatusTextHandler::resetErrorLevelMessages()
+void StatusTextHandler::markAllRead()
 {
-    const uint32_t prevMessageCount = messageCount();
-    const MessageType prevMessagetype = m_messageType;
-
-    m_messageCount -= getErrorCount();
-    m_errorCount = 0;
-
-    if (getWarningCount() > 0) {
-        m_messageType = MessageType::MessageWarning;
-    } else if (getNormalCount() > 0) {
-        m_messageType = MessageType::MessageNormal;
-    } else {
-        m_messageType = MessageType::MessageNone;
+    if (m_unreadMessageCount == 0) {
+        return;
     }
 
-    if (prevMessageCount != messageCount()) {
-        emit messageCountChanged(messageCount());
+    for (StatusText* message : m_messages) {
+        message->markRead();
     }
 
-    if (prevMessagetype != m_messageType) {
-        emit messageTypeChanged();
+    m_unreadMessageCount = 0;
+    emit hasUnreadMessagesChanged();
+    emit unreadMessageCountChanged();
+
+    _resetUnreadSeverityCounts();
+
+    emit formattedMessagesChanged();
+}
+
+void StatusTextHandler::_resetUnreadSeverityCounts()
+{
+    if (m_unreadCriticalMessageCount != 0) {
+        m_unreadCriticalMessageCount = 0;
+        emit unreadCriticalMessageCountChanged();
+    }
+
+    if (m_unreadWarningMessageCount != 0) {
+        m_unreadWarningMessageCount = 0;
+        emit unreadWarningMessageCountChanged();
     }
 }
 
@@ -152,8 +187,6 @@ void StatusTextHandler::handleHTMLEscapedTextMessage(MAV_COMPONENT compId, MAV_S
         m_multiComp = true;
     }
 
-    MessageType messageType = MessageType::MessageNone;
-
     // Color the output depending on the message severity. We have 3 distinct cases:
     // 1: If we have an ERROR or worse, make it bigger, bolder, and highlight it red.
     // 2: If we have a warning or notice, just make it bold and color it orange.
@@ -165,18 +198,15 @@ void StatusTextHandler::handleHTMLEscapedTextMessage(MAV_COMPONENT compId, MAV_S
         case MAV_SEVERITY_CRITICAL:
         case MAV_SEVERITY_ERROR:
             style = QStringLiteral("<#E>");
-            messageType = MessageType::MessageError;
             break;
 
         case MAV_SEVERITY_NOTICE:
         case MAV_SEVERITY_WARNING:
             style = QStringLiteral("<#I>");
-            messageType = MessageType::MessageWarning;
             break;
 
         default:
             style = QStringLiteral("<#N>");
-            messageType = MessageType::MessageNormal;
             break;
     }
 
@@ -226,20 +256,29 @@ void StatusTextHandler::handleHTMLEscapedTextMessage(MAV_COMPONENT compId, MAV_S
 
     const QString dateString = QDateTime::currentDateTime().toString("hh:mm:ss.zzz");
 
-    const QString formatText = QString("<font style=\"%1\">[%2 %3] %4: %5</font><br/>").arg(style, dateString, compString, severityText, htmlText);
+    const QString formatText =
+        QString("<font style=\"%1\">%2[%3 %4] %5: %6%7</font><br/>")
+            .arg(style, kUnreadStart, dateString, compString, severityText, htmlText, kUnreadEnd);
 
     StatusText* const message = new StatusText(compId, severity, text);
     message->setFormatedText(formatText);
 
-    emit newFormattedMessage(formatText);
-
     (void) m_messages.append(message);
-    const uint32_t count = m_messages.count();
 
-    _handleTextMessage(count, messageType);
+    if (m_unreadMessageCount++ == 0) {
+        emit hasUnreadMessagesChanged();
+    }
+    emit unreadMessageCountChanged();
+
+    emit newFormattedMessage(_displayText(*message));
 
     if (message->severityIsError()) {
+        m_unreadCriticalMessageCount++;
+        emit unreadCriticalMessageCountChanged();
         emit newErrorMessage(message->getText());
+    } else if (message->severityIsWarning()) {
+        m_unreadWarningMessageCount++;
+        emit unreadWarningMessageCountChanged();
     }
 }
 
@@ -257,13 +296,13 @@ void StatusTextHandler::_handleStatusText(const mavlink_message_t &message)
     mavlink_statustext_t statustext;
     mavlink_msg_statustext_decode(&message, &statustext);
 
-    const QString messageText = getMessageText(message);
-    const bool includesNullTerminator = messageText.length() < MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN;
+    bool includesNullTerminator;
+    const QByteArray chunkBytes = statusTextBytes(statustext, includesNullTerminator);
 
     const MAV_COMPONENT compId = static_cast<MAV_COMPONENT>(message.compid);
     if (m_chunkedStatusTextInfoMap.contains(compId) && (m_chunkedStatusTextInfoMap.value(compId).chunkId != statustext.id)) {
         // We have an incomplete chunked status still pending
-        (void) m_chunkedStatusTextInfoMap.value(compId).rgMessageChunks.append(QString());
+        appendMissingChunk(m_chunkedStatusTextInfoMap[compId].rgMessageChunks);
         _chunkedStatusTextCompleted(compId);
     }
 
@@ -272,28 +311,23 @@ void StatusTextHandler::_handleStatusText(const mavlink_message_t &message)
         ChunkedStatusTextInfo_t chunkedInfo;
         chunkedInfo.chunkId = 0;
         chunkedInfo.severity = static_cast<MAV_SEVERITY>(statustext.severity);
-        (void) chunkedInfo.rgMessageChunks.append(messageText);
+        chunkedInfo.rgMessageChunks.append(chunkBytes);
         (void) m_chunkedStatusTextInfoMap.insert(compId, chunkedInfo);
     } else {
-        if (m_chunkedStatusTextInfoMap.contains(compId)) {
-            // A chunk sequence is in progress
-            QStringList& chunks = m_chunkedStatusTextInfoMap[compId].rgMessageChunks;
-            if (statustext.chunk_seq > chunks.size()) {
-                // We are missing some chunks in between, fill them in as missing
-                for (size_t i = chunks.size(); i < statustext.chunk_seq; i++) {
-                    (void) chunks.append(QString());
-                }
-            }
-
-            (void) chunks.append(messageText);
-        } else {
+        if (!m_chunkedStatusTextInfoMap.contains(compId)) {
             // Starting a new chunk sequence
             ChunkedStatusTextInfo_t chunkedInfo;
             chunkedInfo.chunkId = statustext.id;
             chunkedInfo.severity = static_cast<MAV_SEVERITY>(statustext.severity);
-            (void) chunkedInfo.rgMessageChunks.append(messageText);
             (void) m_chunkedStatusTextInfoMap.insert(compId, chunkedInfo);
         }
+
+        QList<std::optional<QByteArray>>& chunks = m_chunkedStatusTextInfoMap[compId].rgMessageChunks;
+        if (statustext.chunk_seq >= chunks.size()) {
+            // Chunks skipped in between stay nullopt and are rendered as missing
+            chunks.resize(statustext.chunk_seq + 1);
+        }
+        chunks[statustext.chunk_seq] = chunkBytes;
 
         m_chunkedStatusTextTimer->start();
     }
@@ -308,7 +342,7 @@ void StatusTextHandler::_chunkedStatusTextTimeout()
 {
     for (auto compId : m_chunkedStatusTextInfoMap.keys()) {
         auto& chunkedInfo = m_chunkedStatusTextInfoMap[compId];
-        (void) chunkedInfo.rgMessageChunks.append(QString());
+        appendMissingChunk(chunkedInfo.rgMessageChunks);
         _chunkedStatusTextCompleted(compId);
     }
 }
@@ -318,65 +352,21 @@ void StatusTextHandler::_chunkedStatusTextCompleted(MAV_COMPONENT compId)
     const ChunkedStatusTextInfo_t& chunkedInfo = m_chunkedStatusTextInfoMap.value(compId);
     const MAV_SEVERITY severity = chunkedInfo.severity;
 
+    // Decode only after reassembly so multibyte characters split across chunks survive
     QString messageText;
-    for (const QString& chunk : std::as_const(chunkedInfo.rgMessageChunks)) {
-        if (chunk.isEmpty()) {
-            (void) messageText.append(tr(" ... ", "Indicates missing chunk from chunked STATUS_TEXT"));
+    QByteArray pendingBytes;
+    for (const std::optional<QByteArray>& chunk : std::as_const(chunkedInfo.rgMessageChunks)) {
+        if (chunk.has_value()) {
+            pendingBytes.append(*chunk);
         } else {
-            (void) messageText.append(chunk);
+            (void) messageText.append(QString::fromUtf8(pendingBytes));
+            pendingBytes.clear();
+            (void) messageText.append(tr(" ... ", "Indicates missing chunk from chunked STATUS_TEXT"));
         }
     }
+    (void) messageText.append(QString::fromUtf8(pendingBytes));
 
     (void) m_chunkedStatusTextInfoMap.remove(compId);
 
     emit textMessageReceived(compId, severity, messageText, "");
-}
-
-void StatusTextHandler::_handleTextMessage(uint32_t newCount, MessageType messageType)
-{
-    if (newCount == 0) {
-        resetAllMessages();
-        return;
-    }
-
-    switch (messageType) {
-        case MessageType::MessageNormal:
-            m_normalCount++;
-            break;
-
-        case MessageType::MessageWarning:
-            m_warningCount++;
-            break;
-
-        case MessageType::MessageError:
-            m_errorCount++;
-            m_errorCountTotal++;
-            break;
-
-        case MessageType::MessageNone:
-        default:
-            qCWarning(StatusTextHandlerLog) << Q_FUNC_INFO << "Invalid MessageType";
-            break;
-    }
-
-    const uint32_t count = getErrorCount() + getWarningCount() + getNormalCount();
-    if (count != messageCount()) {
-        m_messageCount = count;
-        emit messageCountChanged(messageCount());
-    }
-
-    // messageType represents the worst message which hasn't been viewed yet
-    MessageType newMessageType = MessageType::MessageNone;
-    if (getErrorCount() > 0) {
-        newMessageType = MessageType::MessageError;
-    } else if (getWarningCount() > 0) {
-        newMessageType = MessageType::MessageWarning;
-    } else if (getNormalCount() > 0) {
-        newMessageType = MessageType::MessageNormal;
-    }
-
-    if (newMessageType != m_messageType) {
-        m_messageType = newMessageType;
-        emit messageTypeChanged();
-    }
 }

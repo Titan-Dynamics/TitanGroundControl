@@ -1,22 +1,62 @@
 # QGroundControl Coding Style Guide
 
-This document describes the coding conventions for QGroundControl. For complete examples, see the reference files:
+This document describes the coding conventions for QGroundControl. For the canonical AI-agent
+workflow entry point (golden rules, build/test commands, project structure), see [AGENTS.md](AGENTS.md).
+
+For complete worked examples, see the reference files:
 
 - [CodingStyle.h](tools/coding-style/CodingStyle.h) - C++ header example
 - [CodingStyle.cc](tools/coding-style/CodingStyle.cc) - C++ implementation example
 - [CodingStyle.qml](tools/coding-style/CodingStyle.qml) - QML example
+
+## Contents
+
+- [General](#general)
+- [Comments](#comments)
+- [Naming Conventions](#naming-conventions)
+- [C++ Style](#c-style)
+  - [Headers](#headers)
+  - [Class Declaration Order](#class-declaration-order)
+  - [Constructor Initializer Lists](#constructor-initializer-lists)
+  - [Modern C++ (C++20)](#modern-c-c20)
+  - [Defensive Coding](#defensive-coding)
+  - [Logging](#logging)
+- [Qt6 / QML Integration](#qt6--qml-integration)
+  - [Exposing C++ to QML](#exposing-c-to-qml)
+  - [Signal Emission](#signal-emission)
+  - [QML File Structure](#qml-file-structure)
+  - [QML Guidelines](#qml-guidelines)
+  - [Connections Syntax (Qt6)](#connections-syntax-qt6)
+- [Common Pitfalls](#common-pitfalls)
+  - [Examples](#examples)
+- [Formatting Tools](#formatting-tools)
+- [Additional Resources](#additional-resources)
 
 ## General
 
 - **Indentation**: 4 spaces (no tabs)
 - **Line endings**: LF (Unix-style)
 - **File encoding**: UTF-8
-- **Max line length**: No hard limit, use judgment
+- **Max line length**: 120 columns (enforced by `.clang-format`, `ColumnLimit: 120`)
+- **Avoid overengineering**: Prefer the smallest focused solution that satisfies current requirements.
+  Do not add abstractions, extensibility, or speculative handling without a concrete need.
+
+## Comments
+
+Write comments that earn their place. Prefer self-documenting code — clear names and small functions —
+over narration.
+
+- **Only when non-obvious.** Comment the *why* (intent, trade-offs, non-obvious constraints, links to
+  a spec or bug), not the *what* the code already states. Delete comments that just restate the code.
+- **Keep them concise.** A short phrase beats a paragraph. Update or remove comments when the code
+  changes so they never go stale.
+- **Doxygen `///`** for public class/API docs in headers (see [Headers](#headers)); skip redundant
+  member-by-member narration.
 
 ## Naming Conventions
 
 | Element | Convention | Example |
-|---------|------------|---------|
+| --------- | ------------ | --------- |
 | Classes | PascalCase | `VehicleManager` |
 | Methods/Functions | camelCase | `getActiveVehicle()` |
 | Variables | camelCase | `activeVehicle` |
@@ -77,6 +117,26 @@ private:
 };
 ```
 
+### Constructor Initializer Lists
+
+Put each base-class or member initializer on its own line, even when several would fit on one line.
+Start the list on the line after the constructor signature with `:`, indented four spaces. Start each
+subsequent initializer with `,` aligned with the colon, as in
+[`CameraMetaData::CameraMetaData`](src/Camera/CameraMetaData.cc). Keep initializers in declaration order.
+When the constructor parameter list spans multiple lines, put one parameter on each line and align
+continuation parameters with the first parameter.
+
+```cpp
+MyClass::MyClass(const QString& name,
+                 int timeout,
+                 QObject* parent)
+    : QObject(parent)
+    , _name(name)
+    , _timeout(timeout)
+{
+}
+```
+
 ### Modern C++ (C++20)
 
 QGroundControl uses C++20. Prefer modern features:
@@ -103,6 +163,9 @@ static constexpr int MaxRetries = 5;
 
 ### Defensive Coding
 
+Always use braces (`{}`) for `if`, `else if`, and `else` bodies, even when the body contains only one
+statement. Put the body on separate lines.
+
 ```cpp
 // Always null-check pointers
 Vehicle* vehicle = _manager->activeVehicle();
@@ -122,6 +185,14 @@ if (param.isEmpty()) {
 
 ### Logging
 
+- `qCDebug` - general logging, only displayed when the category is turned on. Use this instead of `qCInfo`.
+- `qCWarning` - handled-but-unusual error flows (e.g. vehicle failed to respond to a request). Always displayed.
+- `qCCritical` - indicates a coding error (e.g. a `Fact` using an unsupported type). Always displayed, and fails
+  unit tests when hit.
+- Never use uncategorized logging (`qDebug()`).
+- Don't prefix messages with the function/method name - the logging formatter already includes it.
+- When logging multiple values, stream each on its own line, aligned under the first operand.
+
 ```cpp
 // Declare in header
 Q_DECLARE_LOGGING_CATEGORY(MyComponentLog)
@@ -129,25 +200,18 @@ Q_DECLARE_LOGGING_CATEGORY(MyComponentLog)
 // Define in source (use QGC macro for runtime configuration)
 QGC_LOGGING_CATEGORY(MyComponentLog, "qgc.component.name")
 
-// Use categorized logging
+qCDebug(MyComponentLog) << "download(): fromURI:" << fromURI; // Wrong - redundant function name prefix
+qCDebug(MyComponentLog) << "fromURI:" << fromURI;             // Correct
 
-// qCDebug is used for general logging. These logs only display when turned on.
-// Do not use qCInfo, always use qCDebug.
-qCDebug(MyComponentLog) << "Debug message";
+qCDebug(MyComponentLog) << "fromCompId:" << fromCompId
+                        << "fromURI:" << fromURI
+                        << "toDir:" << toDir
+                        << "fileName:" << fileName;
 
-// qCWarning is used for logging of error flows which are handled but unusual.
-// For example the vehicle failed to respond to a request.
-// These logs will display even when the category is not enabled to display.
 qCWarning(MyComponentLog) << "Warning message";
-
-// qCCritical is used to indicate a coding error.
-// Example: An internal  Fact is using an unsupported Fact type.
-// These logs will cause unit tests to fail if they are hit.
-// These logs will display even when the category is not enabled to display.
 qCCritical(MyComponentLog) << "Internal Error: ...";
 
-// Never use uncategorized logging
-qDebug() << "..."; // This is wrong
+qDebug() << "..."; // Wrong - never use uncategorized logging
 ```
 
 ## Qt6 / QML Integration
@@ -181,9 +245,7 @@ void MyClass::setValue(int newValue)
 }
 ```
 
-## QML Style
-
-### File Structure
+### QML File Structure
 
 ```qml
 import QtQuick
@@ -262,9 +324,31 @@ Connections {
 5. **Mixing cookedValue/rawValue** - Understand the difference
 6. **Hardcoded QML sizes/colors** - Use ScreenTools and QGCPalette
 
+### Examples
+
+```cpp
+// Always null-check vehicle
+Vehicle* vehicle = MultiVehicleManager::instance()->activeVehicle();
+if (!vehicle) {
+    return;
+}
+
+// Access parameters via Fact System
+Fact* param = vehicle->parameterManager()->getParameter(-1, "PARAM_NAME");
+if (param) {
+    param->setCookedValue(newValue);
+}
+```
+
+```qml
+// QML vehicle access
+property var vehicle: QGroundControl.multiVehicleManager.activeVehicle
+enabled: vehicle && vehicle.armed
+```
+
 ## Formatting Tools
 
-The repository includes configuration for automatic formatting:
+Formatting and static analysis are enforced via [.pre-commit-config.yaml](.pre-commit-config.yaml):
 
 - `.clang-format` - C++ formatting
 - `.clang-tidy` - C++ static analysis
@@ -272,11 +356,13 @@ The repository includes configuration for automatic formatting:
 - `.qmllint.ini` - QML linting
 - `.editorconfig` - Editor settings
 
-See [.pre-commit-config.yaml](.pre-commit-config.yaml) for the full list of enforced hooks. Run pre-commit checks:
+Do not run a formatter over an entire existing file as part of an otherwise focused change. Format only
+the lines or regions you modify and preserve the surrounding style; whole-file formatting creates unrelated
+diffs that make contributions harder to review. Put intentional broad formatting changes in a dedicated
+commit or pull request. Whole-file formatting is appropriate for new files.
 
-```bash
-pre-commit run --all-files
-```
+Run them with `just lint` (fast gate) or `pre-commit run --all-files` (full sweep); see
+[tools/README.md](tools/README.md) for all commands.
 
 ## Additional Resources
 

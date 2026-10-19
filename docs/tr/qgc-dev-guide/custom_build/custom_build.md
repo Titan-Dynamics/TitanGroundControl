@@ -5,14 +5,14 @@ A custom build allows third parties to create their own version of QGC in a way 
 Some possibilities with a custom build
 
 - Fully brand your build
-- Define a single flight stack to avoid carrying over unnecessary code
+- Define a single flight stack to simplify the user interface
 - Implement your own, autopilot and firmware plugin overrides
 - Implement your own camera manager and plugin overrides
 - Implement your own QtQuick interface module
 - Implement your own toolbar, toolbar indicators and UI navigation
 - Implement your own Fly View overlay (and how to hide elements from QGC such as the flight widget)
 - Implement your own, custom QtQuick camera control
-- Implement your own, custom Pre-flight Checklist
+- Implement your own, custom Pre-flight Checklist (resource override `PreFlightCheckList.qml` or the per-airframe `*Checklist.qml` files, or disable it by overriding the `useChecklist` setting)
 - Define your own resources for all of the above
 
 One of the downsides of QGC providing both generic support for any vehicle which supports mavlink as well as providing firmware specific support for both PX4 Pro and ArduPilot is complexity of the user interface. Since QGC doesn't know any information about your vehicle ahead of time it requires UI bits which can get in the way if the vehicle you fly only uses PX4 Pro firmware and is a multi-rotor vehicle. If that is a known thing then the UI can be simplified in various places. Also QGC targets both DIY users who are building their own vehicles from scratch as well as commercial users of off the shelf vehicles. Setting up a DIY drone from scratch requires all sort of functionality which is not needed for users of off the shelf vehicles. So for off the shelf vehicle users all the DIY specific stuff is just extra noise they need to look past. Creating a custom build allows you to specify exact details for your vehicle and hide things which are irrelevant thus creating an even simple user experience for your users than regular generic QGC.
@@ -20,6 +20,15 @@ One of the downsides of QGC providing both generic support for any vehicle which
 There is a plugin architecture in QGC which allows for this custom build creation. They can be found in QGCCorePlugin.h, FirmwarePlugin.h and AutoPilotPlugin.h associated classes. To create a custom build you create subclasses of the standard plugins overriding the set of methods which are appropriate for you usage.
 
 There is also a mechanism which allows you to override resources so you can change the smaller visual elements in QGC.
+
+## Single Firmware Support
+
+A custom build can restrict the firmwares QGC exposes to the user by disabling the standard firmware plugin factories in its `CustomOverrides.cmake`:
+
+- `QGC_DISABLE_APM_PLUGIN_FACTORY` - Don't register the standard ArduPilot plugin factory
+- `QGC_DISABLE_PX4_PLUGIN_FACTORY` - Don't register the standard PX4 plugin factory
+
+All firmware plugin code is always compiled into the build. Disabling a factory only removes the firmware from the set returned by `FirmwarePluginManager::supportedFirmwareClasses()`, and the UI adapts at runtime: firmware-specific settings, pickers and pages are hidden for unsupported firmwares. From QML this is available as `QGroundControl.apmFirmwareSupported` and `QGroundControl.px4ProFirmwareSupported`, which you can use in your own custom UI as well. A custom build which implements its own `FirmwarePluginFactory` (see the custom example's PX4-based factory) determines the supported set through the firmware classes its factory reports from `FirmwarePluginFactory::supportedFirmwareClasses()`.
 
 Also internal to QGC is the concept of an "Advanced Mode". Whereas a standard QGC builds always runs in advanced mode. A custom build always starts out in regular/not advanced mode. There is an easier mechanism in the build to turn on advanced mode which is to click the fly view button 5 times in a row fairly quickly. If you do this in a custom build you will be warned about entering advanced mode. The concept here is to hide things which normal users should not have access to behind advanced mode. For example a commercial vehicle will not need access to most setup pages which are oriented to DIY setup. So a custom build can hide this. The custom example code shows how to do this.
 

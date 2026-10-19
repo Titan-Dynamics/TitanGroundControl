@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import collect_artifact_sizes as mod
+import pytest
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def _run(
@@ -37,7 +41,9 @@ def test_latest_successful_runs_picks_latest_success_per_platform() -> None:
         _run("Other", run_id=5),
     ]
 
-    latest = mod.latest_successful_runs(runs, platforms)
+    latest = mod.select_latest_runs_by_name(
+        runs, set(platforms), status="completed", conclusion="success"
+    )
     assert latest["Linux"]["id"] == 2
     assert latest["Windows"]["id"] == 4
 
@@ -49,7 +55,9 @@ def test_latest_successful_runs_handles_iso8601_offsets() -> None:
         _run("Linux", run_id=2, created_at="2026-02-24T01:00:00Z"),
     ]
 
-    latest = mod.latest_successful_runs(runs, platforms)
+    latest = mod.select_latest_runs_by_name(
+        runs, set(platforms), status="completed", conclusion="success"
+    )
     assert latest["Linux"]["id"] == 2
 
 
@@ -60,7 +68,9 @@ def test_latest_successful_runs_filters_by_event() -> None:
         _run("Linux", run_id=2, created_at="2026-02-24T01:00:00Z", event="push"),
     ]
 
-    latest = mod.latest_successful_runs(runs, platforms, event="pull_request")
+    latest = mod.select_latest_runs_by_name(
+        runs, set(platforms), event="pull_request", status="completed", conclusion="success"
+    )
     assert latest["Linux"]["id"] == 1
 
 
@@ -156,7 +166,9 @@ def test_collect_artifacts_uses_prefetched_artifact_metadata() -> None:
     }
 
     def fail_list_run_artifacts(repo: str, run_id: int) -> list[dict[str, object]]:
-        raise AssertionError("list_run_artifacts should not be called when prefetched metadata is provided")
+        raise AssertionError(
+            "list_run_artifacts should not be called when prefetched metadata is provided"
+        )
 
     original = mod.list_run_artifacts
     mod.list_run_artifacts = fail_list_run_artifacts  # type: ignore[assignment]
@@ -240,6 +252,7 @@ def test_main_writes_output_json(tmp_path: Path, monkeypatch) -> None:
     )
     assert rc == 0
     data = json.loads(output_file.read_text(encoding="utf-8"))
+    assert data["head_sha"] == "abc123"
     assert len(data["artifacts"]) == 2
     assert data["artifacts"][0]["name"] == "QGroundControl-installer-AMD64"
     assert data["artifacts"][1]["name"] == "QGroundControl-x86_64"
@@ -269,7 +282,9 @@ def test_main_reads_artifacts_file_when_provided(tmp_path: Path, monkeypatch) ->
         return runs
 
     def fail_list_run_artifacts(repo: str, run_id: int) -> list[dict[str, object]]:
-        raise AssertionError("list_run_artifacts should not be called when artifacts file is provided")
+        raise AssertionError(
+            "list_run_artifacts should not be called when artifacts file is provided"
+        )
 
     monkeypatch.setattr(mod, "list_workflow_runs_for_sha", fake_list_workflow_runs)
     monkeypatch.setattr(mod, "list_run_artifacts", fail_list_run_artifacts)
@@ -292,6 +307,31 @@ def test_main_reads_artifacts_file_when_provided(tmp_path: Path, monkeypatch) ->
     data = json.loads(output_file.read_text(encoding="utf-8"))
     assert len(data["artifacts"]) == 1
     assert data["artifacts"][0]["name"] == "QGroundControl-x86_64"
+
+
+@pytest.mark.parametrize("require_artifacts", [False, True])
+def test_main_replaces_stale_sizes_when_no_artifacts_exist(
+    tmp_path: Path, monkeypatch, require_artifacts: bool
+) -> None:
+    output_file = tmp_path / "sizes.json"
+    output_file.write_text(
+        json.dumps(
+            {"head_sha": "old", "artifacts": [{"name": "QGroundControl", "size_bytes": 100}]}
+        )
+    )
+    monkeypatch.setattr(mod, "list_workflow_runs_for_sha", lambda *args: [])
+    assert mod.main(
+        [
+            "--repo",
+            "owner/repo",
+            "--head-sha",
+            "abc123",
+            "--output-file",
+            str(output_file),
+            *(["--require-artifacts"] if require_artifacts else []),
+        ]
+    ) == int(require_artifacts)
+    assert json.loads(output_file.read_text()) == {"head_sha": "abc123", "artifacts": []}
 
 
 def test_collect_artifacts_deduplicates_same_name_keeps_largest() -> None:

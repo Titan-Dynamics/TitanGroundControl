@@ -1,11 +1,13 @@
 #include "VehicleFactGroup.h"
-#include "Vehicle.h"
-#include "QGCMath.h"
 
 #include <cmath>
 
 #include <QtGui/QQuaternion>
 #include <QtGui/QVector3D>
+
+#include "MAVLinkLib.h"
+#include "QGCMath.h"
+#include "Vehicle.h"
 
 VehicleFactGroup::VehicleFactGroup(QObject *parent)
     : FactGroup(100, QStringLiteral(":/json/Vehicle/VehicleFact.json"), parent)
@@ -97,11 +99,9 @@ void VehicleFactGroup::handleMessage(Vehicle *vehicle, const mavlink_message_t &
     case MAVLINK_MSG_ID_RAW_IMU:
         _handleRawImuTemp(message);
         break;
-#ifndef QGC_NO_ARDUPILOT_DIALECT
     case MAVLINK_MSG_ID_RANGEFINDER:
         _handleRangefinder(message);
         break;
-#endif
     default:
         break;
     }
@@ -237,7 +237,6 @@ void VehicleFactGroup::_handleRawImuTemp(const mavlink_message_t &message)
     _setTelemetryAvailable(true);
 }
 
-#ifndef QGC_NO_ARDUPILOT_DIALECT
 void VehicleFactGroup::_handleRangefinder(const mavlink_message_t &message)
 {
     mavlink_rangefinder_t rangefinder{};
@@ -247,4 +246,3 @@ void VehicleFactGroup::_handleRangefinder(const mavlink_message_t &message)
 
     _setTelemetryAvailable(true);
 }
-#endif

@@ -81,7 +81,8 @@ public:
     int defaultJoystickTXMode() const override { return 3; }
     void initializeStreamRates(Vehicle *vehicle) override;
     bool isCapable(const Vehicle *vehicle, FirmwareCapabilities capabilities) const override;
-    bool supportsThrottleModeCenterZero() const override { return false; }
+    bool supportsThrottleModeCenterZero() const override { return true; }
+    bool supportsNegativeThrust(Vehicle *vehicle) const override { Q_UNUSED(vehicle); return true; }
     bool supportsRadio() const override { return false; }
     bool supportsJSButton() const override { return true; }
     bool supportsMotorInterference() const override { return false; }
@@ -100,6 +101,9 @@ public:
 
     QString stabilizedFlightMode() const override;
     QString motorDetectionFlightMode() const override;
+
+    QString rtlFlightMode() const override { return QString(); }
+
     void updateAvailableFlightModes(FlightModeList &modeList) override;
 
     QString offlineEditingParamFile(Vehicle *vehicle) const override { Q_UNUSED(vehicle); return QStringLiteral(":/FirmwarePlugin/APM/Sub.OfflineEditing.params"); }

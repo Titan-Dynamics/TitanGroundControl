@@ -3,10 +3,27 @@
     "fileType": "FactMetaData",
     "QGC.MetaData.Facts": [
         {
+            "name": "useGeoMapEngine",
+            "shortDesc": "Use the experimental GeoMap 2D/3D engine for the Fly View map (preview feature).",
+            "type": "bool",
+            "default": false,
+            "label": "Use GeoMap engine (preview)",
+            "keywords": "geomap,3d map,map engine,preview,experimental",
+            "qgcRebootRequired": true
+        },
+        {
+            "name": "geoMapDebugUI",
+            "shortDesc": "Show the GeoMap engine debug controls and terrain stats overlay.",
+            "type": "bool",
+            "default": false,
+            "label": "Show GeoMap engine debug UI",
+            "keywords": "geomap,debug,stats,diagnostics"
+        },
+        {
             "name": "guidedMinimumAltitude",
             "shortDesc": "Minimum altitude allowed for guided mode actions like takeoff and altitude changes.",
             "type": "double",
-            "units": "m",
+            "units": "vertical m",
             "default": 2,
             "label": "Minimum Altitude",
             "keywords": "altitude,guided,minimum"
@@ -15,7 +32,7 @@
             "name": "guidedMaximumAltitude",
             "shortDesc": "Maximum altitude allowed for guided mode actions like takeoff and altitude changes.",
             "type": "double",
-            "units": "m",
+            "units": "vertical m",
             "default": 10000,
             "label": "Maximum Altitude",
             "keywords": "altitude,guided,maximum"
@@ -95,7 +112,7 @@
         },
         {
             "name": "forwardFlightGoToLocationLoiterRad",
-            "shortDesc": "Loiter radius when circling a go-to destination during fixed-wing flight.",
+            "shortDesc": "Loiter radius when circling a go-to destination during fixed-wing flight. (ArduPilot only)",
             "type": "double",
             "units": "m",
             "default": 80,
@@ -152,6 +169,14 @@
             "default": true,
             "label": "Enable automatic mission start/resume popups",
             "keywords": "mission popup"
+        },
+        {
+            "name": "allowForceArm",
+            "shortDesc": "Show a Force Arm button in the main status indicator. Force arming bypasses pre-arm checks. Use with caution.",
+            "type": "bool",
+            "default": false,
+            "label": "Allow Force Arm",
+            "keywords": "force arm,arming,pre-arm"
         }
     ]
 }

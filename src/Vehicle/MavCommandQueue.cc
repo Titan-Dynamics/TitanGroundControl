@@ -17,6 +17,8 @@
 
 QGC_LOGGING_CATEGORY(MavCommandQueueLog, "Vehicle.MavCommandQueue")
 
+std::optional<int> MavCommandQueue::_testAckTimeoutOverride;
+
 MavCommandQueue::MavCommandQueue(Vehicle* vehicle)
     : QObject(vehicle)
     , _vehicle(vehicle)
@@ -108,10 +110,16 @@ void lambdaFallbackResultHandler(void* resultHandlerData, int /*compId*/, const 
 
     switch (ack.result) {
     case MAV_RESULT_ACCEPTED:
-        instanceData->setCommandSupported(MAV_CMD(ack.command), FirmwarePluginInstanceData::CommandSupportedResult::SUPPORTED);
+        if (instanceData) {
+            instanceData->setCommandSupported(MAV_CMD(ack.command),
+                                              FirmwarePluginInstanceData::CommandSupportedResult::SUPPORTED);
+        }
         break;
     case MAV_RESULT_UNSUPPORTED:
-        instanceData->setCommandSupported(MAV_CMD(ack.command), FirmwarePluginInstanceData::CommandSupportedResult::UNSUPPORTED);
+        if (instanceData) {
+            instanceData->setCommandSupported(MAV_CMD(ack.command),
+                                              FirmwarePluginInstanceData::CommandSupportedResult::UNSUPPORTED);
+        }
         data->unsupportedLambda();
         break;
     default:
@@ -124,31 +132,65 @@ void lambdaFallbackResultHandler(void* resultHandlerData, int /*compId*/, const 
     delete data;
 }
 
+/// Converts param5/param6 to COMMAND_INT x/y. NaN ("no change" in COMMAND_LONG) must be sent as
+/// INT32_MAX, which is what MAVLink uses for an unset integer param. Converting NaN to an integer is
+/// undefined behavior, and yields 0 (latitude/longitude 0,0) on ARM.
+int32_t commandIntXY(double param, MAV_FRAME frame)
+{
+    if (qIsNaN(param)) {
+        return INT32_MAX;
+    }
+    return static_cast<int32_t>(frame == MAV_FRAME_MISSION ? param : param * 1e7);
+}
+
 } // namespace
+
+void MavCommandQueue::sendCommandWithLambdaFallbackWorker(std::function<void()> lambda, bool commandInt, int compId, MAV_CMD command, MAV_FRAME frame, bool showError, float param1, float param2, float param3, float param4, double param5, double param6, float param7)
+{
+    auto* instanceData = _vehicle->firmwarePluginInstanceData();
+    const auto supported = instanceData ? instanceData->getCommandSupported(command)
+                                        : FirmwarePluginInstanceData::CommandSupportedResult::UNKNOWN;
+
+    switch (supported) {
+        case FirmwarePluginInstanceData::CommandSupportedResult::UNSUPPORTED:
+            lambda();
+            break;
+        case FirmwarePluginInstanceData::CommandSupportedResult::SUPPORTED:
+            if (commandInt) {
+                sendCommandInt(compId, command, frame, showError, param1, param2, param3, param4, param5, param6,
+                               param7);
+            } else {
+                sendCommand(compId, command, showError, param1, param2, param3, param4, param5, param6, param7);
+            }
+            break;
+        case FirmwarePluginInstanceData::CommandSupportedResult::UNKNOWN: {
+            auto* data = new LambdaFallbackHandlerData{_vehicle, showError, std::move(lambda)};
+            const MavCmdAckHandlerInfo_t handlerInfo{
+                /* .resultHandler         = */ &lambdaFallbackResultHandler,
+                /* .resultHandlerData     = */ data,
+                /* .progressHandler       = */ nullptr,
+                /* .progressHandlerData   = */ nullptr,
+            };
+            if (commandInt) {
+                sendCommandIntWithHandler(&handlerInfo, compId, command, frame, param1, param2, param3, param4, param5,
+                                          param6, param7);
+            } else {
+                sendCommandWithHandler(&handlerInfo, compId, command, param1, param2, param3, param4, param5, param6,
+                                       param7);
+            }
+            break;
+        }
+    }
+}
 
 void MavCommandQueue::sendCommandWithLambdaFallback(std::function<void()> lambda, int compId, MAV_CMD command, bool showError, float param1, float param2, float param3, float param4, float param5, float param6, float param7)
 {
-    auto* instanceData = _vehicle->firmwarePluginInstanceData();
+    sendCommandWithLambdaFallbackWorker(std::move(lambda), false /* commandInt */, compId, command, MAV_FRAME_GLOBAL, showError, param1, param2, param3, param4, param5, param6, param7);
+}
 
-    switch (instanceData->getCommandSupported(command)) {
-    case FirmwarePluginInstanceData::CommandSupportedResult::UNSUPPORTED:
-        lambda();
-        break;
-    case FirmwarePluginInstanceData::CommandSupportedResult::SUPPORTED:
-        sendCommand(compId, command, showError, param1, param2, param3, param4, param5, param6, param7);
-        break;
-    case FirmwarePluginInstanceData::CommandSupportedResult::UNKNOWN: {
-        auto* data = new LambdaFallbackHandlerData { _vehicle, showError, std::move(lambda) };
-        const MavCmdAckHandlerInfo_t handlerInfo {
-            /* .resultHandler         = */ &lambdaFallbackResultHandler,
-            /* .resultHandlerData     = */ data,
-            /* .progressHandler       = */ nullptr,
-            /* .progressHandlerData   = */ nullptr,
-        };
-        sendCommandWithHandler(&handlerInfo, compId, command, param1, param2, param3, param4, param5, param6, param7);
-        break;
-    }
-    }
+void MavCommandQueue::sendCommandIntWithLambdaFallback(std::function<void()> lambda, int compId, MAV_CMD command, MAV_FRAME frame, bool showError, float param1, float param2, float param3, float param4, double param5, double param6, float param7)
+{
+    sendCommandWithLambdaFallbackWorker(std::move(lambda), true /* commandInt */, compId, command, frame, showError, param1, param2, param3, param4, param5, param6, param7);
 }
 
 bool MavCommandQueue::isPending(int targetCompId, MAV_CMD command) const
@@ -175,8 +217,25 @@ int MavCommandQueue::_responseCheckIntervalMSecs()
 
 int MavCommandQueue::_ackTimeoutMSecs()
 {
-    // Use shorter ack timeout during unit tests for faster test execution
-    return QGC::runningUnitTests() ? kTestAckTimeoutMs : 1200;
+    return _testAckTimeoutOverride.value_or(_ackTimeoutMSecsDefault);
+}
+
+void MavCommandQueue::setTestAckTimeoutOverride(std::optional<int> msecs)
+{
+    if (!QGC::runningUnitTests()) {
+        qCWarning(MavCommandQueueLog) << "setTestAckTimeoutOverride called outside unit tests, ignoring";
+        return;
+    }
+    if (msecs.has_value() && *msecs <= 0) {
+        qCWarning(MavCommandQueueLog) << "setTestAckTimeoutOverride rejecting non-positive timeout:" << *msecs;
+        return;
+    }
+    _testAckTimeoutOverride = msecs;
+}
+
+std::optional<int> MavCommandQueue::testAckTimeoutOverride()
+{
+    return _testAckTimeoutOverride;
 }
 
 bool MavCommandQueue::_shouldRetry(MAV_CMD command)
@@ -230,7 +289,7 @@ QString MavCommandQueue::_formatCommand(MAV_CMD command, float param1)
     QString friendlyName = MissionCommandTree::instance()->friendlyName(command);
     QString commandStr = friendlyName.isEmpty() ? rawName : QStringLiteral("%1 (%2)").arg(friendlyName, rawName);
 
-    if (command == MAV_CMD_REQUEST_MESSAGE) {
+    if (command == MAV_CMD_REQUEST_MESSAGE || command == MAV_CMD_SET_MESSAGE_INTERVAL) {
         const mavlink_message_info_t* info = mavlink_get_message_info_by_id(static_cast<int>(param1));
         if (info) {
             commandStr += QStringLiteral(" [%1]").arg(info->name);
@@ -330,11 +389,11 @@ void MavCommandQueue::_sendFromList(int index)
     if (++_list[index].tryCount > commandEntry.maxTries) {
         QString logMsg = QStringLiteral("Giving up sending command after max retries: %1").arg(rawCommandName);
 
-        // For REQUEST_MESSAGE commands, also log which message was being requested
-        if (commandEntry.command == MAV_CMD_REQUEST_MESSAGE) {
+        // These commands identify their target message in param1.
+        if (commandEntry.command == MAV_CMD_REQUEST_MESSAGE || commandEntry.command == MAV_CMD_SET_MESSAGE_INTERVAL) {
             int requestedMsgId = static_cast<int>(commandEntry.rgParam1);
             const mavlink_message_info_t *info = mavlink_get_message_info_by_id(requestedMsgId);
-            logMsg += QStringLiteral(" requesting: %1").arg(info ? info->name : QString::number(requestedMsgId));
+            logMsg += QStringLiteral(" message: %1").arg(info ? info->name : QString::number(requestedMsgId));
         }
 
         qCWarning(MavCommandQueueLog) << logMsg;
@@ -381,8 +440,8 @@ void MavCommandQueue::_sendFromList(int index)
         cmd.param2 =            commandEntry.rgParam2;
         cmd.param3 =            commandEntry.rgParam3;
         cmd.param4 =            commandEntry.rgParam4;
-        cmd.x =                 commandEntry.frame == MAV_FRAME_MISSION ? commandEntry.rgParam5 : commandEntry.rgParam5 * 1e7;
-        cmd.y =                 commandEntry.frame == MAV_FRAME_MISSION ? commandEntry.rgParam6 : commandEntry.rgParam6 * 1e7;
+        cmd.x = commandIntXY(commandEntry.rgParam5, commandEntry.frame);
+        cmd.y = commandIntXY(commandEntry.rgParam6, commandEntry.frame);
         cmd.z =                 commandEntry.rgParam7;
         mavlink_msg_command_int_encode_chan(MAVLinkProtocol::instance()->getSystemId(),
                                             MAVLinkProtocol::getComponentId(),
@@ -420,8 +479,18 @@ void MavCommandQueue::_responseTimeoutCheck()
         return;
     }
 
-    // Walk the list backwards since _sendFromList can remove entries
+    // Walk the list backwards since _sendFromList can remove entries. Give-up result
+    // handlers invoked from _sendFromList can also re-enter the queue and remove or
+    // clear entries (e.g. closing the vehicle from within the callback), so re-validate
+    // the stop flag and index on every iteration.
     for (int i = _list.count() - 1; i >= 0; i--) {
+        if (_stopped) {
+            return;
+        }
+        if (i >= _list.count()) {
+            i = _list.count();  // Handler removed entries below us, clamp (loop decrement follows)
+            continue;
+        }
         MavCommandListEntry_t& commandEntry = _list[i];
         if (commandEntry.elapsedTimer.elapsed() > commandEntry.ackTimeoutMSecs) {
             // Try sending command again

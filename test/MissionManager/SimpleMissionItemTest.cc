@@ -2,9 +2,13 @@
 
 #include <memory>
 
+#include <QtCore/QJsonArray>
+#include <QtCore/QJsonObject>
+#include <QtCore/QJsonValue>
 #include <QtPositioning/QGeoCoordinate>
 
 #include "AppSettings.h"
+#include "BaseClasses/TerrainTest.h"
 #include "CameraSection.h"
 #include "MissionCommandTree.h"
 #include "MissionCommandUIInfo.h"
@@ -205,15 +209,13 @@ void SimpleMissionItemTest::_testSignals()
     //      amslEntryAltChanged, amslExitAltChanged, terrainAltitudeChanged (altitude depends on position)
     // Check that actually changing coordinate signals correctly
     _simpleItem->setCoordinate(QGeoCoordinate(missionItem.param5() + 1, missionItem.param6(), missionItem.param7()));
-    QVERIFY(_spyVisualItem->onlyEmittedOnceByMask(
-        _spyVisualItem->mask("coordinateChanged", "entryCoordinateChanged", "exitCoordinateChanged", "dirtyChanged",
-                             "amslEntryAltChanged", "amslExitAltChanged", "terrainAltitudeChanged")));
+    QVERIFY(_spyVisualItem->onlyEmittedOnce("coordinateChanged", "entryCoordinateChanged", "exitCoordinateChanged", "dirtyChanged",
+                             "amslEntryAltChanged", "amslExitAltChanged", "terrainAltitudeChanged"));
     _spyVisualItem->clearAllSignals();
     _spySimpleItem->clearAllSignals();
     _simpleItem->setCoordinate(QGeoCoordinate(missionItem.param5(), missionItem.param6() + 1, missionItem.param7()));
-    QVERIFY(_spyVisualItem->onlyEmittedOnceByMask(
-        _spyVisualItem->mask("coordinateChanged", "entryCoordinateChanged", "exitCoordinateChanged", "dirtyChanged",
-                             "amslEntryAltChanged", "amslExitAltChanged", "terrainAltitudeChanged")));
+    QVERIFY(_spyVisualItem->onlyEmittedOnce("coordinateChanged", "entryCoordinateChanged", "exitCoordinateChanged", "dirtyChanged",
+                             "amslEntryAltChanged", "amslExitAltChanged", "terrainAltitudeChanged"));
     _spyVisualItem->clearAllSignals();
     _spySimpleItem->clearAllSignals();
     // Altitude in coordinate is not used in setCoordinate
@@ -247,8 +249,7 @@ void SimpleMissionItemTest::_testSignals()
     _simpleItem->setAltitudeFrame(_simpleItem->altitudeFrame() == QGroundControlQmlGlobal::AltitudeFrameRelative
                                      ? QGroundControlQmlGlobal::AltitudeFrameAbsolute
                                      : QGroundControlQmlGlobal::AltitudeFrameRelative);
-    QVERIFY(_spySimpleItem->emittedByMask(
-        _spySimpleItem->mask("dirtyChanged", "friendlyEditAllowedChanged", "altitudeFrameChanged")));
+    QVERIFY(_spySimpleItem->emitted("dirtyChanged", "friendlyEditAllowedChanged", "altitudeFrameChanged"));
     _spySimpleItem->clearAllSignals();
     _spyVisualItem->clearAllSignals();
     // Check commandChanged signalling. Call setCommand should trigger:
@@ -261,7 +262,7 @@ void SimpleMissionItemTest::_testSignals()
     QVERIFY(_spySimpleItem->noneEmitted());
     _simpleItem->setCommand(MAV_CMD_NAV_LOITER_TIME);
     QVERIFY(_spySimpleItem->emitted("commandChanged"));
-    QVERIFY(_spyVisualItem->emittedByMask(_spyVisualItem->mask("commandNameChanged", "dirtyChanged")));
+    QVERIFY(_spyVisualItem->emitted("commandNameChanged", "dirtyChanged"));
 }
 
 void SimpleMissionItemTest::_testCameraSectionDirty()
@@ -373,6 +374,86 @@ void SimpleMissionItemTest::_testCalcAboveTerrainSaveLoad()
     QCOMPARE(loadedItem.amslAltAboveTerrain()->rawValue().toDouble(), amslAlt);
     QCOMPARE(loadedItem.missionItem().frame(), MAV_FRAME_GLOBAL);
     QCOMPARE(loadedItem.missionItem().param7(), amslAlt);
+}
+
+void SimpleMissionItemTest::_testTerrainDependentLoadQueriesTerrain_data()
+{
+    QTest::addColumn<int>("altitudeFrame");
+    QTest::addColumn<int>("mavFrame");
+    QTest::addColumn<QJsonValue>("savedParam7");
+
+    const double aboveTerrainAlt = 40.0;
+    QTest::newRow("CalcAboveTerrain without AMSL")
+        << static_cast<int>(QGroundControlQmlGlobal::AltitudeFrameCalcAboveTerrain)
+        << static_cast<int>(MAV_FRAME_GLOBAL) << QJsonValue(QJsonValue::Null);
+    QTest::newRow("Terrain frame") << static_cast<int>(QGroundControlQmlGlobal::AltitudeFrameTerrain)
+                                   << static_cast<int>(MAV_FRAME_GLOBAL_TERRAIN_ALT) << QJsonValue(aboveTerrainAlt);
+}
+
+void SimpleMissionItemTest::_testTerrainDependentLoadQueriesTerrain()
+{
+    QFETCH(int, altitudeFrame);
+    QFETCH(int, mavFrame);
+    QFETCH(QJsonValue, savedParam7);
+
+    const QGeoCoordinate terrainCoord = UnitTestTerrainData::flat10Region.center();
+    const double aboveTerrainAlt = 40.0;
+    const double expectedAmslAlt = UnitTestTerrainData::Flat10Region::amslElevation + aboveTerrainAlt;
+
+    const QJsonObject json{
+        {"AMSLAltAboveTerrain", QJsonValue::Null},
+        {"Altitude", aboveTerrainAlt},
+        {"AltitudeMode", altitudeFrame},
+        {"autoContinue", true},
+        {"command", static_cast<int>(MAV_CMD_NAV_WAYPOINT)},
+        {"doJumpId", 1},
+        {"frame", mavFrame},
+        {"params",
+         QJsonArray{0, 0, 0, QJsonValue::Null, terrainCoord.latitude(), terrainCoord.longitude(), savedParam7}},
+        {"type", "SimpleItem"},
+    };
+
+    QString errorString;
+    SimpleMissionItem loadedItem(planController(), false /* flyView */, true /* forLoad */);
+    QVERIFY2(loadedItem.load(json, 1, errorString), qPrintable(errorString));
+
+    QTRY_COMPARE_WITH_TIMEOUT(loadedItem.amslEntryAlt(), expectedAmslAlt, TestTimeout::mediumMs());
+    QCOMPARE(loadedItem.readyForSaveState(), VisualMissionItem::ReadyForSave);
+    QCOMPARE(loadedItem.amslAltAboveTerrain()->rawValue().toDouble(), expectedAmslAlt);
+}
+
+void SimpleMissionItemTest::_testFlyViewTerrainQuery()
+{
+    // Regression test for VisualMissionItem::terrainAltitudeRequiredInFlyView: FlyView items
+    // normally skip terrain queries, but terrain-frame items need terrain altitude to compute
+    // their AMSL altitude (used by the 3D view and altitude displays).
+
+    const QGeoCoordinate terrainCoord = UnitTestTerrainData::flat10Region.center();
+    const double aboveTerrainAlt = 40.0;
+
+    // Items are constructed at (0,0); the terrain query is triggered by the coordinate change
+    // below, mirroring the FlyView mission download flow. The relative item is nudged first so
+    // that a wrongly issued query for it would have resolved by the time the terrain item's does.
+    MissionItem relativeMissionItem(1, MAV_CMD_NAV_WAYPOINT, MAV_FRAME_GLOBAL_RELATIVE_ALT, 0, 0, 0, 0, 0, 0,
+                                    aboveTerrainAlt,
+                                    true,    // autoContinue
+                                    false);  // isCurrentItem
+    SimpleMissionItem* relativeItem = new SimpleMissionItem(planController(), true /* flyView */, relativeMissionItem);
+    relativeItem->setCoordinate(terrainCoord);
+
+    MissionItem terrainMissionItem(2, MAV_CMD_NAV_WAYPOINT, MAV_FRAME_GLOBAL_TERRAIN_ALT, 0, 0, 0, 0, 0, 0,
+                                   aboveTerrainAlt,
+                                   true,    // autoContinue
+                                   false);  // isCurrentItem
+    SimpleMissionItem* terrainItem = new SimpleMissionItem(planController(), true /* flyView */, terrainMissionItem);
+    terrainItem->setCoordinate(terrainCoord);
+
+    QTRY_COMPARE_WITH_TIMEOUT(terrainItem->terrainAltitude(), UnitTestTerrainData::Flat10Region::amslElevation,
+                              TestTimeout::mediumMs());
+    QCOMPARE(terrainItem->amslEntryAlt(), UnitTestTerrainData::Flat10Region::amslElevation + aboveTerrainAlt);
+
+    // Non-terrain FlyView items must not have queried
+    QVERIFY(qIsNaN(relativeItem->terrainAltitude()));
 }
 
 UT_REGISTER_TEST(SimpleMissionItemTest, TestLabel::Unit, TestLabel::MissionManager)

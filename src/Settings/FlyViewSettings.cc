@@ -4,6 +4,8 @@ DECLARE_SETTINGGROUP(FlyView, "FlyView")
 {
 }
 
+DECLARE_SETTINGSFACT(FlyViewSettings, useGeoMapEngine)
+DECLARE_SETTINGSFACT(FlyViewSettings, geoMapDebugUI)
 DECLARE_SETTINGSFACT(FlyViewSettings, guidedMinimumAltitude)
 DECLARE_SETTINGSFACT(FlyViewSettings, guidedMaximumAltitude)
 DECLARE_SETTINGSFACT(FlyViewSettings, showLogReplayStatusBar)
@@ -22,3 +24,4 @@ DECLARE_SETTINGSFACT(FlyViewSettings, requestControlAllowTakeover)
 DECLARE_SETTINGSFACT(FlyViewSettings, requestControlTimeout)
 DECLARE_SETTINGSFACT(FlyViewSettings, enableAutomaticMissionPopups)
 DECLARE_SETTINGSFACT(FlyViewSettings, toolDrawerFullWidth)
+DECLARE_SETTINGSFACT(FlyViewSettings, allowForceArm)

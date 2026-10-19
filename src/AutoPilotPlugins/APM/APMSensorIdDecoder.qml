@@ -45,7 +45,8 @@ QGCLabel {
         0x15: 'AK09915',
         0x16: 'QMC5883P',
         0x17: 'BMM350',
-        0x18: 'IIS2MDC'
+        0x18: 'IIS2MDC',
+        0x1A: 'AF9838'
     }
 
     property var imuTypes: {
@@ -84,7 +85,14 @@ QGCLabel {
         0x3A: 'INS_ICM42670',
         0x3B: 'INS_ICM45686',
         0x3C: 'INS_SCHA63T',
-        0x3D: 'INS_IIM42653'
+        0x3D: 'INS_IIM42653',
+        0x3E: 'INS_LSM6DSV16X',
+        0x3F: 'INS_ASM330',
+        0x40: 'INS_ADIS16607',
+        0x41: 'INS_ZEROONE_FPGA_SCH16T',
+        0x42: 'INS_LSM6DSV32X',
+        0x43: 'INS_LSM6DSK320X',
+        0x44: 'INS_ICM56686'
     }
 
     property var baroTypes: {

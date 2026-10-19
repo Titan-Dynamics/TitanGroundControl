@@ -5,20 +5,20 @@ When QGC is started for the first time it prompts the user to specify some initi
 - Unit Settings - What units does the user want to use for display.
 - Offline Vehicle Settings - Vehicle information for creating Plans while not connected to a vehicle.
 
-The custom build architecure includes mechanisms for a custom build to both override the display of these prompts and/or create your own first run prompts.
+The custom build architecture includes mechanisms for a custom build to both override the display of these prompts and/or create your own first run prompts.
 
 ## First Run Prompt Dialog
 
 Each first run prompt is a simple dialog which can display ui to the user. Whether the specific dialog has already been show to the user or not is stored in a setting. Here is the code for the upstream first run prompt dialogs:
 
-- [Units Settings](https://github.com/mavlink/qgroundcontrol/blob/master/src/UI/FirstRunPromptDialogs/UnitsFirstRunPrompt.qml)
-- [Offline Vehicle Settings](https://github.com/mavlink/qgroundcontrol/blob/master/src/UI/FirstRunPromptDialogs/OfflineVehicleFirstRunPrompt.qml)
+- [FirstRunPrompt](https://github.com/mavlink/qgroundcontrol/blob/master/src/FirstRunPromptDialogs/FirstRunPrompt.qml) - base class
+- [InitialSetupPrompt](https://github.com/mavlink/qgroundcontrol/blob/master/src/FirstRunPromptDialogs/InitialSetupPrompt.qml) - units & offline vehicle settings
 
 ## Standard First Run Prompt Dialogs
 
 Each dialog has a unique ID associated with it. When that dialog is shown to the user that ID is registered as having already been displayed so it only happens once (unless you clear settings). The set of first run prompt which are included with upstream QGC are considered the "Standard" set. QGC gets the list of standard prompts to display from the `QGCCorePlugin::firstRunPromptStdIds` call.
 
-```
+```cpp
     /// Returns the standard list of first run prompt ids for possible display. Actual display is based on the
     /// current AppSettings::firstRunPromptIds value. The order of this list also determines the order the prompts
     /// will be displayed in.
@@ -31,14 +31,14 @@ You can override this method in your custom build if you want to hide some of th
 
 Custom builds have the ability to create their own set of additional first run prompts as needed through the use of the following QGCCorePlugin method overrides:
 
-```
+```cpp
     /// Returns the custom build list of first run prompt ids for possible display. Actual display is based on the
     /// current AppSettings::firstRunPromptIds value. The order of this list also determines the order the prompts
     /// will be displayed in.
     virtual QList<int> firstRunPromptCustomIds(void);
 ```
 
-```
+```cpp
     /// Returns the resource which contains the specified first run prompt for display
     Q_INVOKABLE virtual QString firstRunPromptResource(int id);
 ```

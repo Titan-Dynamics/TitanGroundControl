@@ -3,15 +3,22 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+import sys
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
+import pytest
+from common.cmake import read_cache_dict
 from generate_cpm_sbom import (
     generate_sbom,
+    generate_spdx,
+    gstreamer_component,
     make_purl,
     normalize_git_url,
-    parse_cmake_cache,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 SAMPLE_CACHE = """\
 CMAKE_BUILD_TYPE:STRING=Debug
@@ -28,10 +35,68 @@ CPM_PACKAGE_earcut_hpp_BINARY_DIR:PATH=/build/earcut
 """
 
 
-def test_parse_cmake_cache(tmp_path: Path) -> None:
+def test_spdx_snapshot_preserves_dependency_identity_and_relationships(tmp_path: Path) -> None:
+    (tmp_path / "CMakeCache.txt").write_text(SAMPLE_CACHE)
+    with patch("generate_cpm_sbom.git_info", side_effect=_mock_git_info):
+        sbom = generate_spdx(tmp_path)
+    assert sbom["spdxVersion"] == "SPDX-2.2"
+    assert sbom["creationInfo"]["created"].endswith("Z")
+    root, *dependencies = sbom["packages"]
+    assert len(dependencies) == 3
+    assert len({p["SPDXID"] for p in sbom["packages"]}) == 4
+    assert dependencies[0]["externalRefs"][0]["referenceLocator"] == "pkg:github/madler/zlib@1.3.2"
+    assert "checksums" not in dependencies[0]  # A Git commit is not a package archive checksum.
+    assert sbom["relationships"][0]["relationshipType"] == "DESCRIBES"
+    assert sbom["relationships"][1:] == [
+        {
+            "spdxElementId": root["SPDXID"],
+            "relationshipType": "DEPENDS_ON",
+            "relatedSpdxElement": p["SPDXID"],
+        }
+        for p in dependencies
+    ]
+
+
+def test_gstreamer_component_names_the_bundled_sdk_and_its_packages() -> None:
+    cache = {
+        "QGC_ENABLE_GST_VIDEOSTREAMING": "ON",
+        "QGC_GST_RESOLVED_SDK_VERSION": "1.28.4",
+        "QGC_GST_RESOLVED_PACKAGES": "https://example.invalid/runtime.pkg|0a1b;"
+        "https://example.invalid/devel.pkg|2c3d",
+    }
+    component = gstreamer_component(cache)
+    assert component is not None
+    assert component["purl"] == "pkg:generic/gstreamer@1.28.4"
+    assert component["licenses"] == [{"expression": "LGPL-2.1-or-later"}]
+    distributions = [r for r in component["externalReferences"] if r["type"] == "distribution"]
+    assert [(r["url"], r["hashes"][0]["content"]) for r in distributions] == [
+        ("https://example.invalid/runtime.pkg", "0a1b"),
+        ("https://example.invalid/devel.pkg", "2c3d"),
+    ]
+    # A system or user-provided GStreamer has no packages; its source location remains.
+    system = gstreamer_component({**cache, "QGC_GST_RESOLVED_PACKAGES": ""})
+    assert system is not None
+    assert [r["type"] for r in system["externalReferences"]] == ["vcs", "website"]
+    assert gstreamer_component({**cache, "QGC_ENABLE_GST_VIDEOSTREAMING": "OFF"}) is None
+
+
+def test_spdx_declares_the_gstreamer_license(tmp_path: Path) -> None:
+    cache = SAMPLE_CACHE + (
+        "QGC_ENABLE_GST_VIDEOSTREAMING:BOOL=ON\nQGC_GST_RESOLVED_SDK_VERSION:INTERNAL=1.24.2\n"
+    )
+    (tmp_path / "CMakeCache.txt").write_text(cache)
+    with patch("generate_cpm_sbom.git_info", side_effect=_mock_git_info):
+        sbom = generate_spdx(tmp_path)
+    gstreamer = sbom["packages"][-1]
+    assert gstreamer["name"] == "GStreamer"
+    assert gstreamer["licenseDeclared"] == "LGPL-2.1-or-later"
+    assert sbom["packages"][1]["licenseDeclared"] == "NOASSERTION"
+
+
+def test_read_cache_dict(tmp_path: Path) -> None:
     cache = tmp_path / "CMakeCache.txt"
     cache.write_text(SAMPLE_CACHE)
-    entries = parse_cmake_cache(cache)
+    entries = read_cache_dict(str(cache))
     assert entries["CPM_PACKAGES"] == "zlib;mavlink;earcut_hpp"
     assert entries["CPM_PACKAGE_zlib_VERSION"] == "1.3.2"
     assert entries["CPM_PACKAGE_mavlink_VERSION"] == "0"
@@ -40,9 +105,13 @@ def test_parse_cmake_cache(tmp_path: Path) -> None:
 
 
 def test_normalize_git_url() -> None:
-    assert normalize_git_url("https://github.com/madler/zlib.git") == "https://github.com/madler/zlib"
+    assert (
+        normalize_git_url("https://github.com/madler/zlib.git") == "https://github.com/madler/zlib"
+    )
     assert normalize_git_url("git@github.com:madler/zlib.git") == "https://github.com/madler/zlib"
-    assert normalize_git_url("https://gitlab.com/bzip2/bzip2.git") == "https://gitlab.com/bzip2/bzip2"
+    assert (
+        normalize_git_url("https://gitlab.com/bzip2/bzip2.git") == "https://gitlab.com/bzip2/bzip2"
+    )
     assert normalize_git_url("https://example.com/repo") == "https://example.com/repo"
 
 
@@ -74,9 +143,18 @@ def test_make_purl_generic_no_version() -> None:
 def _mock_git_info(source_dir: Path) -> tuple[str, str]:
     """Return fake git info based on the source dir path."""
     mapping = {
-        "/src/zlib": ("https://github.com/madler/zlib.git", "da607da739fa6047df13e66a2af6b8bec7c2a498"),
-        "/src/mavlink": ("https://github.com/mavlink/mavlink.git", "b1fb5a1a32c41c6e46fea70600d626a0b5a8edbe"),
-        "/src/earcut": ("https://github.com/mapbox/earcut.hpp.git", "f36ced7e50254738c4e5af1a239f5fb7b1094007"),
+        "/src/zlib": (
+            "https://github.com/madler/zlib.git",
+            "da607da739fa6047df13e66a2af6b8bec7c2a498",
+        ),
+        "/src/mavlink": (
+            "https://github.com/mavlink/mavlink.git",
+            "b1fb5a1a32c41c6e46fea70600d626a0b5a8edbe",
+        ),
+        "/src/earcut": (
+            "https://github.com/mapbox/earcut.hpp.git",
+            "f36ced7e50254738c4e5af1a239f5fb7b1094007",
+        ),
     }
     return mapping.get(str(source_dir), ("", ""))
 
@@ -120,6 +198,7 @@ def test_main_stdout(tmp_path: Path, monkeypatch, capsys) -> None:
 
     with patch("generate_cpm_sbom.git_info", side_effect=_mock_git_info):
         from generate_cpm_sbom import main
+
         ret = main()
 
     assert ret == 0
@@ -136,8 +215,61 @@ def test_main_file_output(tmp_path: Path, monkeypatch) -> None:
 
     with patch("generate_cpm_sbom.git_info", side_effect=_mock_git_info):
         from generate_cpm_sbom import main
+
         ret = main()
 
     assert ret == 0
     sbom = json.loads(out_file.read_text())
     assert len(sbom["components"]) == 3
+
+
+def test_main_requires_components(tmp_path: Path, monkeypatch) -> None:
+    cache = tmp_path / "CMakeCache.txt"
+    cache.write_text(SAMPLE_CACHE)
+    out_file = tmp_path / "sbom.json"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "prog",
+            "--build-dir",
+            str(tmp_path),
+            "--output",
+            str(out_file),
+            "--require-components",
+        ],
+    )
+
+    with patch("generate_cpm_sbom.git_info", side_effect=_mock_git_info):
+        from generate_cpm_sbom import main
+
+        ret = main()
+
+    assert ret == 0
+    assert len(json.loads(out_file.read_text())["components"]) == 3
+
+
+@pytest.mark.parametrize("format_name", ["cyclonedx", "spdx"])
+def test_main_rejects_empty_required_components(
+    tmp_path: Path, monkeypatch, capsys, format_name: str
+) -> None:
+    cache = tmp_path / "CMakeCache.txt"
+    cache.write_text("CMAKE_BUILD_TYPE:STRING=Release\n")
+    out_file = tmp_path / "sbom.json"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "prog",
+            "--build-dir",
+            str(tmp_path),
+            "--output",
+            str(out_file),
+            "--require-components",
+        ],
+    )
+
+    from generate_cpm_sbom import main
+
+    monkeypatch.setattr("sys.argv", [*sys.argv, "--format", format_name])
+    assert main() == 1
+    assert "contains no components" in capsys.readouterr().err
+    assert not out_file.exists()

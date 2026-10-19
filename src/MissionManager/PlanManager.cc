@@ -1,11 +1,13 @@
 #include "PlanManager.h"
-#include "Vehicle.h"
-#include "VehicleLinkManager.h"
+
+#include "AppMessages.h"
 #include "FirmwarePlugin.h"
+#include "MAVLinkLib.h"
 #include "MAVLinkProtocol.h"
 #include "MissionCommandTree.h"
-#include "AppMessages.h"
 #include "QGCLoggingCategory.h"
+#include "Vehicle.h"
+#include "VehicleLinkManager.h"
 
 QGC_LOGGING_CATEGORY(PlanManagerLog, "PlanManager.PlanManager")
 
@@ -418,6 +420,8 @@ void PlanManager::_handleMissionItem(const mavlink_message_t& message)
         frame = MAV_FRAME_GLOBAL;
     } else if (frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
         frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+    } else if (frame == MAV_FRAME_GLOBAL_TERRAIN_ALT_INT) {
+        frame = MAV_FRAME_GLOBAL_TERRAIN_ALT;
     }
 
     bool ardupilotHomePositionUpdate = false;
@@ -684,7 +688,7 @@ QString PlanManager::_ackTypeToString(AckType_t ackType)
     case AckGuidedItem:
         return QString("Guided Mode Item");
     default:
-        qWarning(PlanManagerLog) << QStringLiteral("Fell off end of switch statement %1").arg(_planTypeString());
+        qCWarning(PlanManagerLog) << QStringLiteral("Fell off end of switch statement %1").arg(_planTypeString());
         return QString("QGC Internal Error");
     }
 }
@@ -789,7 +793,7 @@ QString PlanManager::_missionResultToString(MAV_MISSION_RESULT result)
         error = tr("Not accepting any mission commands.");
         break;
     default:
-        qWarning(PlanManagerLog) << QStringLiteral("Fell off end of switch statement %1 %2").arg(_planTypeString()).arg(result);
+        qCWarning(PlanManagerLog) << QStringLiteral("Fell off end of switch statement %1 %2").arg(_planTypeString()).arg(result);
         error = tr("Unknown error: %1.").arg(result);
         break;
     }

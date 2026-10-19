@@ -7,10 +7,13 @@ if(NOT ANDROID)
 endif()
 
 qt_add_library(QGCAndroidSerialPort STATIC
+    ../AndroidSerial.cc
+    ../AndroidSerial.h
     qserialport.cpp
     qserialport.h
     qserialport_android.cpp
     qserialport_p.h
+    qserialport_posix.cpp
     qserialportglobal.h
     qserialportinfo.cpp
     qserialportinfo.h
@@ -25,7 +28,7 @@ target_link_libraries(QGCAndroidSerialPort
         Qt6::Core
     PRIVATE
         Qt6::CorePrivate    # <QtCore/private/qiodevice_p.h>, qproperty_p.h
-        QGCLogging          # QGCLoggingCategory.h
+        QGCLoggingCategory
 )
 
 target_include_directories(QGCAndroidSerialPort

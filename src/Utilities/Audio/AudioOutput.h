@@ -1,12 +1,18 @@
 #pragma once
 
+#include <chrono>
+
+#include <QtCore/QHash>
 #include <QtCore/QObject>
+#include <QtCore/QSet>
+#include <QtCore/QString>
 
 class QTextToSpeech;
 class Fact;
 class AudioOutputTest;
 
-/// The AudioOutput class provides functionality for audio output using text-to-speech.
+/// \brief The AudioOutput class provides functionality for audio output using text-to-speech.
+///
 class AudioOutput : public QObject
 {
     Q_OBJECT
@@ -51,10 +57,10 @@ public:
 
 private:
     QTextToSpeech *_engine = nullptr;
-    QAtomicInteger<qsizetype> _textQueueSize = 0;
+    qsizetype _textQueueSize = 0;
     bool _initialized = false;
-    std::atomic_bool _muted = false;
-    std::atomic_bool _pendingMuteRestore = false;
+    bool _speakCapable = false;
+    bool _pendingMuteRestore = false;
     Fact *_volumeFact = nullptr;
     Fact *_mutedFact = nullptr;
     double _lastVolume = -1.0;
@@ -68,9 +74,17 @@ private:
     /// Sets the TTS engine volume from the current Fact value.
     void _setVolume();
 
-    static const QHash<QString, QString> _textHash;
+    /// Applies engine-dependent settings (locale, cached capabilities) for the current engine.
+    void _applyEngineSettings();
 
-    static constexpr qsizetype kMaxTextQueueSize = 20;
+    /// Finalizes initialization once the engine is Ready: applies settings, wires Facts, sets volume.
+    void _finishInit();
+
+    static const QHash<QString, QString> _textHash;
+    static const QSet<QString> _spelledAcronyms;
+
+    /// Grace period for async TTS backends (e.g. Android service binding) to reach Ready before warning.
+    static constexpr std::chrono::seconds kEngineInitWarnTimeout{10};
 
     /// Fixes text messages for audio output.
     ///     @param string The text message to fix.
@@ -81,6 +95,10 @@ private:
     ///     @param input The input string containing abbreviations.
     ///     @return A string with abbreviations replaced by their full forms.
     static QString _replaceAbbreviations(const QString &input);
+
+    /// Returns the spoken form of an abbreviation token, or an empty string if none.
+    /// _textHash ignores case; _spelledAcronyms matches all-caps only.
+    static QString _spokenAbbreviation(const QString& token);
 
     /// Replaces negative signs with the word "negative".
     static QString _replaceNegativeSigns(const QString &input);

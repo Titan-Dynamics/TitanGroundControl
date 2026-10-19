@@ -2,9 +2,9 @@
 
 #include <QtPositioning/QGeoCoordinate>
 
-#include "UnitTest.h"
+#include "PortableTest.h"
 
-class GeoTest : public UnitTest
+class GeoTest : public PortableTest
 {
     Q_OBJECT
 
@@ -18,6 +18,12 @@ private slots:
     void _convertUTMToGeo_test();
     void _convertGeoToMGRS_test();
     void _convertMGRSToGeo_test();
+
+    void _convertDegreesToDMS_test();
+    void _convertDMSToDegrees_test_data();
+    void _convertDMSToDegrees_test();
+    void _convertDMSToGeo_test();
+    void _dmsRoundTrip_test();
 
     void _convertGeodeticToEcef_test();
     void _convertEcefToGeodetic_test();

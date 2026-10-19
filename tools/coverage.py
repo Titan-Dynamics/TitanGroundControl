@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import os
 import re
 import shutil
 import subprocess
@@ -15,7 +14,12 @@ from _bootstrap import ensure_tools_dir
 
 ensure_tools_dir(__file__)
 
+from common.file_traversal import find_repo_root
+from common.gh_actions import write_step_summary
 from common.logging import log_error, log_info, log_ok
+from common.opener import open_in_default_app
+from common.proc import run_captured
+from configure import CMakeConfig, configure
 
 LINE_COVERAGE_RE = re.compile(r"lines:\s*(.+)")
 BRANCH_COVERAGE_RE = re.compile(r"branches:\s*(.+)")
@@ -31,9 +35,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Coverage generation mode (default: full)",
     )
     parser.add_argument("-r", "--report", action="store_true", help="Generate report only")
-    parser.add_argument("-o", "--open", dest="open_report", action="store_true", help="Open HTML report")
+    parser.add_argument(
+        "-o", "--open", dest="open_report", action="store_true", help="Open HTML report"
+    )
     parser.add_argument("-c", "--clean", action="store_true", help="Clean coverage data")
-    parser.add_argument("--xml", action="store_true", help="Generate coverage report and highlight XML output path")
+    parser.add_argument(
+        "--xml", action="store_true", help="Generate coverage report and highlight XML output path"
+    )
     parser.add_argument("--log-file", default="", help="Write coverage target output to a file")
     parser.add_argument(
         "--step-summary",
@@ -49,20 +57,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def run_command(
-    cmd: list[str],
-    *,
-    cwd: Path | None = None,
-    capture_output: bool = False,
-) -> subprocess.CompletedProcess[str]:
-    """Run a subprocess and fail fast on errors."""
-    return subprocess.run(cmd, cwd=cwd, check=True, capture_output=capture_output, text=True)
-
-
 def check_dependencies() -> None:
     """Ensure required tooling is installed."""
     from common.deps import require_tool
-    require_tool("gcovr", hint="Install with: pip install gcovr")
+
+    require_tool("gcovr", hint="Install with: python tools/setup/install_python.py coverage")
 
 
 def clean_coverage(build_dir: Path) -> None:
@@ -82,34 +81,35 @@ def configure_build(repo_root: Path, build_dir: Path) -> None:
             return
 
     log_info("Configuring build with coverage...")
-    run_command(
-        [
-            "cmake",
-            "-B",
-            str(build_dir),
-            "-S",
-            str(repo_root),
-            "-DCMAKE_BUILD_TYPE=Debug",
-            "-DQGC_ENABLE_COVERAGE=ON",
-            "-DQGC_BUILD_TESTING=ON",
-            "-G",
-            "Ninja",
-        ]
+    return_code = configure(
+        CMakeConfig(
+            source_dir=repo_root,
+            build_dir=build_dir,
+            build_type="Debug",
+            coverage=True,
+            preset="Linux-coverage",
+        )
     )
+    if return_code:
+        raise subprocess.CalledProcessError(return_code, ["cmake", "--preset", "Linux-coverage"])
     log_ok("Build configured")
 
 
 def build_project(build_dir: Path) -> None:
     """Build the coverage target."""
     log_info("Building project...")
-    run_command(["cmake", "--build", str(build_dir), "--parallel"])
+    subprocess.run(["cmake", "--build", str(build_dir), "--parallel"], check=True, text=True)
     log_ok("Build complete")
 
 
 def run_tests(build_dir: Path) -> None:
     """Run tests and fail if any test fails."""
     log_info("Running tests...")
-    run_command(["ctest", "--test-dir", str(build_dir), "--output-on-failure", "--timeout", "300"])
+    subprocess.run(
+        ["ctest", "--test-dir", str(build_dir), "--output-on-failure", "--timeout", "300"],
+        check=True,
+        text=True,
+    )
 
 
 def build_step_summary(log_text: str, mode: str) -> str:
@@ -135,19 +135,17 @@ def build_step_summary(log_text: str, mode: str) -> str:
 
 def maybe_write_step_summary(log_text: str, mode: str) -> None:
     """Append coverage markdown to GITHUB_STEP_SUMMARY when requested."""
-    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
-    if not summary_path:
-        return
-    with open(summary_path, "a", encoding="utf-8") as handle:
-        handle.write(build_step_summary(log_text, mode))
+    write_step_summary(build_step_summary(log_text, mode))
 
 
-def generate_report(build_dir: Path, *, xml_only: bool, log_file: Path | None = None, mode: str = "full") -> str:
+def generate_report(
+    build_dir: Path, *, xml_only: bool, log_file: Path | None = None, mode: str = "full"
+) -> str:
     """Generate coverage artifacts from existing coverage data."""
     log_info("Generating coverage report...")
-    result = run_command(
+    result = run_captured(
         ["cmake", "--build", str(build_dir), "--target", "coverage-report"],
-        capture_output=True,
+        check=False,
     )
     if result.stdout:
         print(result.stdout, end="")
@@ -155,6 +153,8 @@ def generate_report(build_dir: Path, *, xml_only: bool, log_file: Path | None = 
         print(result.stderr, end="", file=sys.stderr)
     if log_file is not None:
         log_file.write_text((result.stdout or "") + (result.stderr or ""), encoding="utf-8")
+    if result.returncode != 0:
+        raise subprocess.CalledProcessError(result.returncode, result.args)
     print()
     log_ok("Coverage report generated")
     log_info(f"  XML:  {build_dir / 'coverage.xml'}")
@@ -170,16 +170,14 @@ def open_report(build_dir: Path) -> None:
         raise FileNotFoundError(f"Report not found: {report}")
 
     log_info("Opening coverage report...")
-    opener = shutil.which("xdg-open") or shutil.which("open")
-    if opener is None:
+    if not open_in_default_app(report):
         raise RuntimeError(f"Could not find a browser opener. Report at: {report}")
-    subprocess.run([opener, str(report)], check=False)
 
 
 def main(argv: list[str] | None = None) -> int:
     """Run the requested coverage workflow."""
     args = parse_args(argv)
-    repo_root = Path(__file__).resolve().parent.parent
+    repo_root = find_repo_root(Path(__file__))
     build_dir = Path(args.build_dir)
     mode = "report-only" if args.report else args.mode
     if not build_dir.is_absolute():
@@ -195,12 +193,16 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if mode == "report-only":
-            report_output = generate_report(build_dir, xml_only=args.xml, log_file=log_file, mode=mode)
+            report_output = generate_report(
+                build_dir, xml_only=args.xml, log_file=log_file, mode=mode
+            )
         else:
             configure_build(repo_root, build_dir)
             build_project(build_dir)
             run_tests(build_dir)
-            report_output = generate_report(build_dir, xml_only=args.xml, log_file=log_file, mode=mode)
+            report_output = generate_report(
+                build_dir, xml_only=args.xml, log_file=log_file, mode=mode
+            )
 
         if args.open_report:
             open_report(build_dir)

@@ -1,25 +1,26 @@
 #include "QGroundControlQmlGlobal.h"
 
-#include "QGCCorePlugin.h"
-#include "LinkManager.h"
-#include "MAVLinkProtocol.h"
-#include "FirmwarePluginManager.h"
-#include "AppSettings.h"
-#include "FlightMapSettings.h"
-#include "SettingsManager.h"
-#include "PositionManager.h"
-#include "QGCMapEngineManager.h"
 #include "ADSBVehicleManager.h"
+#include "AppSettings.h"
 #include "AudioOutput.h"
-#include "NTRIPManager.h"
+#include "FirmwarePluginManager.h"
+#include "FlightMapSettings.h"
+#include "GPSManager.h"
+#include "LinkManager.h"
+#include "LoggingCategoryModel.h"
+#include "MAVLinkProtocol.h"
 #include "MAVLinkSigningKeys.h"
 #include "MissionCommandTree.h"
-#include "VideoManager.h"
 #include "MultiVehicleManager.h"
-#include "LoggingCategoryModel.h"
+#include "PositionManager.h"
+#include "QGCCorePlugin.h"
+#include "QGCFormat.h"
+#include "QGCMapEngineManager.h"
+#include "QGCVersionCheck.h"
+#include "SettingsManager.h"
+#include "VideoManager.h"
 #ifndef QGC_NO_SERIAL_LINK
-#include "GPSManager.h"
-#include "GPSRtk.h"
+#include "SerialPortManager.h"
 #endif
 #ifdef QT_DEBUG
 #include "MockLink.h"
@@ -29,6 +30,8 @@
 #include <QtCore/QSettings>
 #include <QtGui/QClipboard>
 #include <QtGui/QGuiApplication>
+
+#include "qgc_version.h"
 
 #include "QGCLoggingCategory.h"
 
@@ -41,8 +44,6 @@ QGroundControlQmlGlobal::QGroundControlQmlGlobal(QObject *parent)
     : QObject(parent)
     , _mapEngineManager(QGCMapEngineManager::instance())
     , _adsbVehicleManager(ADSBVehicleManager::instance())
-    , _ntripManager(NTRIPManager::instance())
-    , _qgcPositionManager(QGCPositionManager::instance())
     , _missionCommandTree(MissionCommandTree::instance())
     , _mavlinkSigningKeys(MAVLinkSigningKeys::instance())
     , _videoManager(VideoManager::instance())
@@ -51,9 +52,6 @@ QGroundControlQmlGlobal::QGroundControlQmlGlobal(QObject *parent)
     , _settingsManager(SettingsManager::instance())
     , _corePlugin(QGCCorePlugin::instance())
     , _globalPalette(new QGCPalette(this))
-#ifndef QGC_NO_SERIAL_LINK
-    , _gpsRtkFactGroup(GPSManager::instance()->gpsRtk()->gpsRtkFactGroup())
-#endif
 {
     // We clear the parent on this object since we run into shutdown problems caused by hybrid qml app. Instead we let it leak on shutdown.
     // setParent(nullptr);
@@ -84,10 +82,22 @@ QGroundControlQmlGlobal::QGroundControlQmlGlobal(QObject *parent)
             _flightMapPositionSettledTimer.start();
         }
     });
+    (void) connect(QGCVersionCheck::instance(), &QGCVersionCheck::newStableVersionChanged, this,
+                   &QGroundControlQmlGlobal::newStableVersionChanged);
 }
 
 QGroundControlQmlGlobal::~QGroundControlQmlGlobal()
 {
+}
+
+GPSManager* QGroundControlQmlGlobal::gpsManager() const
+{
+    return GPSManager::instance();
+}
+
+PositionManager* QGroundControlQmlGlobal::positionManager() const
+{
+    return GPSManager::instance()->positionManager();
 }
 
 void QGroundControlQmlGlobal::saveGlobalSetting (const QString& key, const QString& value)
@@ -118,69 +128,22 @@ bool QGroundControlQmlGlobal::loadBoolGlobalSetting (const QString& key, bool de
     return settings.value(key, defaultValue).toBool();
 }
 
-void QGroundControlQmlGlobal::startPX4MockLink(bool sendStatusText, bool enableCamera, bool enableGimbal)
-{
 #ifdef QT_DEBUG
-    MockLink::startPX4MockLink(sendStatusText, enableCamera, enableGimbal);
-#else
-    Q_UNUSED(sendStatusText);
-    Q_UNUSED(enableCamera);
-    Q_UNUSED(enableGimbal);
+QGC_LOGGING_CATEGORY(QGroundControlQmlGlobalLog, "QMLControls.QGroundControlQmlGlobal")
 #endif
-}
 
-void QGroundControlQmlGlobal::startGenericMockLink(bool sendStatusText, bool enableCamera, bool enableGimbal)
+void QGroundControlQmlGlobal::startMockLink(const QVariantMap& properties)
 {
 #ifdef QT_DEBUG
-    MockLink::startGenericMockLink(sendStatusText, enableCamera, enableGimbal);
+    MockConfiguration* const mockConfig = new MockConfiguration(QStringLiteral("MockLink"));
+    for (auto it = properties.cbegin(); it != properties.cend(); ++it) {
+        if (!mockConfig->setProperty(it.key().toUtf8().constData(), it.value())) {
+            qCWarning(QGroundControlQmlGlobalLog) << "Invalid MockConfiguration property:" << it.key() << it.value();
+        }
+    }
+    (void) MockLink::startMockLink(mockConfig);
 #else
-    Q_UNUSED(sendStatusText);
-    Q_UNUSED(enableCamera);
-    Q_UNUSED(enableGimbal);
-#endif
-}
-
-void QGroundControlQmlGlobal::startAPMArduCopterMockLink(bool sendStatusText, bool enableCamera, bool enableGimbal)
-{
-#ifdef QT_DEBUG
-    MockLink::startAPMArduCopterMockLink(sendStatusText, enableCamera, enableGimbal);
-#else
-    Q_UNUSED(sendStatusText);
-    Q_UNUSED(enableCamera);
-    Q_UNUSED(enableGimbal);
-#endif
-}
-
-void QGroundControlQmlGlobal::startAPMArduPlaneMockLink(bool sendStatusText, bool enableCamera, bool enableGimbal)
-{
-#ifdef QT_DEBUG
-    MockLink::startAPMArduPlaneMockLink(sendStatusText, enableCamera, enableGimbal);
-#else
-    Q_UNUSED(sendStatusText);
-    Q_UNUSED(enableCamera);
-    Q_UNUSED(enableGimbal);
-#endif
-}
-
-void QGroundControlQmlGlobal::startAPMArduSubMockLink(bool sendStatusText, bool enableCamera, bool enableGimbal)
-{
-#ifdef QT_DEBUG
-    MockLink::startAPMArduSubMockLink(sendStatusText, enableCamera, enableGimbal);
-#else
-    Q_UNUSED(sendStatusText);
-    Q_UNUSED(enableCamera);
-    Q_UNUSED(enableGimbal);
-#endif
-}
-
-void QGroundControlQmlGlobal::startAPMArduRoverMockLink(bool sendStatusText, bool enableCamera, bool enableGimbal)
-{
-#ifdef QT_DEBUG
-    MockLink::startAPMArduRoverMockLink(sendStatusText, enableCamera, enableGimbal);
-#else
-    Q_UNUSED(sendStatusText);
-    Q_UNUSED(enableCamera);
-    Q_UNUSED(enableGimbal);
+    Q_UNUSED(properties);
 #endif
 }
 
@@ -202,26 +165,27 @@ void QGroundControlQmlGlobal::stopOneMockLink(void)
 
 bool QGroundControlQmlGlobal::singleFirmwareSupport(void)
 {
-    return FirmwarePluginManager::instance()->supportedFirmwareClasses().count() == 1;
+    return FirmwarePluginManager::instance()->singleFirmwareSupport();
 }
 
 bool QGroundControlQmlGlobal::singleVehicleSupport(void)
 {
-    if (singleFirmwareSupport()) {
-        return FirmwarePluginManager::instance()->supportedVehicleClasses(FirmwarePluginManager::instance()->supportedFirmwareClasses()[0]).count() == 1;
-    }
-
-    return false;
+    return FirmwarePluginManager::instance()->singleVehicleSupport();
 }
 
 bool QGroundControlQmlGlobal::px4ProFirmwareSupported()
 {
-    return FirmwarePluginManager::instance()->supportedFirmwareClasses().contains(QGCMAVLink::FirmwareClassPX4);
+    return FirmwarePluginManager::instance()->firmwareClassSupported(QGCMAVLink::FirmwareClassPX4);
 }
 
 bool QGroundControlQmlGlobal::apmFirmwareSupported()
 {
-    return FirmwarePluginManager::instance()->supportedFirmwareClasses().contains(QGCMAVLink::FirmwareClassArduPilot);
+    return FirmwarePluginManager::instance()->firmwareClassSupported(QGCMAVLink::FirmwareClassArduPilot);
+}
+
+QString QGroundControlQmlGlobal::bigSizeToString(quint64 size)
+{
+    return QGC::bigSizeToString(size);
 }
 
 bool QGroundControlQmlGlobal::linesIntersect(QPointF line1A, QPointF line1B, QPointF line2A, QPointF line2B)
@@ -263,6 +227,16 @@ QString QGroundControlQmlGlobal::qgcVersion(void)
         versionStr += QStringLiteral(" %1").arg(tr("64 bit"));
     }
     return versionStr;
+}
+
+QString QGroundControlQmlGlobal::qgcAppDate()
+{
+    return QGC_APP_DATE;
+}
+
+QString QGroundControlQmlGlobal::newStableVersion()
+{
+    return QGCVersionCheck::instance()->newStableVersion();
 }
 
 QString QGroundControlQmlGlobal::altitudeFrameExtraUnits(AltitudeFrame altFrame)
@@ -353,4 +327,13 @@ QString QGroundControlQmlGlobal::appName()
     return QCoreApplication::applicationName();
 }
 
-
+QObject* QGroundControlQmlGlobal::serialPortManager() const
+{
+#ifndef QGC_NO_SERIAL_LINK
+    auto* manager = SerialPortManager::instance();
+    (void) manager->availablePorts();
+    return manager;
+#else
+    return nullptr;
+#endif
+}

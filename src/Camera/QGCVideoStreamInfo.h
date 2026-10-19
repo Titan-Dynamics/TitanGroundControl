@@ -6,7 +6,8 @@
 
 #include "MAVLinkLib.h"
 
-/// Encapsulates the contents of a [VIDEO_STREAM_INFORMATION](https://mavlink.io/en/messages/common.html#VIDEO_STREAM_INFORMATION) message
+/// \brief Encapsulates the contents of a [VIDEO_STREAM_INFORMATION](https://mavlink.io/en/messages/common.html#VIDEO_STREAM_INFORMATION) message
+///
 class QGCVideoStreamInfo : public QObject
 {
     Q_OBJECT
@@ -27,7 +28,6 @@ class QGCVideoStreamInfo : public QObject
     Q_PROPERTY(qreal    framerate   READ framerate      NOTIFY infoChanged)
     Q_ENUM(VIDEO_STREAM_TYPE)
     Q_ENUM(VIDEO_STREAM_ENCODING)
-    Q_FLAGS(QVIDEO_STREAM_STATUS_FLAGS)
 
 public:
     explicit QGCVideoStreamInfo(const mavlink_video_stream_information_t &info, QObject *parent = nullptr);

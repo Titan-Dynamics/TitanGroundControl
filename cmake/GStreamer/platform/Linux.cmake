@@ -1,0 +1,64 @@
+# Linux GStreamer SDK discovery — invoked by Orchestrator.cmake.
+
+include_guard(GLOBAL)
+
+# _qgc_gst_discover_linux_sdk()
+# Uses the GStreamer under GStreamer_ROOT_DIR, else the system one (/usr, or CMAKE_SYSROOT/usr), and prepends its
+# pkgconfig directory to PKG_CONFIG_PATH.
+# cmake-lint: disable=C0103
+function(_qgc_gst_discover_linux_sdk)
+    if(NOT GStreamer_ROOT_DIR)
+        if(CMAKE_SYSROOT)
+            set(GStreamer_ROOT_DIR "${CMAKE_SYSROOT}/usr")
+        else()
+            set(GStreamer_ROOT_DIR "/usr")
+        endif()
+    endif()
+
+    # Candidate multiarch triplets: explicit CMAKE_LIBRARY_ARCHITECTURE first, then
+    # any lib/<triplet> that actually contains gstreamer-1.0 (handles musl,
+    # arm-linux-gnueabihf, and non-Debian layouts where the triplet is unset).
+    set(_gst_linux_triplet_candidates)
+    if(CMAKE_LIBRARY_ARCHITECTURE)
+        list(APPEND _gst_linux_triplet_candidates "${CMAKE_LIBRARY_ARCHITECTURE}")
+    endif()
+    list(APPEND _gst_linux_triplet_candidates "${CMAKE_SYSTEM_PROCESSOR}-linux-gnu")
+    # musl sysroots use a -linux-musl triplet and often leave CMAKE_LIBRARY_ARCHITECTURE unset.
+    list(APPEND _gst_linux_triplet_candidates "${CMAKE_SYSTEM_PROCESSOR}-linux-musl")
+    file(
+        GLOB _gst_linux_multiarch_dirs
+        LIST_DIRECTORIES true
+        "${GStreamer_ROOT_DIR}/lib/*-linux-*"
+    )
+    foreach(_d IN LISTS _gst_linux_multiarch_dirs)
+        cmake_path(GET _d FILENAME _d_name)
+        list(APPEND _gst_linux_triplet_candidates "${_d_name}")
+    endforeach()
+    list(REMOVE_DUPLICATES _gst_linux_triplet_candidates)
+
+    set(_gst_linux_lib "")
+    foreach(_triplet IN LISTS _gst_linux_triplet_candidates)
+        if(EXISTS "${GStreamer_ROOT_DIR}/lib/${_triplet}/gstreamer-1.0")
+            set(_gst_linux_lib "${GStreamer_ROOT_DIR}/lib/${_triplet}")
+            break()
+        endif()
+    endforeach()
+    if(NOT _gst_linux_lib)
+        if(EXISTS "${GStreamer_ROOT_DIR}/lib64/gstreamer-1.0")
+            set(_gst_linux_lib "${GStreamer_ROOT_DIR}/lib64")
+        elseif(EXISTS "${GStreamer_ROOT_DIR}/lib/gstreamer-1.0")
+            set(_gst_linux_lib "${GStreamer_ROOT_DIR}/lib")
+        else()
+            message(
+                FATAL_ERROR
+                    "Could not locate GStreamer libraries - check installation or set environment/cmake variables"
+            )
+        endif()
+    endif()
+
+    gstreamer_create_layout_target(SDK_ROOT "${GStreamer_ROOT_DIR}" LIB_PATH "${_gst_linux_lib}")
+
+    # Prepend SDK pkgconfig dir so system glib/gobject .pc files remain discoverable.
+    gstreamer_apply_pkgconfig_env(MODE SYSTEM_AUGMENT LIBDIR "${GSTREAMER_LIB_PATH}/pkgconfig")
+    _qgc_gst_return_discovery()
+endfunction()

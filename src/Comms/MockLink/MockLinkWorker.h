@@ -5,8 +5,10 @@
 class MockLink;
 class QTimer;
 
-/// Worker class that runs periodic tasks for MockLink simulation.
+/// \brief Worker class that runs periodic tasks for MockLink simulation.
+///
 /// Operates on a separate thread to avoid blocking the main thread.
+///
 class MockLinkWorker : public QObject
 {
     Q_OBJECT
@@ -19,6 +21,7 @@ public:
     static constexpr int kTimer1HzIntervalMs = 1000;        ///< 1 Hz tasks (battery, sys status, ADSB, etc.)
     static constexpr int kTimer10HzIntervalMs = 100;        ///< 10 Hz tasks (heartbeat, GPS, position)
     static constexpr int kTimer500HzIntervalMs = 2;         ///< 500 Hz tasks (param list, log download)
+    static constexpr int kBootStatusTextDelayMs = 2000;     ///< Delay before sending the non-critical status text messages
     static constexpr int kStatusTextDelayMs = 10000;        ///< Delay before sending status text messages
 
 public slots:
@@ -31,6 +34,7 @@ private slots:
     void run500HzTasks();
 
     void sendStatusTextMessages();
+    void sendBootStatusTextMessages();
 
 private:
     MockLink *_mockLink = nullptr;
@@ -38,4 +42,5 @@ private:
     QTimer *_timer10Hz = nullptr;
     QTimer *_timer500Hz = nullptr;
     QTimer *_timerStatusText = nullptr;
+    QTimer *_timerBootStatusText = nullptr;
 };

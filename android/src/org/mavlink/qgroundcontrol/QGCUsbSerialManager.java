@@ -5,6 +5,7 @@ import android.content.*;
 import android.hardware.usb.*;
 import android.os.Build;
 import android.os.Process;
+import androidx.core.content.ContextCompat;
 import com.hoho.android.usbserial.driver.*;
 import com.hoho.android.usbserial.util.*;
 
@@ -354,13 +355,7 @@ public class QGCUsbSerialManager {
         filter.addAction(ACTION_USB_PERMISSION);
 
         try {
-            if (android.os.Build.VERSION.SDK_INT >=
-                android.os.Build.VERSION_CODES.TIRAMISU) {
-                int flags = Context.RECEIVER_NOT_EXPORTED;
-                context.registerReceiver(usbReceiver, filter, flags);
-            } else {
-                context.registerReceiver(usbReceiver, filter);
-            }
+            ContextCompat.registerReceiver(context, usbReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED);
 
             receiverRegistered = true;
             QGCLogger.i(TAG, "BroadcastReceiver registered successfully.");
@@ -1071,6 +1066,34 @@ public class QGCUsbSerialManager {
     }
 
     /**
+     * Writes data to the USB serial device and reports partial progress on timeout.
+     *
+     * @param deviceId    The device ID.
+     * @param data        The byte array of data to write.
+     * @param length      The number of bytes to write.
+     * @param timeoutMSec The timeout in milliseconds; 0 waits without limit.
+     * @return The number of bytes written, fewer than length on timeout, or -1 if failed.
+     */
+    public static int writeWithProgress(final int deviceId, final byte[] data, final int length, final int timeoutMSec) {
+        final UsbSerialPort port = getOpenPortOrWarn(deviceId, "writeWithProgress");
+        if (port == null) {
+            return -1;
+        }
+
+        try {
+            port.write(data, length, timeoutMSec);
+            return length;
+        } catch (final SerialTimeoutException e) {
+            final int transferred = Math.max(0, Math.min(e.bytesTransferred, length));
+            QGCLogger.d(TAG, "Write timed out after " + transferred + " of " + length + " bytes");
+            return transferred;
+        } catch (final IOException e) {
+            QGCLogger.e(TAG, "Error writing data", e);
+            return -1;
+        }
+    }
+
+    /**
      * Writes data asynchronously to the USB serial device.
      *
      * @param deviceId    The device ID.
@@ -1237,16 +1260,30 @@ public class QGCUsbSerialManager {
      * @return True if supported, false otherwise.
      */
     private static boolean isControlLineSupported(final UsbSerialPort port, final UsbSerialPort.ControlLine controlLine) {
-        EnumSet<UsbSerialPort.ControlLine> supportedControlLines;
+        return controlLineSupport(port, controlLine) == 1;
+    }
 
+    // 1: supported, 0: unsupported, -1: capability query failed. Shared with JNI.
+    static int controlLineSupport(final UsbSerialPort port, final UsbSerialPort.ControlLine controlLine) {
+        if (port == null) {
+            return -1;
+        }
         try {
-            supportedControlLines = port.getSupportedControlLines();
+            return port.getSupportedControlLines().contains(controlLine) ? 1 : 0;
+        } catch (final UnsupportedOperationException e) {
+            return 0;
         } catch (final IOException e) {
             QGCLogger.e(TAG, "Error getting supported control lines", e);
-            return false;
+            return -1;
         }
+    }
 
-        return supportedControlLines.contains(controlLine);
+    public static int getDataTerminalReadySupport(final int deviceId) {
+        return controlLineSupport(getOpenPortOrWarn(deviceId, "get DTR support"), UsbSerialPort.ControlLine.DTR);
+    }
+
+    public static int getRequestToSendSupport(final int deviceId) {
+        return controlLineSupport(getOpenPortOrWarn(deviceId, "get RTS support"), UsbSerialPort.ControlLine.RTS);
     }
 
     /**

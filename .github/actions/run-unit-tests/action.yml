@@ -5,6 +5,12 @@ inputs:
   build-dir:
     description: Path to CMake build directory
     required: true
+  build-type:
+    description: CTest configuration for multi-config generators
+    default: ''
+  tests-regex:
+    description: Optional CTest test-name filter
+    default: ''
   junit-output:
     description: JUnit XML output filename
     required: false
@@ -25,6 +31,18 @@ inputs:
     description: Number of parallel CTest jobs, or 'auto'
     required: false
     default: auto
+  repeat:
+    description: CTest --repeat spec (e.g. 'until-fail:5'). Empty = no repeat.
+    required: false
+    default: ''
+  shard-index:
+    description: 0-based shard index. Ignored unless shard-count > 1.
+    required: false
+    default: '0'
+  shard-count:
+    description: Total shards. 0 or 1 disables sharding (default).
+    required: false
+    default: '0'
 
 runs:
   using: composite
@@ -34,15 +52,37 @@ runs:
       shell: bash
       run: |
         python3 "${GITHUB_WORKSPACE}/.github/scripts/cmake_helper.py" detect-jobs \
-          --parallel "${{ inputs.parallel }}"
+          --parallel "${INPUTS_PARALLEL}"
+      env:
+        INPUTS_PARALLEL: ${{ inputs.parallel }}
 
     - name: Run CTest
       shell: bash
       working-directory: ${{ inputs.build-dir }}
       run: |
-        python3 "${GITHUB_WORKSPACE}/.github/scripts/cmake_helper.py" ctest \
-          --junit-output "${{ inputs.junit-output }}" \
-          --ctest-output "${{ inputs.ctest-output }}" \
-          --jobs "${{ steps.jobs.outputs.jobs }}" \
-          --include-labels "${{ inputs.include-labels }}" \
-          --exclude-labels "${{ inputs.exclude-labels }}"
+        args=(
+          --junit-output "${INPUTS_JUNIT_OUTPUT}"
+          --ctest-output "${INPUTS_CTEST_OUTPUT}"
+          --jobs "${STEPS_JOBS_OUTPUTS_JOBS}"
+          --build-type "${INPUTS_BUILD_TYPE}"
+          --tests-regex "${INPUTS_TESTS_REGEX}"
+          --include-labels "${INPUTS_INCLUDE_LABELS}"
+          --exclude-labels "${INPUTS_EXCLUDE_LABELS}"
+        )
+        [[ -n "${INPUTS_REPEAT}" ]] && args+=(--repeat "${INPUTS_REPEAT}")
+        [[ "${INPUTS_SHARD_COUNT}" -gt 1 ]] && args+=(
+          --shard-index "${INPUTS_SHARD_INDEX}"
+          --shard-count "${INPUTS_SHARD_COUNT}"
+        )
+        python3 "${GITHUB_WORKSPACE}/.github/scripts/cmake_helper.py" ctest "${args[@]}"
+      env:
+        INPUTS_JUNIT_OUTPUT: ${{ inputs.junit-output }}
+        INPUTS_CTEST_OUTPUT: ${{ inputs.ctest-output }}
+        STEPS_JOBS_OUTPUTS_JOBS: ${{ steps.jobs.outputs.jobs }}
+        INPUTS_INCLUDE_LABELS: ${{ inputs.include-labels }}
+        INPUTS_EXCLUDE_LABELS: ${{ inputs.exclude-labels }}
+        INPUTS_BUILD_TYPE: ${{ inputs.build-type }}
+        INPUTS_TESTS_REGEX: ${{ inputs.tests-regex }}
+        INPUTS_REPEAT: ${{ inputs.repeat }}
+        INPUTS_SHARD_COUNT: ${{ inputs.shard-count }}
+        INPUTS_SHARD_INDEX: ${{ inputs.shard-index }}

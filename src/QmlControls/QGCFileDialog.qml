@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
 import QtQuick.Layouts
-import Qt.labs.platform as Labs
 
 import QGroundControl
 import QGroundControl.Controls
@@ -26,7 +25,15 @@ Item {
 
     function openForLoad() {
         _openForLoad = true
-        if (_mobileDlg && folder.length !== 0) {
+        if (QGCFileDialogController.testHookArmed()) {
+            // Unit test shim: bypass the native dialog and produce the armed result
+            var testFile = QGCFileDialogController.takeTestNextFile()
+            if (testFile.length === 0) {
+                _root.rejected()
+            } else {
+                _root.acceptedForLoad(testFile)
+            }
+        } else if (_mobileDlg && folder.length !== 0) {
             mobileFileOpenDialogFactory.open()
         } else if (selectFolder) {
             fullFolderDialog.open()
@@ -38,7 +45,15 @@ Item {
 
     function openForSave() {
         _openForLoad = false
-        if (_mobileDlg && folder.length !== 0) {
+        if (QGCFileDialogController.testHookArmed()) {
+            // Unit test shim: bypass the native dialog and produce the armed result
+            var testFile = QGCFileDialogController.takeTestNextFile()
+            if (testFile.length === 0) {
+                _root.rejected()
+            } else {
+                _root.acceptedForSave(testFile)
+            }
+        } else if (_mobileDlg && folder.length !== 0) {
             mobileFileSaveDialogFactory.open()
         } else {
             fullFileDialog.fileMode = FileDialog.SaveFile
@@ -108,7 +123,7 @@ Item {
 
     FileDialog {
         id:             fullFileDialog
-        currentFolder:  "file:///" + _root.folder
+        currentFolder:  QGCFileDialogController.localFileToUrl(_root.folder)
         nameFilters:    _root.nameFilters ? _root.nameFilters : []
         title:          _root.title
         defaultSuffix:  _root.defaultSuffix
@@ -124,12 +139,12 @@ Item {
         onRejected: _root.rejected()
     }
 
-    Labs.FolderDialog {
+    FolderDialog {
         id:             fullFolderDialog
-        currentFolder:  "file:///" + _root.folder
+        currentFolder:  QGCFileDialogController.localFileToUrl(_root.folder)
         title:          _root.title
 
-        onAccepted: _root.acceptedForLoad(QGCFileDialogController.urlToLocalFile(folder))
+        onAccepted: _root.acceptedForLoad(QGCFileDialogController.urlToLocalFile(selectedFolder))
         onRejected: _root.rejected()
     }
 

@@ -14,6 +14,9 @@
 #include <QtPositioning/QGeoCoordinate>
 #include <QtQmlIntegration/QtQmlIntegration>
 
+#include <array>
+#include <atomic>
+
 #include "QGCMAVLink.h"
 #include "VehicleFactGroup.h"
 #include "VehicleSigningController.h"  // Q_PROPERTY needs the full QObject type for moc/QML metatype registration
@@ -24,6 +27,7 @@ class AIChatController;
 class HealthAndArmingCheckReport;
 class MAVLinkStreamConfig;
 class QGCMapCircle;
+class QJsonDocument;
 class QmlObjectListModel;
 class SysStatusSensorInfo;
 class VehicleLinkManager;
@@ -38,9 +42,7 @@ class VehicleDistanceSensorFactGroup;
 class VehicleEFIFactGroup;
 class VehicleEstimatorStatusFactGroup;
 class VehicleGeneratorFactGroup;
-class VehicleGPS2FactGroup;
 class VehicleGPSFactGroup;
-class VehicleGPSAggregateFactGroup;
 class VehicleHygrometerFactGroup;
 class VehicleLocalPositionFactGroup;
 class VehicleLocalPositionSetpointFactGroup;
@@ -100,6 +102,7 @@ class Vehicle : public VehicleFactGroup, public VehicleTypes
     Q_MOC_INCLUDE("VehicleLinkManager.h")
     Q_MOC_INCLUDE("VehicleObjectAvoidance.h")
     Q_MOC_INCLUDE("VehicleSupports.h")
+    Q_MOC_INCLUDE("VehicleGPSFactGroup.h")
 
     friend class InitialConnectStateMachine;
     friend class VehicleLinkManager;
@@ -203,12 +206,16 @@ public:
     Q_PROPERTY(AIChatController*    aiChatController            READ aiChatController                                               CONSTANT)
     Q_PROPERTY(bool                 hasGripper                  READ hasGripper                                                     NOTIFY hasGripperChanged)
     Q_PROPERTY(bool                 isROIEnabled                READ isROIEnabled                                                   NOTIFY isROIEnabledChanged)
+    Q_PROPERTY(double               roiRelativeAltitudeMeters   READ roiRelativeAltitudeMeters                                      NOTIFY roiRelativeAltitudeMetersChanged)
     Q_PROPERTY(CheckList            checkListState              READ checkListState             WRITE setCheckListState             NOTIFY checkListStateChanged)
     Q_PROPERTY(bool                 readyToFlyAvailable         READ readyToFlyAvailable                                            NOTIFY readyToFlyAvailableChanged)  ///< true: readyToFly signalling is available on this vehicle
     Q_PROPERTY(bool                 readyToFly                  READ readyToFly                                                     NOTIFY readyToFlyChanged)
     Q_PROPERTY(QObject*             sysStatusSensorInfo         READ sysStatusSensorInfo                                            CONSTANT)
     Q_PROPERTY(bool                 allSensorsHealthy           READ allSensorsHealthy                                              NOTIFY allSensorsHealthyChanged)    //< true: all sensors in SYS_STATUS reported as healthy
     Q_PROPERTY(bool                 requiresGpsFix              READ requiresGpsFix                                                 NOTIFY requiresGpsFixChanged)
+    Q_PROPERTY(bool                 rebootRequired              READ rebootRequired                                                 NOTIFY rebootRequiredChanged)
+    Q_PROPERTY(QString              newStableFirmwareVersion    READ newStableFirmwareVersion                                       NOTIFY newStableFirmwareVersionChanged) ///< Non-empty when vehicle firmware is older than this stable version
+    Q_PROPERTY(bool                 newStableFirmwareVersionAcknowledged READ newStableFirmwareVersionAcknowledged                  NOTIFY newStableFirmwareVersionChanged)
     Q_PROPERTY(double               loadProgress                READ loadProgress                                                   NOTIFY loadProgressChanged)
     Q_PROPERTY(bool                 initialConnectComplete      READ isInitialConnectComplete                                       NOTIFY initialConnectComplete)
 
@@ -217,7 +224,9 @@ public:
     Q_PROPERTY(QGCMapCircle*    orbitMapCircle  READ orbitMapCircle     CONSTANT)
 
     // Vehicle state used for guided control
-    Q_PROPERTY(bool     flying                  READ flying                                         NOTIFY flyingChanged)       ///< Vehicle is flying
+    Q_PROPERTY(bool underway READ underway NOTIFY underwayChanged)  ///< Vehicle is flying, driving or diving
+    Q_PROPERTY(
+        bool airborne READ airborne NOTIFY airborneChanged)  ///< Vehicle is underway and is not a rover/boat or sub
     Q_PROPERTY(bool     landing                 READ landing                                        NOTIFY landingChanged)      ///< Vehicle is in landing pattern (DO_LAND_START)
     Q_PROPERTY(bool     guidedMode              READ guidedMode                 WRITE setGuidedMode NOTIFY guidedModeChanged)   ///< Vehicle is in Guided mode and can respond to guided commands
     Q_PROPERTY(QString  gotoFlightMode          READ gotoFlightMode                                 CONSTANT)                   ///< Flight mode vehicle is in while performing goto
@@ -233,9 +242,8 @@ public:
     // FactGroup object model properties
 
     Q_PROPERTY(FactGroup*           vehicle         READ vehicleFactGroup           CONSTANT)
-    Q_PROPERTY(FactGroup*           gps             READ gpsFactGroup               CONSTANT)
-    Q_PROPERTY(FactGroup*           gps2            READ gps2FactGroup              CONSTANT)
-    Q_PROPERTY(FactGroup*           gpsAggregate    READ gpsAggregateFactGroup      CONSTANT)
+    Q_PROPERTY(VehicleGPSFactGroup* gps READ gpsFactGroup CONSTANT)
+    Q_PROPERTY(VehicleGPSFactGroup* gps2 READ gps2FactGroup CONSTANT)
     Q_PROPERTY(FactGroup*           wind            READ windFactGroup              CONSTANT)
     Q_PROPERTY(FactGroup*           vibration       READ vibrationFactGroup         CONSTANT)
     Q_PROPERTY(FactGroup*           temperature     READ temperatureFactGroup       CONSTANT)
@@ -329,9 +337,11 @@ public:
     ///     @param amslAltitude Desired vehicle altitude
     Q_INVOKABLE void guidedModeOrbit(const QGeoCoordinate& centerCoord, double radius, double amslAltitude);
 
-    /// Command vehicle to keep given point as ROI
-    ///     @param centerCoord ROI coordinates
-    Q_INVOKABLE void guidedModeROI(const QGeoCoordinate& centerCoord);
+    /// Command vehicle to set a Region Of Interest at the specified location.
+    ///     @param centerCoord ROI location (altitude within the coordinate is ignored)
+    ///     @param relativeAltitudeMeters ROI altitude in meters above home
+    /// @return true: ROI command sent, false: unable to send
+    Q_INVOKABLE bool guidedModeROI(const QGeoCoordinate &centerCoord, double relativeAltitudeMeters);
     Q_INVOKABLE void stopGuidedModeROI();
 
     /// Command vehicle to pause at current location. If vehicle supports guide mode, vehicle will be left
@@ -360,8 +370,19 @@ public:
     /// Reboot vehicle
     Q_INVOKABLE void rebootVehicle();
 
+    /// Latches rebootRequired until the vehicle reboots
+    void setRebootRequired();
+
+    void setNewStableFirmwareVersion(const QString& version);
+
+    /// Hides the update indicator until a newer stable firmware is released
+    Q_INVOKABLE void acknowledgeNewStableFirmwareVersion();
+
     Q_INVOKABLE void sendPlan(QString planFile);
     Q_INVOKABLE void setEstimatorOrigin(const QGeoCoordinate& centerCoord);
+
+    /// Fallback for setEstimatorOrigin which sends the deprecated SET_GPS_GLOBAL_ORIGIN message.
+    void setEstimatorOrigin_SET_GPS_GLOBAL_ORIGIN(const QGeoCoordinate& centerCoord);
 
     /// Used to check if running current version is equal or higher than the one being compared.
     //  returns 1 if current > compare, 0 if current == compare, -1 if current < compare
@@ -424,6 +445,9 @@ public:
     void updateFlightDistance(double distance);
 
     void sendJoystickDataThreadSafe (float roll, float pitch, float yaw, float thrust, quint16 buttons, quint16 buttons2, float pitchExtension, float rollExtension, float aux1, float aux2, float aux3, float aux4, float aux5, float aux6);
+    /// Sends RC_CHANNELS_OVERRIDE for joystick aux axes mapped to RC channels 5–10 only.
+    static constexpr int kAuxRcOverrideChannelCount = 6; ///< Number of RC channels overridden (channels 5–10)
+    void sendJoystickAuxRcOverrideThreadSafe(const std::array<uint16_t, kAuxRcOverrideChannelCount> &channelValues, const std::array<bool, kAuxRcOverrideChannelCount> &channelEnabled, bool useRcOverride);
 
     // Property accesors
     int id() const{ return _systemID; }
@@ -502,7 +526,11 @@ public:
     uint            messagesReceived            () const{ return _messagesReceived; }
     uint            messagesSent                () const{ return _messagesSent; }
     uint            messagesLost                () const{ return _messagesLost; }
-    bool            flying                      () const { return _flying; }
+
+    bool underway() const { return _underway; }
+
+    bool airborne() const { return _airborne; }
+
     bool            landing                     () const { return _landing; }
     bool            guidedMode                  () const;
     bool            inFwdFlight                 () const;
@@ -538,6 +566,9 @@ public:
     bool            allSensorsHealthy           () const{ return _allSensorsHealthy; }
     QObject*        sysStatusSensorInfo         ();
     bool            requiresGpsFix              () const { return static_cast<bool>(_onboardControlSensorsPresent & MAV_SYS_STATUS_SENSOR_GPS); }
+    bool            rebootRequired              () const { return _rebootRequired; }
+    QString         newStableFirmwareVersion    () const { return _newStableFirmwareVersion; }
+    bool            newStableFirmwareVersionAcknowledged() const { return _newStableFirmwareVersionAcknowledged; }
     bool            hilMode                     () const { return _base_mode & MAV_MODE_FLAG_HIL_ENABLED; }
     Actuators*      actuators                   () const { return _actuators; }
     VehicleSigningController* signingController() { return _signingController; }
@@ -546,13 +577,10 @@ public:
     void startCalibration   (QGCMAVLink::CalibrationType calType);
     void stopCalibration    (bool showError);
 
-    void startUAVCANBusConfig(void);
-    void stopUAVCANBusConfig(void);
+    FactGroup* vehicleFactGroup() { return _vehicleFactGroup; }
 
-    FactGroup* vehicleFactGroup             () { return _vehicleFactGroup; }
-    FactGroup* gpsFactGroup                 ();
-    FactGroup* gps2FactGroup                ();
-    FactGroup* gpsAggregateFactGroup        ();
+    VehicleGPSFactGroup* gpsFactGroup();
+    VehicleGPSFactGroup* gps2FactGroup();
     FactGroup* windFactGroup                ();
     FactGroup* vibrationFactGroup           ();
     FactGroup* temperatureFactGroup         ();
@@ -641,6 +669,14 @@ public:
         bool showError,
         float param1 = 0.0f, float param2 = 0.0f, float param3 = 0.0f, float param4 = 0.0f, float param5 = 0.0f, float param6 = 0.0f, float param7 = 0.0f);
 
+    /// Sends the command as a COMMAND_INT and calls the fallback lambda function in
+    /// case the command is MAV_RESULT_UNSUPPORTED
+    void sendMavCommandIntWithLambdaFallback(
+        std::function<void()> lambda,
+        int compId, MAV_CMD command, MAV_FRAME frame,
+        bool showError,
+        float param1 = 0.0f, float param2 = 0.0f, float param3 = 0.0f, float param4 = 0.0f, double param5 = 0.0, double param6 = 0.0, float param7 = 0.0f);
+
 
     static QString requestMessageResultHandlerFailureCodeToString(RequestMessageResultHandlerFailureCode_t failureCode);
 
@@ -709,7 +745,7 @@ public:
 
     void forceInitialPlanRequestComplete();
 
-    void _setFlying(bool flying);
+    void _setUnderway(bool underway);
     void _setLanding(bool landing);
     void _setHomePosition(QGeoCoordinate& homeCoord);
 
@@ -726,12 +762,15 @@ public:
 
     bool        isROIEnabled            () const{ return _isROIEnabled; }
 
+    /// Last commanded ROI altitude in meters above home. Used to preserve the altitude when the ROI is re-positioned.
+    double      roiRelativeAltitudeMeters() const{ return _roiRelativeAltitudeMeters; }
+
     CheckList   checkListState          () { return _checkListState; }
     void        setCheckListState       (CheckList cl)  { _checkListState = cl; emit checkListStateChanged(); }
 
     double loadProgress                 () const { return _loadProgress; }
 
-    void setActuatorsMetadata(uint8_t compid, const QString& metadataJsonFileName);
+    void setActuatorsMetadata(uint8_t compid, const QString& metadataJsonFileName, const QJsonDocument& metadataJson);
 
     GimbalController* gimbalController  () { return _gimbalController; }
     AIChatController* aiChatController  () { return _aiChatController; }
@@ -750,7 +789,8 @@ signals:
     void armedPositionChanged();
     void armedChanged                   (bool armed);
     void flightModeChanged              (const QString& flightMode);
-    void flyingChanged                  (bool flying);
+    void underwayChanged(bool underway);
+    void airborneChanged(bool airborne);
     void landingChanged                 (bool landing);
     void guidedModeChanged              (bool guidedMode);
     void inFwdFlightChanged             ();
@@ -780,6 +820,8 @@ signals:
     void readyToFlyChanged              (bool readyToFy);
     void allSensorsHealthyChanged       (bool allSensorsHealthy);
     void requiresGpsFixChanged          ();
+    void rebootRequiredChanged          ();
+    void newStableFirmwareVersionChanged();
     void haveMRSpeedLimChanged          ();
     void haveFWSpeedLimChanged          ();
     void hasGripperChanged              ();
@@ -819,6 +861,7 @@ signals:
     void mavlinkStatusChanged           ();
 
     void isROIEnabledChanged            ();
+    void roiRelativeAltitudeMetersChanged();
     void roiCoordChanged                (const QGeoCoordinate& centerCoord);
     void initialConnectComplete         ();
 
@@ -833,6 +876,7 @@ private slots:
     void _parametersReady                   (bool parametersReady);
     void _handleFlightModeChanged           (const QString& flightMode);
     void _announceArmedChanged              (bool armed);
+    void _updateAirborne();
     void _offlineCruiseSpeedSettingChanged  (QVariant value);
     void _offlineHoverSpeedSettingChanged   (QVariant value);
     void _prearmErrorTimeout                ();
@@ -874,9 +918,7 @@ private:
     void _handleFenceStatus             (const mavlink_message_t& message);
 
     // ArduPilot dialect messages
-#if !defined(QGC_NO_ARDUPILOT_DIALECT)
     void _handleCameraFeedback          (const mavlink_message_t& message);
-#endif
     void _handleCameraImageCaptured     (const mavlink_message_t& message);
     void _handleCommandLong             (const mavlink_message_t& message);
     void _missionManagerError           (int errorCode, const QString& errorMsg);
@@ -890,6 +932,8 @@ private:
     void _commonInit                    (LinkInterface* link);
     void _setupAutoDisarmSignalling     ();
     void _setCapabilities               (uint64_t capabilityBits);
+    QString _acknowledgedStableFirmwareSettingsKey() const;
+    bool _isNewStableFirmwareVersionAcknowledged() const;
     void _updateArmed                   (bool armed);
     bool _apmArmingNotRequired          ();
     void _initializeCsv                 ();
@@ -935,7 +979,8 @@ private:
     qreal           _initialGCSPressure = 0.;
     qreal           _initialGCSTemperature = 0.;
 
-    bool            _flying = false;
+    bool _underway = false;
+    bool _airborne = false;
     bool            _landing = false;
     bool            _vtolInFwdFlight = false;
     uint32_t        _onboardControlSensorsPresent = 0;
@@ -945,6 +990,7 @@ private:
     bool            _gpsRawIntMessageAvailable              = false;
     bool            _gps2RawMessageAvailable                = false;
     bool            _globalPositionIntMessageAvailable      = false;
+    bool            _cameraImageCapturedMessageAvailable    = false;
     double          _defaultCruiseSpeed = qQNaN();
     double          _defaultHoverSpeed = qQNaN();
     bool            _capabilityBitsKnown                    = false;
@@ -953,7 +999,11 @@ private:
     bool            _readyToFlyAvailable                    = false;
     bool            _readyToFly                             = false;
     bool            _allSensorsHealthy                      = true;
+    bool            _rebootRequired                         = false;
+    QString         _newStableFirmwareVersion;
+    bool            _newStableFirmwareVersionAcknowledged   = false;
     VehicleSigningController* _signingController            = nullptr;
+    std::atomic<bool> _joystickAuxRcOverrideActive           = false;
 
     std::unique_ptr<SysStatusSensorInfo> _sysStatusSensorInfo;
 
@@ -1009,6 +1059,7 @@ private:
     bool                _heardFrom = false;
 
     bool                _isROIEnabled   = false;
+    double              _roiRelativeAltitudeMeters = 0;
 \
     bool _checkLatestStableFWDone = false;
     int _firmwareMajorVersion = versionNotSetValue;
@@ -1050,12 +1101,6 @@ private:
     RequestMessageCoordinator*  _reqMsgCoord    = nullptr;
 
 public:
-    /// Ack timeout used in unit tests — kept on Vehicle for source-compat with
-    /// existing tests (mirrors MavCommandQueue::kTestAckTimeoutMs).
-    static constexpr int _mavCommandMaxRetryCount    = 3;
-    static constexpr int kTestMavCommandAckTimeoutMs = 500;
-    static constexpr int kTestMavCommandMaxWaitMs    = kTestMavCommandAckTimeoutMs * _mavCommandMaxRetryCount * 2;
-
     /// Test-only helper: forwards to MavCommandQueue::findEntryIndex.
     int  _findMavCommandListEntryIndex(int targetCompId, MAV_CMD command);
 
@@ -1072,7 +1117,6 @@ public:
     const QString _vehicleFactGroupName =            QStringLiteral("vehicle");
     const QString _gpsFactGroupName =                QStringLiteral("gps");
     const QString _gps2FactGroupName =               QStringLiteral("gps2");
-    const QString _gpsAggregateFactGroupName =       QStringLiteral("gpsAggregate");
     const QString _windFactGroupName =               QStringLiteral("wind");
     const QString _vibrationFactGroupName =          QStringLiteral("vibration");
     const QString _temperatureFactGroupName =        QStringLiteral("temperature");
@@ -1091,8 +1135,7 @@ public:
 
     VehicleFactGroup*               _vehicleFactGroup;
     VehicleGPSFactGroup*                _gpsFactGroup               = nullptr;
-    VehicleGPS2FactGroup*               _gps2FactGroup              = nullptr;
-    VehicleGPSAggregateFactGroup*       _gpsAggregateFactGroup      = nullptr;
+    VehicleGPSFactGroup* _gps2FactGroup = nullptr;
     VehicleWindFactGroup*               _windFactGroup              = nullptr;
     VehicleVibrationFactGroup*          _vibrationFactGroup         = nullptr;
     VehicleTemperatureFactGroup*        _temperatureFactGroup       = nullptr;
@@ -1165,7 +1208,7 @@ private:
     void _handleCommandRequestOperatorControl(const mavlink_command_long_t commandLong);
     static void _requestOperatorControlAckHandler(void* resultHandlerData, int compId, const mavlink_command_ack_t& ack, MavCmdResultFailureCode_t failureCode);
 
-    Q_PROPERTY(uint8_t sysidInControl                        READ sysidInControl                        NOTIFY gcsControlStatusChanged)
+    Q_PROPERTY(uint8_t gcsMain                               READ gcsMain                               NOTIFY gcsControlStatusChanged)
     Q_PROPERTY(bool    gcsControlStatusFlags_SystemManager   READ gcsControlStatusFlags_SystemManager   NOTIFY gcsControlStatusChanged)
     Q_PROPERTY(bool    gcsControlStatusFlags_TakeoverAllowed READ gcsControlStatusFlags_TakeoverAllowed NOTIFY gcsControlStatusChanged)
     Q_PROPERTY(bool    firstControlStatusReceived            READ firstControlStatusReceived            NOTIFY gcsControlStatusChanged)
@@ -1173,7 +1216,7 @@ private:
     Q_PROPERTY(int     requestOperatorControlRemainingMsecs  READ requestOperatorControlRemainingMsecs  CONSTANT)
     Q_PROPERTY(bool    sendControlRequestAllowed             READ sendControlRequestAllowed             NOTIFY sendControlRequestAllowedChanged)
 
-    uint8_t sysidInControl() const { return _sysid_in_control; }
+    uint8_t gcsMain() const { return _gcsMain; }
     bool    gcsControlStatusFlags_SystemManager() const { return _gcsControlStatusFlags_SystemManager; }
     bool    gcsControlStatusFlags_TakeoverAllowed() const { return _gcsControlStatusFlags_TakeoverAllowed; }
     bool    firstControlStatusReceived() const { return _firstControlStatusReceived; }
@@ -1182,7 +1225,7 @@ private:
     bool    sendControlRequestAllowed() const { return _sendControlRequestAllowed; }
     void    requestOperatorControlStartTimer(int requestTimeoutMsecs);
 
-    uint8_t _sysid_in_control = 0;
+    uint8_t _gcsMain = 0;
     uint8_t _gcsControlStatusFlags = 0;
     bool    _gcsControlStatusFlags_SystemManager = 0;
     bool    _gcsControlStatusFlags_TakeoverAllowed = 0;
@@ -1200,25 +1243,22 @@ signals:
 /*                         STATUS TEXT HANDLER                               */
 /*===========================================================================*/
 private:
-    Q_PROPERTY(bool    messageTypeNone    READ messageTypeNone    NOTIFY messageTypeChanged)
-    Q_PROPERTY(bool    messageTypeNormal  READ messageTypeNormal  NOTIFY messageTypeChanged)
-    Q_PROPERTY(bool    messageTypeWarning READ messageTypeWarning NOTIFY messageTypeChanged)
-    Q_PROPERTY(bool    messageTypeError   READ messageTypeError   NOTIFY messageTypeChanged)
-    Q_PROPERTY(int     messageCount       READ messageCount       NOTIFY messageCountChanged)
-    Q_PROPERTY(QString formattedMessages  READ formattedMessages  NOTIFY formattedMessagesChanged)
+    Q_PROPERTY(int unreadCriticalMessageCount READ unreadCriticalMessageCount NOTIFY unreadCriticalMessageCountChanged)
+    Q_PROPERTY(int unreadWarningMessageCount READ unreadWarningMessageCount NOTIFY unreadWarningMessageCountChanged)
+    Q_PROPERTY(bool hasUnreadMessages READ hasUnreadMessages NOTIFY hasUnreadMessagesChanged)
+    Q_PROPERTY(int unreadMessageCount READ unreadMessageCount NOTIFY unreadMessageCountChanged)
+    Q_PROPERTY(QString formattedMessages READ formattedMessages NOTIFY formattedMessagesChanged)
 
     // Q_PROPERTY(StatusTextHandler *statusTextHandler READ statusTextHandler NOTIFY statusTextHandlerChanged)
 
 public:
-    Q_INVOKABLE void resetAllMessages();
-    Q_INVOKABLE void resetErrorLevelMessages();
     Q_INVOKABLE void clearMessages();
+    Q_INVOKABLE void markMessagesRead();
 
-    bool messageTypeNone() const;
-    bool messageTypeNormal() const;
-    bool messageTypeWarning() const;
-    bool messageTypeError() const;
-    int messageCount() const;
+    int unreadCriticalMessageCount() const;
+    int unreadWarningMessageCount() const;
+    bool hasUnreadMessages() const;
+    int unreadMessageCount() const;
     QString formattedMessages() const;
 
     // StatusTextHandler* statusTextHandler() { return m_statusTextHandler; }
@@ -1229,8 +1269,10 @@ signals:
     void messagesReceivedChanged();
     void messagesSentChanged();
     void messagesLostChanged();
-    void messageTypeChanged();
-    void messageCountChanged();
+    void unreadCriticalMessageCountChanged();
+    void unreadWarningMessageCountChanged();
+    void hasUnreadMessagesChanged();
+    void unreadMessageCountChanged();
     void formattedMessagesChanged();
     void newFormattedMessage(QString formattedMessage);
 
@@ -1314,7 +1356,7 @@ private:
 
 public:
     HealthAndArmingCheckReport* healthAndArmingCheckReport();
-    
+
     void setEventsMetadata(uint8_t compid, const QString& metadataJsonFileName);
 
 private:

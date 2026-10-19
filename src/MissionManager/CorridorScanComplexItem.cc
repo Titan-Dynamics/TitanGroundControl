@@ -9,7 +9,7 @@
 
 #include <QtCore/QJsonArray>
 
-QGC_LOGGING_CATEGORY(CorridorScanComplexItemLog, "Plan.CorridorScanComplexItemL")
+QGC_LOGGING_CATEGORY(CorridorScanComplexItemLog, "Plan.CorridorScanComplexItem")
 
 CorridorScanComplexItem::CorridorScanComplexItem(PlanMasterController* masterController, bool flyView, const QString& kmlOrShpFile)
     : TransectStyleComplexItem  (masterController, flyView, settingsGroup)
@@ -24,16 +24,21 @@ CorridorScanComplexItem::CorridorScanComplexItem(PlanMasterController* masterCon
         _cameraCalc.distanceToSurface()->setRawValue(SettingsManager::instance()->appSettings()->defaultMissionItemAltitude()->rawValue());
     }
 
-    connect(&_corridorWidthFact,    &Fact::valueChanged,                            this, &CorridorScanComplexItem::_setDirty);
+    connect(&_corridorWidthFact,    &Fact::rawValueChanged,                         this, &CorridorScanComplexItem::_setDirty);
     connect(&_corridorPolyline,     &QGCMapPolyline::pathChanged,                   this, &CorridorScanComplexItem::_setDirty);
 
     connect(&_corridorPolyline,     &QGCMapPolyline::dirtyChanged,                  this, &CorridorScanComplexItem::_polylineDirtyChanged);
 
     connect(&_corridorPolyline,     &QGCMapPolyline::pathChanged,                   this, &CorridorScanComplexItem::_rebuildCorridorPolygon);
-    connect(&_corridorWidthFact,    &Fact::valueChanged,                            this, &CorridorScanComplexItem::_rebuildCorridorPolygon);
+    connect(&_corridorWidthFact,    &Fact::rawValueChanged,                         this, &CorridorScanComplexItem::_rebuildCorridorPolygon);
+
+    connect(&_corridorPolyline,     &QGCMapPolyline::countChanged,                  this, &CorridorScanComplexItem::_updateSpecifiesCoordinate);
 
     connect(&_corridorPolyline,     &QGCMapPolyline::isValidChanged,                this, &CorridorScanComplexItem::_updateWizardMode);
     connect(&_corridorPolyline,     &QGCMapPolyline::traceModeChanged,              this, &CorridorScanComplexItem::_updateWizardMode);
+
+    // Anchor the cache to current state so correctness doesn't depend on constructor ordering
+    _updateSpecifiesCoordinate();
 
     if (!kmlOrShpFile.isEmpty()) {
         _corridorPolyline.loadKMLOrSHPFile(kmlOrShpFile);
@@ -77,7 +82,7 @@ void CorridorScanComplexItem::loadPreset(const QString& presetName)
 
     QJsonObject presetObject = _loadPresetJson(presetName);
     if (!_loadWorker(presetObject, 0, errorString, true /* forPresets */)) {
-        QGC::showAppMessage(QStringLiteral("Internal Error: Preset load failed. Name: %1 Error: %2").arg(presetName).arg(errorString));
+        QGC::showAppMessage(tr("Internal Error: Preset load failed. Name: %1 Error: %2").arg(presetName).arg(errorString));
     }
     _rebuildTransects();
 }
@@ -153,6 +158,16 @@ bool CorridorScanComplexItem::specifiesCoordinate(void) const
     return _corridorPolyline.count() > 1;
 }
 
+// specifiesCoordinate() depends on polyline count, so the NOTIFY signal must be emitted when it flips
+void CorridorScanComplexItem::_updateSpecifiesCoordinate(void)
+{
+    const bool newSpecifiesCoordinate = specifiesCoordinate();
+    if (newSpecifiesCoordinate != _specifiesCoordinate) {
+        _specifiesCoordinate = newSpecifiesCoordinate;
+        emit specifiesCoordinateChanged();
+    }
+}
+
 void CorridorScanComplexItem::setCoordinate(const QGeoCoordinate& coordinate)
 {
     if (!coordinate.isValid() || !_entryCoordinate.isValid() || _corridorPolyline.count() < 2) {
@@ -175,7 +190,11 @@ void CorridorScanComplexItem::setCoordinate(const QGeoCoordinate& coordinate)
 int CorridorScanComplexItem::_calcTransectCount(void) const
 {
     double fullWidth = _corridorWidthFact.rawValue().toDouble();
-    return fullWidth > 0.0 ? qCeil(fullWidth / _calcTransectSpacing()) : 1;
+    if (fullWidth <= 0.0) {
+        return 1;
+    }
+    const double spacing = _calcTransectSpacing();
+    return spacing > 0.0 ? qMin(qCeil(fullWidth / spacing), maxTransectCount) : 1;
 }
 
 void CorridorScanComplexItem::_polylineDirtyChanged(bool dirty)
@@ -403,11 +422,20 @@ double CorridorScanComplexItem::timeBetweenShots(void)
 double CorridorScanComplexItem::_calcTransectSpacing(void) const
 {
     double transectSpacing = _cameraCalc.adjustedFootprintSide()->rawValue().toDouble();
-    if (transectSpacing < _minimumTransectSpacingMeters) {
-        // We can't let spacing get too small otherwise we will end up with too many transects.
-        // So we limit the spacing to be above a small increment and below that value we set to huge spacing
-        // which will cause a single transect to be added instead of having things blow up.
-        transectSpacing = _forceLargeTransectSpacingMeters;
+    if (transectSpacing <= 0) {
+        return 0;
+    }
+
+    // Cap spacing so the corridor never generates more than maxTransectCount transects.
+    // The relevant extent is the corridor width (transects run perpendicular to the path).
+    const double corridorWidth = _corridorWidthFact.rawValue().toDouble();
+    if (corridorWidth <= 0.0) {
+        qCWarning(CorridorScanComplexItemLog) << "Corridor width" << corridorWidth << "is invalid, skipping transect count cap";
+        return transectSpacing;
+    }
+    if (transectSpacing < corridorWidth / maxTransectCount) {
+        qCWarning(CorridorScanComplexItemLog) << "Transect spacing" << transectSpacing << "raised to" << corridorWidth / maxTransectCount << "to limit transect count to" << maxTransectCount;
+        transectSpacing = corridorWidth / maxTransectCount;
     }
 
     return transectSpacing;

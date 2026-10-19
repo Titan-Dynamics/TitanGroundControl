@@ -1,0 +1,47 @@
+{
+    "version": 1,
+    "fileType": "SettingsUI",
+    "groups": [
+        {
+            "component": "LinkConfigurationManager",
+            "sectionName": "Link Management",
+            "keywords": [
+                "link",
+                "connection",
+                "serial",
+                "tcp",
+                "udp",
+                "bluetooth",
+                "add link"
+            ]
+        },
+        {
+            "heading": "Android Serial",
+            "keywords": ["serial", "posix", "uart", "tty", "android"],
+            "controls": [
+                {
+                    "setting": "appSettings.androidUsePosixSerial"
+                }
+            ]
+        },
+        {
+            "heading": "AutoConnect",
+            "keywords": ["auto connect", "pixhawk", "sik radio", "librepilot", "udp", "usb"],
+            "showWhen": "QGroundControl.settingsManager.autoConnectSettings.userVisible",
+            "controls": [
+                {
+                    "setting": "autoConnectSettings.autoConnectPixhawk"
+                },
+                {
+                    "setting": "autoConnectSettings.autoConnectSiKRadio"
+                },
+                {
+                    "setting": "autoConnectSettings.autoConnectLibrePilot"
+                },
+                {
+                    "setting": "autoConnectSettings.autoConnectUDP"
+                }
+            ]
+        }
+    ]
+}

@@ -1,6 +1,7 @@
 #include "StructureScanComplexItemTest.h"
 
 #include <QtCore/QJsonArray>
+#include <QtCore/QRegularExpression>
 
 #include "CoordFixtures.h"
 #include "MultiSignalSpy.h"
@@ -51,7 +52,7 @@ void StructureScanComplexItemTest::_testDirty()
     QList<Fact*> rgFacts;
     rgFacts << _structureScanItem->entranceAlt() << _structureScanItem->layers();
     for (Fact* fact : rgFacts) {
-        qDebug() << fact->name();
+        qCDebug(UnitTestLog) << fact->name();
         QVERIFY(!_structureScanItem->dirty());
         if (fact->typeIsBool()) {
             fact->setRawValue(!fact->rawValue().toBool());
@@ -108,6 +109,7 @@ void StructureScanComplexItemTest::_testSaveLoad()
 void StructureScanComplexItemTest::_testItemCount()
 {
     QList<MissionItem*> items;
+    ignoreLogMessage("QMLControls.QGCMapPolygon", QtWarningMsg, QRegularExpression("bad vertex requested"));
     _initItem();
     _structureScanItem->appendMissionItems(items, this);
     QCOMPARE(items.count() - 1, _structureScanItem->lastSequenceNumber());

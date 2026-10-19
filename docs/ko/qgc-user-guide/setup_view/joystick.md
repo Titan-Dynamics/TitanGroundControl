@@ -1,25 +1,25 @@
 # 조이스틱 설정
 
-_QGroundControl_은 RC 송신기 대신 조이스틱이나 게임패드로 기체를 조종할 수 있습니다.
+_QGroundContro&#x6C;_&#xC740; RC 송신기 대신 조이스틱이나 게임패드로 기체를 조종할 수 있습니다.
 
 :::info
 조이스틱(또는 [가상 썸스틱](../settings_view/virtual_joystick.md))으로 비행하려면 조이스틱 정보가 MAVLink로 전송되기 때문에 기체가 조이스틱에 반응하기 위하여 안정적인 고대역폭 원격 측정 채널이 필요합니다.
 :::
 
 :::info
-조이스틱과 게임패드 지원은 이기종 플랫폼 [SDL2](http://www.libsdl.org/index.php) 라이브러리를 사용하여 활성화됩니다.
+Joystick and Gamepad support is enabled using the cross-platform [SDL2](https://github.com/libsdl-org/SDL/tree/SDL2) library.
 특정 컨트롤러와의 호환성은 SDL에 따라 다릅니다(해당 API에 의해 노출되는 모든 버튼은 _QGroundControl_ UI를 통하여 표시됨).
 [일반적인 조이스틱과 게임패드](#supported-joysticks)들은 호환됩니다.
 :::
 
 :::info
-조이스틱은 보정 프로세스의 마지막 단계로 _활성화_됩니다.
+조이스틱은 보정 프로세스의 마지막 단계로 _활성&#xD654;_&#xB429;니다.
 :::
 
 ## PX4 조이스틱 활성화
 
 To enable Joystick support in PX4 you need to set the parameter [`COM_RC_IN_MODE`](https://docs.px4.io/en/main/advanced_config/parameter_reference.html#COM_RC_IN_MODE) to `1` - _Joystick_.
-이 매개변수가 `0`이면 _조이스틱_이 설정 옵션으로 제공되지 않습니다.
+이 매개변수가 `0`이면 _조이스&#xD2F1;_&#xC774; 설정 옵션으로 제공되지 않습니다.
 
 This is enabled by default for PX4 SITL builds (see the [Parameters](../setup_view/parameters.md) topic for information on how to find and set a particular parameter).
 
@@ -38,15 +38,11 @@ ArduPilot 기체에서 지원됩니다. 매개변수 설정은 필요하지 않�
 3. 상단 도구 모음에서 **톱니 바퀴** 아이콘(기체 설정)을 선택한 다음 가장자리 표시줄에서 **조이스틱**을 선택하십시오.
    아래의 화면이 표시됩니다.
 
-   ![조이스틱 설정 - PlayStation](../../../assets/setup/joystick_sony_playstation.jpg)
-
 4. **활성화된 조이스틱** 드롭다운에서 조이스틱이 선택 여부를 확인합니다.
 
 5. **교정** 탭으로 이동하여 **시작** 버튼을 클릭하여 다음 화면의 지시에 따라 스틱을 교정하고 이동합니다.
 
-   ![조이스틱 설정 - 보정](../../../assets/setup/joystick_calibration.jpg)
-
-   조이스틱은 보정 프로세스의 마지막 단계에서 _활성화_됩니다.
+   조이스틱은 보정 프로세스의 마지막 단계에서 _활성&#xD654;_&#xB429;니다.
 
    ::: warning
    On some controllers the calibration process does not work because of incorrect channel mappings. You can follow [supported joysticks section](#supported-joysticks) for more information.
@@ -55,16 +51,13 @@ ArduPilot 기체에서 지원됩니다. 매개변수 설정은 필요하지 않�
 6. 버튼과 스틱이 의도한 대로 작동하는지 테스트하고 **일반** 탭의 축과 버튼 모니터에서 결과를 확인합니다.
 
 7. 각 조이스틱 버튼으로 활성화되는 비행 모드와 차량의 기능을 선택합니다.![조이스틱 설정 - 버튼](../../../assets/setup/joystick_buttons.jpg)
-   ![조이스틱 설정 - 고급 설정](../../../assets/setup/joystick_advanced.jpg)
 
 ## Advanced Options
 
 **고급** 탭에서 몇 가지 추가 옵션을 사용할 수 있습니다.
-이러한 옵션은 특이하고 비정상적인 설정, 감도 증가 및 시끄러운 조이스틱 처리에 유용합니다.
+These options may be useful for specific, unusual setups, for increasing sensibility, and for handling noisy joysticks.
 
 ### 스로틀 옵션
-
-![조이스틱 설정 - 스로틀 모드](../../../assets/setup/joystick_throttle_modes.jpg)
 
 - **조이스틱의 중앙을 스로틀 0으로 설정**: [MANUAL_CONTROL **z**](https://mavlink.io/en/messages/common.html#MANUAL_CONTROL)에서 중앙 또는 아래로 향한 스틱은 0을 전송하고, 위로 올린 스틱은 1000을 전송합니다.
   - **스프링 로드 스로틀 스무딩**: 이 모드에서는 스로틀 자체가 아니라 스로틀이 증감하는 속도를 제어합니다.
@@ -78,11 +71,7 @@ ArduPilot 기체에서 지원됩니다. 매개변수 설정은 필요하지 않�
 
 엑스포 슬라이더를 사용하면 스틱을 중앙에서 덜 민감하게 만들어 이 영역에서 더 세밀하게 제어할 수 있습니다.
 
-![조이스틱 설정 - 엑스포](../../../assets/setup/joystick_throttle_expo.jpg)
-
 슬라이더는 지수 곡선의 곡률을 조정합니다.
-
-![조이스틱 설정 - 엑스포 곡선](../../../assets/setup/joystick_throttle_expo_curve.jpg)
 
 엑스포 값이 높을수록 곡선은 중앙에서 더 평평해지고 가장자리에서 더 가파르게 됩니다.
 
@@ -90,8 +79,6 @@ ArduPilot 기체에서 지원됩니다. 매개변수 설정은 필요하지 않�
 
 고급 설정은 일반 사용자에게는 권장되지 않습니다.
 잘못 사용하면 예상치 못한 결과를 초래할 수 있습니다.
-
-고급 설정
 
 다음과 같은 설정을 사용할 수 있습니다:
 
@@ -117,12 +104,8 @@ ArduPilot 기체에서 지원됩니다. 매개변수 설정은 필요하지 않�
     이 그림에서 지점 B는 전체 피치 앞으로 및 전체 롤 오른쪽을 명령하지만 리테이너가 원형이기 때문에 조이스틱이 지점 B에 도달할 수 없습니다.
     이는 전체 롤 및 피치 편향을 동시에 달성할 수 없음을 의미합니다.
 
-    ![](../../../assets/setup/joystick_circle_correction.jpg)
-
   - **활성화:** 조이스틱 값은 명령의 전체 범위를 보장하기 위해 소프트웨어에서 조정됩니다.
     그러나 그림에서 회색으로 강조 표시된 영역이 더 이상 사용되지 않기 때문에 사용 가능한 이동 영역 및 해상도가 감소합니다.
-
-    ![원 수정 활성화됨](../../../assets/setup/joystick_circle_correction2.jpg)
 
 - **불감대:** 불감대를 사용하면 스틱이 중립 위치 근처에 있을 때 입력 변경 사항을 무시할 수 있습니다.
   이것은 명령으로 해석될 수 있는 민감한 스틱의 소음이나 작은 진동을 피하는 데 도움이 되며, 스틱이 중앙으로 잘 돌아오지 않을 때 작은 오프셋을 제거할 수 있습니다.
@@ -149,20 +132,27 @@ ArduPilot 기체에서 지원됩니다. 매개변수 설정은 필요하지 않�
 
 과정은 다음과 같습니다:
 
-1. _QGroundControl_을 실행후, 기체를 연결합니다.
-   ```
+1. _QGroundContro&#x6C;_&#xC744; 실행후, 기체를 연결합니다.
+
+   ```bash
    _jstest-gtk_ 설치: `sudo apt install jstest-gtk`
    ```
+
 2. 매개변수의 검색 및 설정 방법은 [매개변수](../setup_view/parameters.md)를 참고하십시오.
-   ```
+
+   ```bash
    _ds4drv_ 설치: `sudo pip install ds4drv`
    ```
+
 3. ds4drv 실행 `sudo ds4drv`
-   ```
+
+   ```bash
    엑스포
    ```
+
 4. 컨트롤러 LED가 빠르게 깜박이기 시작할 때까지 **공유** 버튼을 누른 다음 **PS** 버튼을 길게 누릅니다.
-   그다음에는 _ds4drv_가 새 기기를 감지하여야 합니다.
+   그다음에는 _ds4dr&#x76;_&#xAC00; 새 기기를 감지하여야 합니다.
+
 5. 마지막으로 _jstest-gtk_ 유틸리티를 실행하여 컨트롤러 설정을 확인합니다.
 
 ### FrSky 타라니스 XD9 플러스
@@ -192,7 +182,7 @@ For another radio, the first command above can be found by using the [jstest sof
 jstest-sdl -l
 ```
 
-**Take care of the channels remapping you need to do between a2, a3 and other if needed**
+Take care of the channels remapping you need to do between a2, a3 and other if needed.
 
 ### 로지텍 게임패드 F310
 
@@ -212,7 +202,7 @@ Logitech Gamepad F310은 MacOS "Sierra"에서 USB를 통해 테스트되었습�
 #### Mac OS Leopard / Lion 설정
 
 F710은 Leopard / Lion에서 감지되지만, 자동으로 설정되지 않습니다.
-작동하는 구성을 얻으려면 F710이 _Rumblepad2_로 인식되어야 합니다.
+작동하는 구성을 얻으려면 F710이 _Rumblepad&#x32;_&#xB85C; 인식되어야 합니다.
 
 먼저 **Apple > 이 Mac에 관하여 > 추가 정보 > 시스템 보고서 > USB**에서 인식 방법을 확인합니다.
 "Logitech Cordless RumblePad 2"로 감지되면 더 이상 수행할 필요는 없습니다.

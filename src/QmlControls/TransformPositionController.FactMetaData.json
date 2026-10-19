@@ -22,6 +22,16 @@
     "decimalPlaces":    7
 },
 {
+    "name":             "LatitudeDMS",
+    "shortDesc":        "Latitude of item position in degrees, minutes, seconds",
+    "type":             "string"
+},
+{
+    "name":             "LongitudeDMS",
+    "shortDesc":        "Longitude of item position in degrees, minutes, seconds",
+    "type":             "string"
+},
+{
     "name":             "Easting",
     "shortDesc": "Easting of item position",
     "type":             "double",
@@ -57,7 +67,7 @@
     "shortDesc":        "East offset",
     "type":             "double",
     "units":            "m",
-    "defaultValue":     0,
+    "default":          0,
     "decimalPlaces":    2
 },
 {
@@ -65,15 +75,15 @@
     "shortDesc":        "North offset",
     "type":             "double",
     "units":            "m",
-    "defaultValue":     0,
+    "default":          0,
     "decimalPlaces":    2
 },
 {
     "name":             "OffsetUp",
     "shortDesc":        "Up offset",
     "type":             "double",
-    "units":            "m",
-    "defaultValue":     0,
+    "units":            "vertical m",
+    "default":          0,
     "decimalPlaces":    2
 },
 {
@@ -81,7 +91,7 @@
     "shortDesc":        "Clockwise rotation",
     "type":             "double",
     "units":            "deg",
-    "defaultValue":     0,
+    "default":          0,
     "decimalPlaces":    1
 }
 ]

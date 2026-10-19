@@ -2,7 +2,9 @@
 #include "QGCFileHelper.h"
 #include "QGCPalette.h"
 #include "AppMessages.h"
+#include "FirmwarePluginManager.h"
 #include "QGCApplication.h"
+#include "QGCLoggingCategory.h"
 #include "QGCMAVLink.h"
 #include "LinkManager.h"
 
@@ -13,6 +15,8 @@
 #include <QtCore/QStandardPaths>
 #include <QtCore/QDir>
 #include <QtCore/QSettings>
+
+QGC_LOGGING_CATEGORY(AppSettingsLog, "Settings.AppSettings")
 
 // Release languages are 90%+ complete
 QList<QLocale::Language> AppSettings::_rgReleaseLanguages = {
@@ -56,6 +60,36 @@ AppSettings::LanguageInfo_t AppSettings::_rgLanguageInfo[] = {
 
 DECLARE_SETTINGGROUP(App, "")
 {
+    // Don't offer firmware classes whose plugin factory is not registered in this build
+    const QList<QGCMAVLink::FirmwareClass_t> supportedFirmwareClasses = FirmwarePluginManager::instance()->supportedFirmwareClasses();
+    const auto isSupported = [&supportedFirmwareClasses](const QVariant &value) {
+        return supportedFirmwareClasses.contains(static_cast<QGCMAVLink::FirmwareClass_t>(value.toUInt()));
+    };
+    for (const char *factName : { preferredFirmwareClassName, offlineEditingFirmwareClassName }) {
+        FactMetaData *const metaData = _nameToMetaDataMap.value(factName);
+        if (!metaData) {
+            qCWarning(AppSettingsLog) << "Missing metadata for fact" << factName;
+            continue;
+        }
+        const QVariantList enumValues = metaData->enumValues();
+        for (const QVariant &enumValue : enumValues) {
+            if (!isSupported(enumValue)) {
+                metaData->removeEnumInfo(enumValue);
+            }
+        }
+    }
+
+    // A previously stored value (or even the default) may no longer be supported by this build
+    for (Fact *const fact : { preferredFirmwareClass(), offlineEditingFirmwareClass() }) {
+        if (!isSupported(fact->rawValue())) {
+            if (isSupported(fact->rawDefaultValue())) {
+                fact->setRawValue(fact->rawDefaultValue());
+            } else if (!fact->enumValues().isEmpty()) {
+                fact->setRawValue(fact->enumValues().constFirst());
+            }
+        }
+    }
+
     QGCPalette::setGlobalTheme(indoorPalette()->rawValue().toBool() ? QGCPalette::Dark : QGCPalette::Light);
 
     // Instantiate savePath so we can check for override and setup default path if needed
@@ -80,10 +114,10 @@ DECLARE_SETTINGGROUP(App, "")
         #ifdef Q_OS_ANDROID
             if (!androidDontSaveToSDCard()->rawValue().toBool()) {
                 rootDirPath = AndroidInterface::getSDCardPath();
-                qDebug() << "AndroidInterface::getSDCardPath();" << rootDirPath;
+                qCDebug(AppSettingsLog) << "AndroidInterface::getSDCardPath()" << rootDirPath;
                 if (rootDirPath.isEmpty() || !QDir(rootDirPath).exists()) {
                     rootDirPath.clear();
-                    qDebug() << "Save to SD card specified for application data. But no SD card present or permissions not granted. Using internal storage.";
+                    qCWarning(AppSettingsLog) << "Save to SD card specified for application data. But no SD card present or permissions not granted. Using internal storage.";
                 } else if (!QFileInfo(rootDirPath).isWritable()) {
                     rootDirPath.clear();
                     QGC::showAppMessage(AppSettings::tr("Save to SD card specified for application data. But SD card is write protected. Using internal storage."));
@@ -109,6 +143,25 @@ DECLARE_SETTINGGROUP(App, "")
 
     connect(savePathFact, &Fact::rawValueChanged, this, &AppSettings::savePathsChanged);
     connect(savePathFact, &Fact::rawValueChanged, this, &AppSettings::_checkSavePathDirectories);
+
+#ifdef Q_OS_ANDROID
+    // React to runtime toggling of the SD card setting
+    connect(androidDontSaveToSDCard(), &Fact::rawValueChanged, this, [this, appName](QVariant value) {
+        Fact* const fact = savePath();
+        if (value.toBool()) {
+            const QString internalBasePath = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
+            fact->setRawValue(QDir(internalBasePath).filePath(appName));
+        } else {
+            // If permission is already granted this returns the SD card root and we set the path here.
+            // If not, it returns empty and launches the system permission UI. The result comes back through
+            // jniStoragePermissionsResult, which sets the SD card save path (or reverts this setting on denial).
+            const QString sdRootPath = AndroidInterface::getSDCardPath();
+            if (!sdRootPath.isEmpty() && QDir(sdRootPath).exists() && QFileInfo(sdRootPath).isWritable()) {
+                fact->setRawValue(QDir(sdRootPath).filePath(appName));
+            }
+        }
+    });
+#endif
 
     _checkSavePathDirectories();
 
@@ -143,6 +196,7 @@ DECLARE_SETTINGSFACT(AppSettings, virtualJoystickLeftHandedMode)
 DECLARE_SETTINGSFACT(AppSettings, uiScalePercent)
 DECLARE_SETTINGSFACT(AppSettings, savePath)
 DECLARE_SETTINGSFACT(AppSettings, androidDontSaveToSDCard)
+DECLARE_SETTINGSFACT(AppSettings, androidUsePosixSerial)
 DECLARE_SETTINGSFACT(AppSettings, useChecklist)
 DECLARE_SETTINGSFACT(AppSettings, enforceChecklist)
 DECLARE_SETTINGSFACT(AppSettings, enableMultiVehiclePanel)
@@ -159,16 +213,9 @@ DECLARE_SETTINGSFACT(AppSettings, followTarget)
 DECLARE_SETTINGSFACT(AppSettings, clearSettingsNextBoot)
 DECLARE_SETTINGSFACT(AppSettings, disableAllPersistence)
 DECLARE_SETTINGSFACT(AppSettings, firstRunPromptIdsShown)
+DECLARE_SETTINGSFACT(AppSettings, lastNotifiedStableVersion)
 DECLARE_SETTINGSFACT(AppSettings, favoriteParameters)
-DECLARE_SETTINGSFACT(AppSettings, remoteLoggingEnabled)
-DECLARE_SETTINGSFACT(AppSettings, remoteLoggingHost)
-DECLARE_SETTINGSFACT(AppSettings, remoteLoggingPort)
-DECLARE_SETTINGSFACT(AppSettings, remoteLoggingProtocol)
-DECLARE_SETTINGSFACT(AppSettings, remoteLoggingVehicleId)
-DECLARE_SETTINGSFACT(AppSettings, remoteLoggingTlsEnabled)
-DECLARE_SETTINGSFACT(AppSettings, remoteLoggingTlsVerifyPeer)
-DECLARE_SETTINGSFACT(AppSettings, remoteLoggingCompressionEnabled)
-DECLARE_SETTINGSFACT(AppSettings, remoteLoggingCompressionLevel)
+DECLARE_SETTINGSFACT(AppSettings, showAppLogTimestampAsElapsedTime)
 
 DECLARE_SETTINGSFACT_NO_FUNC(AppSettings, indoorPalette)
 {

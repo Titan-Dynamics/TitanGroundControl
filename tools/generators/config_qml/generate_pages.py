@@ -15,9 +15,12 @@ import argparse
 import sys
 from pathlib import Path
 
-# Allow running as a module (-m) from the repo root
-_SCRIPT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(_SCRIPT_DIR.parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _bootstrap import ensure_tools_dir
+
+ensure_tools_dir(__file__)
+
+from common.io import write_text_if_changed
 
 from generators.config_qml.page_generator import generate_config_page_qml, load_page_def
 
@@ -33,12 +36,22 @@ def _output_name(json_name: str) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate config page QML from JSON definitions")
-    parser.add_argument("--pages-dir", type=Path, required=True,
-                        help="Directory containing *.VehicleConfig.json files")
-    parser.add_argument("--output-dir", "-o", type=Path, required=True,
-                        help="Output directory for generated QML files")
-    parser.add_argument("--dry-run", "-n", action="store_true",
-                        help="Print to stdout without writing files")
+    parser.add_argument(
+        "--pages-dir",
+        type=Path,
+        required=True,
+        help="Directory containing *.VehicleConfig.json files",
+    )
+    parser.add_argument(
+        "--output-dir",
+        "-o",
+        type=Path,
+        required=True,
+        help="Output directory for generated QML files",
+    )
+    parser.add_argument(
+        "--dry-run", "-n", action="store_true", help="Print to stdout without writing files"
+    )
     args = parser.parse_args()
 
     if not args.pages_dir.is_dir():
@@ -62,7 +75,7 @@ def main() -> None:
             print(qml)
         else:
             out_path = args.output_dir / out_name
-            out_path.write_text(qml, encoding="utf-8")
+            write_text_if_changed(out_path, qml)
             print(f"  Generated {out_path}")
 
 

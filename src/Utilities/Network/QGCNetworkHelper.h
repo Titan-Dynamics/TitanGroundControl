@@ -15,8 +15,11 @@
 #include <QtNetwork/QSslConfiguration>
 #include <QtNetwork/QSslKey>
 
+#include "QGCNetworkClient.h"
+
 class QIODevice;
 class QNetworkAccessManager;
+class QNetworkInformation;
 
 /// Network utility functions for HTTP requests, URL handling, and connectivity
 /// All functions are stateless and thread-safe
@@ -136,11 +139,13 @@ QUrl buildUrl(const QString& baseUrl, const QMap<QString, QString>& params);
 /// Build URL with query parameters from a list of pairs
 QUrl buildUrl(const QString& baseUrl, const QList<QPair<QString, QString>>& params);
 
-/// Extract filename from URL path (last path segment)
-QString urlFileName(const QUrl& url);
-
 /// Get URL without query string and fragment
 QUrl urlWithoutQuery(const QUrl& url);
+
+/// Return a URL suitable for diagnostics. Stream identity is preserved while user info,
+/// query values, and fragment content are redacted.
+QString redactedUrlForLogging(const QUrl& url);
+QString redactedUrlForLogging(const QString& url);
 
 // ============================================================================
 // Request Configuration
@@ -159,6 +164,11 @@ struct RequestConfig
     QString acceptEncoding;
     QString contentType;
     QList<QPair<QNetworkRequest::Attribute, QVariant>> requestAttributes;
+
+    int connectionCacheExpirySecs = -1;
+    int tcpKeepAliveIdleSecs = -1;
+    int tcpKeepAliveIntervalSecs = -1;
+    int tcpKeepAliveProbeCount = -1;
 };
 
 /// Configure a QNetworkRequest with standard settings
@@ -180,9 +190,6 @@ void setJsonHeaders(QNetworkRequest& request);
 
 /// Set form data content headers
 void setFormHeaders(QNetworkRequest& request);
-
-/// Get the default User-Agent string for QGC
-QString defaultUserAgent();
 
 // ============================================================================
 // Authentication Helpers
@@ -237,11 +244,6 @@ QHttpPart createFilePart(const QString& name, const QString& fileName, QIODevice
 // SSL/TLS Configuration Builders
 // ============================================================================
 
-/// Create SSL configuration with specified protocol
-/// @param protocol TLS protocol version (default: TLS 1.2 or later)
-/// @return Configured QSslConfiguration
-QSslConfiguration createSslConfig(QSsl::SslProtocol protocol = QSsl::TlsV1_2OrLater);
-
 /// Create SSL configuration that disables peer verification (use with caution!)
 /// Only for development/testing or known self-signed certificates
 /// @return QSslConfiguration with peer verification disabled
@@ -266,8 +268,7 @@ QList<QSslCertificate> loadCaCertificates(const QString& filePath, QString* erro
 /// @param keyOut Receives the loaded key
 /// @param errorOut Optional pointer to receive error message
 /// @return true on success
-bool loadClientCertAndKey(const QString& certPath, const QString& keyPath,
-                          QSslCertificate& certOut, QSslKey& keyOut,
+bool loadClientCertAndKey(const QString& certPath, const QString& keyPath, QSslCertificate& certOut, QSslKey& keyOut,
                           QString* errorOut = nullptr);
 
 // ============================================================================
@@ -326,7 +327,10 @@ bool isJsonResponse(const QNetworkReply* reply);
 // Network Availability
 // ============================================================================
 
-/// Check if network is available (not disconnected)
+/// The platform's network information, preferring a backend that reports reachability; null without a backend.
+QNetworkInformation* networkInformation();
+
+/// Check if network is available (not disconnected); assumed available without a backend
 bool isNetworkAvailable();
 
 /// Check if internet is reachable (online state, stricter than isNetworkAvailable)
@@ -383,7 +387,7 @@ void initializeProxySupport();
 
 /// Create a network access manager with recommended settings
 /// Caller takes ownership of the returned pointer
-QNetworkAccessManager* createNetworkManager(QObject* parent = nullptr);
+QNetworkAccessManager* createNetworkManager(QObject* parent);
 
 /// Set up default proxy configuration on a network manager
 void configureProxy(QNetworkAccessManager* manager);

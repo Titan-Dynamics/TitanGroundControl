@@ -19,15 +19,8 @@ void ConditionalStateTest::_testConditionalStateExecute()
             actionExecuted = true;
         }
     );
-    auto* finalState = new QFinalState(&machine);
 
-    conditionalState->addTransition(conditionalState, &QGCState::advance, finalState);
-    machine.setInitialState(conditionalState);
-
-    QSignalSpy finishedSpy(&machine, &QStateMachine::finished);
-    machine.start();
-
-    QVERIFY(finishedSpy.wait(TestTimeout::shortMs()));
+    QVERIFY(runStateToCompletion(conditionalState, &machine));
     QVERIFY(predicateCalled);
     QVERIFY(actionExecuted);
 }
@@ -72,8 +65,8 @@ void ConditionalStateTest::_testConditionalStateSkip()
     QVERIFY(!actionExecuted);
     QVERIFY(skipHandled);
     // Verify skip path taken, not execute path
-    QVERIFY(stateSpy.emittedByMask(stateSpy.mask("skipped")));
-    QVERIFY(stateSpy.notEmittedByMask(stateSpy.mask("advance")));
+    QVERIFY(stateSpy.emitted("skipped"));
+    QVERIFY(stateSpy.notEmitted("advance"));
 }
 
-UT_REGISTER_TEST(ConditionalStateTest, TestLabel::Unit, TestLabel::Utilities)
+UT_REGISTER_TEST_LIGHTWEIGHT(ConditionalStateTest, TestLabel::Unit, TestLabel::Utilities)

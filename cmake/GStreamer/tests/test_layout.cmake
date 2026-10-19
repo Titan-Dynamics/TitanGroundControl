@@ -1,0 +1,40 @@
+cmake_minimum_required(VERSION 3.25)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/..")
+include("${CMAKE_CURRENT_LIST_DIR}/_assert.cmake")
+include(Layout)
+
+qgc_test_sandbox(_sandbox qgc_layout_test_sandbox)
+
+set(_flat "${_sandbox}/flat-sdk")
+file(MAKE_DIRECTORY "${_flat}/lib/gstreamer-1.0" "${_flat}/include")
+gstreamer_create_layout_target(SDK_ROOT "${_flat}/../flat-sdk")
+qgc_test_assert_streq("root" "${_flat}" "${GStreamer_ROOT_DIR}")
+qgc_test_assert_streq("lib" "${_flat}/lib" "${GSTREAMER_LIB_PATH}")
+qgc_test_assert_streq("plugins" "${_flat}/lib/gstreamer-1.0" "${GSTREAMER_PLUGIN_PATH}")
+qgc_test_assert_streq("include" "${_flat}/include" "${GSTREAMER_INCLUDE_PATH}")
+qgc_test_pass("layout")
+
+set(_multi "${_sandbox}/flat-multi")
+file(MAKE_DIRECTORY "${_multi}/lib/x86_64-linux-gnu/gstreamer-1.0" "${_multi}/include")
+gstreamer_create_layout_target(SDK_ROOT "${_multi}" LIB_PATH "${_multi}/lib/x86_64-linux-gnu")
+qgc_test_assert_streq("multiarch plugins" "${_multi}/lib/x86_64-linux-gnu/gstreamer-1.0" "${GSTREAMER_PLUGIN_PATH}")
+qgc_test_pass("LIB_PATH override")
+
+# A root is one path even when it contains the POSIX path-list separator.
+if(NOT CMAKE_HOST_WIN32)
+    set(_colon "${_sandbox}/flat:sdk")
+    file(MAKE_DIRECTORY "${_colon}/lib/gstreamer-1.0" "${_colon}/include")
+    gstreamer_create_layout_target(SDK_ROOT "${_colon}")
+    qgc_test_assert_streq("root with ':' lib" "${_colon}/lib" "${GSTREAMER_LIB_PATH}")
+    qgc_test_pass("root with ':'")
+endif()
+
+set(_bundle "${_sandbox}/GStreamer.framework")
+gstreamer_create_layout_target(SDK_ROOT "${_flat}" FRAMEWORK_BUNDLE "${_bundle}")
+qgc_test_assert_streq("framework" "${_bundle}" "${GSTREAMER_FRAMEWORK_PATH}")
+qgc_test_pass("FRAMEWORK_BUNDLE")
+
+gstreamer_layout_get(FRAMEWORK_BUNDLE _none)
+qgc_test_assert_streq("layout_get without the target" "" "${_none}")
+gstreamer_layout_set(FOO bar)
+qgc_test_pass("layout_get/layout_set in script mode")

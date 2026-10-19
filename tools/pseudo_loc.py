@@ -19,23 +19,71 @@ Transformation applied to each translatable string:
 
 import re
 import sys
+import xml.etree.ElementTree as ET  # for Element/SubElement/indent/tostring construction
 from pathlib import Path
-from xml.etree import ElementTree as ET
+
+from _bootstrap import ensure_tools_dir
+
+ensure_tools_dir(__file__)
+
+from common.xml import xml_parse  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Character substitution table
 # ---------------------------------------------------------------------------
 _CHAR_MAP: dict[str, str] = {
-    "a": "ȧ", "b": "ƀ", "c": "ċ", "d": "ḋ", "e": "ė", "f": "ƒ",
-    "g": "ġ", "h": "ħ", "i": "ı", "j": "ĵ", "k": "ķ", "l": "ĺ",
-    "m": "m̃", "n": "ń", "o": "ǒ", "p": "ṗ", "q": "q̈", "r": "ŕ",
-    "s": "ŝ", "t": "ṫ", "u": "ũ", "v": "v̇", "w": "ẇ", "x": "ẋ",
-    "y": "ẏ", "z": "ż",
-    "A": "Ȧ", "B": "Ɓ", "C": "Ċ", "D": "Ḋ", "E": "Ė", "F": "Ƒ",
-    "G": "Ġ", "H": "Ħ", "I": "İ", "J": "Ĵ", "K": "Ķ", "L": "Ĺ",
-    "M": "M̃", "N": "Ń", "O": "Ǒ", "P": "Ṗ", "Q": "Q̈", "R": "Ŕ",
-    "S": "Ŝ", "T": "Ṫ", "U": "Ũ", "V": "V̇", "W": "Ẇ", "X": "Ẋ",
-    "Y": "Ẏ", "Z": "Ż",
+    "a": "ȧ",
+    "b": "ƀ",
+    "c": "ċ",
+    "d": "ḋ",
+    "e": "ė",
+    "f": "ƒ",
+    "g": "ġ",
+    "h": "ħ",
+    "i": "ı",
+    "j": "ĵ",
+    "k": "ķ",
+    "l": "ĺ",
+    "m": "m̃",
+    "n": "ń",
+    "o": "ǒ",
+    "p": "ṗ",
+    "q": "q̈",
+    "r": "ŕ",
+    "s": "ŝ",
+    "t": "ṫ",
+    "u": "ũ",
+    "v": "v̇",
+    "w": "ẇ",
+    "x": "ẋ",
+    "y": "ẏ",
+    "z": "ż",
+    "A": "Ȧ",
+    "B": "Ɓ",
+    "C": "Ċ",
+    "D": "Ḋ",
+    "E": "Ė",
+    "F": "Ƒ",
+    "G": "Ġ",
+    "H": "Ħ",
+    "I": "İ",
+    "J": "Ĵ",
+    "K": "Ķ",
+    "L": "Ĺ",
+    "M": "M̃",
+    "N": "Ń",
+    "O": "Ǒ",
+    "P": "Ṗ",
+    "Q": "Q̈",
+    "R": "Ŕ",
+    "S": "Ŝ",
+    "T": "Ṫ",
+    "U": "Ũ",
+    "V": "V̇",
+    "W": "Ẇ",
+    "X": "Ẋ",
+    "Y": "Ẏ",
+    "Z": "Ż",
 }
 
 # Pattern that matches tokens to pass through unchanged:
@@ -44,10 +92,10 @@ _CHAR_MAP: dict[str, str] = {
 #   &name;      — XML/HTML entities
 #   &           — Qt accelerator prefix (standalone ampersand)
 _PASSTHROUGH = re.compile(
-    r"%L?\d+"           # Qt format markers
-    r"|<[^>]+>"         # HTML/XML tags
-    r"|&\w+;"           # HTML entities (&amp; &lt; etc.)
-    r"|&(?=\w)"         # Qt accelerator prefix (&File, &Edit …)
+    r"%L?\d+"  # Qt format markers
+    r"|<[^>]+>"  # HTML/XML tags
+    r"|&\w+;"  # HTML entities (&amp; &lt; etc.)
+    r"|&(?=\w)"  # Qt accelerator prefix (&File, &Edit …)
 )
 
 
@@ -62,7 +110,7 @@ def pseudo_loc(text: str) -> str:
     for m in _PASSTHROUGH.finditer(text):
         if m.start() > cursor:
             parts.append(_substitute(text[cursor : m.start()]))
-        parts.append(m.group())   # pass through unchanged
+        parts.append(m.group())  # pass through unchanged
         cursor = m.end()
     if cursor < len(text):
         parts.append(_substitute(text[cursor:]))
@@ -85,10 +133,13 @@ def _substitute(segment: str) -> str:
 # .ts file processing
 # ---------------------------------------------------------------------------
 
+
 def process_ts(src_path: Path, dst_path: Path, language: str) -> int:
     """Read *src_path*, write pseudo-loc *dst_path*. Returns message count."""
-    tree = ET.parse(src_path)
+    tree = xml_parse(src_path)
     root = tree.getroot()
+    if root is None:
+        raise ValueError(f"{src_path}: XML document has no root element")
 
     # Set locale on the <TS> element
     root.set("language", language)
@@ -111,16 +162,12 @@ def process_ts(src_path: Path, dst_path: Path, language: str) -> int:
         trans_el.text = pseudo_loc(source_el.text)
         count += 1
 
-    # Indent for readability (Python 3.9+)
-    try:
-        ET.indent(tree, space="    ")
-    except AttributeError:
-        pass  # Python < 3.9 — no indentation
+    ET.indent(tree, space="    ")
 
     # Build output preserving XML declaration
     xml_decl = '<?xml version="1.0" encoding="utf-8"?>\n'
-    doctype  = '<!DOCTYPE TS>\n'
-    body     = ET.tostring(root, encoding="unicode", xml_declaration=False)
+    doctype = "<!DOCTYPE TS>\n"
+    body = ET.tostring(root, encoding="unicode", xml_declaration=False)
     dst_path.write_text(xml_decl + doctype + body + "\n", encoding="utf-8")
     return count
 
@@ -130,7 +177,7 @@ def main() -> None:
     translations = repo / "translations"
 
     pairs = [
-        (translations / "qgc.ts",      translations / "qgc_source_eo.ts"),
+        (translations / "qgc.ts", translations / "qgc_source_eo.ts"),
         (translations / "qgc-json.ts", translations / "qgc_json_eo.ts"),
     ]
 

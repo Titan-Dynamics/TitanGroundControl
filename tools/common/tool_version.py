@@ -1,0 +1,91 @@
+"""Probe an external tool's version string into a tuple of ints.
+
+Standardizes the ``tool --version`` + regex parse that ``ccache_helper``,
+``release.py``, ``analyze.py``, and ``check_deps.py`` each implement
+differently.
+"""
+
+from __future__ import annotations
+
+import re
+import shutil
+import subprocess
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+from .io import read_toml
+from .proc import run_captured
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+__all__ = ["DEFAULT_VERSION_RE", "probe_version", "uv_lock_version", "version_prefix_matches"]
+
+DEFAULT_VERSION_RE: re.Pattern[str] = re.compile(r"(\d+)\.(\d+)(?:\.(\d+))?")
+
+_UV_LOCK = Path(__file__).resolve().parents[1] / "uv.lock"
+
+
+def version_prefix_matches(installed: tuple[int, ...], expected: str) -> bool:
+    """Compare installed and expected versions over their shared components."""
+    try:
+        wanted = tuple(int(part) for part in expected.split("."))
+    except ValueError:
+        return False
+    compare_len = min(len(installed), len(wanted))
+    return compare_len > 0 and installed[:compare_len] == wanted[:compare_len]
+
+
+def uv_lock_version(package: str, *, lock_path: Path | None = None) -> str | None:
+    """Return the version pinned for *package* in tools/uv.lock, or None if absent/unreadable.
+
+    Lets a setup script pin its fallback binary to the same version the dev/CI venv
+    resolves (single source of truth), so the two install paths can't drift. Returns
+    None in contexts without the lockfile (e.g. the Docker builders that COPY setup
+    scripts out of the repo), leaving the caller to apply its own fallback.
+    """
+    path = lock_path or _UV_LOCK
+    if not path.exists():
+        return None
+    packages = read_toml(path).get("package", [])
+    versions = {
+        str(entry["version"])
+        for entry in packages
+        if entry.get("name") == package and "version" in entry
+    }
+    if len(versions) > 1:
+        raise ValueError(f"Multiple locked versions of {package}: {', '.join(sorted(versions))}")
+    return next(iter(versions), None)
+
+
+def probe_version(
+    tool: str,
+    *,
+    args: Sequence[str] = ("--version",),
+    pattern: re.Pattern[str] = DEFAULT_VERSION_RE,
+    timeout: float = 5.0,
+) -> tuple[int, ...] | None:
+    """Run ``<tool> <args>`` and parse the first version-shaped token.
+
+    Returns a tuple like ``(4, 13, 6)`` or ``None`` if the tool is missing,
+    times out, exits non-zero, or produces no parseable version.
+    Patch component is optional; missing trailing components are dropped.
+    """
+    if not shutil.which(tool):
+        return None
+
+    try:
+        result = run_captured([tool, *args], timeout=timeout)
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+
+    if result.returncode != 0:
+        return None
+
+    # version may go to stdout or stderr depending on the tool
+    text = result.stdout or result.stderr
+    match = pattern.search(text)
+    if not match:
+        return None
+
+    return tuple(int(g) for g in match.groups() if g is not None)

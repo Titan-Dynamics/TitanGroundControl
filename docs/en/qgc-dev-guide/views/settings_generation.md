@@ -1,6 +1,8 @@
 # Generated Settings Pages
 
-This page explains how the new Application Settings pages are generated and how to extend them.
+This page explains how the Application Settings pages are generated from JSON definitions and how to extend them.
+
+For the complete JSON schema reference see [tools/generators/settings_qml/README.md](https://github.com/mavlink/qgroundcontrol/blob/master/tools/generators/settings_qml/README.md).
 
 ## Architecture Overview
 
@@ -8,8 +10,8 @@ The runtime stack is:
 
 1. Fact metadata in `src/Settings/*.SettingsGroup.json`
 2. Settings Fact accessors in `src/Settings/*Settings.h/.cc`
-3. Settings UI page definitions in `src/UI/AppSettings/pages/*.SettingsUI.json`
-4. Page list in `src/UI/AppSettings/pages/SettingsPages.json`
+3. Settings UI page definitions in `src/AppSettings/pages/*.SettingsUI.json`
+4. Page list in `src/AppSettings/pages/SettingsPages.json`
 5. Python generator in `tools/generators/settings_qml`
 6. Generated QML loaded by `src/QmlControls/AppSettings.qml`
 
@@ -17,69 +19,37 @@ At build time, CMake runs the generator and places generated QML in the build tr
 
 ## Where Generation Is Wired
 
-Generation is configured in [src/UI/AppSettings/CMakeLists.txt](../../../../src/UI/AppSettings/CMakeLists.txt):
+Generation is configured in [src/AppSettings/CMakeLists.txt](https://github.com/mavlink/qgroundcontrol/blob/master/src/AppSettings/CMakeLists.txt):
 
 - Custom command runs:
   - `python -m tools.generators.settings_qml.generate_pages --output-dir <build>/generated`
 - Inputs:
-  - `src/UI/AppSettings/pages/*.json`
+  - `src/AppSettings/pages/*.json`
   - `src/Settings/*.SettingsGroup.json`
 - Outputs:
-  - Generated page QML files (for example `AppSettings.qml`, `FlyViewSettings.qml`, ...)
+  - Generated page QML files (e.g. `GeneralSettings.qml`, `FlyViewSettings.qml`)
   - `SettingsPagesModel.qml`
 
-The generator entry point is [tools/generators/settings_qml/generate_pages.py](../../../../tools/generators/settings_qml/generate_pages.py), with most logic in [tools/generators/settings_qml/page_generator.py](../../../../tools/generators/settings_qml/page_generator.py).
-
-## JSON Files and Their Roles
-
-1. `SettingsPages.json` controls sidebar/page registration:
-- Page name
-- Icon
-- Generated QML file name (`qml`)
-- Source page definition JSON (`pageDefinition`)
-- Optional visibility expression (`visible`)
-- Optional divider entries
-
-2. `<Page>.SettingsUI.json` controls page content:
-- `bindings`: reusable QML expressions
-- `groups`: section blocks
-- Group options:
-  - `heading`
-  - `sectionName` (sidebar label override)
-  - `showWhen`, `enableWhen`
-  - `component` (embed a custom QML component)
-  - `keywords` (for search on component-only groups)
-- Control options:
-  - `setting` (required), format: `<settingsManager accessor>.<factName>`
-  - Optional `control` override (`checkbox`, `combobox`, `textfield`, `slider`, `browse`, `scaler`)
-  - Optional `label`, `showWhen`, `enableWhen`, `placeholder`
-  - Slider-specific `enableCheckbox` and `button`
-
-3. `*.SettingsGroup.json` provides Fact metadata used by both runtime and generation:
-- Type
-- Label/descriptions
-- Enum values
-- Visibility/user visibility
-- Search `keywords`
+The generator entry point is [tools/generators/settings_qml/generate_pages.py](https://github.com/mavlink/qgroundcontrol/blob/master/tools/generators/settings_qml/generate_pages.py), with most logic in [tools/generators/settings_qml/page_generator.py](https://github.com/mavlink/qgroundcontrol/blob/master/tools/generators/settings_qml/page_generator.py).
 
 ## How Controls Are Chosen
 
-When `control` is omitted, the generator auto-selects from Fact metadata:
+When `control` is omitted in a `*.SettingsUI.json`, the generator reads the fact's type from `*.SettingsGroup.json` metadata to auto-detect:
 
-- `bool` -> checkbox control
-- Enum-backed facts -> combobox
-- Other types -> text field
+- `bool` → checkbox
+- Enum-backed facts → combobox
+- Other types → text field
 
-Explicit `control` in `*.SettingsUI.json` overrides auto-selection.
+An explicit `control` key overrides auto-selection.
 
 ## Sidebar, Sections, and Search
 
-Generated `SettingsPagesModel.qml` is built from `SettingsPages.json` and each page definition.
+The generated `SettingsPagesModel.qml` is built from `SettingsPages.json` and each page definition.
 
 It includes:
 
 - `sections`: section names for expandable sidebar rows
-- `searchTerms`: page/section/fact keyword tokens used by the search field in [src/QmlControls/AppSettings.qml](../../../../src/QmlControls/AppSettings.qml)
+- `searchTerms`: page/section/fact keyword tokens used by the search field in [src/QmlControls/AppSettings.qml](https://github.com/mavlink/qgroundcontrol/blob/master/src/QmlControls/AppSettings.qml)
 
 Search terms are derived from:
 
@@ -90,37 +60,48 @@ Search terms are derived from:
 
 ## Add a New Setting to an Existing Generated Page
 
-1. Add Fact metadata entry to the appropriate `src/Settings/<Group>.SettingsGroup.json` file.
+1. Add a Fact metadata entry to the appropriate `src/Settings/<Group>.SettingsGroup.json` file.
 2. Expose that Fact through the corresponding settings class:
-- Add `DEFINE_SETTINGFACT(<factName>)` in the matching `*Settings.h`.
-- Ensure `DECLARE_SETTINGSFACT` exists in `*Settings.cc` if required by that file pattern.
+   - Add `DEFINE_SETTINGFACT(<factName>)` in the matching `*Settings.h`.
+   - Ensure `DECLARE_SETTINGSFACT` exists in `*Settings.cc` if required by that file pattern.
 3. Add a control entry in the page JSON:
-- File: `src/UI/AppSettings/pages/<Page>.SettingsUI.json`
-- Add control: `{ "setting": "<accessor>.<factName>" }`
-4. Build QGC. CMake regenerates the QML page automatically.
+   - File: `src/AppSettings/pages/<Page>.SettingsUI.json`
+   - Add: `{ "setting": "<accessor>.<factName>" }`
+
+   See [tools/generators/settings_qml/README.md](https://github.com/mavlink/qgroundcontrol/blob/master/tools/generators/settings_qml/README.md) for the full JSON schema.
+4. Build. CMake regenerates the QML page automatically.
 
 ## Add a New Generated Settings Page
 
-1. Create a new page definition JSON in `src/UI/AppSettings/pages`, for example `MyFeature.SettingsUI.json`.
-2. Add a new entry to `src/UI/AppSettings/pages/SettingsPages.json`:
-- `name`
-- `icon`
-- `qml` (output file name, for example `MyFeatureSettings.qml`)
-- `pageDefinition` (your new JSON file)
-- Optional `visible` expression
-3. Update generated outputs list in [src/UI/AppSettings/CMakeLists.txt](../../../../src/UI/AppSettings/CMakeLists.txt):
-- Add your new QML file name to `_generated_qml_names`.
+1. Create a new page definition JSON in `src/AppSettings/pages`, e.g. `MyFeature.SettingsUI.json`.
+2. Add a new entry to `src/AppSettings/pages/SettingsPages.json`:
+   - `name`, `icon`, `qml` (output filename), `pageDefinition` (your new JSON file)
+   - Optional `visible` expression
+3. Update the generated outputs list in [src/AppSettings/CMakeLists.txt](https://github.com/mavlink/qgroundcontrol/blob/master/src/AppSettings/CMakeLists.txt):
+   - Add your new QML filename to `_generated_qml_names`.
 4. Build QGC to generate and include the new page.
 
-## Important Notes and Gotchas
+## Custom Build Settings Pages
 
-- If a page exists in `SettingsPages.json` but has no `pageDefinition`, it is not generated; it is treated as hand-written QML/URL content.
-- The CMake `_generated_qml_names` list is explicit. If you forget to add a new page output file name there, generation/build integration will be incomplete.
+Custom builds (`QGC_CUSTOM_DIR`) can add, replace, reposition, or remove generated settings pages without overriding the stock generated QML:
+
+1. **Page list overlay** — create `<custom>/src/AppSettings/pages/SettingsPages.json`. Its entries are merged into the stock page list at configure time:
+   - An entry whose `name` matches a stock page **replaces** it in place.
+   - New entries support `insertAfter`/`insertBefore` (referencing a stock page `name`); otherwise they append.
+   - `{ "remove": "<name>" }` removes a stock page.
+2. **Page definitions** — put `*.SettingsUI.json` files in the same custom pages dir. A file with the same name as a stock definition shadows it.
+3. **Custom settings groups** — to reference facts that don't exist in stock QGC:
+   - Add `<custom>/src/Settings/<Name>.SettingsGroup.json` fact metadata (also compile it into the app under the `:/json` resource prefix).
+   - Create a `SettingsGroup` subclass for it.
+   - Override `QGCCorePlugin::registerCustomSettings` and call `SettingsManager::registerCustomSettingsGroup("<accessor>", new MySettings())` (the manager takes ownership). The accessor must be the camelCase JSON stem plus `Settings` (e.g. `Custom.SettingsGroup.json` → `customSettings`) so generated pages resolve `QGroundControl.settingsManager.<accessor>.<fact>`.
+
+CMake wires this automatically when the custom directories exist; the generated output list is computed by the generator's `--list-outputs` mode.
+
+The `custom-example` build in the repo includes a complete working example of all of the above: a page list overlay adding a custom settings page, its page definition, the custom settings group (fact metadata and `SettingsGroup` subclass), and the plugin registration override.
+
+## Important Notes
+
+- If a page in `SettingsPages.json` has no `pageDefinition`, it is treated as hand-written QML/URL content and not generated.
+- The CMake `_generated_qml_names` list is explicit. If you forget to add a new output filename, build integration will be incomplete.
 - The `setting` path in `*.SettingsUI.json` must match a valid `QGroundControl.settingsManager.<group>.<fact>` accessor.
 - Fact labels should be present in metadata. Missing labels are logged at runtime by `SettingsGroup`.
-
-## Runtime Override Support
-
-`SettingsManager` can load external settings override files (from `settingsSavePath()` with the configured settings file extension), then apply metadata/value/visibility overrides in `SettingsManager::adjustSettingMetaData(...)`.
-
-This is separate from page generation, but it affects visibility/defaults in generated UI.

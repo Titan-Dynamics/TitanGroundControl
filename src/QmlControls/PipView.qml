@@ -16,6 +16,9 @@ Item {
     property bool   show:                   true
     property real   topBound:               0       // Set externally to toolbar height
 
+    // Area covering the parent, in PipView coordinates: just the restore button while collapsed
+    readonly property rect occupiedRect: _isExpanded ? Qt.rect(0, 0, width, height) : Qt.rect(showPip.x, showPip.y, showPip.width, showPip.height)
+
     readonly property string _pipExpandedSettingsKey: "IsPIPVisible"
 
     property var    _fullItem
@@ -55,6 +58,8 @@ Item {
         }
     }
 
+    // item1 can swap at runtime (fly view map engine Loader), not just item2
+    onItem1Changed: _initForItems()
     onItem2Changed: _initForItems()
 
     // When height changes (from resize), pin bottom edge by adjusting y
@@ -122,6 +127,12 @@ Item {
     }
 
     function _initForItems() {
+        if (!item1) {
+            // Engine swap in flight: wait for the new item1
+            _fullItem = null
+            _pipOrWindowItem = null
+            return
+        }
         var item1IsFull = QGroundControl.loadBoolGlobalSetting(item1IsFullSettingsKey, true)
         if (item1 && item2) {
             item1.pipState.state = item1IsFull ? item1.pipState.fullState : item1.pipState.pipState
@@ -137,6 +148,10 @@ Item {
     }
 
     function _swapPip() {
+        if (!item1 || !item2) {
+            // Engine swap in flight (see _initForItems)
+            return
+        }
         var item1IsFull = false
         if (item1.pipState.state === item1.pipState.fullState) {
             item1.pipState.state = item1.pipState.pipState
@@ -320,7 +335,11 @@ Item {
 
         MouseArea {
             anchors.fill:   parent
-            onClicked:      _pipOrWindowItem.pipState.state = _pipOrWindowItem.pipState.windowState
+            onClicked: {
+                if (_pipOrWindowItem) {
+                    _pipOrWindowItem.pipState.state = _pipOrWindowItem.pipState.windowState
+                }
+            }
         }
     }
 

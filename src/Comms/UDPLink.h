@@ -23,8 +23,15 @@ struct UDPClient
         , port(portNum)
     {}
 
+    UDPClient(const QString &host, const QHostAddress &addr, quint16 portNum)
+        : hostname(host)
+        , address(addr)
+        , port(portNum)
+    {}
+
     explicit UDPClient(const UDPClient *other)
-        : address(other->address)
+        : hostname(other->hostname)
+        , address(other->address)
         , port(other->port)
     {}
 
@@ -35,12 +42,14 @@ struct UDPClient
 
     UDPClient &operator=(const UDPClient &other)
     {
+        hostname = other.hostname;
         address = other.address;
         port = other.port;
 
         return *this;
     }
 
+    QString hostname;
     QHostAddress address;
     quint16 port = 0;
 };
@@ -65,7 +74,6 @@ public:
     Q_INVOKABLE void removeHost(const QString &host, quint16 port);
 
     LinkType type() const override { return LinkConfiguration::TypeUdp; }
-    void setAutoConnect(bool autoc = true) override;
     void copyFrom(const LinkConfiguration *source) override;
     void loadSettings(QSettings &settings, const QString &root) override;
     void saveSettings(QSettings &settings, const QString &root) const override;
@@ -74,6 +82,15 @@ public:
 
     QStringList hostList() const { return _hostList; }
     QList<std::shared_ptr<UDPClient>> targetHosts() const { return _targetHosts; }
+
+    /// Returns the hostnames that failed to resolve
+    QStringList resolveHosts() const;
+
+    /// When false, connect proceeds (listening) even if a target host fails to resolve
+    bool requireResolvedHosts() const { return _requireResolvedHosts; }
+
+    void setRequireResolvedHosts(bool require) { _requireResolvedHosts = require; }
+
     quint16 localPort() const { return _localPort; }
     void setLocalPort(quint16 port) { if (port != _localPort) { _localPort = port; emit localPortChanged(); } }
 
@@ -89,6 +106,7 @@ private:
     QStringList _hostList;
     QList<std::shared_ptr<UDPClient>> _targetHosts;
     quint16 _localPort = 0;
+    bool _requireResolvedHosts = true;
 };
 
 /*===========================================================================*/
@@ -128,7 +146,7 @@ private:
     QUdpSocket *_socket = nullptr;
     QMutex _sessionTargetsMutex;
     QList<std::shared_ptr<UDPClient>> _sessionTargets;
-    bool _isConnected = false;
+    std::atomic<bool> _isConnected{false};
     bool _errorEmitted = false;
     QSet<QHostAddress> _localAddresses;
 

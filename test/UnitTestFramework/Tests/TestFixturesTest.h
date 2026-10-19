@@ -27,14 +27,12 @@ private slots:
     void _testNetworkReplyFixture();
     void _testSingleInstanceLockFixture();
 
-    // SignalSpyFixture
-    void _testSignalSpyFixtureExpect();
-    void _testSignalSpyFixtureExpectExactly();
-    void _testSignalSpyFixtureExpectNot();
-    void _testSignalSpyFixtureWaitAndVerify();
     void _testWaitForSignalCountHelper();
 
     // SettingsFixture
     void _testSettingsFixtureRestore();
     void _testSettingsFixtureFactValue();
+
+    // LoggingCategoryFixture
+    void _testLoggingCategoryFixtureRestore();
 };

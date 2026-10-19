@@ -12,6 +12,46 @@
 
 QGC_LOGGING_CATEGORY(QGCFileDialogControllerLog, "QMLControls.QGCFileDialogController")
 
+#ifdef QGC_UNITTEST_BUILD
+static bool s_testHookArmed = false;
+static QString s_testNextFile;
+
+bool QGCFileDialogController::testHookArmed()
+{
+    return s_testHookArmed;
+}
+
+QString QGCFileDialogController::takeTestNextFile()
+{
+    s_testHookArmed = false;
+    const QString file = s_testNextFile;
+    s_testNextFile.clear();
+    return file;
+}
+
+void QGCFileDialogController::setTestNextFileForAccept(const QString &file)
+{
+    s_testHookArmed = true;
+    s_testNextFile = file;
+}
+
+void QGCFileDialogController::setTestRejectNext()
+{
+    s_testHookArmed = true;
+    s_testNextFile.clear();
+}
+#else
+bool QGCFileDialogController::testHookArmed()
+{
+    return false;
+}
+
+QString QGCFileDialogController::takeTestNextFile()
+{
+    return QString();
+}
+#endif
+
 QGCFileDialogController::QGCFileDialogController(QObject *parent)
     : QObject(parent)
 {
@@ -103,11 +143,30 @@ QString QGCFileDialogController::urlToLocalFile(QUrl url)
 {
     // For some strange reason on Qt6 running on Linux files returned by FileDialog are not returned as local file urls.
     // Seems to be new behavior with Qt6.
+    QString result;
     if (url.isLocalFile()) {
-        return url.toLocalFile();
+        result = url.toLocalFile();
+    } else {
+        result = url.toString();
     }
 
-    return url.toString();
+#ifndef Q_OS_WIN
+    // Qt6 Linux FileDialog can return file URLs missing the third slash
+    // (file://path instead of file:///path). Qt parses that as host=first-segment,
+    // path=rest, and toLocalFile() yields "//host/rest" (UNC-style). On non-Windows
+    // platforms drop the spurious leading slash so it becomes a normal absolute path.
+    if (result.startsWith(QStringLiteral("//"))) {
+        result = result.mid(1);
+    }
+#endif
+
+    return result;
+}
+
+QUrl QGCFileDialogController::localFileToUrl(const QString &localFile)
+{
+    // Empty in, empty out - QUrl::fromLocalFile("") would return the degenerate "file:" url
+    return localFile.isEmpty() ? QUrl() : QUrl::fromLocalFile(localFile);
 }
 
 void QGCFileDialogController::importFromNativePicker()

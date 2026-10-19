@@ -1,16 +1,19 @@
 #include "GimbalController.h"
+
+#include <cmath>
+#include <cstring>
+
+#include "Gimbal.h"
 #include "GimbalControllerSettings.h"
 #include "MAVLinkLib.h"
 #include "MAVLinkProtocol.h"
 #include "ParameterManager.h"
+#include "QGCCameraManager.h"
 #include "QGCLoggingCategory.h"
 #include "QmlObjectListModel.h"
 #include "SettingsManager.h"
 #include "Vehicle.h"
 #include "VehicleLinkManager.h"
-#include <cmath>
-#include "Gimbal.h"
-#include "QGCCameraManager.h"
 
 QGC_LOGGING_CATEGORY(GimbalControllerLog, "Gimbal.GimbalController")
 
@@ -71,6 +74,9 @@ void GimbalController::_mavlinkMessageReceived(const mavlink_message_t &message)
     case MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS:
         _handleGimbalDeviceAttitudeStatus(message);
         break;
+    case MAVLINK_MSG_ID_GIMBAL_DEVICE_INFORMATION:
+        _handleGimbalDeviceInformation(message);
+        break;
     default:
         break;
     }
@@ -88,8 +94,9 @@ void GimbalController::_handleHeartbeat(const mavlink_message_t &message)
     // This is because we address the gimbal manager by compid, but a gimbal device might have an
     // id different than the message compid it comes from. For more information see https://mavlink.io/en/services/gimbal_v2.html
     if (!gimbalManager.receivedGimbalManagerInformation && (gimbalManager.requestGimbalManagerInformationRetries > 0)) {
-        _requestGimbalInformation(message.compid);
-        --gimbalManager.requestGimbalManagerInformationRetries;
+        if (_requestGimbalInformation(message.compid)) {
+            --gimbalManager.requestGimbalManagerInformationRetries;
+        }
     }
 }
 
@@ -240,23 +247,47 @@ void GimbalController::_handleGimbalDeviceAttitudeStatus(const mavlink_message_t
     gimbal->setAbsoluteRoll(qRadiansToDegrees(roll));
     gimbal->setAbsolutePitch(qRadiansToDegrees(pitch));
 
-    const bool yaw_in_vehicle_frame = _yawInVehicleFrame(attitude_status.flags);
+    // The two yaw frame flags are mutually exclusive. Both set is malformed: ignore both and fall back to the
+    // legacy YAW_LOCK frame semantics with the vehicle's heading.
+    constexpr uint16_t kYawFrameFlags = GIMBAL_DEVICE_FLAGS_YAW_IN_VEHICLE_FRAME | GIMBAL_DEVICE_FLAGS_YAW_IN_EARTH_FRAME;
+    uint16_t flags = attitude_status.flags;
+    const bool yawFrameFlagsInvalid = (flags & kYawFrameFlags) == kYawFrameFlags;
+    if (yawFrameFlagsInvalid) {
+        flags &= ~kYawFrameFlags;
+    }
+    if (yawFrameFlagsInvalid != gimbal->_yawFrameFlagsInvalid) {
+        gimbal->_yawFrameFlagsInvalid = yawFrameFlagsInvalid;
+        if (yawFrameFlagsInvalid) {
+            qCWarning(GimbalControllerLog) << "GIMBAL_DEVICE_ATTITUDE_STATUS has both yaw frame flags set, ignoring them for device:"
+                                           << gimbal->deviceId()->rawValue().toUInt();
+        }
+    }
+
+    // Spec: delta_yaw (gimbal's own estimate of vehicle heading) is only meaningful when a yaw frame flag is
+    // set; NaN means unknown. Without it fall back to the vehicle's heading.
+    const bool frameFlagged = (flags & kYawFrameFlags) != 0;
+    const bool deltaYawValid = frameFlagged && !std::isnan(attitude_status.delta_yaw);
+    const float deltaYawDeg = deltaYawValid ? std::remainder(qRadiansToDegrees(attitude_status.delta_yaw), 360.0f) : qQNaN();
+    if (deltaYawValid != gimbal->_deltaYawValid) {
+        gimbal->_deltaYawValid = deltaYawValid;
+        qCDebug(GimbalControllerLog) << "delta_yaw heading source" << (deltaYawValid ? "available" : "unavailable")
+                                     << "for device:" << gimbal->deviceId()->rawValue().toUInt();
+    }
+    gimbal->setDeltaYaw(deltaYawDeg);
+
+    const float headingDeg = deltaYawValid ? deltaYawDeg : _vehicle->heading()->rawValue().toFloat();
+
+    const bool yaw_in_vehicle_frame = _yawInVehicleFrame(flags);
     if (yaw_in_vehicle_frame) {
         const float bodyYaw = qRadiansToDegrees(yaw);
-        float absoluteYaw = bodyYaw + _vehicle->heading()->rawValue().toFloat();
-        if (absoluteYaw > 180.0f) {
-            absoluteYaw -= 360.0f;
-        }
+        const float absoluteYaw = std::remainder(bodyYaw + headingDeg, 360.0f);
 
         gimbal->setBodyYaw(bodyYaw);
         gimbal->setAbsoluteYaw(absoluteYaw);
 
     } else {
         const float absoluteYaw = qRadiansToDegrees(yaw);
-        float bodyYaw = absoluteYaw - _vehicle->heading()->rawValue().toFloat();
-        if (bodyYaw < -180.0f) {
-            bodyYaw += 360.0f;
-        }
+        const float bodyYaw = std::remainder(absoluteYaw - headingDeg, 360.0f);
 
         gimbal->setBodyYaw(bodyYaw);
         gimbal->setAbsoluteYaw(absoluteYaw);
@@ -267,15 +298,101 @@ void GimbalController::_handleGimbalDeviceAttitudeStatus(const mavlink_message_t
     _checkComplete(*gimbal, pairId);
 }
 
-void GimbalController::_requestGimbalInformation(uint8_t compid)
+void GimbalController::_handleGimbalDeviceInformation(const mavlink_message_t& message)
+{
+    mavlink_gimbal_device_information_t information{};
+    mavlink_msg_gimbal_device_information_decode(&message, &information);
+
+    // Build a human-readable name: prefer the user-set custom name, otherwise
+    // combine vendor and model. The char arrays are not guaranteed null-terminated.
+    const auto toString = [](const char* field, size_t size) {
+        return QString::fromLatin1(field, static_cast<int>(strnlen(field, size))).trimmed();
+    };
+    QString name = toString(information.custom_name, sizeof(information.custom_name));
+    if (name.isEmpty()) {
+        const QString vendor = toString(information.vendor_name, sizeof(information.vendor_name));
+        const QString model = toString(information.model_name, sizeof(information.model_name));
+        name = QStringLiteral("%1 %2").arg(vendor, model).trimmed();
+    }
+
+    if (name.isEmpty()) {
+        return;
+    }
+
+    // Match to the gimbal. If gimbal_device_id is 1-6 the manager and device
+    // share this component id, so the pair is {compid, gimbal_device_id}.
+    // Otherwise the device is its own component and its compid is the device id.
+    Gimbal* gimbal = nullptr;
+    if (information.gimbal_device_id != 0) {
+        const auto it = _potentialGimbals.find(GimbalPairId{message.compid, information.gimbal_device_id});
+        if (it != _potentialGimbals.constEnd()) {
+            gimbal = it.value();
+        }
+    } else {
+        for (Gimbal* const candidate : _potentialGimbals) {
+            if (candidate->deviceId()->rawValue().toUInt() == message.compid) {
+                gimbal = candidate;
+                break;
+            }
+        }
+    }
+
+    if (gimbal) {
+        gimbal->setDeviceName(name);
+        gimbal->_receivedGimbalDeviceInformation = true;
+        qCDebug(GimbalControllerLog) << "gimbal device name:" << name << "for compid:" << message.compid;
+    }
+}
+
+bool GimbalController::_requestGimbalInformation(uint8_t compid)
 {
     qCDebug(GimbalControllerLog) << "_requestGimbalInformation(" << compid << ")";
 
-    if (_vehicle) {
-        _vehicle->sendMavCommand(compid,
-                                 MAV_CMD_REQUEST_MESSAGE,
-                                 false /* no error */,
-                                 MAVLINK_MSG_ID_GIMBAL_MANAGER_INFORMATION);
+    if (!_vehicle) {
+        return false;
+    }
+    if (_pendingInformationRequestCompId != -1) {
+        qCDebug(GimbalControllerLog) << "_requestGimbalInformation: request already in flight for compid" << _pendingInformationRequestCompId;
+        return false;
+    }
+
+    // Must go through requestMessage rather than sending MAV_CMD_REQUEST_MESSAGE directly so
+    // that it serializes with other request-message users targeting the same component
+    // (a raw send collides with theirs in the command queue's duplicate-command check).
+    _pendingInformationRequestCompId = compid;
+    _vehicle->requestMessage(_requestMessageResultHandler,
+                             this,
+                             compid,
+                             MAVLINK_MSG_ID_GIMBAL_MANAGER_INFORMATION);
+    return true;
+}
+
+void GimbalController::_requestMessageResultHandler(void* resultHandlerData, MAV_RESULT result, VehicleTypes::RequestMessageResultHandlerFailureCode_t failureCode, const mavlink_message_t& message)
+{
+    Q_UNUSED(message);
+
+    auto* controller = static_cast<GimbalController*>(resultHandlerData);
+    controller->_pendingInformationRequestCompId = -1;
+
+    // Success is handled by the normal GIMBAL_MANAGER_INFORMATION message dispatch and
+    // failures are retried from _checkComplete, so just log here.
+    if (result != MAV_RESULT_ACCEPTED) {
+        qCDebug(GimbalControllerLog) << "GIMBAL_MANAGER_INFORMATION request failed - result:" << result << "failureCode:" << failureCode;
+    }
+}
+
+void GimbalController::_requestDeviceInformationResultHandler(
+    void* resultHandlerData, MAV_RESULT result, VehicleTypes::RequestMessageResultHandlerFailureCode_t failureCode,
+    const mavlink_message_t& message)
+{
+    Q_UNUSED(resultHandlerData);
+    Q_UNUSED(message);
+
+    // Success is handled by the normal GIMBAL_DEVICE_INFORMATION message dispatch. The name is
+    // optional, so on failure we keep showing the IDs.
+    if (result != MAV_RESULT_ACCEPTED) {
+        qCDebug(GimbalControllerLog) << "GIMBAL_DEVICE_INFORMATION request failed - result:" << result
+                                     << "failureCode:" << failureCode;
     }
 }
 
@@ -287,14 +404,14 @@ void GimbalController::_checkComplete(Gimbal &gimbal, GimbalPairId pairId)
     }
 
     if (!gimbal._receivedGimbalManagerInformation && gimbal._requestInformationRetries > 0) {
-        _requestGimbalInformation(pairId.managerCompid);
-        --gimbal._requestInformationRetries;
+        if (_requestGimbalInformation(pairId.managerCompid)) {
+            --gimbal._requestInformationRetries;
+        }
     }
-    // Limit to 1 second between set message interface requests
-    static qint64 lastRequestStatusMessage = 0;
-    qint64 now = QDateTime::currentMSecsSinceEpoch();
-    if (!gimbal._receivedGimbalManagerStatus && (gimbal._requestStatusRetries > 0) && (now - lastRequestStatusMessage > 1000)) {
-        lastRequestStatusMessage = now;
+    // Limit to 1 second between set message interval requests, per gimbal
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (!gimbal._receivedGimbalManagerStatus && (gimbal._requestStatusRetries > 0) && (now - gimbal._lastStatusRequestMs > 1000)) {
+        gimbal._lastStatusRequestMs = now;
         _vehicle->sendMavCommand(pairId.managerCompid,
                                  MAV_CMD_SET_MESSAGE_INTERVAL,
                                  false /* no error */,
@@ -332,6 +449,21 @@ void GimbalController::_checkComplete(Gimbal &gimbal, GimbalPairId pairId)
     }
 
     gimbal._isComplete = true;
+
+    // Now that discovery is done, make a best-effort request for the gimbal
+    // device information, which carries the vendor/model/custom name.
+    // If it's never answered (e.g. the SITL gimbal sends empty names),
+    // we simply fall back to showing the IDs.
+    if (pairId.deviceId != 0) {
+        uint8_t gimbalDeviceCompid = pairId.deviceId;
+        // If the device ID is 1-6, the device shares the manager's component id.
+        if (gimbalDeviceCompid <= 6) {
+            gimbalDeviceCompid = pairId.managerCompid;
+        }
+        // Use requestMessage so it serializes with other request-message users targeting this component.
+        _vehicle->requestMessage(_requestDeviceInformationResultHandler, nullptr, gimbalDeviceCompid,
+                                 MAVLINK_MSG_ID_GIMBAL_DEVICE_INFORMATION);
+    }
 
     // If there is no current active gimbal, set this one as active
     if (!_activeGimbal) {
@@ -450,7 +582,7 @@ void GimbalController::gimbalOnScreenControl(float panPct, float tiltPct, bool c
         const float tiltDesired = tiltIncDesired + _activeGimbal->absolutePitch()->rawValue().toFloat();
 
         if (_activeGimbal->yawLock()) {
-            sendPitchAbsoluteYaw(tiltDesired, panDesired + _vehicle->heading()->rawValue().toFloat(), false);
+            sendPitchAbsoluteYaw(tiltDesired, panIncDesired + _activeGimbal->absoluteYaw()->rawValue().toFloat(), false);
         } else {
             sendPitchBodyYaw(tiltDesired, panDesired, false);
         }
@@ -467,7 +599,7 @@ void GimbalController::gimbalOnScreenControl(float panPct, float tiltPct, bool c
         const float tiltDesired = tiltIncDesired + _activeGimbal->absolutePitch()->rawValue().toFloat();
 
         if (_activeGimbal->yawLock()) {
-            sendPitchAbsoluteYaw(tiltDesired, panDesired + _vehicle->heading()->rawValue().toFloat(), false);
+            sendPitchAbsoluteYaw(tiltDesired, panIncDesired + _activeGimbal->absoluteYaw()->rawValue().toFloat(), false);
         } else {
             sendPitchBodyYaw(tiltDesired, panDesired, false);
         }

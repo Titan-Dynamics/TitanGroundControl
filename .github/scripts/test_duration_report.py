@@ -5,13 +5,20 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
-import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from xml_utils import xml_parse
+if TYPE_CHECKING:
+    import xml.etree.ElementTree as ET
+
+from ci_bootstrap import ensure_tools_dir
+
+ensure_tools_dir(__file__)
+
+from common.gh_actions import gh_warning, write_github_output, write_step_summary
+from common.markdown import md_table
+from common.xml import xml_parse
 
 
 def test_key(elem: ET.Element) -> str:
@@ -27,7 +34,7 @@ def parse_time(value: str) -> float:
     """Parse testcase duration, defaulting invalid values to 0."""
     try:
         return float(value)
-    except Exception:
+    except (ValueError, TypeError):
         return 0.0
 
 
@@ -40,7 +47,12 @@ def analyze_test_durations(
     """Return computed timing report data for a JUnit XML file."""
     tree = xml_parse(junit_path)
     root = tree.getroot()
-    cases = [(test_key(testcase), parse_time(testcase.attrib.get("time", "0"))) for testcase in root.iter("testcase")]
+    if root is None:
+        raise ValueError(f"JUnit XML {junit_path} has no root element")
+    cases = [
+        (test_key(testcase), parse_time(testcase.attrib.get("time", "0")))
+        for testcase in root.iter("testcase")
+    ]
 
     total_seconds = sum(secs for _, secs in cases)
     slowest = sorted(cases, key=lambda item: item[1], reverse=True)
@@ -80,21 +92,16 @@ def build_summary(report: dict[str, Any], *, missing_junit: str = "") -> str:
     if top_slowest:
         lines.append(f"### Top {len(top_slowest)} Slowest Tests")
         lines.append("")
-        lines.append("| Test | Seconds |")
-        lines.append("|---|---:|")
-        for item in top_slowest:
-            lines.append(f"| `{item['test']}` | {item['seconds']:.3f} |")
+        lines.append(
+            md_table(
+                ["Test", "Seconds"],
+                [[f"`{item['test']}`", f"{item['seconds']:.3f}"] for item in top_slowest],
+                align=["left", "right"],
+            )
+        )
         lines.append("")
 
     return "\n".join(lines)
-
-
-def append_file(path: Path | None, content: str) -> None:
-    """Append content to a file if a path is provided."""
-    if path is None:
-        return
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(content)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -104,8 +111,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--report-json-path", default="test-duration-report.json")
     parser.add_argument("--top-n", type=int, default=20)
     parser.add_argument("--slow-threshold-seconds", type=float, default=60.0)
-    parser.add_argument("--github-step-summary", default=os.environ.get("GITHUB_STEP_SUMMARY", ""))
-    parser.add_argument("--github-output", default=os.environ.get("GITHUB_OUTPUT", ""))
     return parser.parse_args(argv)
 
 
@@ -114,14 +119,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     junit_path = Path(args.junit_path)
     report_json_path = Path(args.report_json_path)
-    step_summary = Path(args.github_step_summary) if args.github_step_summary else None
-    github_output = Path(args.github_output) if args.github_output else None
 
     if not junit_path.exists():
         message = f"JUnit report not found at {junit_path}"
-        print(f"::warning::{message}")
-        append_file(step_summary, build_summary({}, missing_junit=message))
-        append_file(github_output, "slow_count=0\n")
+        gh_warning(message)
+        write_step_summary(build_summary({}, missing_junit=message))
+        write_github_output({"slow_count": "0"})
         return 0
 
     report = analyze_test_durations(
@@ -130,16 +133,15 @@ def main(argv: list[str] | None = None) -> int:
         slow_threshold=args.slow_threshold_seconds,
     )
     report_json_path.parent.mkdir(parents=True, exist_ok=True)
-    report_json_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-    append_file(step_summary, build_summary(report))
-    append_file(
-        github_output,
-        f"slow_count={report['slow_count']}\n",
+    report_json_path.write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
 
+    write_step_summary(build_summary(report))
+    write_github_output({"slow_count": str(report["slow_count"])})
+
     for key, secs in report["slow_warnings"]:
-        print(f"::warning::Slow test (>={args.slow_threshold_seconds:.1f}s): {key} took {secs:.3f}s")
+        gh_warning(f"Slow test (>={args.slow_threshold_seconds:.1f}s): {key} took {secs:.3f}s")
 
     return 0
 

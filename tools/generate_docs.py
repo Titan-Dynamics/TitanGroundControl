@@ -14,7 +14,9 @@ from _bootstrap import ensure_tools_dir
 
 ensure_tools_dir(__file__)
 
+from common.file_traversal import find_repo_root
 from common.logging import log_error, log_info, log_ok, log_warn
+from common.opener import open_in_default_app
 
 DEFAULT_DOXYFILE = """# Doxyfile for QGroundControl
 
@@ -39,11 +41,17 @@ WARNINGS               = YES
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description="Generate QGroundControl API documentation.")
-    parser.add_argument("-o", "--open", dest="open_docs", action="store_true", help="Open docs after generating")
+    parser.add_argument(
+        "-o", "--open", dest="open_docs", action="store_true", help="Open docs after generating"
+    )
     parser.add_argument("--pdf", action="store_true", help="Generate PDF output")
     parser.add_argument("-c", "--clean", action="store_true", help="Clean generated docs")
-    parser.add_argument("--output-dir", default="docs/api", help="Output directory (default: docs/api)")
-    parser.add_argument("--doxyfile", default="Doxyfile", help="Path to Doxyfile (default: Doxyfile)")
+    parser.add_argument(
+        "--output-dir", default="docs/api", help="Output directory (default: docs/api)"
+    )
+    parser.add_argument(
+        "--doxyfile", default="Doxyfile", help="Path to Doxyfile (default: Doxyfile)"
+    )
     parser.add_argument("--check-deps", action="store_true", help="Check required tools, then exit")
     return parser.parse_args(argv)
 
@@ -84,7 +92,9 @@ def load_base_doxyfile(doxyfile_path: Path) -> str:
     return DEFAULT_DOXYFILE
 
 
-def generate_docs(repo_root: Path, output_dir: Path, doxyfile_path: Path, *, generate_pdf: bool) -> None:
+def generate_docs(
+    repo_root: Path, output_dir: Path, doxyfile_path: Path, *, generate_pdf: bool
+) -> None:
     """Generate HTML docs and optionally PDF docs without mutating tracked files."""
     log_info("Generating documentation...")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -92,7 +102,9 @@ def generate_docs(repo_root: Path, output_dir: Path, doxyfile_path: Path, *, gen
     base_text = load_base_doxyfile(doxyfile_path)
     effective_text = build_doxyfile_text(base_text, output_dir, generate_pdf=generate_pdf)
 
-    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".doxyfile", delete=False) as handle:
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", suffix=".doxyfile", delete=False
+    ) as handle:
         handle.write(effective_text)
         temp_doxyfile = Path(handle.name)
 
@@ -117,10 +129,8 @@ def open_docs(output_dir: Path) -> None:
         raise FileNotFoundError(f"Documentation not found: {index}")
 
     log_info("Opening documentation...")
-    opener = shutil.which("xdg-open") or shutil.which("open")
-    if opener is None:
+    if not open_in_default_app(index):
         raise RuntimeError(f"Could not find a browser opener. Docs at: {index}")
-    subprocess.run([opener, str(index)], check=False)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -129,10 +139,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.check_deps:
         from common.deps import check_and_report
+
         check_and_report(["doxygen"])
         return 0
 
-    repo_root = Path(__file__).resolve().parent.parent
+    repo_root = find_repo_root(Path(__file__))
     output_dir = Path(args.output_dir)
     doxyfile_path = Path(args.doxyfile)
     if not output_dir.is_absolute():

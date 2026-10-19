@@ -82,10 +82,12 @@ void LoggingQmlBindingTest::_modelReceivesEntries()
     auto* model = LogManager::instance()->model();
     const int before = model->totalCount();
 
+    expectLogMessage("Test.LoggingQmlBinding", QtWarningMsg, QRegularExpression("test message for model"));
     qCWarning(LoggingQmlBindingTestLog) << "test message for model";
     // Model update is an in-process queued signal, not I/O; a 500 ms window
     // is generous for a local Qt signal and keeps failure feedback fast.
     QTRY_VERIFY_WITH_TIMEOUT(model->totalCount() > before, 500);
+    verifyExpectedLogMessage();
 
     QQmlComponent component(_engine);
     component.setData(R"(
@@ -136,32 +138,6 @@ void LoggingQmlBindingTest::_filterBindingsWork()
 
     const auto categories = obj->property("categories").toStringList();
     QVERIFY(categories.size() >= 0); // May be empty initially
-}
-
-void LoggingQmlBindingTest::_settingsDialogLoads()
-{
-    QQmlComponent component(_engine);
-    component.setData(R"(
-        import QtQuick
-        import QGroundControl.LogManager
-
-        QtObject {
-            property bool diskEnabled: LogManager.diskLoggingEnabled
-            property bool hasError: LogManager.hasError
-            property var sink: LogManager.remoteSink
-            property bool sinkValid: sink !== null
-        }
-    )", QUrl());
-
-    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
-
-    QScopedPointer<QObject> obj(component.create());
-    QVERIFY(obj);
-
-    QCOMPARE(obj->property("sinkValid").toBool(), true);
-    // diskLoggingEnabled should be a boolean
-    QVERIFY(obj->property("diskEnabled").isValid());
-    QVERIFY(obj->property("hasError").isValid());
 }
 
 UT_REGISTER_TEST(LoggingQmlBindingTest, TestLabel::Unit, TestLabel::Utilities)

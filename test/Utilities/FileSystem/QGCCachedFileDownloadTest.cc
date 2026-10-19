@@ -1,34 +1,28 @@
 #include "QGCCachedFileDownloadTest.h"
 
 #include <QtCore/QFile>
-#include <QtNetwork/QHostAddress>
+#include <QtCore/QRegularExpression>
 #include <QtNetwork/QNetworkCacheMetaData>
 #include <QtNetwork/QNetworkDiskCache>
 #include <QtNetwork/QNetworkRequest>
-#include <QtNetwork/QTcpServer>
-#include <QtNetwork/QTcpSocket>
 #include <QtTest/QSignalSpy>
 
+#include "LocalHttpTestServer.h"
 #include "QGCCachedFileDownload.h"
 #include "QGCFileDownload.h"
-
-namespace {
-bool listenOnLocalTestAddress(QTcpServer& server)
-{
-    return server.listen(QHostAddress::LocalHost, 0) || server.listen(QHostAddress::LocalHostIPv6, 0) ||
-           server.listen(QHostAddress::Any, 0);
-}
-}  // namespace
+#include <QtCore/QTemporaryDir>
+#include <QtCore/QDir>
 
 // ============================================================================
 // QGCCachedFileDownload Tests
 // ============================================================================
 void QGCCachedFileDownloadTest::_testCachedFileDownloadConstruction()
 {
+    QTemporaryDir tempDir;
     // Test construction with cache directory
-    QGCCachedFileDownload downloader1(tempDirPath(), this);
+    QGCCachedFileDownload downloader1(tempDir.path(), this);
     // QNetworkDiskCache may append trailing slash
-    QVERIFY(downloader1.cacheDirectory().startsWith(tempDirPath()));
+    QVERIFY(downloader1.cacheDirectory().startsWith(tempDir.path()));
     QVERIFY(!downloader1.isRunning());
     QCOMPARE(downloader1.progress(), 0.0);
     QVERIFY(downloader1.errorString().isEmpty());
@@ -41,8 +35,11 @@ void QGCCachedFileDownloadTest::_testCachedFileDownloadConstruction()
 
 void QGCCachedFileDownloadTest::_testCachedFileDownloadCacheDirectory()
 {
-    const QString cacheDir1 = createSubDir(QStringLiteral("cache-dir-1"));
-    const QString cacheDir2 = createSubDir(QStringLiteral("cache-dir-2"));
+    QTemporaryDir tempDir;
+    const QString cacheDir1 = tempDir.path() + "/cache-dir-1";
+    QDir().mkpath(cacheDir1);
+    const QString cacheDir2 = tempDir.path() + "/cache-dir-2";
+    QDir().mkpath(cacheDir2);
     QVERIFY(!cacheDir1.isEmpty());
     QVERIFY(!cacheDir2.isEmpty());
     QGCCachedFileDownload downloader(cacheDir1, this);
@@ -60,7 +57,8 @@ void QGCCachedFileDownloadTest::_testCachedFileDownloadCacheDirectory()
 
 void QGCCachedFileDownloadTest::_testCachedFileDownloadMaxCacheSize()
 {
-    QGCCachedFileDownload downloader(tempDirPath(), this);
+    QTemporaryDir tempDir;
+    QGCCachedFileDownload downloader(tempDir.path(), this);
     QSignalSpy spy(&downloader, &QGCCachedFileDownload::maxCacheSizeChanged);
     constexpr qint64 newSize = 100 * 1024 * 1024;  // 100 MB
     downloader.setMaxCacheSize(newSize);
@@ -74,9 +72,12 @@ void QGCCachedFileDownloadTest::_testCachedFileDownloadMaxCacheSize()
 
 void QGCCachedFileDownloadTest::_testCachedFileDownloadEmptyUrl()
 {
-    QGCCachedFileDownload downloader(tempDirPath(), this);
+    QTemporaryDir tempDir;
+    QGCCachedFileDownload downloader(tempDir.path(), this);
     // Empty URL should fail
+    expectLogMessage("Utilities.QGCCachedFileDownload", QtWarningMsg, QRegularExpression("Empty URL"));
     QVERIFY(!downloader.download("", 3600));
+    verifyExpectedLogMessage();
     QVERIFY(!downloader.errorString().isEmpty());
 }
 
@@ -84,13 +85,16 @@ void QGCCachedFileDownloadTest::_testCachedFileDownloadNoCacheDir()
 {
     QGCCachedFileDownload downloader(this);
     // No cache directory should fail
+    expectLogMessage("Utilities.QGCCachedFileDownload", QtWarningMsg, QRegularExpression("Cache directory not set"));
     QVERIFY(!downloader.download(":/unittest/manifest.json.gz", 3600));
+    verifyExpectedLogMessage();
     QVERIFY(!downloader.errorString().isEmpty());
 }
 
 void QGCCachedFileDownloadTest::_testCachedFileDownloadDownload()
 {
-    QGCCachedFileDownload downloader(tempDirPath(), this);
+    QTemporaryDir tempDir;
+    QGCCachedFileDownload downloader(tempDir.path(), this);
     bool finished = false;
     bool success = false;
     QString localPath;
@@ -118,36 +122,14 @@ void QGCCachedFileDownloadTest::_testCachedFileDownloadDownload()
 
 void QGCCachedFileDownloadTest::_testCachedFileDownloadSyntheticCacheHit()
 {
-    QGCCachedFileDownload downloader(tempDirPath(), this);
+    QTemporaryDir tempDir;
+    QGCCachedFileDownload downloader(tempDir.path(), this);
 
     const QByteArray payload("cached-data");
-    QTcpServer server;
-    if (!listenOnLocalTestAddress(server)) {
-        const QString reason = QStringLiteral("Could not start local test HTTP server: %1").arg(server.errorString());
-        QSKIP(qPrintable(reason));
-    }
-    const QString url = QStringLiteral("http://127.0.0.1:%1/synthetic-cache-hit.txt").arg(server.serverPort());
-
-    (void)connect(&server, &QTcpServer::newConnection, &server, [&server, payload]() {
-        while (server.hasPendingConnections()) {
-            QTcpSocket* const socket = server.nextPendingConnection();
-            (void)connect(socket, &QTcpSocket::readyRead, socket, [socket, payload]() {
-                (void)socket->readAll();
-                const QByteArray response = QByteArrayLiteral(
-                                                "HTTP/1.1 200 OK\r\n"
-                                                "Content-Type: text/plain\r\n"
-                                                "Cache-Control: max-age=3600\r\n"
-                                                "Connection: close\r\n"
-                                                "Content-Length: ") +
-                                            QByteArray::number(payload.size()) + QByteArrayLiteral("\r\n\r\n") +
-                                            payload;
-                (void)socket->write(response);
-                (void)socket->flush();
-                socket->disconnectFromHost();
-            });
-            (void)connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
-        }
-    });
+    TestFixtures::LocalHttpTestServer server;
+    QVERIFY2(server.listen(), "Could not start local test HTTP server");
+    const QString url = server.url(QStringLiteral("/synthetic-cache-hit.txt"));
+    server.installHttpResponder(payload, 200, "text/plain", 3600);
 
     QSignalSpy firstFinishedSpy(&downloader, &QGCCachedFileDownload::finished);
     QVERIFY(downloader.download(url, 3600));
@@ -175,37 +157,15 @@ void QGCCachedFileDownloadTest::_testCachedFileDownloadSyntheticCacheHit()
 
 void QGCCachedFileDownloadTest::_testCachedFileDownloadCachedPath()
 {
-    QGCCachedFileDownload downloader(tempDirPath(), this);
+    QTemporaryDir tempDir;
+    QGCCachedFileDownload downloader(tempDir.path(), this);
 
     const QByteArray payload("cached-path-data");
-    QTcpServer server;
-    if (!listenOnLocalTestAddress(server)) {
-        const QString reason = QStringLiteral("Could not start local test HTTP server: %1").arg(server.errorString());
-        QSKIP(qPrintable(reason));
-    }
-    const QString url = QStringLiteral("http://127.0.0.1:%1/cached-path.txt").arg(server.serverPort());
+    TestFixtures::LocalHttpTestServer server;
+    QVERIFY2(server.listen(), "Could not start local test HTTP server");
+    const QString url = server.url(QStringLiteral("/cached-path.txt"));
     QVERIFY(downloader.cachedPath(url).isEmpty());
-
-    (void)connect(&server, &QTcpServer::newConnection, &server, [&server, payload]() {
-        while (server.hasPendingConnections()) {
-            QTcpSocket* const socket = server.nextPendingConnection();
-            (void)connect(socket, &QTcpSocket::readyRead, socket, [socket, payload]() {
-                (void)socket->readAll();
-                const QByteArray response = QByteArrayLiteral(
-                                                "HTTP/1.1 200 OK\r\n"
-                                                "Content-Type: text/plain\r\n"
-                                                "Cache-Control: max-age=3600\r\n"
-                                                "Connection: close\r\n"
-                                                "Content-Length: ") +
-                                            QByteArray::number(payload.size()) + QByteArrayLiteral("\r\n\r\n") +
-                                            payload;
-                (void)socket->write(response);
-                (void)socket->flush();
-                socket->disconnectFromHost();
-            });
-            (void)connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
-        }
-    });
+    server.installHttpResponder(payload, 200, "text/plain", 3600);
 
     QSignalSpy finishedSpy(&downloader, &QGCCachedFileDownload::finished);
     QVERIFY(downloader.download(url, 3600));
@@ -226,7 +186,8 @@ void QGCCachedFileDownloadTest::_testCachedFileDownloadCachedPath()
 
 void QGCCachedFileDownloadTest::_testCachedFileDownloadPreferCache()
 {
-    QGCCachedFileDownload downloader(tempDirPath(), this);
+    QTemporaryDir tempDir;
+    QGCCachedFileDownload downloader(tempDir.path(), this);
     bool success = false;
     QString localPath;
     connect(&downloader, &QGCCachedFileDownload::finished, this,
@@ -244,7 +205,8 @@ void QGCCachedFileDownloadTest::_testCachedFileDownloadPreferCache()
 
 void QGCCachedFileDownloadTest::_testCachedFileDownloadNoCache()
 {
-    QGCCachedFileDownload downloader(tempDirPath(), this);
+    QTemporaryDir tempDir;
+    QGCCachedFileDownload downloader(tempDir.path(), this);
     bool success = false;
     QString localPath;
     connect(&downloader, &QGCCachedFileDownload::finished, this,
@@ -262,7 +224,8 @@ void QGCCachedFileDownloadTest::_testCachedFileDownloadNoCache()
 
 void QGCCachedFileDownloadTest::_testCachedFileDownloadIsCached()
 {
-    QGCCachedFileDownload downloader(tempDirPath(), this);
+    QTemporaryDir tempDir;
+    QGCCachedFileDownload downloader(tempDir.path(), this);
     const QString testUrl = ":/unittest/manifest.json.gz";
     // Initially not cached
     QVERIFY(!downloader.isCached(testUrl));
@@ -277,36 +240,14 @@ void QGCCachedFileDownloadTest::_testCachedFileDownloadIsCached()
 
 void QGCCachedFileDownloadTest::_testCachedFileDownloadIsCachedInvalidTimestamp()
 {
-    QGCCachedFileDownload downloader(tempDirPath(), this);
+    QTemporaryDir tempDir;
+    QGCCachedFileDownload downloader(tempDir.path(), this);
 
     const QByteArray payload("cached-invalid-timestamp");
-    QTcpServer server;
-    if (!listenOnLocalTestAddress(server)) {
-        const QString reason = QStringLiteral("Could not start local test HTTP server: %1").arg(server.errorString());
-        QSKIP(qPrintable(reason));
-    }
-    const QString url = QStringLiteral("http://127.0.0.1:%1/cached-invalid-timestamp.txt").arg(server.serverPort());
-
-    (void)connect(&server, &QTcpServer::newConnection, &server, [&server, payload]() {
-        while (server.hasPendingConnections()) {
-            QTcpSocket* const socket = server.nextPendingConnection();
-            (void)connect(socket, &QTcpSocket::readyRead, socket, [socket, payload]() {
-                (void)socket->readAll();
-                const QByteArray response = QByteArrayLiteral(
-                                                "HTTP/1.1 200 OK\r\n"
-                                                "Content-Type: text/plain\r\n"
-                                                "Cache-Control: max-age=3600\r\n"
-                                                "Connection: close\r\n"
-                                                "Content-Length: ") +
-                                            QByteArray::number(payload.size()) + QByteArrayLiteral("\r\n\r\n") +
-                                            payload;
-                (void)socket->write(response);
-                (void)socket->flush();
-                socket->disconnectFromHost();
-            });
-            (void)connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
-        }
-    });
+    TestFixtures::LocalHttpTestServer server;
+    QVERIFY2(server.listen(), "Could not start local test HTTP server");
+    const QString url = server.url(QStringLiteral("/cached-invalid-timestamp.txt"));
+    server.installHttpResponder(payload, 200, "text/plain", 3600);
 
     QSignalSpy finishedSpy(&downloader, &QGCCachedFileDownload::finished);
     QVERIFY(downloader.download(url, 3600));
@@ -329,7 +270,8 @@ void QGCCachedFileDownloadTest::_testCachedFileDownloadIsCachedInvalidTimestamp(
 
 void QGCCachedFileDownloadTest::_testCachedFileDownloadCacheAge()
 {
-    QGCCachedFileDownload downloader(tempDirPath(), this);
+    QTemporaryDir tempDir;
+    QGCCachedFileDownload downloader(tempDir.path(), this);
     const QString testUrl = ":/unittest/manifest.json.gz";
     // Not cached returns -1
     QCOMPARE(downloader.cacheAge(testUrl), -1);
@@ -337,7 +279,8 @@ void QGCCachedFileDownloadTest::_testCachedFileDownloadCacheAge()
 
 void QGCCachedFileDownloadTest::_testCachedFileDownloadClearCache()
 {
-    QGCCachedFileDownload downloader(tempDirPath(), this);
+    QTemporaryDir tempDir;
+    QGCCachedFileDownload downloader(tempDir.path(), this);
     QSignalSpy spy(&downloader, &QGCCachedFileDownload::cacheSizeChanged);
     // Clear cache (should work even if empty)
     downloader.clearCache();
@@ -347,7 +290,8 @@ void QGCCachedFileDownloadTest::_testCachedFileDownloadClearCache()
 
 void QGCCachedFileDownloadTest::_testCachedFileDownloadRemoveFromCache()
 {
-    QGCCachedFileDownload downloader(tempDirPath(), this);
+    QTemporaryDir tempDir;
+    QGCCachedFileDownload downloader(tempDir.path(), this);
     const QString testUrl = ":/unittest/manifest.json.gz";
     // Removing non-existent URL should return false
     QVERIFY(!downloader.removeFromCache(testUrl));
@@ -355,7 +299,8 @@ void QGCCachedFileDownloadTest::_testCachedFileDownloadRemoveFromCache()
 
 void QGCCachedFileDownloadTest::_testCachedFileDownloadCancel()
 {
-    QGCCachedFileDownload downloader(tempDirPath(), this);
+    QTemporaryDir tempDir;
+    QGCCachedFileDownload downloader(tempDir.path(), this);
     QSignalSpy finishedSpy(&downloader, &QGCCachedFileDownload::finished);
 
     // Start download and immediately cancel
@@ -374,9 +319,12 @@ void QGCCachedFileDownloadTest::_testCachedFileDownloadCancel()
 
 void QGCCachedFileDownloadTest::_testCachedFileDownloadConcurrentDownloadRejected()
 {
-    QGCCachedFileDownload downloader(tempDirPath(), this);
+    QTemporaryDir tempDir;
+    QGCCachedFileDownload downloader(tempDir.path(), this);
     // Start first download
     QVERIFY(downloader.download(":/unittest/manifest.json.gz", 3600));
+    // Each of the three rejection calls logs "Download already in progress"
+    ignoreLogMessage("Utilities.QGCCachedFileDownload", QtWarningMsg, QRegularExpression("Download already in progress"));
     // Second download should be rejected while first is running
     QVERIFY(!downloader.download(":/unittest/arducopter.apj", 3600));
     QVERIFY(!downloader.downloadPreferCache(":/unittest/arducopter.apj"));
@@ -388,17 +336,21 @@ void QGCCachedFileDownloadTest::_testCachedFileDownloadConcurrentDownloadRejecte
 
 void QGCCachedFileDownloadTest::_testCachedFileDownloadRejectedStartNoFinishedSignal()
 {
-    QGCCachedFileDownload downloader(tempDirPath(), this);
+    QTemporaryDir tempDir;
+    QGCCachedFileDownload downloader(tempDir.path(), this);
     QSignalSpy finishedSpy(&downloader, &QGCCachedFileDownload::finished);
 
+    expectLogMessage("Utilities.QGCCachedFileDownload", QtWarningMsg, QRegularExpression("Empty URL"));
     QVERIFY(!downloader.download(QString(), 3600));
+    verifyExpectedLogMessage();
     QCOMPARE(finishedSpy.count(), 0);
     QVERIFY(!downloader.errorString().isEmpty());
 }
 
 void QGCCachedFileDownloadTest::_testCachedFileDownloadReentrantStartFromCompletion()
 {
-    QGCCachedFileDownload downloader(tempDirPath(), this);
+    QTemporaryDir tempDir;
+    QGCCachedFileDownload downloader(tempDir.path(), this);
 
     QSignalSpy finishedSpy(&downloader, &QGCCachedFileDownload::finished);
     bool secondStartAttempted = false;
@@ -426,7 +378,8 @@ void QGCCachedFileDownloadTest::_testCachedFileDownloadReentrantStartFromComplet
 
 void QGCCachedFileDownloadTest::_testCachedFileDownloadSignals()
 {
-    QGCCachedFileDownload downloader(tempDirPath(), this);
+    QTemporaryDir tempDir;
+    QGCCachedFileDownload downloader(tempDir.path(), this);
     QSignalSpy progressSpy(&downloader, &QGCCachedFileDownload::progressChanged);
     QSignalSpy runningSpy(&downloader, &QGCCachedFileDownload::runningChanged);
     QSignalSpy urlSpy(&downloader, &QGCCachedFileDownload::urlChanged);

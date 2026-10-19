@@ -1,11 +1,13 @@
 {
   "json.schemas": [
     {
-      "fileMatch": ["**/FactGroups/*Fact.json"],
-      "url": "./tools/schemas/factmetadata.schema.json"
+      "fileMatch": [
+        "**/FactGroups/*Fact.json"
+      ],
+      "url": "./src/FactSystem/factmetadata.schema.json"
     }
   ],
-  "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+  "C_Cpp.codeAnalysis.clangTidy.enabled": false,
   "C_Cpp.codeAnalysis.clangTidy.useBuildPath": true,
   "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
   "C_Cpp.default.cppStandard": "c++20",
@@ -20,10 +22,8 @@
     "--completion-style=detailed",
     "--function-arg-placeholders=false"
   ],
-  "cmake.buildDirectory": "${workspaceFolder}/build",
-  "cmake.configureOnOpen": true,
-  "cmake.generator": "Ninja",
-  "cmake.parallelJobs": 0,
+  "cmake.configureOnOpen": false,
+  "cmake.useCMakePresets": "always",
   "editor.formatOnSave": false,
   "editor.insertSpaces": true,
   "editor.rulers": [
@@ -43,11 +43,18 @@
     "**/build/**": true
   },
   "git.ignoreLimitWarning": true,
-  "python.defaultInterpreterPath": "python3",
+  "python.defaultInterpreterPath": "${workspaceFolder}/tools/.venv",
   "qml.format.enabled": true,
+  "qt-qml.qmlls.useQmllsFromEnvironment": true,
+  "qt-qml.qmlls.customArgs": [
+    "--no-cmake-calls",
+    "--build-dir",
+    "${workspaceFolder}/build"
+  ],
   "search.exclude": {
     "**/.cache": true,
     "**/build": true,
     "**/libs": true
-  }
+  },
+  "C_Cpp.intelliSenseEngine": "disabled"
 }

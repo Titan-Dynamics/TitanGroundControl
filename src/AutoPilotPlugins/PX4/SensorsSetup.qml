@@ -106,26 +106,10 @@ Item {
     }
 
     function orientationsButtonVisible() {
-        if (_sensorsHaveFixedOrientation || !showSetOrientations) {
-            return false
-        } else if (_boardOrientationChangeAllowed) {
-            return true
-        } else if (_compassOrientationChangeAllowed && !_allMagsDisabled) {
-            for (var index=0; index<_arbitrarilyLargeMaxMagIndex; index++) {
-                var magIdParam = _calMagIdParamFormat.replace("#", index)
-                if (controller.parameterExists(-1, magIdParam)) {
-                    var calMagIdFact = controller.parameterExists(-1, magIdParam)
-                    var calMagRotFact = controller.parameterExists(-1, _calMagRotParamFormat.replace("#", index))
-                    if (calMagIdFact.value > 0 && calMagRotFact.value >= 0) {
-                        // Only external compasses can set orientation
-                        return true
-                    }
-                }
-            }
-            return false
-        } else {
-            return false
-        }
+        // Deliberately independent of setOrientationsDialogShowBoardOrientation: that is a
+        // transient flag controlling dialog contents only (cleared by onMagCalComplete) and
+        // must not hide the Orientations button after a compass calibration completes.
+        return !_sensorsHaveFixedOrientation && showSetOrientations
     }
 
     QGCPalette { id: qgcPal; colorGroupEnabled: true }
@@ -140,7 +124,7 @@ Item {
 
         onMagCalComplete: {
             setOrientationsDialogShowBoardOrientation   = false
-            setOrientationsDialogFactory.open({ title: qsTr("Compass Calibration Complete"), showRebootVehicleButton: true })
+            setOrientationsDialogFactory.open({ title: qsTr("Compass Calibration Complete"), showRebootMessage: true })
         }
 
         onWaitingForCancelChanged: {
@@ -271,20 +255,14 @@ Item {
         QGCPopupDialog {
             buttons: Dialog.Ok
 
-            property bool showRebootVehicleButton: true
+            property bool showRebootMessage: true
 
             ColumnLayout {
                 spacing: ScreenTools.defaultFontPixelHeight
 
                 QGCLabel {
                     text:       qsTr("Reboot the vehicle prior to flight.")
-                    visible:    showRebootVehicleButton
-                }
-
-                QGCButton {
-                    text:       qsTr("Reboot Vehicle")
-                    visible:    showRebootVehicleButton
-                    onClicked: { controller.vehicle.rebootVehicle(); close() }
+                    visible:    showRebootMessage
                 }
 
                 QGCLabel {
@@ -329,16 +307,31 @@ Item {
         } // QGCPopupDialog
     } // Component - setOrientationsDialogComponent
 
-    property string sectionNameFilter: ""
+    property string sectionIdFilter: ""
 
-    function sectionVisible(name) {
-        if (name === qsTr("Compass")) return !_allMagsDisabled && QGroundControl.corePlugin.options.showSensorCalibrationCompass && showSensorCalibrationCompass
-        if (name === qsTr("Gyroscope")) return QGroundControl.corePlugin.options.showSensorCalibrationGyro && showSensorCalibrationGyro
-        if (name === qsTr("Accelerometer")) return QGroundControl.corePlugin.options.showSensorCalibrationAccel && showSensorCalibrationAccel
-        if (name === qsTr("Level Horizon")) return QGroundControl.corePlugin.options.showSensorCalibrationLevel && showSensorCalibrationLevel
-        if (name === qsTr("Airspeed")) return vehicleComponent.airspeedCalSupported && QGroundControl.corePlugin.options.showSensorCalibrationAirspeed && showSensorCalibrationAirspeed
-        if (name === qsTr("Orientations")) return orientationsButtonVisible()
-        return true
+    // Completed (green) side indicators are only meaningful for the sensor that was
+    // just calibrated. Return them to the neutral idle state when the preview switches
+    // to a different sensor.
+    onSectionIdFilterChanged: controller.resetSidesToIdle()
+
+    // Section IDs are untranslated — compare with raw literals.
+    function sectionVisible(sectionId) {
+        switch (sectionId) {
+        case "Compass":
+            return !_allMagsDisabled && QGroundControl.corePlugin.options.showSensorCalibrationCompass && showSensorCalibrationCompass
+        case "Gyroscope":
+            return QGroundControl.corePlugin.options.showSensorCalibrationGyro && showSensorCalibrationGyro
+        case "Accelerometer":
+            return QGroundControl.corePlugin.options.showSensorCalibrationAccel && showSensorCalibrationAccel
+        case "Level Horizon":
+            return QGroundControl.corePlugin.options.showSensorCalibrationLevel && showSensorCalibrationLevel
+        case "Airspeed":
+            return vehicleComponent.airspeedCalSupported && QGroundControl.corePlugin.options.showSensorCalibrationAirspeed && showSensorCalibrationAirspeed
+        case "Orientations":
+            return orientationsButtonVisible()
+        default:
+            return true
+        }
     }
 
     function _startCalibration(type, help, title) {
@@ -347,46 +340,53 @@ Item {
         preCalibrationDialogFactory.open({ title: title })
     }
 
+    // Mag calibration requires the vehicle to be rotated while a side is calibrating
+    function _sideRotating(calState) {
+        return (calState === VehicleRotationCal.CalState.InProgress) && controller.magCalInProgress
+    }
+
     property bool _showOrientationPreview: !controller.calibrationActive &&
-        (sectionNameFilter === qsTr("Accelerometer") || sectionNameFilter === qsTr("Compass") || sectionNameFilter === qsTr("Gyroscope"))
+        (sectionIdFilter === "Accelerometer" || sectionIdFilter === "Compass" || sectionIdFilter === "Gyroscope")
 
     property bool _showAllSidesPreview: _showOrientationPreview &&
-        (sectionNameFilter === qsTr("Accelerometer") || sectionNameFilter === qsTr("Compass"))
+        (sectionIdFilter === "Accelerometer" || sectionIdFilter === "Compass")
 
     property bool _showDownOnlyPreview: _showOrientationPreview &&
-        sectionNameFilter === qsTr("Gyroscope")
+        sectionIdFilter === "Gyroscope"
 
     property bool _showStatusPreview: !controller.calibrationActive &&
-        (sectionNameFilter === qsTr("Level Horizon") || sectionNameFilter === qsTr("Airspeed"))
+        (sectionIdFilter === "Level Horizon" || sectionIdFilter === "Airspeed")
 
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
 
-        // Calibration trigger buttons — one per section, shown based on sectionNameFilter
+        // Calibration trigger buttons — one per section, shown based on sectionIdFilter
         ColumnLayout {
             Layout.fillWidth: true
             spacing: ScreenTools.defaultFontPixelHeight / 2
             visible: !controller.calibrationActive
 
             QGCButton {
+                objectName: "sensorsSetup_calibrateCompass"
                 Layout.fillWidth: true
                 text:       qsTr("Calibrate Compass")
-                visible:    sectionNameFilter === "" || sectionNameFilter === qsTr("Compass")
+                visible:    sectionIdFilter === "" || sectionIdFilter === "Compass"
                 onClicked:  _startCalibration("compass", compassHelp, qsTr("Calibrate Compass"))
             }
 
             QGCButton {
                 Layout.fillWidth: true
                 text:       qsTr("Calibrate Gyroscope")
-                visible:    sectionNameFilter === "" || sectionNameFilter === qsTr("Gyroscope")
+                visible:    sectionIdFilter === "" || sectionIdFilter === "Gyroscope"
                 onClicked:  _startCalibration("gyro", gyroHelp, qsTr("Calibrate Gyro"))
             }
 
             QGCButton {
+                objectName: "sensorsSetup_calibrateAccel"
                 Layout.fillWidth: true
                 text:       qsTr("Calibrate Accelerometer")
-                visible:    sectionNameFilter === "" || sectionNameFilter === qsTr("Accelerometer")
+                visible:    sectionIdFilter === "" || sectionIdFilter === "Accelerometer"
                 onClicked:  _startCalibration("accel", accelHelp, qsTr("Calibrate Accelerometer"))
             }
 
@@ -394,31 +394,31 @@ Item {
                 Layout.fillWidth: true
                 text:       qsTr("Level Horizon")
                 enabled:    cal_acc0_id.value !== 0 && cal_gyro0_id.value !== 0
-                visible:    sectionNameFilter === "" || sectionNameFilter === qsTr("Level Horizon")
+                visible:    sectionIdFilter === "" || sectionIdFilter === "Level Horizon"
                 onClicked:  _startCalibration("level", levelHelp, qsTr("Level Horizon"))
             }
 
             QGCButton {
                 Layout.fillWidth: true
                 text:       qsTr("Calibrate Airspeed")
-                visible:    sectionNameFilter === "" || sectionNameFilter === qsTr("Airspeed")
+                visible:    sectionIdFilter === "" || sectionIdFilter === "Airspeed"
                 onClicked:  _startCalibration("airspeed", airspeedHelp, qsTr("Calibrate Airspeed"))
             }
 
             QGCButton {
                 Layout.fillWidth: true
                 text:       qsTr("Set Orientations")
-                visible:    sectionNameFilter === "" || sectionNameFilter === qsTr("Orientations")
+                visible:    sectionIdFilter === "" || sectionIdFilter === "Orientations"
                 onClicked: {
                     setOrientationsDialogShowBoardOrientation = true
-                    setOrientationsDialogFactory.open({ title: qsTr("Set Orientations"), showRebootVehicleButton: false })
+                    setOrientationsDialogFactory.open({ title: qsTr("Set Orientations"), showRebootMessage: false })
                 }
             }
 
             QGCButton {
                 Layout.fillWidth: true
                 text:       qsTr("Factory Reset")
-                visible:    sectionNameFilter === "" || sectionNameFilter === qsTr("Orientations")
+                visible:    sectionIdFilter === "" || sectionIdFilter === "Orientations"
                 onClicked:  controller.resetFactoryParameters()
             }
 
@@ -438,10 +438,12 @@ Item {
 
             ProgressBar {
                 id:                 progressBar
+                objectName:         "sensorsSetup_progressBar"
                 Layout.fillWidth:   true
             }
 
             QGCButton {
+                objectName: "sensorsSetup_cancelCalibration"
                 text:       qsTr("Cancel")
                 onClicked:  controller.cancelCalibration()
             }
@@ -491,58 +493,58 @@ Item {
                     property real indicatorHeight:  (height / 2) - spacing
 
                     VehicleRotationCal {
+                        objectName:         "sensorsCal_downSide"
                         width:              parent.indicatorWidth
                         height:             parent.indicatorHeight
                         visible:            controller.orientationCalDownSideVisible || _showAllSidesPreview || _showDownOnlyPreview
-                        calValid:           controller.orientationCalDownSideDone && !_showOrientationPreview
-                        calInProgress:      controller.orientationCalDownSideInProgress
-                        calInProgressText:  controller.orientationCalDownSideRotate ? qsTr("Rotate") : qsTr("Hold Still")
-                        imageSource:        controller.orientationCalDownSideRotate ? "qrc:///qmlimages/VehicleDownRotate.png" : "qrc:///qmlimages/VehicleDown.png"
+                        calState:           controller.orientationCalDownSideState
+                        calInProgressText:  controller.magCalInProgress ? qsTr("Rotate") : qsTr("Hold Still")
+                        imageSource:        _sideRotating(calState) ? "qrc:///qmlimages/VehicleDownRotate.png" : "qrc:///qmlimages/VehicleDown.png"
                     }
                     VehicleRotationCal {
+                        objectName:         "sensorsCal_upsideDownSide"
                         width:              parent.indicatorWidth
                         height:             parent.indicatorHeight
                         visible:            controller.orientationCalUpsideDownSideVisible || _showAllSidesPreview
-                        calValid:           controller.orientationCalUpsideDownSideDone && !_showOrientationPreview
-                        calInProgress:      controller.orientationCalUpsideDownSideInProgress
-                        calInProgressText:  controller.orientationCalUpsideDownSideRotate ? qsTr("Rotate") : qsTr("Hold Still")
-                        imageSource:        controller.orientationCalUpsideDownSideRotate ? "qrc:///qmlimages/VehicleUpsideDownRotate.png" : "qrc:///qmlimages/VehicleUpsideDown.png"
+                        calState:           controller.orientationCalUpsideDownSideState
+                        calInProgressText:  controller.magCalInProgress ? qsTr("Rotate") : qsTr("Hold Still")
+                        imageSource:        _sideRotating(calState) ? "qrc:///qmlimages/VehicleUpsideDownRotate.png" : "qrc:///qmlimages/VehicleUpsideDown.png"
                     }
                     VehicleRotationCal {
+                        objectName:         "sensorsCal_noseDownSide"
                         width:              parent.indicatorWidth
                         height:             parent.indicatorHeight
                         visible:            controller.orientationCalNoseDownSideVisible || _showAllSidesPreview
-                        calValid:           controller.orientationCalNoseDownSideDone && !_showOrientationPreview
-                        calInProgress:      controller.orientationCalNoseDownSideInProgress
-                        calInProgressText:  controller.orientationCalNoseDownSideRotate ? qsTr("Rotate") : qsTr("Hold Still")
-                        imageSource:        controller.orientationCalNoseDownSideRotate ? "qrc:///qmlimages/VehicleNoseDownRotate.png" : "qrc:///qmlimages/VehicleNoseDown.png"
+                        calState:           controller.orientationCalNoseDownSideState
+                        calInProgressText:  controller.magCalInProgress ? qsTr("Rotate") : qsTr("Hold Still")
+                        imageSource:        _sideRotating(calState) ? "qrc:///qmlimages/VehicleNoseDownRotate.png" : "qrc:///qmlimages/VehicleNoseDown.png"
                     }
                     VehicleRotationCal {
+                        objectName:         "sensorsCal_tailDownSide"
                         width:              parent.indicatorWidth
                         height:             parent.indicatorHeight
                         visible:            controller.orientationCalTailDownSideVisible || _showAllSidesPreview
-                        calValid:           controller.orientationCalTailDownSideDone && !_showOrientationPreview
-                        calInProgress:      controller.orientationCalTailDownSideInProgress
-                        calInProgressText:  controller.orientationCalTailDownSideRotate ? qsTr("Rotate") : qsTr("Hold Still")
-                        imageSource:        controller.orientationCalTailDownSideRotate ? "qrc:///qmlimages/VehicleTailDownRotate.png" : "qrc:///qmlimages/VehicleTailDown.png"
+                        calState:           controller.orientationCalTailDownSideState
+                        calInProgressText:  controller.magCalInProgress ? qsTr("Rotate") : qsTr("Hold Still")
+                        imageSource:        _sideRotating(calState) ? "qrc:///qmlimages/VehicleTailDownRotate.png" : "qrc:///qmlimages/VehicleTailDown.png"
                     }
                     VehicleRotationCal {
+                        objectName:         "sensorsCal_leftSide"
                         width:              parent.indicatorWidth
                         height:             parent.indicatorHeight
                         visible:            controller.orientationCalLeftSideVisible || _showAllSidesPreview
-                        calValid:           controller.orientationCalLeftSideDone && !_showOrientationPreview
-                        calInProgress:      controller.orientationCalLeftSideInProgress
-                        calInProgressText:  controller.orientationCalLeftSideRotate ? qsTr("Rotate") : qsTr("Hold Still")
-                        imageSource:        controller.orientationCalLeftSideRotate ? "qrc:///qmlimages/VehicleLeftRotate.png" : "qrc:///qmlimages/VehicleLeft.png"
+                        calState:           controller.orientationCalLeftSideState
+                        calInProgressText:  controller.magCalInProgress ? qsTr("Rotate") : qsTr("Hold Still")
+                        imageSource:        _sideRotating(calState) ? "qrc:///qmlimages/VehicleLeftRotate.png" : "qrc:///qmlimages/VehicleLeft.png"
                     }
                     VehicleRotationCal {
+                        objectName:         "sensorsCal_rightSide"
                         width:              parent.indicatorWidth
                         height:             parent.indicatorHeight
                         visible:            controller.orientationCalRightSideVisible || _showAllSidesPreview
-                        calValid:           controller.orientationCalRightSideDone && !_showOrientationPreview
-                        calInProgress:      controller.orientationCalRightSideInProgress
-                        calInProgressText:  controller.orientationCalRightSideRotate ? qsTr("Rotate") : qsTr("Hold Still")
-                        imageSource:        controller.orientationCalRightSideRotate ? "qrc:///qmlimages/VehicleRightRotate.png" : "qrc:///qmlimages/VehicleRight.png"
+                        calState:           controller.orientationCalRightSideState
+                        calInProgressText:  controller.magCalInProgress ? qsTr("Rotate") : qsTr("Hold Still")
+                        imageSource:        _sideRotating(calState) ? "qrc:///qmlimages/VehicleRightRotate.png" : "qrc:///qmlimages/VehicleRight.png"
                     }
                 }
             }

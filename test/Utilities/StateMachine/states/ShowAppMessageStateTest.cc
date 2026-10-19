@@ -1,6 +1,8 @@
 #include "ShowAppMessageStateTest.h"
 #include "StateTestCommon.h"
 
+#include <QtCore/QRegularExpression>
+
 
 void ShowAppMessageStateTest::_testShowAppMessageStateCreation()
 {
@@ -17,16 +19,11 @@ void ShowAppMessageStateTest::_testShowAppMessageStateAdvance()
     QStateMachine machine;
 
     auto* state = new ShowAppMessageState(&machine, QStringLiteral("Test message"));
-    auto* finalState = new QFinalState(&machine);
-
-    state->addTransition(state, &QGCState::advance, finalState);
-    machine.setInitialState(state);
-
-    QSignalSpy finishedSpy(&machine, &QStateMachine::finished);
-    machine.start();
 
     // ShowAppMessageState should emit advance() after showing the message
-    QVERIFY(finishedSpy.wait(TestTimeout::shortMs()));
+    expectAppMessage(QRegularExpression("Test message"));
+    QVERIFY(runStateToCompletion(state, &machine));
+    verifyExpectedLogMessage();
 }
 
 UT_REGISTER_TEST(ShowAppMessageStateTest, TestLabel::Unit, TestLabel::Utilities)

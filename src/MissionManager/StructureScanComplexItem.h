@@ -75,6 +75,7 @@ public:
     void                appendMissionItems          (QList<MissionItem*>& items, QObject* missionItemParent) final;
     void                setMissionFlightStatus      (MissionFlightStatus_t& missionFlightStatus) final;
     void                applyNewAltitude            (double newAltitude) final;
+    bool usesAltitudeFrame(QGroundControlQmlGlobal::AltitudeFrame altitudeFrame) const final;
     double              additionalTimeDelay         (void) const final { return 0; }
     ReadyForSaveState   readyForSaveState           (void) const final;
     bool                exitCoordinateSameAsEntry   (void) const final { return true; }
@@ -149,7 +150,7 @@ private:
 
     static constexpr const char* _jsonCameraCalcKey =          "CameraCalc";
 
-    static constexpr const char* _entranceAltName = "EntranceAltitude"; // This value cannot be overriden
+    static constexpr const char* _entranceAltName = "EntranceAltitude"; // This value cannot be overridden
 
 #ifdef QGC_UNITTEST_BUILD
     friend class StructureScanComplexItemTest;

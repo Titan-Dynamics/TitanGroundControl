@@ -21,6 +21,10 @@ VehicleTest::VehicleTest(QObject* parent) : UnitTest(parent)
 
 void VehicleTest::init()
 {
+    if ((_autopilotType == MAV_AUTOPILOT_ARDUPILOTMEGA) && !apmFirmwareSupported()) {
+        QSKIP("ArduPilot support not registered in this build");
+    }
+
     UnitTest::init();
 
     // Initialize vehicle management systems
@@ -125,7 +129,7 @@ void VehicleTest::simulateConnectionRemoved()
     }
 }
 
-void VehicleTest::_connectMockLink(MAV_AUTOPILOT autopilot, MockConfiguration::FailureMode_t failureMode)
+void VehicleTest::_connectMockLink(MAV_AUTOPILOT autopilot, MockConfiguration::FailureMode_t failureMode, MockConfiguration::Options options)
 {
     QVERIFY2(!_mockLink, "MockLink already connected");
 
@@ -134,16 +138,16 @@ void VehicleTest::_connectMockLink(MAV_AUTOPILOT autopilot, MockConfiguration::F
 
     switch (autopilot) {
         case MAV_AUTOPILOT_PX4:
-            _mockLink = MockLink::startPX4MockLink(false /* sendStatusText */, false /* enableCamera */, false /* enableGimbal */, failureMode);
+            _mockLink = MockLink::startPX4MockLink(options, failureMode);
             break;
         case MAV_AUTOPILOT_ARDUPILOTMEGA:
-            _mockLink = MockLink::startAPMArduCopterMockLink(false /* sendStatusText */, false /* enableCamera */, false /* enableGimbal */, failureMode);
+            _mockLink = MockLink::startAPMArduCopterMockLink(options, failureMode);
             break;
         case MAV_AUTOPILOT_GENERIC:
-            _mockLink = MockLink::startGenericMockLink(false /* sendStatusText */, false /* enableCamera */, false /* enableGimbal */, failureMode);
+            _mockLink = MockLink::startGenericMockLink(options, failureMode);
             break;
         case MAV_AUTOPILOT_INVALID:
-            _mockLink = MockLink::startNoInitialConnectMockLink(false /* sendStatusText */, false /* enableCamera */, false /* enableGimbal */);
+            _mockLink = MockLink::startNoInitialConnectMockLink(options);
             break;
         default:
             QFAIL(qPrintable(QStringLiteral("Unsupported autopilot type: %1").arg(autopilot)));
@@ -161,10 +165,7 @@ void VehicleTest::_connectMockLink(MAV_AUTOPILOT autopilot, MockConfiguration::F
     QVERIFY2(_vehicle != nullptr, "Vehicle should not be null after connection");
 
     if (autopilot != MAV_AUTOPILOT_INVALID) {
-        QSignalSpy spyConnect(_vehicle, &Vehicle::initialConnectComplete);
-        QVERIFY2(spyConnect.isValid(), "Failed to create spy for initialConnectComplete");
-        QVERIFY2(UnitTest::waitForSignal(spyConnect, TestTimeout::longMs(), QStringLiteral("initialConnectComplete")),
-                 "Timeout waiting for initial connect");
+        QVERIFY2(waitForInitialConnect(), "Timeout waiting for initial connect");
     }
 }
 

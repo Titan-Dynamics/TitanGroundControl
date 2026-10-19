@@ -1,0 +1,637 @@
+/****************************************************************************
+ *
+ * (c) 2009-2024 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
+ *
+ * QGroundControl is licensed according to the terms in the file
+ * COPYING.md in the root of the source code directory.
+ *
+ ****************************************************************************/
+
+import QtQuick
+import QtQuick.Layouts
+import QtPositioning
+
+import QGroundControl
+import QGroundControl.Controls
+import QGroundControl.FlightMap
+import QGroundControl.GeoMap
+
+/// Fly-view 2D/3D map: the GeoMap-engine counterpart of FlyViewMap.
+/// Fly-view specific map content (vehicle items, trajectory, ...) lands here.
+GeoMap {
+    id: root
+
+    allowGCSLocationCenter: true
+    allowVehicleLocationCenter: true
+    keepVehicleCentered: QGroundControl.settingsManager.flyViewSettings.keepMapCenteredOnVehicle.rawValue
+
+    // Guided-action indicators for the map click drop panel (FlyViewMapClickDropPanel)
+    readonly property var gotoIndicator: gotoLocationItem
+    readonly property var orbitIndicator: orbitMapCircle
+
+    readonly property var _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
+    readonly property var _missionController: globals.planMasterControllerFlyView ? globals.planMasterControllerFlyView.missionController : null
+    readonly property var _rallyPointController: globals.planMasterControllerFlyView ? globals.planMasterControllerFlyView.rallyPointController : null
+    readonly property var _geoFenceController: globals.planMasterControllerFlyView ? globals.planMasterControllerFlyView.geoFenceController : null
+    readonly property var _flyViewSettings: QGroundControl.settingsManager.flyViewSettings
+
+    // DEM height minus vehicle-reported AMSL, sampled at home for the active
+    // vehicle. Computed once here and shared by GeoMapMissionPath and every
+    // GeoMapMissionItems marker instead of each re-sampling the same DEM
+    // lookup independently (see GeoMapVehicleItem for the same correction
+    // applied per-vehicle in the marker Repeater below, where it can't be
+    // shared since each vehicle has its own home position).
+    property real _activeVehicleHomeTerrainBias: 0
+
+    function _updateActiveVehicleHomeTerrainBias() {
+        if (root.surfaceModel && root._activeVehicle && root._activeVehicle.homePosition.isValid && !isNaN(root._activeVehicle.homePosition.altitude)) {
+            root._activeVehicleHomeTerrainBias = root.surfaceModel.terrainDataHeightAt(root._activeVehicle.homePosition) - root._activeVehicle.homePosition.altitude
+        } else {
+            root._activeVehicleHomeTerrainBias = 0
+        }
+    }
+
+    on_ActiveVehicleChanged: {
+        _updateActiveVehicleHomeTerrainBias()
+        _fuzzyVehicleDisplayAltitude = NaN
+        _updateFuzzyVehicleDisplayAltitude()
+    }
+    onSurfaceModelChanged: _updateActiveVehicleHomeTerrainBias()
+
+    // Deadbanded copy of the vehicle's bias-corrected display altitude so
+    // live-bound orbit visuals don't rebuild their ring geometry on every
+    // sub-meter telemetry altitude tick
+    property real _fuzzyVehicleDisplayAltitude: NaN
+
+    readonly property real _fuzzyAltitudeDeadbandMeters: 1
+
+    function _updateFuzzyVehicleDisplayAltitude() {
+        if (!root._activeVehicle || isNaN(root._activeVehicle.coordinate.altitude)) {
+            root._fuzzyVehicleDisplayAltitude = NaN
+            return
+        }
+        const displayAltitude = root._activeVehicle.coordinate.altitude + root._activeVehicleHomeTerrainBias
+        if (isNaN(root._fuzzyVehicleDisplayAltitude) || Math.abs(displayAltitude - root._fuzzyVehicleDisplayAltitude) > root._fuzzyAltitudeDeadbandMeters) {
+            root._fuzzyVehicleDisplayAltitude = displayAltitude
+        }
+    }
+
+    on_ActiveVehicleHomeTerrainBiasChanged: _updateFuzzyVehicleDisplayAltitude()
+
+    function _withFuzzyVehicleAltitude(coord) {
+        if (!isNaN(root._fuzzyVehicleDisplayAltitude)) {
+            return QtPositioning.coordinate(coord.latitude, coord.longitude, root._fuzzyVehicleDisplayAltitude)
+        }
+        return QtPositioning.coordinate(coord.latitude, coord.longitude)
+    }
+
+    // Guided commands hold the vehicle's current altitude; same bias-corrected
+    // AMSL as GeoMapVehicleItem so indicators line up with the rendered vehicle
+    function _withVehicleAltitude(coord) {
+        if (root._activeVehicle && !isNaN(root._activeVehicle.coordinate.altitude)) {
+            return QtPositioning.coordinate(coord.latitude, coord.longitude,
+                                            root._activeVehicle.coordinate.altitude + root._activeVehicleHomeTerrainBias)
+        }
+        return QtPositioning.coordinate(coord.latitude, coord.longitude)
+    }
+
+    property var _missionItemSelectionPanel: null
+
+    function _confirmSetWaypoint(sequenceNumber) {
+        globals.guidedControllerFlyView.confirmAction(globals.guidedControllerFlyView.actionSetWaypoint,
+                                                      Math.max(sequenceNumber, 1))
+    }
+
+    function _closeMissionItemSelectionPanel() {
+        if (_missionItemSelectionPanel) {
+            _missionItemSelectionPanel.close()
+        }
+    }
+
+    Connections {
+        target: root.surfaceModel
+
+        function onTerrainDataChanged() {
+            root._updateActiveVehicleHomeTerrainBias()
+        }
+    }
+
+    Connections {
+        target: root._activeVehicle
+
+        function onHomePositionChanged() {
+            root._updateActiveVehicleHomeTerrainBias()
+        }
+
+        function onCoordinateChanged() {
+            root._updateFuzzyVehicleDisplayAltitude()
+        }
+    }
+
+    // Vehicle home (launch) location
+    GeoMapPin {
+        scene: root.scene
+        surfaceModel: root.surfaceModel
+        coordinate: root._activeVehicle ? root._activeVehicle.homePosition : QtPositioning.coordinate()
+        visible: root._activeVehicle && root._activeVehicle.homePosition.isValid
+        label: qsTr("L")
+    }
+
+    Repeater {
+        model: QGroundControl.multiVehicleManager.vehicles
+
+        GeoMapVehicleItem {
+            scene: root.scene
+            surfaceModel: root.surfaceModel
+            vehicle: object
+        }
+    }
+
+    GeoMapFlightPath {
+        scene: root.scene
+        surfaceModel: root.surfaceModel
+        vehicle: root._activeVehicle
+    }
+
+    GeoMapMissionPath {
+        scene: root.scene
+        surfaceModel: root.surfaceModel
+        missionController: root._missionController
+        vehicle: root._activeVehicle
+        homeTerrainBias: root._activeVehicleHomeTerrainBias
+    }
+
+    GeoMapMissionItems {
+        scene: root.scene
+        surfaceModel: root.surfaceModel
+        missionController: root._missionController
+        homeTerrainBias: root._activeVehicleHomeTerrainBias
+        // Same action as PlanMapItems in the QtLocation fly view: clicking a
+        // marker adjusts the vehicle's current mission item (after confirm)
+        onItemClicked: (item) => root._confirmSetWaypoint(item.sequenceNumber)
+        onGroupClicked: (items, marker) => {
+            root._closeMissionItemSelectionPanel()
+            const topLeft = marker.mapToItem(globals.parent, 0, 0)
+            root._missionItemSelectionPanel = missionItemSelectionPanelComponent.createObject(mainWindow, {
+                clickRect: Qt.rect(topLeft.x, topLeft.y, marker.width, marker.height),
+                groupItems: items
+            })
+            if (root._missionItemSelectionPanel) {
+                root._missionItemSelectionPanel.open()
+            }
+        }
+        onGroupsInvalidated: root._closeMissionItemSelectionPanel()
+    }
+
+    // The picker lists the old mission's items: close it when the mission is replaced
+    Connections {
+        target: root._missionController
+
+        function onVisualItemsReset() { root._closeMissionItemSelectionPanel() }
+    }
+
+    Component {
+        id: missionItemSelectionPanelComponent
+
+        MissionItemSelectionPanel {
+            id: missionItemSelectionPanel
+
+            onItemSelected: (sequenceNumber) => root._confirmSetWaypoint(sequenceNumber)
+            onClosed: {
+                if (root._missionItemSelectionPanel === missionItemSelectionPanel) {
+                    root._missionItemSelectionPanel = null
+                }
+                destroy()
+            }
+        }
+    }
+
+    GeoMapMissionDirectionArrows {
+        scene: root.scene
+        surfaceModel: root.surfaceModel
+        missionController: root._missionController
+        homeTerrainBias: root._activeVehicleHomeTerrainBias
+    }
+
+    // Allow custom builds to add map items (QGCCorePlugin::customGeoMapItems)
+    Repeater {
+        model: QGroundControl.corePlugin.customGeoMapItems
+
+        Loader {
+            Component.onCompleted: setSource(object.url, {
+                customMapObject: object,
+                scene: root.scene,
+                surfaceModel: root.surfaceModel
+            })
+        }
+    }
+
+    GeoMapGeoFenceVisuals {
+        scene: root.scene
+        surfaceModel: root.surfaceModel
+        geoFenceController: root._geoFenceController
+        homePosition: root._activeVehicle && root._activeVehicle.homePosition.isValid ? root._activeVehicle.homePosition : QtPositioning.coordinate()
+    }
+
+    // Rally points
+    Repeater {
+        model: root._rallyPointController ? root._rallyPointController.points : undefined
+
+        GeoMapMissionLabel {
+            scene: root.scene
+            surfaceModel: root.surfaceModel
+            coordinate: object.coordinate
+            label: qsTr("R", "rally point map item label")
+        }
+    }
+
+    // Proximity sensor arcs per vehicle
+    Repeater {
+        model: QGroundControl.multiVehicleManager.vehicles
+
+        FlyViewGeoProximityRadar {
+            scene: root.scene
+            surfaceModel: root.surfaceModel
+            vehicle: object
+        }
+    }
+
+    // ADS-B traffic
+    Repeater {
+        model: QGroundControl.adsbVehicleManager.adsbVehicles
+
+        GeoMapADSBVehicleItem {
+            scene: root.scene
+            surfaceModel: root.surfaceModel
+            coordinate: object.coordinate
+            altitude: object.altitude
+            callsign: object.callsign
+            heading: object.heading
+            alert: object.alert
+            size: ScreenTools.defaultFontPixelHeight * 2.5
+            homeTerrainBias: root._activeVehicleHomeTerrainBias
+        }
+    }
+
+    // Camera trigger points: batched sprite layer (single draw call), since
+    // surveys can produce thousands of points
+    GeoMapSpriteLayer {
+        scene: root.scene
+        surfaceModel: root.surfaceModel
+        model: root._activeVehicle ? root._activeVehicle.cameraTriggerPoints : null
+        sprite: triggerIconSource
+        spriteSize: triggerIcon.width
+
+        CameraTriggerIcon { id: triggerIcon }
+        ShaderEffectSource {
+            id: triggerIconSource
+            sourceItem: triggerIcon
+            hideSource: true
+            // Render at physical resolution: the default (logical-size) texture
+            // is upscaled on hidpi displays and looks blurry
+            textureSize: Qt.size(triggerIcon.width * Screen.devicePixelRatio, triggerIcon.height * Screen.devicePixelRatio)
+        }
+    }
+
+    // GoTo Location forward flight circle visuals
+    GeoMapCircleVisuals {
+        id: fwdFlightGotoMapCircle
+        objectName: "flyViewGeoFwdFlightGotoCircle"
+        scene: root.scene
+        surfaceModel: root.surfaceModel
+        mapCircle: _fwdFlightGotoCircleModel
+        radiusLabelVisible: true
+        // Only the radius is editable, not the position
+        centerDragHandleVisible: false
+        // Loiter happens at the goto altitude (carried in the center coordinate)
+        altitudeMode: !isNaN(_fwdFlightGotoCircleModel.center.altitude) ? GeoMapItem.Absolute : GeoMapItem.ClampToGround
+        // PX4 ignores the commanded loiter radius (flies NAV_LOITER_RAD), so the circle size is unknown
+        visible: gotoLocationItem.visible && root._activeVehicle &&
+                 !root._activeVehicle.px4Firmware &&
+                 root._activeVehicle.inFwdFlight &&
+                 !root._activeVehicle.orbitActive
+
+        property alias coordinate: _fwdFlightGotoCircleModel.center
+        property alias radius: _fwdFlightGotoCircleModel.radius
+        property alias clockwiseRotation: _fwdFlightGotoCircleModel.clockwiseRotation
+
+        Component.onCompleted: globals.guidedControllerFlyView.fwdFlightGotoMapCircle = this
+
+        Binding {
+            target: _fwdFlightGotoCircleModel
+            property: "center"
+            value: gotoLocationItem.coordinate
+        }
+
+        function startLoiterRadiusEdit() {
+            _fwdFlightGotoCircleModel.interactive = true
+        }
+
+        // Called when loiter edit is confirmed
+        function actionConfirmed() {
+            _fwdFlightGotoCircleModel.interactive = false
+            _fwdFlightGotoCircleModel._commitRadius()
+        }
+
+        // Called when loiter edit is cancelled
+        function actionCancelled() {
+            _fwdFlightGotoCircleModel.interactive = false
+            _fwdFlightGotoCircleModel._restoreRadius()
+        }
+
+        QGCMapCircle {
+            id: _fwdFlightGotoCircleModel
+            interactive: false
+            showRotation: true
+            clockwiseRotation: true
+
+            property real _defaultLoiterRadius: root._flyViewSettings.forwardFlightGoToLocationLoiterRad.rawValue
+            property real _committedRadius
+
+            onCenterChanged: {
+                // Don't commit the radius in case this operation is undone
+                radius.rawValue = _defaultLoiterRadius
+            }
+
+            Component.onCompleted: {
+                radius.rawValue = _defaultLoiterRadius
+                _commitRadius()
+            }
+
+            function _commitRadius() {
+                _committedRadius = radius.rawValue
+            }
+
+            function _restoreRadius() {
+                radius.rawValue = _committedRadius
+            }
+        }
+    }
+
+    // GoTo Location visuals
+    GeoMapMissionLabel {
+        id: gotoLocationItem
+        objectName: "flyViewGeoGotoLocation"
+        scene: root.scene
+        surfaceModel: root.surfaceModel
+        visible: false
+        checked: true
+        label: qsTr("Go here", "Go to location waypoint")
+        // Goto holds the vehicle's current altitude, so render there in 3D
+        altitudeMode: isNaN(coordinate.altitude) ? GeoMapItem.ClampToGround : GeoMapItem.Absolute
+
+        readonly property bool inGotoFlightMode: root._activeVehicle ? root._activeVehicle.flightMode === root._activeVehicle.gotoFlightMode : false
+
+        property var _committedCoordinate: null
+
+        onInGotoFlightModeChanged: {
+            if (!inGotoFlightMode && gotoLocationItem.visible) {
+                // Hide goto indicator when vehicle falls out of guided mode
+                hide()
+            }
+        }
+
+        function show(coord) {
+            gotoLocationItem.coordinate = root._withVehicleAltitude(coord)
+            gotoLocationItem.visible = true
+        }
+
+        function hide() {
+            gotoLocationItem.visible = false
+        }
+
+        function actionConfirmed() {
+            _commitCoordinate()
+
+            // Commit the new radius which possibly changed
+            fwdFlightGotoMapCircle.actionConfirmed()
+
+            // We leave the indicator visible. The handling for onInGuidedModeChanged will hide it.
+        }
+
+        function actionCancelled() {
+            _restoreCoordinate()
+
+            // Also restore the loiter radius
+            fwdFlightGotoMapCircle.actionCancelled()
+        }
+
+        function _commitCoordinate() {
+            // Must deep copy
+            _committedCoordinate = QtPositioning.coordinate(coordinate.latitude, coordinate.longitude, coordinate.altitude)
+        }
+
+        function _restoreCoordinate() {
+            if (_committedCoordinate) {
+                coordinate = _committedCoordinate
+            } else {
+                hide()
+            }
+        }
+    }
+
+    // Orbit editing visuals
+    GeoMapCircleVisuals {
+        id: orbitMapCircle
+        objectName: "flyViewGeoOrbitCircle"
+        scene: root.scene
+        surfaceModel: root.surfaceModel
+        mapCircle: _orbitCircleModel
+        altitudeMode: !isNaN(_orbitCircleModel.center.altitude) ? GeoMapItem.Absolute : GeoMapItem.ClampToGround
+        visible: false
+
+        property alias center: _orbitCircleModel.center
+        property alias clockwiseRotation: _orbitCircleModel.clockwiseRotation
+        readonly property real defaultRadius: 30
+
+        Connections {
+            target: QGroundControl.multiVehicleManager
+            function onActiveVehicleChanged(activeVehicle) {
+                if (!activeVehicle) {
+                    orbitMapCircle.visible = false
+                }
+            }
+        }
+
+        function show(coord) {
+            _orbitCircleModel.radius.rawValue = defaultRadius
+            _orbitCircleModel.center = root._withVehicleAltitude(coord)
+            orbitMapCircle.visible = true
+        }
+
+        function hide() {
+            orbitMapCircle.visible = false
+        }
+
+        function actionConfirmed() {
+            // Live orbit status is handled by telemetry so we hide here and telemetry will show again.
+            hide()
+        }
+
+        function actionCancelled() {
+            hide()
+        }
+
+        function radius() {
+            return _orbitCircleModel.radius.rawValue
+        }
+
+        Component.onCompleted: globals.guidedControllerFlyView.orbitMapCircle = orbitMapCircle
+
+        QGCMapCircle {
+            id: _orbitCircleModel
+            interactive: true
+            radius.rawValue: 30
+            showRotation: true
+            clockwiseRotation: true
+        }
+    }
+
+    // ROI Location visuals
+    GeoMapMissionLabel {
+        id: roiLocationItem
+        scene: root.scene
+        surfaceModel: root.surfaceModel
+        visible: root._activeVehicle && root._activeVehicle.isROIEnabled
+        checked: true
+        label: qsTr("ROI here", "Make this a Region Of Interest")
+
+        // The vehicle reports the ROI center as lat/lon only; the commanded
+        // height lives in roiRelativeAltitudeMeters (relative to home).
+        // Render at that height, DEM bias-corrected like the mission markers.
+        property var _roiCenter: QtPositioning.coordinate()
+
+        // Picked coordinates carry altitude 0 (worldToGeo), so isNaN(altitude)
+        // cannot detect the missing-composition case; ground-clamp on this
+        readonly property bool _haveComposedAltitude: _roiCenter.isValid && root._activeVehicle
+                                                      && root._activeVehicle.homePosition.isValid
+                                                      && !isNaN(root._activeVehicle.homePosition.altitude)
+
+        // Re-check the vehicle here: _haveComposedAltitude can be stale-true
+        // during binding re-evaluation when the active vehicle goes null
+        coordinate: (_haveComposedAltitude && root._activeVehicle)
+                    ? QtPositioning.coordinate(_roiCenter.latitude, _roiCenter.longitude,
+                                               root._activeVehicle.homePosition.altitude
+                                               + root._activeVehicle.roiRelativeAltitudeMeters
+                                               + root._activeVehicleHomeTerrainBias)
+                    : _roiCenter
+        altitudeMode: _haveComposedAltitude ? GeoMapItem.Absolute : GeoMapItem.ClampToGround
+
+        Connections {
+            target: root._activeVehicle
+            function onRoiCoordChanged(centerCoord) {
+                roiLocationItem._roiCenter = centerCoord
+            }
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: (position) => {
+                const windowPosition = mapToItem(globals.parent, position.x, position.y)
+                const dropPanel = roiEditDropPanelComponent.createObject(mainWindow, { clickRect: Qt.rect(windowPosition.x, windowPosition.y, 0, 0) })
+                dropPanel.open()
+            }
+        }
+    }
+
+    // Orbit telemetry visuals. ORBIT_EXECUTION_STATUS carries no altitude, so
+    // render at the vehicle's altitude (the vehicle flies on this ring)
+    GeoMapCircle {
+        id: orbitTelemetryCircle
+        scene: root.scene
+        surfaceModel: root.surfaceModel
+        center: root._activeVehicle ? root._withFuzzyVehicleAltitude(root._activeVehicle.orbitMapCircle.center) : QtPositioning.coordinate()
+        radiusMeters: root._activeVehicle ? root._activeVehicle.orbitMapCircle.radius.rawValue : 0
+        altitudeMode: (center && !isNaN(center.altitude)) ? GeoMapItem.Absolute : GeoMapItem.ClampToGround
+        visible: root._activeVehicle ? root._activeVehicle.orbitActive : false
+    }
+
+    GeoMapMissionLabel {
+        id: orbitCenterIndicator
+        scene: root.scene
+        surfaceModel: root.surfaceModel
+        coordinate: root._activeVehicle ? root._withFuzzyVehicleAltitude(root._activeVehicle.orbitMapCircle.center) : QtPositioning.coordinate()
+        altitudeMode: isNaN(coordinate.altitude) ? GeoMapItem.ClampToGround : GeoMapItem.Absolute
+        visible: orbitTelemetryCircle.visible && !gotoLocationItem.visible
+        checked: true
+        label: qsTr("Orbit", "Orbit waypoint")
+    }
+
+    QGCPopupDialogFactory {
+        id: roiEditPositionDialogFactory
+
+        dialogComponent: roiEditPositionDialogComponent
+    }
+
+    Component {
+        id: roiEditPositionDialogComponent
+
+        EditPositionDialog {
+            // Edit the raw reported center, not the composed display coordinate:
+            // that binding recomputes on home/terrain-bias updates, which would
+            // fire onCoordinateChanged and re-command the ROI while editing
+            title: qsTr("Edit ROI Position")
+            coordinate: roiLocationItem._roiCenter
+
+            readonly property var _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
+            property var _openedForVehicle: null
+
+            Component.onCompleted: _openedForVehicle = _activeVehicle
+
+            // The ROI belongs to the vehicle the dialog was opened for; close
+            // if that vehicle goes away or the active vehicle changes
+            on_ActiveVehicleChanged: close()
+
+            onCoordinateChanged: {
+                // Guards the init-time change and the vehicle-switch race, where
+                // the rebound coordinate could command the new vehicle with the
+                // old vehicle's ROI before the close() handler runs
+                if (!_openedForVehicle || (_activeVehicle !== _openedForVehicle)) {
+                    return
+                }
+                roiLocationItem._roiCenter = coordinate
+                _openedForVehicle.guidedModeROI(coordinate, _openedForVehicle.roiRelativeAltitudeMeters)
+            }
+        }
+    }
+
+    Component {
+        id: roiEditDropPanelComponent
+
+        DropPanel {
+            id: roiEditDropPanel
+
+            readonly property var _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
+
+            // The ROI belongs to the vehicle the panel was opened for; close
+            // if that vehicle goes away or the active vehicle changes
+            on_ActiveVehicleChanged: close()
+
+            onClosed: destroy()
+
+            sourceComponent: Component {
+                ColumnLayout {
+                    spacing: ScreenTools.defaultFontPixelWidth / 2
+
+                    QGCButton {
+                        Layout.fillWidth: true
+                        text: qsTr("Cancel ROI")
+                        onClicked: {
+                            root._activeVehicle.stopGuidedModeROI()
+                            roiEditDropPanel.close()
+                        }
+                    }
+
+                    QGCButton {
+                        Layout.fillWidth: true
+                        text: qsTr("Edit Position")
+                        onClicked: {
+                            roiEditPositionDialogFactory.open()
+                            roiEditDropPanel.close()
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

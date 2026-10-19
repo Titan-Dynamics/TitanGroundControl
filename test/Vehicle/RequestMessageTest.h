@@ -22,6 +22,7 @@ private slots:
     void _compIdAllFailure();
     void _duplicateCommand();
     void _duplicateWhileQueued();
+    void _staleAvailableModesIgnored();
 
 private:
     struct TestCase_t
@@ -33,6 +34,7 @@ private:
         int expectedMessageId;
         bool resultHandlerCalled;
         int callbackCount;
+        bool expectAckTimeout = false;  ///< Outcome depends on the ack timeout expiring at least once
     };
 
     void _testCaseWorker(TestCase_t& testCase);
@@ -43,6 +45,9 @@ private:
     static void _compIdAllRequestMessageResultHandler(void* resultHandlerData, MAV_RESULT commandResult,
                                                       Vehicle::RequestMessageResultHandlerFailureCode_t failureCode,
                                                       const mavlink_message_t& message);
+    static void _availableModesResultHandler(void* resultHandlerData, MAV_RESULT commandResult,
+                                             Vehicle::RequestMessageResultHandlerFailureCode_t failureCode,
+                                             const mavlink_message_t& message);
 
     static TestCase_t _rgTestCases[];
 };

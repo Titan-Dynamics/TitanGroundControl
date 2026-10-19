@@ -1,6 +1,9 @@
 #include "SigningControllerTest.h"
 
+#include <chrono>
+
 #include <QtCore/QByteArrayView>
+#include <QtCore/QRegularExpression>
 #include <QtTest/QSignalSpy>
 #include <QtTest/QTest>
 
@@ -81,6 +84,8 @@ void SigningControllerTest::initTestCase()
 {
     UnitTest::initTestCase();
     MAVLinkSigningKeys::setPbkdf2IterationsForTesting(1);
+    // Exercise the real timeout FSM path without the production 5s wall-clock wait.
+    SigningController::setTimeoutForTesting(std::chrono::milliseconds(150));
 }
 
 void SigningControllerTest::cleanup()
@@ -137,11 +142,15 @@ void SigningControllerTest::_testReentryRejected()
 
     QSignalSpy failSpy(&ctrl, &SigningController::signingFailed);
 
+    expectLogMessage("MAVLink.SigningController", QtWarningMsg, QRegularExpression("enable rejected: operation already pending"));
     auto reentryEnableFail = ctrl.tryBeginEnable(kTestSysId, QStringLiteral("b"), key);
+    verifyExpectedLogMessage();
     QVERIFY(reentryEnableFail.has_value());
     QCOMPARE(reentryEnableFail->reason, SigningController::FailReason::VehicleUnreachable);
 
+    expectLogMessage("MAVLink.SigningController", QtWarningMsg, QRegularExpression("disable rejected: operation already pending"));
     auto reentryDisableFail = ctrl.tryBeginDisable(kTestSysId);
+    verifyExpectedLogMessage();
     QVERIFY(reentryDisableFail.has_value());
     QCOMPARE(reentryDisableFail->reason, SigningController::FailReason::VehicleUnreachable);
 
@@ -157,7 +166,9 @@ void SigningControllerTest::_testEnableTimeoutFails()
     const auto key = makeKey(0x33);
     (void)ctrl.tryBeginEnable(kTestSysId, QStringLiteral("k"), key);
 
+    expectLogMessage("MAVLink.SigningController", QtWarningMsg, QRegularExpression("Signing setup not confirmed by vehicle"));
     QTRY_VERIFY_WITH_TIMEOUT(outcome.failed, kTimeoutWaitMs);
+    verifyExpectedLogMessage();
     QCOMPARE(outcome.reason, SigningController::FailReason::Timeout);
     QVERIFY(!outcome.succeeded);
     QCOMPARE(ctrl.state(), SigningController::State::Off);
@@ -176,7 +187,9 @@ void SigningControllerTest::_testDisableTimeoutVehicleUnreachable()
     wireDisable(ctrl, outcome);
     (void)ctrl.tryBeginDisable(kTestSysId);
 
+    expectLogMessage("MAVLink.SigningController", QtWarningMsg, QRegularExpression("Signing disable not confirmed"));
     QTRY_VERIFY_WITH_TIMEOUT(outcome.failed, kTimeoutWaitMs);
+    verifyExpectedLogMessage();
     QCOMPARE(outcome.reason, SigningController::FailReason::VehicleUnreachable);
     QVERIFY(!outcome.succeeded);
     QVERIFY(ctrl.isEnabled());
@@ -240,9 +253,11 @@ void SigningControllerTest::_testCancelDuringPendingEnable()
     (void)ctrl.tryBeginEnable(kTestSysId, QStringLiteral("k"), key);
 
     QCOMPARE(ctrl.state(), SigningController::State::Enabling);
+    expectLogMessage("MAVLink.SigningController", QtWarningMsg, QRegularExpression("Signing operation cancelled"));
     ctrl.cancelPending();
 
     QTRY_VERIFY(outcome.failed);
+    verifyExpectedLogMessage();
     QCOMPARE(outcome.reason, SigningController::FailReason::VehicleUnreachable);
     QVERIFY(!outcome.succeeded);
     QCOMPARE(ctrl.state(), SigningController::State::Off);
@@ -260,9 +275,11 @@ void SigningControllerTest::_testCancelDuringPendingDisable()
     DisableOutcome outcome;
     wireDisable(ctrl, outcome);
     (void)ctrl.tryBeginDisable(kTestSysId);
+    expectLogMessage("MAVLink.SigningController", QtWarningMsg, QRegularExpression("Signing disable not confirmed"));
     ctrl.cancelPending();
 
     QTRY_VERIFY(outcome.failed);
+    verifyExpectedLogMessage();
     QCOMPARE(outcome.reason, SigningController::FailReason::VehicleUnreachable);
     QVERIFY(!outcome.succeeded);
     QVERIFY(ctrl.isEnabled());
@@ -445,8 +462,10 @@ void SigningControllerTest::_testStateChangedFiresOnEnableThenCancel()
     QCOMPARE(ctrl.state(), SigningController::State::Enabling);
     QCOMPARE(stateSpy.count(), 1);
 
+    expectLogMessage("MAVLink.SigningController", QtWarningMsg, QRegularExpression("Signing operation cancelled"));
     ctrl.cancelPending();
     QTRY_COMPARE(ctrl.state(), SigningController::State::Off);
+    verifyExpectedLogMessage();
     QVERIFY(stateSpy.count() >= 2);
 }
 
@@ -464,8 +483,10 @@ void SigningControllerTest::_testStateChangedFiresOnDisableThenCancel()
     QCOMPARE(ctrl.state(), SigningController::State::Disabling);
     QCOMPARE(stateSpy.count(), 1);
 
+    expectLogMessage("MAVLink.SigningController", QtWarningMsg, QRegularExpression("Signing disable not confirmed"));
     ctrl.cancelPending();
     QTRY_COMPARE(ctrl.state(), SigningController::State::On);
+    verifyExpectedLogMessage();
     QVERIFY(stateSpy.count() >= 2);
 }
 
@@ -479,6 +500,7 @@ void SigningControllerTest::_testPermanentListenerSurvivesMultipleCycles()
     for (int i = 0; i < 3; ++i) {
         (void)ctrl.tryBeginEnable(kTestSysId, QStringLiteral("k"), key);
         QCOMPARE(ctrl.state(), SigningController::State::Enabling);
+        ignoreLogMessage("MAVLink.SigningController", QtWarningMsg, QRegularExpression("Signing operation cancelled"));
         ctrl.cancelPending();
         QCOMPARE(ctrl.state(), SigningController::State::Off);
     }
@@ -507,14 +529,18 @@ void SigningControllerTest::_testStatusTextDuringPending()
     (void)ctrl.tryBeginEnable(kTestSysId, QStringLiteral("k"), key);
     QCOMPARE(ctrl.statusText(), tr("Configuring…"));
 
+    expectLogMessage("MAVLink.SigningController", QtWarningMsg, QRegularExpression("Signing operation cancelled"));
     ctrl.cancelPending();
+    verifyExpectedLogMessage();
     QCOMPARE(ctrl.statusText(), tr("Off"));
 
     const QByteArrayView kv(reinterpret_cast<const char*>(key.data()), key.size());
     QVERIFY(ctrl.initSigningImmediate(kv, MAVLinkSigning::UnsignedAcceptancePolicy::Strict, QStringLiteral("k")));
     (void)ctrl.tryBeginDisable(kTestSysId);
     QCOMPARE(ctrl.statusText(), tr("Disabling…"));
+    expectLogMessage("MAVLink.SigningController", QtWarningMsg, QRegularExpression("Signing disable not confirmed"));
     ctrl.cancelPending();
+    verifyExpectedLogMessage();
 }
 
 void SigningControllerTest::_testExpectedSysIdScopedToPendingOp()
@@ -542,6 +568,51 @@ void SigningControllerTest::_testExpectedSysIdScopedToPendingOp()
     mavlink_message_t fromExpectedSys = encodeSigned(kTestSysId);
     ctrl.processFrame(true, fromExpectedSys);
     QCOMPARE(ctrl.state(), SigningController::State::On);
+}
+
+// Regression: mavlink/qgroundcontrol#14375 — the wall-clock refresh timer must run once the channel is signing so an
+// idle outbound path doesn't drift behind wall clock. Guards the timer-gating that replaced the always-on ctor timer.
+void SigningControllerTest::_testWallClockTimerRefreshesAfterEnable()
+{
+    SigningController ctrl(kTestChannel);
+    QVERIFY(!ctrl.wallClockRefreshActiveForTesting());
+
+    const auto key = makeKey(0x5A);
+    const QByteArrayView kv(reinterpret_cast<const char*>(key.data()), key.size());
+    QVERIFY(ctrl.initSigningImmediate(kv, MAVLinkSigning::UnsignedAcceptancePolicy::Strict, QStringLiteral("wc")));
+    QVERIFY(ctrl.wallClockRefreshActiveForTesting());
+
+    auto* const signing = mavlink_get_channel_status(kTestChannel)->signing;
+    QVERIFY(signing);
+
+    // Stall 3 minutes behind wall clock; the 1Hz timer must catch the timestamp back up on its own.
+    constexpr uint64_t kThreeMinutesTicks = 3ULL * 60 * 100'000;
+    const uint64_t stale = MAVLinkSigning::currentSigningTimestampTicks() - kThreeMinutesTicks;
+    signing->timestamp = stale;
+
+    QTRY_VERIFY_WITH_TIMEOUT(signing->timestamp > stale, 3000);
+    QVERIFY(signing->timestamp >= MAVLinkSigning::currentSigningTimestampTicks() - (2ULL * 100'000));
+
+    QVERIFY(ctrl.clearSigning());
+    QVERIFY(!ctrl.wallClockRefreshActiveForTesting());
+}
+
+void SigningControllerTest::_testWallClockTimerStoppedWhenIdle()
+{
+    SigningController ctrl(kTestChannel);
+    QVERIFY(!ctrl.wallClockRefreshActiveForTesting());
+
+    // Pending-enable installs the channel (signOutgoing flips on confirm) → timer runs meanwhile.
+    const auto key = makeKey(0x6B);
+    (void)ctrl.tryBeginEnable(kTestSysId, QStringLiteral("k"), key);
+    QVERIFY(ctrl.wallClockRefreshActiveForTesting());
+
+    // Aborting back to Idle disables the channel and must stop the timer.
+    expectLogMessage("MAVLink.SigningController", QtWarningMsg, QRegularExpression("Signing operation cancelled"));
+    ctrl.cancelPending();
+    QTRY_VERIFY(!ctrl.wallClockRefreshActiveForTesting());
+    verifyExpectedLogMessage();
+    QCOMPARE(ctrl.state(), SigningController::State::Off);
 }
 
 UT_REGISTER_TEST(SigningControllerTest, TestLabel::Unit, TestLabel::Comms, TestLabel::Slow)

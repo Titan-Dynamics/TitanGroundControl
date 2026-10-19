@@ -1,15 +1,68 @@
-#!/usr/bin/env python3
 """Tests for detect_changes.py."""
 
 from __future__ import annotations
 
-import pytest
+from typing import TYPE_CHECKING
 
+import pytest
 from detect_changes import (
+    _NON_PR_PASSTHROUGH_KEYS,
     build_patterns,
     has_relevant_changes,
+    main,
     workflow_name_for_platform,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+
+@pytest.mark.parametrize("value", ["true", "false"])
+def test_non_pr_passthrough_emits_every_output(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, value: str
+) -> None:
+    output = tmp_path / "output"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(output))
+    assert main(["--non-pr-passthrough", "--passthrough-value", value]) == 0
+    lines = set(output.read_text().splitlines())
+    assert lines == {f"{key}={value}" for key in _NON_PR_PASSTHROUGH_KEYS}
+
+
+@pytest.mark.parametrize(
+    "platform",
+    [
+        "linux",
+        "windows",
+        "macos",
+        "ios",
+        "android",
+        "custom-build",
+        "docker-linux",
+        "docker-android",
+    ],
+)
+@pytest.mark.parametrize(
+    "filename",
+    [
+        "CMakePresets.json",
+        ".github/workflows/_detect-changes.yml",
+        "tools/moccache.py",
+        "tools/common/config.py",
+        "tools/setup/install_qt.py",
+        "tools/setup/install_dependencies/_common.py",
+    ],
+)
+def test_shared_build_inputs_trigger_all_platforms(platform: str, filename: str) -> None:
+    assert has_relevant_changes([filename], platform)
+
+
+@pytest.mark.parametrize(
+    "filename", ["variants.json", "_variants.py", "run_docker.py", "docker_helper.py"]
+)
+def test_variant_inputs_trigger_docker_builds(filename: str) -> None:
+    for platform in ("docker-linux", "docker-android"):
+        assert has_relevant_changes([f"deploy/docker/{filename}"], platform)
+    assert not has_relevant_changes([f"deploy/docker/{filename}"], "linux")
 
 
 class TestWorkflowNameForPlatform:
@@ -86,16 +139,21 @@ class TestHasRelevantChanges:
         assert not has_relevant_changes(["android/AndroidManifest.xml"], "linux")
 
     def test_docker_linux_patterns(self) -> None:
-        assert has_relevant_changes(["deploy/docker/Dockerfile-build-ubuntu"], "docker-linux")
+        assert has_relevant_changes(["deploy/docker/Dockerfile"], "docker-linux")
+        assert has_relevant_changes(["deploy/docker/install_sysroot_aarch64.py"], "docker-linux")
+        assert has_relevant_changes(["deploy/docker/entrypoint.sh"], "docker-linux")
+        assert has_relevant_changes(["deploy/docker/run_docker.py"], "docker-linux")
+        assert has_relevant_changes(["deploy/docker/lib/setup-base.sh"], "docker-linux")
         assert has_relevant_changes(["deploy/linux/AppImage.sh"], "docker-linux")
-        assert not has_relevant_changes(["deploy/docker/Dockerfile-build-ubuntu"], "linux")
+        assert not has_relevant_changes(["deploy/docker/Dockerfile"], "linux")
 
     def test_docker_android_patterns(self) -> None:
-        assert has_relevant_changes(["deploy/docker/Dockerfile-build-android"], "docker-android")
+        assert has_relevant_changes(["deploy/docker/Dockerfile"], "docker-android")
+        assert has_relevant_changes(["deploy/docker/entrypoint.py"], "docker-android")
         assert has_relevant_changes(["android/build.gradle"], "docker-android")
 
     def test_setup_patterns_linux(self) -> None:
-        assert has_relevant_changes(["tools/setup/install_dependencies.py"], "linux")
+        assert has_relevant_changes(["tools/setup/install_dependencies/_debian.py"], "linux")
         assert has_relevant_changes(["tools/setup/foo-debian.sh"], "linux")
         assert not has_relevant_changes(["tools/setup/foo-windows.ps1"], "linux")
 

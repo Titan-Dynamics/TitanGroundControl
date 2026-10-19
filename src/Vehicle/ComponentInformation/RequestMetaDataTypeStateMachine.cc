@@ -387,7 +387,7 @@ void RequestMetaDataTypeStateMachine::_requestTranslate()
                                                        typeToString())) {
         disconnect(_compMgr->translation(), &ComponentInformationTranslation::downloadComplete,
                    this, &RequestMetaDataTypeStateMachine::_downloadAndTranslationComplete);
-        qCDebug(RequestMetaDataTypeStateMachineLog) << "downloadAndTranslate() failed";
+        qCDebug(RequestMetaDataTypeStateMachineLog) << typeToString() << ": translation skipped (English locale, locale unavailable, or download failure), using untranslated metadata";
         _stateRequestTranslate->complete();
     }
 }
@@ -436,8 +436,14 @@ void RequestMetaDataTypeStateMachine::_completeRequest()
                                                     << sourceLabel << _metadataUri;
         }
     } else {
-        qCWarning(RequestMetaDataTypeStateMachineLog) << typeToString() << ": failed to load metadata (primary and fallback)"
-                                                  << (_metadataUri.isEmpty() ? _compInfo->uriMetaData() : _metadataUri);
+        const QString failureMsg = QStringLiteral("%1 : failed to load metadata (primary and fallback) %2")
+                .arg(typeToString(), _metadataUri.isEmpty() ? _compInfo->uriMetaData() : _metadataUri);
+        if (_compInfo->vehicle->apmFirmware()) {
+            // ArduPilot doesn't support the component metadata protocol, so failure is expected
+            qCDebug(RequestMetaDataTypeStateMachineLog).noquote() << failureMsg;
+        } else {
+            qCWarning(RequestMetaDataTypeStateMachineLog).noquote() << failureMsg;
+        }
     }
 }
 
@@ -493,7 +499,7 @@ void RequestMetaDataTypeStateMachine::_requestFile(const QString& cacheFileTag, 
         qCDebug(RequestMetaDataTypeStateMachineLog) << typeToString() << ": not found in cache, downloading";
     }
 
-    qCDebug(RequestMetaDataTypeStateMachineLog) << "Downloading json" << uri;
+    qCDebug(RequestMetaDataTypeStateMachineLog) << typeToString() << ": downloading json" << uri;
 
     if (_uriIsMAVLinkFTP(uri)) {
         if (trackMetadataSource) {
@@ -502,7 +508,10 @@ void RequestMetaDataTypeStateMachine::_requestFile(const QString& cacheFileTag, 
         }
         connect(ftpManager, &FTPManager::downloadComplete, this, &RequestMetaDataTypeStateMachine::_ftpDownloadComplete);
         if (ftpManager->download(MAV_COMP_ID_AUTOPILOT1, uri, QStandardPaths::writableLocation(QStandardPaths::TempLocation))) {
-            _downloadStartTime.start();
+            // Throughput is measured from the first data packet (see _ftpDownloadProgress), not from here: the
+            // leading session reset and open can take several seconds on a lossy link without saying anything
+            // about transfer speed
+            _downloadStartTime.invalidate();
             connect(ftpManager, &FTPManager::commandProgress, this, &RequestMetaDataTypeStateMachine::_ftpDownloadProgress);
         } else {
             qCWarning(RequestMetaDataTypeStateMachineLog) << "FTPManager::download returned failure";
@@ -566,12 +575,19 @@ void RequestMetaDataTypeStateMachine::_ftpDownloadComplete(const QString& fileNa
 
 void RequestMetaDataTypeStateMachine::_ftpDownloadProgress(float progress)
 {
+    if (!_downloadStartTime.isValid()) {
+        _downloadStartTime.start();
+        return;
+    }
+
     int elapsedSec = _downloadStartTime.elapsed() / 1000;
     float totalDownloadTime = elapsedSec / progress;
 
-    // Abort download if it's too slow (e.g. over telemetry link) and use the fallback
+    // Abort download if it's too slow (e.g. over telemetry link) and use the fallback. This sits in front of
+    // parameter load, so decide as soon as the projection is trustworthy rather than after a fixed 10s.
+    const int minElapsedSec = 5;
     const int maxDownloadTimeSec = 40;
-    if (elapsedSec > 10 && progress < 0.5 && totalDownloadTime > maxDownloadTimeSec) {
+    if (elapsedSec > minElapsedSec && progress < 0.5 && totalDownloadTime > maxDownloadTimeSec) {
         qCDebug(RequestMetaDataTypeStateMachineLog) << "Slow download, aborting. Total time (s):" << totalDownloadTime;
         _compInfo->vehicle->ftpManager()->cancelDownload();
     }

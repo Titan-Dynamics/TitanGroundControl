@@ -5,6 +5,7 @@
 
 #include "Gimbal.h"
 #include "MAVLinkMessageType.h"
+#include "VehicleTypes.h"
 
 class QmlObjectListModel;
 class Vehicle;
@@ -15,6 +16,8 @@ class GimbalController : public QObject
     QML_ELEMENT
     QML_UNCREATABLE("")
     Q_MOC_INCLUDE("QmlObjectListModel.h")
+
+    friend class GimbalControllerDiscoveryTest;
 
     Q_PROPERTY(Gimbal*              activeGimbal    READ activeGimbal WRITE setActiveGimbal NOTIFY activeGimbalChanged)
     Q_PROPERTY(QmlObjectListModel*  gimbals         READ gimbals                            CONSTANT)
@@ -90,11 +93,17 @@ private:
         uint8_t deviceId = 0;
     };
 
-    void _requestGimbalInformation(uint8_t compid);
+    /// @return true if a request was sent; false if skipped (another request is in flight)
+    bool _requestGimbalInformation(uint8_t compid);
+    static void _requestMessageResultHandler(void* resultHandlerData, MAV_RESULT result, VehicleTypes::RequestMessageResultHandlerFailureCode_t failureCode, const mavlink_message_t& message);
+    static void _requestDeviceInformationResultHandler(
+        void* resultHandlerData, MAV_RESULT result, VehicleTypes::RequestMessageResultHandlerFailureCode_t failureCode,
+        const mavlink_message_t& message);
     void _handleHeartbeat(const mavlink_message_t &message);
     void _handleGimbalManagerInformation(const mavlink_message_t &message);
     void _handleGimbalManagerStatus(const mavlink_message_t &message);
     void _handleGimbalDeviceAttitudeStatus(const mavlink_message_t &message);
+    void _handleGimbalDeviceInformation(const mavlink_message_t& message);
     void _checkComplete(Gimbal &gimbal, GimbalPairId pairId);
     bool _tryGetGimbalControl();
     bool _yawInVehicleFrame(uint32_t flags);
@@ -104,6 +113,7 @@ private:
     QTimer _rateSenderTimer;
     Vehicle *_vehicle = nullptr;
     Gimbal *_activeGimbal = nullptr;
+    int _pendingInformationRequestCompId = -1; ///< compid of in-flight GIMBAL_MANAGER_INFORMATION request, -1 if none
 
     struct PotentialGimbalManager {
         unsigned requestGimbalManagerInformationRetries = 6;

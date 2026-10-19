@@ -63,10 +63,12 @@ struct FirmwareFlightMode
 typedef QList<FirmwareFlightMode> FlightModeList;
 typedef QMap<uint32_t,QString> FlightModeCustomModeMap;
 
-/// The FirmwarePlugin class represents the methods and objects which are specific to a certain Firmware flight stack.
+/// \brief The FirmwarePlugin class represents the methods and objects which are specific to a certain Firmware flight stack.
+///
 /// This is the only place where flight stack specific code should reside in QGroundControl. The remainder of the
 /// QGroundControl source is generic to a common mavlink implementation. The implementation in the base class supports
 /// mavlink generic firmware. Override the base clase virtuals to create your own firmware specific plugin.
+///
 class FirmwarePlugin : public QObject
 {
     Q_OBJECT
@@ -85,6 +87,7 @@ public:
         ROIModeCapability =         1 << 5, ///< Vehicle supports ROI (both in Fly guided mode and from Plan creation)
         ChangeHeadingCapability =   1 << 6, ///< Vehicle supports changing heading at current location
         GuidedTakeoffCapability =   1 << 7, ///< Vehicle supports guided takeoff
+        VTOLMulticopterTakeoffCapability = 1 << 8, ///< VTOL supports MAV_CMD_NAV_TAKEOFF while remaining in multicopter mode
     };
 
     /// Parameter name remapping support:
@@ -197,6 +200,12 @@ public:
 
     /// Command vehicle to rotate towards specified location.
     virtual void guidedModeChangeHeading(Vehicle *vehicle, const QGeoCoordinate &headingCoord) const;
+
+    /// Command vehicle to set a Region Of Interest at the specified location.
+    ///     @param roiCenterCoord ROI location (altitude within the coordinate is ignored)
+    ///     @param relativeAltitudeMeters ROI altitude in meters above home
+    /// @return true: ROI command sent, false: unable to send
+    virtual bool guidedModeROI(Vehicle *vehicle, const QGeoCoordinate &roiCenterCoord, double relativeAltitudeMeters) const;
 
     /// @return The minimum takeoff altitude (relative) for guided takeoff.
     virtual double minimumTakeoffAltitudeMeters(Vehicle* /*vehicle*/) const { return 3.048; }
@@ -365,6 +374,12 @@ public:
     /// Used to check if running firmware is latest stable version.
     virtual void checkIfIsLatestStable(Vehicle *vehicle) const;
 
+    /// Settings key identifying the stable firmware stream (firmware + vehicle class) for this vehicle
+    static QString stableFirmwareSettingsKey(const Vehicle* vehicle);
+
+    /// @return true if latestVersion is newer than seenVersion (or seenVersion is empty/unparseable)
+    static bool isStableFirmwareVersionUnseen(const QString& latestVersion, const QString& seenVersion);
+
     /// Used to check if running current version is equal or higher than the one being compared.
     /// returns 1 if current > compare, 0 if current == compare, -1 if current < compare
     int versionCompare(const Vehicle *vehicle, const QString &compare) const;
@@ -384,7 +399,7 @@ public:
     /// Creates Autotune object.
     virtual Autotune *createAutotune(Vehicle *vehicle) const;
 
-    /// Update Available flight modes recieved from vehicle
+    /// Update Available flight modes received from vehicle
     virtual void updateAvailableFlightModes(FlightModeList &flightModeList) { _updateFlightModeList(flightModeList); }
 
     ParameterMetaData *loadParameterMetaData(const Vehicle *vehicle);
@@ -397,6 +412,9 @@ protected:
     /// Arms the vehicle with validation and retries
     ///     @return: true - vehicle armed, false - vehicle failed to arm
     bool _armVehicleAndValidate(Vehicle *vehicle) const;
+
+    /// Build + send MAV_CMD_DO_SET_ROI_LOCATION (COMMAND_INT when the vehicle supports it).
+    void _sendROICommand(Vehicle *vehicle, const QGeoCoordinate &coord, MAV_FRAME frame, float altitude) const;
 
     /// Sets the vehicle to the specified flight mode with validation and retries
     ///     @return: true - vehicle in specified flight mode, false - flight mode change failed
@@ -411,7 +429,8 @@ protected:
     virtual QString _getLatestVersionFileUrl(Vehicle* /*vehicle*/) const { return QString(); }
 
     /// Callback to process file with latest release information
-    virtual void _versionFileDownloadFinished(const QString &remoteFile, const QString &localFile, const Vehicle *vehicle) const;
+    virtual void _versionFileDownloadFinished(const QString& remoteFile, const QString& localFile,
+                                              Vehicle* vehicle) const;
 
     /// Returns regex QString to extract version information from text
     virtual QString _versionRegex() const { return QString(); }

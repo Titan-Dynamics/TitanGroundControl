@@ -24,7 +24,7 @@ void SkippableAsyncStateTest::_testSkippableAsyncStateExecute()
             });
         }
     );
-    auto* finalState = new QFinalState(&machine);
+    auto* finalState = addFinalState(&machine);
 
     skippableState->addTransition(skippableState, &QGCState::advance, finalState);
     skippableState->addTransition(skippableState, &SkippableAsyncState::skipped, finalState);
@@ -34,16 +34,13 @@ void SkippableAsyncStateTest::_testSkippableAsyncStateExecute()
     MultiSignalSpy stateSpy;
     QVERIFY(stateSpy.init(skippableState));
 
-    QSignalSpy finishedSpy(&machine, &QStateMachine::finished);
-    machine.start();
-
-    QVERIFY(finishedSpy.wait(TestTimeout::shortMs()));
+    QVERIFY(startAndWaitForFinished(&machine));
     QVERIFY(skipPredicateCalled);
     QVERIFY(setupCalled);
     QVERIFY(capturedState != nullptr);
     // Verify advance path taken, not skip path
-    QVERIFY(stateSpy.emittedByMask(stateSpy.mask("advance")));
-    QVERIFY(stateSpy.notEmittedByMask(stateSpy.mask("skipped")));
+    QVERIFY(stateSpy.emitted("advance"));
+    QVERIFY(stateSpy.notEmitted("skipped"));
 }
 
 void SkippableAsyncStateTest::_testSkippableAsyncStateSkip()
@@ -68,7 +65,7 @@ void SkippableAsyncStateTest::_testSkippableAsyncStateSkip()
     auto* skipState = new FunctionState(QStringLiteral("SkipHandler"), &machine, [&skipHandled]() {
         skipHandled = true;
     });
-    auto* finalState = new QFinalState(&machine);
+    auto* finalState = addFinalState(&machine);
 
     skippableState->addTransition(skippableState, &QGCState::advance, finalState);
     skippableState->addTransition(skippableState, &SkippableAsyncState::skipped, skipState);
@@ -79,20 +76,18 @@ void SkippableAsyncStateTest::_testSkippableAsyncStateSkip()
     MultiSignalSpy stateSpy;
     QVERIFY(stateSpy.init(skippableState));
 
-    QSignalSpy finishedSpy(&machine, &QStateMachine::finished);
-    machine.start();
-
-    QVERIFY(finishedSpy.wait(TestTimeout::shortMs()));
+    QVERIFY(startAndWaitForFinished(&machine));
     QVERIFY(skipPredicateCalled);
     QVERIFY(!setupCalled);  // Setup should NOT have been called
     QVERIFY(skipHandled);
     // Verify skip path taken, not execute path
-    QVERIFY(stateSpy.emittedByMask(stateSpy.mask("skipped")));
-    QVERIFY(stateSpy.notEmittedByMask(stateSpy.mask("advance")));
+    QVERIFY(stateSpy.emitted("skipped"));
+    QVERIFY(stateSpy.notEmitted("advance"));
 }
 
 void SkippableAsyncStateTest::_testSkippableAsyncStateTimeout()
 {
+    ignoreTimeoutWarnings();
     QStateMachine machine;
     bool timeoutReached = false;
     const int timeoutMs = 100;
@@ -111,7 +106,7 @@ void SkippableAsyncStateTest::_testSkippableAsyncStateTimeout()
     auto* timeoutState = new FunctionState(QStringLiteral("TimeoutHandler"), &machine, [&timeoutReached]() {
         timeoutReached = true;
     });
-    auto* finalState = new QFinalState(&machine);
+    auto* finalState = addFinalState(&machine);
 
     skippableState->addTransition(skippableState, &QGCState::advance, finalState);
     skippableState->addTransition(skippableState, &SkippableAsyncState::skipped, finalState);
@@ -123,15 +118,12 @@ void SkippableAsyncStateTest::_testSkippableAsyncStateTimeout()
     MultiSignalSpy stateSpy;
     QVERIFY(stateSpy.init(skippableState));
 
-    QSignalSpy finishedSpy(&machine, &QStateMachine::finished);
-    machine.start();
-
-    QVERIFY(finishedSpy.wait(TestTimeout::shortMs()));
+    QVERIFY(startAndWaitForFinished(&machine));
     QVERIFY(timeoutReached);
     // Verify timeout path taken
-    QVERIFY(stateSpy.emittedByMask(stateSpy.mask("timeout")));
-    QVERIFY(stateSpy.notEmittedByMask(stateSpy.mask("advance")));
-    QVERIFY(stateSpy.notEmittedByMask(stateSpy.mask("skipped")));
+    QVERIFY(stateSpy.emitted("timeout"));
+    QVERIFY(stateSpy.notEmitted("advance"));
+    QVERIFY(stateSpy.notEmitted("skipped"));
 }
 
 void SkippableAsyncStateTest::_testSkippableAsyncStateWithSkipAction()
@@ -152,16 +144,13 @@ void SkippableAsyncStateTest::_testSkippableAsyncStateWithSkipAction()
             skipActionCalled = true;  // Should be called
         }
     );
-    auto* finalState = new QFinalState(&machine);
+    auto* finalState = addFinalState(&machine);
 
     skippableState->addTransition(skippableState, &QGCState::advance, finalState);
     skippableState->addTransition(skippableState, &SkippableAsyncState::skipped, finalState);
     machine.setInitialState(skippableState);
 
-    QSignalSpy finishedSpy(&machine, &QStateMachine::finished);
-    machine.start();
-
-    QVERIFY(finishedSpy.wait(TestTimeout::shortMs()));
+    QVERIFY(startAndWaitForFinished(&machine));
     QVERIFY(skipActionCalled);  // Skip action should have been called
     QVERIFY(!setupCalled);      // Setup should NOT have been called
 }

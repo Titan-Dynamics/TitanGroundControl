@@ -1,0 +1,12 @@
+{{ indent }}{{ component }} {
+{{ indent }}    Layout.fillWidth: true
+{% if show_when %}
+{{ indent }}    visible: {{ show_when }}
+{% endif %}
+{% if enable_when %}
+{{ indent }}    enabled: {{ enable_when }}
+{% endif %}
+{% for name, expr in properties.items() %}
+{{ indent }}    {{ name }}: {{ expr }}
+{% endfor %}
+{{ indent }}}

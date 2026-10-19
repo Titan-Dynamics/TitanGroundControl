@@ -5,7 +5,7 @@ Handles:
 - Enabling the Ubuntu universe repository
 - Repairing apt alternatives after cache-apt-pkgs-action restore
 - Installing optional packages
-- Detecting Python version for pipx cache keys
+- Detecting Python version for dependency cache keys
 """
 
 from __future__ import annotations
@@ -19,41 +19,40 @@ from ci_bootstrap import ensure_tools_dir
 
 ensure_tools_dir(__file__)
 
-from common.gh_actions import write_github_output  # noqa: E402
+from common.gh_actions import gh_error, gh_warning, write_github_output
+from common.proc import run_captured
 
 APT_OPTS = ["-o", "DPkg::Lock::Timeout=300", "-o", "Acquire::Retries=3"]
 
 
-def _run(cmd: list[str], *, check: bool = True, **kwargs) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, check=check, **kwargs)
-
-
-def _sudo(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
-    return _run(["sudo", *cmd], **kwargs)
+def _sudo(cmd: list[str], *, check: bool = True) -> subprocess.CompletedProcess:
+    """Run cmd under sudo, streaming output. Captured callers use run_captured directly."""
+    return subprocess.run(["sudo", *cmd], check=check)
 
 
 def _ldconfig_has_blas() -> bool:
-    result = _run(["ldconfig", "-p"], capture_output=True, text=True, check=False)
+    result = run_captured(["ldconfig", "-p"])
     return bool(re.search(r"\blibblas\.so\.3\b", result.stdout))
 
 
 def _get_multiarch() -> str:
-    result = _run(
-        ["dpkg-architecture", "-qDEB_HOST_MULTIARCH"],
-        capture_output=True, text=True, check=False,
-    )
+    result = run_captured(["dpkg-architecture", "-qDEB_HOST_MULTIARCH"])
     return result.stdout.strip() if result.returncode == 0 else ""
 
 
 def enable_universe() -> None:
-    """Enable the Ubuntu universe repository if not already present."""
+    """Enable universe; the following bounded install step refreshes package lists."""
     sources_dirs = [Path("/etc/apt/sources.list"), Path("/etc/apt/sources.list.d")]
     universe_found = False
 
     for source in sources_dirs:
         if not source.exists():
             continue
-        paths = [source] if source.is_file() else list(source.glob("*.list")) + list(source.glob("*.sources"))
+        paths = (
+            [source]
+            if source.is_file()
+            else list(source.glob("*.list")) + list(source.glob("*.sources"))
+        )
         for p in paths:
             try:
                 text = p.read_text(errors="replace")
@@ -69,19 +68,17 @@ def enable_universe() -> None:
         _sudo(["apt-get", *APT_OPTS, "install", "-y", "-qq", "software-properties-common"])
         _sudo(["add-apt-repository", "-y", "universe"])
 
-    _sudo(["apt-get", *APT_OPTS, "update", "-y", "-qq"])
-
 
 def fix_apt_alternatives() -> None:
     """Repair apt alternatives and BLAS symlinks after cache restore."""
     result = _sudo(["dpkg", "--configure", "-a"], check=False)
     if result.returncode != 0:
-        print("::warning::dpkg --configure -a failed; package state may be inconsistent")
+        gh_warning("dpkg --configure -a failed; package state may be inconsistent")
 
     if _ldconfig_has_blas():
         return
 
-    print("::warning::libblas.so.3 missing from linker cache; attempting repair")
+    gh_warning("libblas.so.3 missing from linker cache; attempting repair")
     _sudo(
         ["apt-get", *APT_OPTS, "install", "-y", "-qq", "--reinstall", "libblas3", "libopenblas0"],
         check=False,
@@ -96,22 +93,28 @@ def fix_apt_alternatives() -> None:
             candidates = list(Path("/usr/lib").rglob("libblas.so.3"))
             if candidates:
                 candidate = candidates[0]
-                print(f"::warning::Creating compatibility symlink {blas_link} -> {candidate}")
+                gh_warning(f"Creating compatibility symlink {blas_link} -> {candidate}")
                 _sudo(["ln", "-sf", str(candidate), str(blas_link)])
 
     _sudo(["ldconfig"])
 
     if not _ldconfig_has_blas():
-        print("::error::libblas.so.3 is still missing after repair attempt")
+        gh_error("libblas.so.3 is still missing after repair attempt")
         sys.exit(1)
 
 
 def install_optional_packages() -> None:
     """Install optional apt packages that are available."""
-    result = _run(
-        [sys.executable, "tools/setup/install_dependencies.py",
-         "--platform", "debian", "--category", "gstreamer_optional", "--print-available-packages"],
-        capture_output=True, text=True, check=False,
+    result = run_captured(
+        [
+            sys.executable,
+            "tools/setup/install_dependencies",
+            "--platform",
+            "debian",
+            "--category",
+            "gstreamer_optional",
+            "--print-available-packages",
+        ],
     )
     packages = result.stdout.strip()
     if packages:
@@ -125,14 +128,31 @@ def detect_python_version() -> None:
     write_github_output({"minor": minor})
 
 
+def print_packages() -> None:
+    """Resolve the debian apt package list and emit it as a GITHUB_OUTPUT value."""
+    result = run_captured(
+        [
+            sys.executable,
+            "tools/setup/install_dependencies",
+            "--platform",
+            "debian",
+            "--print-packages",
+        ],
+        check=True,
+    )
+    write_github_output({"packages": result.stdout.strip()})
+
+
 def main() -> None:
     import argparse
+
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("enable-universe")
     sub.add_parser("fix-apt-alternatives")
     sub.add_parser("install-optional")
     sub.add_parser("detect-python-version")
+    sub.add_parser("print-packages")
 
     args = parser.parse_args()
     commands = {
@@ -140,6 +160,7 @@ def main() -> None:
         "fix-apt-alternatives": fix_apt_alternatives,
         "install-optional": install_optional_packages,
         "detect-python-version": detect_python_version,
+        "print-packages": print_packages,
     }
     commands[args.command]()
 

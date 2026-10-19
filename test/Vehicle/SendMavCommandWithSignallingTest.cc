@@ -1,8 +1,13 @@
 #include "SendMavCommandWithSignallingTest.h"
 
+#include <optional>
+
 #include <QtCore/QElapsedTimer>
+#include <QtCore/QRegularExpression>
 #include <QtTest/QSignalSpy>
 
+#include "Fixtures/RAIIFixtures.h"
+#include "MavCommandQueue.h"
 #include "MultiVehicleManager.h"
 
 namespace {
@@ -28,7 +33,7 @@ bool _waitForExpectedCommandResult(QSignalSpy& spyResult, MAV_CMD expectedComman
             return true;
         }
 
-        qDebug() << "Received response to command" << arguments.at(2).toInt() << ", ignoring, waiting for:" << expectedCommand;
+        qCDebug(UnitTestLog) << "Received response to command" << arguments.at(2).toInt() << ", ignoring, waiting for:" << expectedCommand;
     }
 }
 }
@@ -37,23 +42,28 @@ SendMavCommandWithSignallingTest::TestCase_t SendMavCommandWithSignallingTest::_
     {MockLink::MAV_CMD_MOCKLINK_ALWAYS_RESULT_ACCEPTED, MAV_RESULT_ACCEPTED, Vehicle::MavCmdResultCommandResultOnly, 1},
     {MockLink::MAV_CMD_MOCKLINK_ALWAYS_RESULT_FAILED, MAV_RESULT_FAILED, Vehicle::MavCmdResultCommandResultOnly, 1},
     {MockLink::MAV_CMD_MOCKLINK_SECOND_ATTEMPT_RESULT_ACCEPTED, MAV_RESULT_ACCEPTED,
-     Vehicle::MavCmdResultCommandResultOnly, 2},
+     Vehicle::MavCmdResultCommandResultOnly, 2, true},
     {MockLink::MAV_CMD_MOCKLINK_SECOND_ATTEMPT_RESULT_FAILED, MAV_RESULT_FAILED, Vehicle::MavCmdResultCommandResultOnly,
-     2},
+     2, true},
     {MockLink::MAV_CMD_MOCKLINK_NO_RESPONSE, MAV_RESULT_FAILED, Vehicle::MavCmdResultFailureNoResponseToCommand,
-     Vehicle::_mavCommandMaxRetryCount},
+     MavCommandQueue::kMaxRetryCount, true},
     {MockLink::MAV_CMD_MOCKLINK_NO_RESPONSE_NO_RETRY, MAV_RESULT_FAILED,
-     Vehicle::MavCmdResultFailureNoResponseToCommand, 1},
+     Vehicle::MavCmdResultFailureNoResponseToCommand, 1, true},
     {MockLink::MAV_CMD_MOCKLINK_RESULT_IN_PROGRESS_ACCEPTED, MAV_RESULT_ACCEPTED,
      Vehicle::MavCmdResultCommandResultOnly, 1},
     {MockLink::MAV_CMD_MOCKLINK_RESULT_IN_PROGRESS_FAILED, MAV_RESULT_FAILED, Vehicle::MavCmdResultCommandResultOnly,
      1},
     {MockLink::MAV_CMD_MOCKLINK_RESULT_IN_PROGRESS_NO_ACK, MAV_RESULT_FAILED,
-     Vehicle::MavCmdResultFailureNoResponseToCommand, 1},
+     Vehicle::MavCmdResultFailureNoResponseToCommand, 1, true},
 };
 
 void SendMavCommandWithSignallingTest::_testCaseWorker(TestCase_t& testCase)
 {
+    std::optional<TestFixtures::MavCommandAckTimeoutFixture> shortAckTimeout;
+    if (testCase.expectAckTimeout) {
+        shortAckTimeout.emplace();
+    }
+
     MultiVehicleManager* vehicleMgr = MultiVehicleManager::instance();
     Vehicle* vehicle = vehicleMgr->activeVehicle();
     QSignalSpy spyResult(vehicle, &Vehicle::mavCommandResult);
@@ -75,15 +85,24 @@ void SendMavCommandWithSignallingTest::_testCaseWorker(TestCase_t& testCase)
 
 void SendMavCommandWithSignallingTest::_performTestCases()
 {
+    // Some test cases send showError=true and get a failed result, producing showAppMessage debug logs.
+    ignoreLogMessage("API.QGCApplication.AppMessage", QtDebugMsg,
+                     QRegularExpression("command failed|did not respond to command"));
+    // No-response test cases exhaust command retries, producing MavCommandQueue warnings.
+    ignoreLogMessage("Vehicle.MavCommandQueue", QtWarningMsg,
+                     QRegularExpression("Giving up sending command after max retries:"));
     int index = 0;
     for (TestCase_t& testCase : _rgTestCases) {
-        qDebug() << "Testing case" << index++;
+        qCDebug(UnitTestLog) << "Testing case" << index++;
         _testCaseWorker(testCase);
     }
 }
 
 void SendMavCommandWithSignallingTest::_duplicateCommand()
 {
+    // Sending a duplicate command produces a showAppMessage debug log.
+    ignoreLogMessage("API.QGCApplication.AppMessage", QtDebugMsg,
+                     QRegularExpression("Unable to send command"));
     MultiVehicleManager* vehicleMgr = MultiVehicleManager::instance();
     Vehicle* vehicle = vehicleMgr->activeVehicle();
     vehicle->sendMavCommand(MAV_COMP_ID_AUTOPILOT1, MockLink::MAV_CMD_MOCKLINK_NO_RESPONSE, true /* showError */);

@@ -1,11 +1,12 @@
-#!/usr/bin/env python3
 """Generate a CycloneDX SBOM from a CMake build directory's CPM package metadata.
 
 Parses CMakeCache.txt for CPM_PACKAGES and per-package VERSION/SOURCE_DIR,
 then reads git metadata (remote URL, commit hash) from each source directory.
+Adds the GStreamer the build bundles, from the QGC_GST_RESOLVED_* entries
+cmake/GStreamer records, when video streaming is enabled.
 
 Usage:
-    generate_cpm_sbom.py --build-dir DIR [--output FILE]
+    generate_cpm_sbom.py --build-dir DIR [--output FILE] [--require-components]
 
 Outputs CycloneDX 1.6 JSON to stdout or the specified file.
 """
@@ -21,15 +22,12 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from ci_bootstrap import ensure_tools_dir
 
-def parse_cmake_cache(cache_path: Path) -> dict[str, str]:
-    """Extract typed entries from CMakeCache.txt into a flat dict."""
-    entries: dict[str, str] = {}
-    for line in cache_path.read_text(encoding="utf-8").splitlines():
-        m = re.match(r"^([A-Za-z0-9_.\-]+):[A-Z]+=(.*)$", line)
-        if m:
-            entries[m.group(1)] = m.group(2)
-    return entries
+ensure_tools_dir(__file__)
+
+from common.cmake import read_cache_dict
+from common.git import run_git
 
 
 def git_info(source_dir: Path) -> tuple[str, str]:
@@ -37,19 +35,13 @@ def git_info(source_dir: Path) -> tuple[str, str]:
     url = ""
     commit = ""
     try:
-        result = subprocess.run(
-            ["git", "-C", str(source_dir), "remote", "get-url", "origin"],
-            capture_output=True, text=True, timeout=5,
-        )
+        result = run_git("remote", "get-url", "origin", cwd=source_dir, timeout=5)
         if result.returncode == 0:
             url = result.stdout.strip()
     except (OSError, subprocess.TimeoutExpired):
         pass
     try:
-        result = subprocess.run(
-            ["git", "-C", str(source_dir), "rev-parse", "HEAD"],
-            capture_output=True, text=True, timeout=5,
-        )
+        result = run_git("rev-parse", "HEAD", cwd=source_dir, timeout=5)
         if result.returncode == 0:
             commit = result.stdout.strip()
     except (OSError, subprocess.TimeoutExpired):
@@ -61,7 +53,7 @@ def normalize_git_url(url: str) -> str:
     """Convert git URL to HTTPS browse URL for purl."""
     url = url.removesuffix(".git")
     if url.startswith("git@github.com:"):
-        url = "https://github.com/" + url[len("git@github.com:"):]
+        url = "https://github.com/" + url[len("git@github.com:") :]
     return url
 
 
@@ -79,7 +71,48 @@ def make_purl(name: str, version: str, url: str, commit: str) -> str:
         repo_path = m.group(1).lower()
         ref = version if version and version != "0" else commit[:12]
         return f"pkg:gitlab/{repo_path}@{ref}" if ref else f"pkg:gitlab/{repo_path}"
-    return f"pkg:generic/{name.lower()}@{version}" if version and version != "0" else f"pkg:generic/{name.lower()}"
+    return (
+        f"pkg:generic/{name.lower()}@{version}"
+        if version and version != "0"
+        else f"pkg:generic/{name.lower()}"
+    )
+
+
+def gstreamer_component(cache: dict[str, str]) -> dict | None:
+    """Return the GStreamer the build bundles as a CycloneDX component, or None without video streaming."""
+    version = cache.get("QGC_GST_RESOLVED_SDK_VERSION", "")
+    enabled = cache.get("QGC_ENABLE_GST_VIDEOSTREAMING", "").upper() in {"ON", "TRUE", "1", "YES"}
+    if not enabled or not version:
+        return None
+    purl = f"pkg:generic/gstreamer@{version}"
+    # The official packages an auto-downloaded SDK came from, then the source of that version.
+    references: list[dict] = []
+    for package in cache.get("QGC_GST_RESOLVED_PACKAGES", "").split(";"):
+        url, _, sha256 = package.partition("|")
+        if url and sha256:
+            references.append(
+                {
+                    "type": "distribution",
+                    "url": url,
+                    "hashes": [{"alg": "SHA-256", "content": sha256}],
+                }
+            )
+    references.append(
+        {
+            "type": "vcs",
+            "url": f"https://gitlab.freedesktop.org/gstreamer/gstreamer/-/tree/{version}",
+        }
+    )
+    references.append({"type": "website", "url": "https://gstreamer.freedesktop.org"})
+    return {
+        "type": "framework",
+        "name": "GStreamer",
+        "version": version,
+        "purl": purl,
+        "bom-ref": purl,
+        "licenses": [{"expression": "LGPL-2.1-or-later"}],
+        "externalReferences": references,
+    }
 
 
 def generate_sbom(build_dir: Path) -> dict:
@@ -88,7 +121,7 @@ def generate_sbom(build_dir: Path) -> dict:
         print(f"Error: {cache_path} not found", file=sys.stderr)
         sys.exit(1)
 
-    cache = parse_cmake_cache(cache_path)
+    cache = read_cache_dict(str(cache_path))
 
     packages_str = cache.get("CPM_PACKAGES", "")
     if not packages_str:
@@ -105,7 +138,9 @@ def generate_sbom(build_dir: Path) -> dict:
         if source_dir:
             url, commit = git_info(Path(source_dir))
 
-        display_version = version if version and version != "0" else commit[:12] if commit else "unknown"
+        display_version = (
+            version if version and version != "0" else commit[:12] if commit else "unknown"
+        )
 
         component: dict = {
             "type": "library",
@@ -125,11 +160,13 @@ def generate_sbom(build_dir: Path) -> dict:
             component["externalReferences"] = external_refs
 
         if commit:
-            component["hashes"] = [
-                {"alg": "SHA-1", "content": commit}
-            ]
+            component["hashes"] = [{"alg": "SHA-1", "content": commit}]
 
         components.append(component)
+
+    gstreamer = gstreamer_component(cache)
+    if gstreamer:
+        components.append(gstreamer)
 
     sbom = {
         "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
@@ -160,18 +197,108 @@ def generate_sbom(build_dir: Path) -> dict:
     return sbom
 
 
+def generate_spdx(build_dir: Path) -> dict:
+    """Return an SPDX dependency snapshot suitable for GitHub submission."""
+    cyclonedx = generate_sbom(build_dir)
+    root_id = "SPDXRef-Package-QGroundControl"
+    packages: list[dict] = [
+        {
+            "SPDXID": root_id,
+            "name": "QGroundControl",
+            "downloadLocation": "https://github.com/mavlink/qgroundcontrol",
+            "filesAnalyzed": False,
+            "licenseConcluded": "NOASSERTION",
+            "licenseDeclared": "NOASSERTION",
+            "copyrightText": "NOASSERTION",
+            "externalRefs": [
+                {
+                    "referenceCategory": "PACKAGE_MANAGER",
+                    "referenceType": "purl",
+                    "referenceLocator": "pkg:github/mavlink/qgroundcontrol",
+                }
+            ],
+        }
+    ]
+    relationships = [
+        {
+            "spdxElementId": "SPDXRef-DOCUMENT",
+            "relationshipType": "DESCRIBES",
+            "relatedSpdxElement": root_id,
+        }
+    ]
+
+    for index, component in enumerate(cyclonedx["components"], start=1):
+        safe_name = re.sub(r"[^A-Za-z0-9.-]", "-", component["name"])
+        package_id = f"SPDXRef-Package-{safe_name}-{index}"
+        external_references = component.get("externalReferences", [])
+        package = {
+            "SPDXID": package_id,
+            "name": component["name"],
+            "versionInfo": component["version"],
+            "downloadLocation": (
+                external_references[0]["url"] if external_references else "NOASSERTION"
+            ),
+            "filesAnalyzed": False,
+            "licenseConcluded": "NOASSERTION",
+            "licenseDeclared": component.get("licenses", [{}])[0].get("expression", "NOASSERTION"),
+            "copyrightText": "NOASSERTION",
+            "externalRefs": [
+                {
+                    "referenceCategory": "PACKAGE_MANAGER",
+                    "referenceType": "purl",
+                    "referenceLocator": component["purl"],
+                }
+            ],
+        }
+        packages.append(package)
+        relationships.append(
+            {
+                "spdxElementId": root_id,
+                "relationshipType": "DEPENDS_ON",
+                "relatedSpdxElement": package_id,
+            }
+        )
+
+    return {
+        "spdxVersion": "SPDX-2.2",
+        "dataLicense": "CC0-1.0",
+        "SPDXID": "SPDXRef-DOCUMENT",
+        "name": "QGroundControl CPM dependencies",
+        "documentNamespace": (
+            f"https://github.com/mavlink/qgroundcontrol/dependency-sbom/{uuid.uuid4()}"
+        ),
+        "creationInfo": {
+            "created": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "creators": ["Tool: generate_cpm_sbom-1.0.0"],
+        },
+        "packages": packages,
+        "relationships": relationships,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--build-dir", type=Path, required=True, help="CMake build directory")
+    parser.add_argument("--format", choices=("cyclonedx", "spdx"), default="cyclonedx")
     parser.add_argument("--output", "-o", type=Path, help="Output file (default: stdout)")
+    parser.add_argument(
+        "--require-components",
+        action="store_true",
+        help="Fail when the CMake cache contains no CPM dependencies",
+    )
     args = parser.parse_args()
 
-    sbom = generate_sbom(args.build_dir)
+    sbom = generate_spdx(args.build_dir) if args.format == "spdx" else generate_sbom(args.build_dir)
+    count = len(sbom["packages"]) - 1 if args.format == "spdx" else len(sbom["components"])
+    if args.require_components and not count:
+        print("Error: CPM dependency SBOM contains no components", file=sys.stderr)
+        return 1
+
     output = json.dumps(sbom, indent=2)
 
     if args.output:
         args.output.write_text(output, encoding="utf-8")
-        print(f"SBOM written to {args.output} ({len(sbom['components'])} components)")
+        print(f"SBOM written to {args.output} ({count} components)")
     else:
         print(output)
 

@@ -11,21 +11,24 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         repository: ${{ inputs.repo }}
         ref: ${{ inputs.ref }}
         path: build-action
+        persist-credentials: false
 
-    - uses: actions/setup-node@v6
+    - uses: actions/setup-node@v7
       with:
-        node-version: 22
-        cache: npm
-        cache-dependency-path: build-action/package-lock.json
+        node-version: 'lts/*'
 
     - name: Build ${{ inputs.repo }}
       run: |
         cd build-action
-        npm ci || npm install
+        if [[ -f package-lock.json || -f npm-shrinkwrap.json ]]; then
+          npm ci
+        else
+          npm install
+        fi
         npm run build
       shell: bash

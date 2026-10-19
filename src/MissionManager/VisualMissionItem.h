@@ -8,6 +8,7 @@
 #include "MissionFlightStatus.h"
 #include "QGCGeoBoundingCube.h"
 #include "QGCMAVLinkTypes.h"
+#include "QGroundControlQmlGlobal.h"
 #include "QmlObjectListModel.h"
 
 class FlightPathSegment;
@@ -66,6 +67,7 @@ public:
     Q_PROPERTY(bool             isSurveyItem                        READ isSurveyItem                                                       )                                                   ///< true: Survey item special case for editing center position through mission item list menue
     Q_PROPERTY(QString          editorQml                           MEMBER _editorQml                                                       CONSTANT)                                           ///< Qml code for editing this item
     Q_PROPERTY(QString          mapVisualQML                        READ mapVisualQML                                                       CONSTANT)                                           ///< QMl code for map visuals
+    Q_PROPERTY(QString          geoMapVisualQML                     READ geoMapVisualQML                                                    CONSTANT)                                           ///< QGroundControl.GeoMap-native QML code for this item's visuals, empty if none
     Q_PROPERTY(double           specifiedFlightSpeed                READ specifiedFlightSpeed                                               NOTIFY specifiedFlightSpeedChanged)                 ///< NaN for not specified
     Q_PROPERTY(double           specifiedGimbalYaw                  READ specifiedGimbalYaw                                                 NOTIFY specifiedGimbalYawChanged)                   ///< NaN for not specified
     Q_PROPERTY(double           specifiedGimbalPitch                READ specifiedGimbalPitch                                               NOTIFY specifiedGimbalPitchChanged)                 ///< NaN for not specified
@@ -180,6 +182,14 @@ public:
     /// @return The QML resource file which contains the control which visualizes the item on the map.
     virtual QString mapVisualQML(void) const = 0;
 
+    /// @return The QGroundControl.GeoMap-native QML resource file which visualizes the item on
+    /// GeoMap, or an empty string if this item type has none (the default).
+    virtual QString geoMapVisualQML(void) const { return QString(); }
+
+    /// FlyView items normally skip terrain queries to save resources. Override to return true
+    /// when the item's AMSL altitude cannot be computed without the terrain height (e.g. terrain frame).
+    virtual bool terrainAltitudeRequiredInFlyView(void) const { return false; }
+
     /// Returns the mission items associated with the complex item. Caller is responsible for freeing.
     ///     @param items List to append to
     ///     @param missionItemParent Parent object for newly created MissionItems
@@ -187,6 +197,9 @@ public:
 
     /// Adjust the altitude of the item if appropriate to the new altitude.
     virtual void applyNewAltitude(double newAltitude) = 0;
+
+    /// @return true: The altitude set by applyNewAltitude is in the specified altitude frame
+    virtual bool usesAltitudeFrame(QGroundControlQmlGlobal::AltitudeFrame altitudeFrame) const = 0;
 
     /// @return Amount of additional time delay in seconds needed to fly this item
     virtual double additionalTimeDelay(void) const = 0;

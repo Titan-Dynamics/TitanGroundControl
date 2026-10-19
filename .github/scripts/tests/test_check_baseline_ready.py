@@ -2,13 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
-import pytest
-
 from check_baseline_ready import evaluate_readiness
-from common.gh_actions import write_github_output
-
 
 PLATFORMS = ["Linux", "Windows", "MacOS", "Android"]
 
@@ -76,17 +70,53 @@ def test_evaluate_readiness_filters_by_event() -> None:
     assert failed == []
 
 
-def test_write_output_multiline_uses_collision_resistant_delimiter(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    out_path = tmp_path / "out.txt"
-    monkeypatch.setenv("GITHUB_OUTPUT", str(out_path))
+def test_terminal_failures_are_complete_but_not_successful():
+    from qgc_tools.workflow_runs import evaluate_runs
 
-    value = "line1\nEOF_missing_deadbeef\ntail"
-    write_github_output({"missing": value})
+    for conclusion in (
+        "timed_out",
+        "action_required",
+        "startup_failure",
+        "skipped",
+        "cancelled",
+        "failure",
+        "neutral",
+    ):
+        runs = [_run("Linux", conclusion=conclusion)]
+        assert evaluate_runs(runs, ["Linux"], "push", require_success=False) == (
+            True,
+            [],
+            [],
+            ["Linux"],
+        )
+        assert not evaluate_runs(runs, ["Linux"], "push")[0]
 
-    text = out_path.read_text(encoding="utf-8")
-    assert "missing<<EOF_missing_" in text
-    assert "EOF_missing\n" not in text
-    assert "line1\nEOF_missing_deadbeef\ntail" in text
+
+def test_gate_snapshot_preserves_latest_precommit_and_platform_runs(tmp_path, monkeypatch):
+    import json
+
+    from check_baseline_ready import main
+
+    runs = [_run("Linux"), _run("pre-commit"), _run("Linux", created_at="2026-02-23T00:00:00Z")]
+    source = tmp_path / "runs.json"
+    target = tmp_path / "snapshot.json"
+    source.write_text(json.dumps(runs))
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "out"))
+    assert (
+        main(
+            [
+                "--repo",
+                "o/r",
+                "--head-sha",
+                "abc",
+                "--platform-workflows",
+                "Linux",
+                "--runs-input",
+                str(source),
+                "--runs-cache",
+                str(target),
+            ]
+        )
+        == 0
+    )
+    assert json.loads(target.read_text()) == runs[:2]

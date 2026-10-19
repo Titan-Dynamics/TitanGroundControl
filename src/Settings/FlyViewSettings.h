@@ -14,6 +14,8 @@ public:
 
     DEFINE_SETTING_NAME_GROUP()
 
+    DEFINE_SETTINGFACT(useGeoMapEngine)
+    DEFINE_SETTINGFACT(geoMapDebugUI)
     DEFINE_SETTINGFACT(guidedMinimumAltitude)
     DEFINE_SETTINGFACT(guidedMaximumAltitude)
     DEFINE_SETTINGFACT(showLogReplayStatusBar)
@@ -32,4 +34,5 @@ public:
     DEFINE_SETTINGFACT(requestControlTimeout)
     DEFINE_SETTINGFACT(enableAutomaticMissionPopups)
     DEFINE_SETTINGFACT(toolDrawerFullWidth)
+    DEFINE_SETTINGFACT(allowForceArm)
 };

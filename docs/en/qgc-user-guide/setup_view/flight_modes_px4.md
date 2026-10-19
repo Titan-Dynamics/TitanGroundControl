@@ -11,8 +11,6 @@ In order to set up flight modes you must already have
 
 To access this section, select the **Gear** icon (Vehicle Setup) in the top toolbar and then **Flight Modes** in the sidebar.
 
-![Flight modes single-channel](../../../assets/setup/flight_modes/px4_single_channel.jpg)
-
 ## Flight Mode Settings
 
 The screen allows you to specify a "mode" channel and select up to 6 flight modes that will be activated based on the value sent on the channel.
@@ -22,8 +20,6 @@ The steps are:
 
 1. Turn on your RC transmitter.
 1. Select the **Gear** icon (Vehicle Setup) in the top toolbar and then **Flight Modes** in the sidebar.
-
-   ![Flight modes single-channel](../../../assets/setup/flight_modes/px4_single_channel.jpg)
 
 1. Specify _Flight Mode Settings_:
 
@@ -46,4 +42,4 @@ All values are automatically saved as they are changed.
 
 ## See Also
 
-- [PX4 Flight Modes](https://docs.px4.io/en/flight_modes/)
+- [PX4 Flight Modes](https://docs.px4.io/main/en/flight_modes/)

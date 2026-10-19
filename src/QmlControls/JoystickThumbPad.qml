@@ -14,6 +14,7 @@ Item {
     property bool   yAxisReCenter:          false               ///< true: snaps back to center on release, false: stays at current position on release
     property real   xPositionDelta:         0                   ///< Amount to move the control on x axis
     property real   yPositionDelta:         0                   ///< Amount to move the control on y axis
+    property bool   touchActive:            false               ///< true: thumb is currently down on the pad
 
     property real   _centerXY:              width / 2
     property bool   _processTouchPoints:    false
@@ -204,7 +205,7 @@ Item {
         sourceSize.height:          height
         mipmap:                     true
         fillMode:                   Image.PreserveAspectFit
-        source:                     "/res/chevron-up.svg"
+        source:                     "/res/chevron-double-up.svg"
         anchors.top:                parent.top
         anchors.topMargin:          ScreenTools.defaultFontPixelWidth
         anchors.horizontalCenter:   parent.horizontalCenter
@@ -218,7 +219,7 @@ Item {
         sourceSize.height:          height
         mipmap:                     true
         fillMode:                   Image.PreserveAspectFit
-        source:                     "/res/chevron-down.svg"
+        source:                     "/res/chevron-double-down.svg"
         anchors.bottom:             parent.bottom
         anchors.bottomMargin:       ScreenTools.defaultFontPixelWidth
         anchors.horizontalCenter:   parent.horizontalCenter
@@ -256,7 +257,17 @@ Item {
         minimumTouchPoints:     1
         maximumTouchPoints:     1
         touchPoints:            [ TouchPoint { id: touchPoint } ]
-        onPressed:              touchPoints => _joyRoot.thumbDown(touchPoints)
-        onReleased:             _joyRoot.reCenter()
+        onPressed: touchPoints => {
+            _joyRoot.touchActive = true
+            _joyRoot.thumbDown(touchPoints)
+        }
+        onReleased: {
+            _joyRoot.touchActive = false
+            _joyRoot.reCenter()
+        }
+        onCanceled: {
+            _joyRoot.touchActive = false
+            _joyRoot.reCenter()
+        }
     }
 }

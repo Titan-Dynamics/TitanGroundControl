@@ -25,6 +25,9 @@ inputs:
     description: Optional path to run artifact metadata JSON (skips per-run artifact API calls)
     required: false
     default: ''
+  require-artifacts:
+    description: Fail if no distributable artifacts are available for a baseline
+    default: 'false'
 
 runs:
   using: composite
@@ -42,22 +45,16 @@ runs:
         OUTPUT_FILE: ${{ inputs.output-file }}
         RUNS_FILE: ${{ inputs.runs-file }}
         ARTIFACTS_FILE: ${{ inputs.artifacts-file }}
+        REQUIRE_ARTIFACTS: ${{ inputs.require-artifacts }}
       run: |
-        python3 -c "
-        import os, subprocess, sys
-        args = ['${GITHUB_WORKSPACE}/.github/scripts/collect_artifact_sizes.py',
-                '--repo', os.environ['REPO'],
-                '--head-sha', os.environ['HEAD_SHA'],
-                '--platform-workflows', os.environ['WORKFLOWS'],
-                '--output-file', os.environ['OUTPUT_FILE']]
-        event = os.environ.get('EVENT', '')
-        if event:
-            args += ['--event', event]
-        runs = os.environ.get('RUNS_FILE', '')
-        if runs and os.path.isfile(runs):
-            args += ['--runs-file', runs]
-        artifacts = os.environ.get('ARTIFACTS_FILE', '')
-        if artifacts and os.path.isfile(artifacts):
-            args += ['--artifacts-file', artifacts]
-        sys.exit(subprocess.run([sys.executable] + args).returncode)
-        "
+        set -euo pipefail
+        cmd=(python3 "${GITHUB_WORKSPACE}/.github/scripts/collect_artifact_sizes.py"
+             --repo "$REPO"
+             --head-sha "$HEAD_SHA"
+             --platform-workflows "$WORKFLOWS"
+             --output-file "$OUTPUT_FILE")
+        [[ -n "$EVENT" ]] && cmd+=(--event "$EVENT")
+        [[ -n "$RUNS_FILE" && -f "$RUNS_FILE" ]] && cmd+=(--runs-file "$RUNS_FILE")
+        [[ -n "$ARTIFACTS_FILE" && -f "$ARTIFACTS_FILE" ]] && cmd+=(--artifacts-file "$ARTIFACTS_FILE")
+        [[ "$REQUIRE_ARTIFACTS" == "true" ]] && cmd+=(--require-artifacts)
+        "${cmd[@]}"

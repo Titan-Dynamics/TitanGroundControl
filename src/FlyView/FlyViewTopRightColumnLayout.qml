@@ -39,8 +39,6 @@ ColumnLayout {
         Layout.alignment:   Qt.AlignRight
         sourceComponent:    globals.activeVehicle && globals.activeVehicle.cameraManager ? photoVideoControlComponent : undefined
 
-        property real rightEdgeCenterInset: visible ? parent.width - x : 0
-
         Component {
             id: photoVideoControlComponent
 

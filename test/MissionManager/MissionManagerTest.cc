@@ -1,5 +1,6 @@
 #include "MissionManagerTest.h"
 
+#include <QtCore/QRegularExpression>
 #include <QtTest/QSignalSpy>
 #include <iterator>
 
@@ -27,6 +28,20 @@ const MissionManagerTest::TestCase_t MissionManagerTest::_rgTestCases[] = {
       MAV_FRAME_MISSION}},
 };
 const size_t MissionManagerTest::_cTestCases = sizeof(_rgTestCases) / sizeof(_rgTestCases[0]);
+
+void MissionManagerTest::init()
+{
+    MissionControllerManagerTest::init();
+    // All failure-handling tests deliberately trigger mission transfer failures which
+    // cause showAppMessage() debug logs and a warning. Ignore them for the whole fixture.
+    ignoreLogMessage("API.QGCApplication.AppMessage", QtDebugMsg,
+                     QRegularExpression("Mission transfer failed"));
+    ignoreLogMessage("Vehicle.Vehicle", QtWarningMsg,
+                     QRegularExpression("Mission transfer failed"));
+    // ArduPilot metadata includes an invalid enum value for RTL_CONE_SLOPE; skip warning is expected.
+    ignoreLogMessage("FirmwarePlugin.ParameterMetaData", QtWarningMsg,
+                     QRegularExpression("Skipping invalid enum value"));
+}
 
 void MissionManagerTest::_writeItems(MockLinkMissionItemHandler::FailureMode_t failureMode,
                                      MAV_MISSION_RESULT failureAckResult, bool shouldFail)
@@ -65,7 +80,7 @@ void MissionManagerTest::_writeItems(MockLinkMissionItemHandler::FailureMode_t f
         //      inProgressChanged(false) signal
         //      error(errorCode, QString) signal
         QVERIFY_WAIT_SIGNAL((*_multiSpyMissionManager), "inProgressChanged", _missionManagerSignalWaitTime);
-        QVERIFY(_multiSpyMissionManager->emittedByMask(_multiSpyMissionManager->mask("inProgressChanged", "error")));
+        QVERIFY(_multiSpyMissionManager->emitted("inProgressChanged", "error"));
         // Validate inProgressChanged signal value
         _checkInProgressValues(false);
         // Validate error signal values
@@ -79,8 +94,7 @@ void MissionManagerTest::_writeItems(MockLinkMissionItemHandler::FailureMode_t f
         //      inProgressChanged(false) signal
         //      sendComplete signal
         QVERIFY_WAIT_SIGNAL((*_multiSpyMissionManager), "sendComplete", _missionManagerSignalWaitTime);
-        QVERIFY(_multiSpyMissionManager->emittedByMask(
-            _multiSpyMissionManager->mask("inProgressChanged", "sendComplete")));
+        QVERIFY(_multiSpyMissionManager->emitted("inProgressChanged", "sendComplete"));
         // Validate inProgressChanged signal value
         _checkInProgressValues(false);
         // Validate item count in mission manager
@@ -113,8 +127,7 @@ void MissionManagerTest::_roundTripItems(MockLinkMissionItemHandler::FailureMode
         //      error(errorCode, QString) signal
         //      newMissionItemsAvailable signal
         QVERIFY_WAIT_SIGNAL((*_multiSpyMissionManager), "inProgressChanged", _missionManagerSignalWaitTime);
-        QVERIFY(_multiSpyMissionManager->emittedByMask(
-            _multiSpyMissionManager->mask("newMissionItemsAvailable", "inProgressChanged", "error")));
+        QVERIFY(_multiSpyMissionManager->emitted("newMissionItemsAvailable", "inProgressChanged", "error"));
         // Validate inProgressChanged signal value
         _checkInProgressValues(false);
         // Validate error signal values
@@ -128,8 +141,7 @@ void MissionManagerTest::_roundTripItems(MockLinkMissionItemHandler::FailureMode
         //      inProgressChanged(false) signal to signal completion
         //      newMissionItemsAvailable signal
         QVERIFY_WAIT_SIGNAL((*_multiSpyMissionManager), "inProgressChanged", _missionManagerSignalWaitTime);
-        QVERIFY(_multiSpyMissionManager->emittedByMask(
-            _multiSpyMissionManager->mask("newMissionItemsAvailable", "inProgressChanged")));
+        QVERIFY(_multiSpyMissionManager->emitted("newMissionItemsAvailable", "inProgressChanged"));
         _checkInProgressValues(false);
     }
     _multiSpyMissionManager->clearAllSignals();
@@ -239,12 +251,18 @@ void MissionManagerTest::_testReadFailureHandlingWorker()
 
 void MissionManagerTest::_testWriteFailureHandlingAPM()
 {
+    if (!apmFirmwareSupported()) {
+        QSKIP("ArduPilot support not registered in this build");
+    }
     _initForFirmwareType(MAV_AUTOPILOT_ARDUPILOTMEGA);
     _testWriteFailureHandlingWorker();
 }
 
 void MissionManagerTest::_testReadFailureHandlingAPM()
 {
+    if (!apmFirmwareSupported()) {
+        QSKIP("ArduPilot support not registered in this build");
+    }
     _initForFirmwareType(MAV_AUTOPILOT_ARDUPILOTMEGA);
     _testReadFailureHandlingWorker();
 }

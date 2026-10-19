@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Tests for tools/common/gh_actions.py."""
 
 from __future__ import annotations
@@ -6,113 +5,114 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+from pathlib import Path
 from unittest.mock import patch
 
-import httpx
+import common.gh_actions as mod
+import pytest
 
-from common import gh_actions as mod
-
-
-def _cp(stdout: str = "", stderr: str = "", returncode: int = 0) -> subprocess.CompletedProcess:
-    return subprocess.CompletedProcess(args=["gh"], returncode=returncode, stdout=stdout, stderr=stderr)
+from ._helpers import completed
 
 
-def _mock_response(
-    data: dict,
-    next_url: str = "",
-    status_code: int = 200,
-    extra_headers: dict[str, str] | None = None,
-) -> httpx.Response:
-    headers = {}
-    if next_url:
-        headers["link"] = f'<{next_url}>; rel="next"'
-    if extra_headers:
-        headers.update(extra_headers)
-    request = httpx.Request("GET", "https://api.github.com/test")
-    resp = httpx.Response(status_code, json=data, headers=headers, request=request)
-    return resp
+def test_gh_uses_text_safe_subprocess_wrapper() -> None:
+    result = subprocess.CompletedProcess(["gh", "api", "rate_limit"], 0, "{}", "")
+    with patch.object(mod, "run_captured", return_value=result) as run:
+        assert mod.gh("api", "rate_limit") is result
+    run.assert_called_once_with(["gh", "api", "rate_limit"], check=True, timeout=None)
 
 
-def test_parse_json_documents_handles_paginated_stream() -> None:
-    payload = (
-        json.dumps({"workflow_runs": [{"id": 1}]})
-        + "\n"
-        + json.dumps({"workflow_runs": [{"id": 2}]})
+def test_gh_read_retry_recovers_from_transient_server_error() -> None:
+    command = ["gh", "api", "rate_limit"]
+    failure = subprocess.CalledProcessError(1, command, stderr="gh: HTTP 502: Bad Gateway")
+    success = subprocess.CompletedProcess(command, 0, "{}", "")
+    with (
+        patch("common.proc.subprocess.run", side_effect=[failure, success]) as run,
+        patch("common.proc.time.sleep"),
+    ):
+        result = mod.gh("api", "rate_limit", retry_transient=True, max_attempts=2)
+    assert result.stdout == "{}"
+    assert run.call_count == 2
+
+
+def test_gh_read_retry_exhausts_rate_limit_failures() -> None:
+    command = ["gh", "api", "rate_limit"]
+    failure = subprocess.CalledProcessError(
+        1,
+        command,
+        stderr="gh: API rate limit exceeded (HTTP 429)",
     )
-    docs = mod.parse_json_documents(payload)
-    assert [doc["workflow_runs"][0]["id"] for doc in docs] == [1, 2]
+    with (
+        patch("common.proc.subprocess.run", side_effect=failure) as run,
+        patch("common.proc.time.sleep"),
+        pytest.raises(subprocess.CalledProcessError),
+    ):
+        mod.gh("api", "rate_limit", retry_transient=True, max_attempts=3)
+    assert run.call_count == 3
 
 
-def test_parse_json_documents_raises_on_invalid_json() -> None:
-    payload = '{"workflow_runs":[{"id":1}]}\nnot-json'
-    try:
-        mod.parse_json_documents(payload)
-    except ValueError as exc:
-        assert "Failed to parse GitHub API JSON output near:" in str(exc)
-    else:
-        raise AssertionError("Expected ValueError for invalid JSON stream")
+def test_gh_does_not_retry_mutation_by_default() -> None:
+    failure = subprocess.CompletedProcess(["gh"], 1, "", "HTTP 503")
+    with patch.object(mod, "run_captured", return_value=failure) as run:
+        result = mod.gh("api", "repos/owner/repo/issues/1", "-X", "PATCH", check=False)
+    assert result is failure
+    run.assert_called_once()
 
 
-def test_list_workflow_runs_for_sha_uses_get_method() -> None:
-    payload = json.dumps({"workflow_runs": [{"id": 1, "name": "Linux"}]})
-    with patch.dict(os.environ, {"QGC_GH_API_MODE": "gh"}, clear=False):
-        with patch.object(mod, "gh", return_value=_cp(stdout=payload)) as gh_mock:
-            runs = mod.list_workflow_runs_for_sha("owner/repo", "abc123")
+def test_gh_rejects_retry_for_mutation() -> None:
+    with (
+        patch.object(mod, "run_with_retry") as run,
+        pytest.raises(ValueError, match="read-only"),
+    ):
+        mod.gh("api", "repos/owner/repo/issues/1", "-X", "PATCH", retry_transient=True)
+    run.assert_not_called()
+
+
+def test_gh_rejects_retry_for_non_api_command() -> None:
+    with (
+        patch.object(mod, "run_with_retry") as run,
+        pytest.raises(ValueError, match="read-only"),
+    ):
+        mod.gh("workflow", "run", "build.yml", retry_transient=True)
+    run.assert_not_called()
+
+
+def test_list_workflow_runs_for_sha_uses_jq_get_method() -> None:
+    payload = json.dumps({"id": 1, "name": "Linux"})
+    with patch.object(mod, "gh", return_value=completed(stdout=payload)) as gh_mock:
+        runs = mod.list_workflow_runs_for_sha("owner/repo", "abc123")
 
     assert runs == [{"id": 1, "name": "Linux"}]
     called_args = gh_mock.call_args[0]
     assert "--method" in called_args
     assert "GET" in called_args
+    assert ".workflow_runs[]?" in called_args
+    assert gh_mock.call_args.kwargs["retry_transient"] is True
 
 
-def test_list_workflow_runs_for_sha_http_mode() -> None:
-    first = _mock_response(
-        {"workflow_runs": [{"id": 1, "name": "Linux"}]},
-        next_url="https://api.github.com/next",
+def test_list_workflow_runs_for_sha_unpacks_ndjson_stream() -> None:
+    payload = (
+        json.dumps({"id": 1, "name": "Linux"}) + "\n" + json.dumps({"id": 2, "name": "Windows"})
     )
-    second = _mock_response({"workflow_runs": [{"id": 2, "name": "Windows"}]})
-
-    with patch.dict(os.environ, {"QGC_GH_API_MODE": "http", "GH_TOKEN": "token"}, clear=False):
-        with patch.object(mod, "_build_http_client") as mock_client:
-            client = mock_client.return_value.__enter__.return_value
-            client.get.side_effect = [first, second]
-            with patch.object(mod, "gh") as gh_mock:
-                runs = mod.list_workflow_runs_for_sha("owner/repo", "abc123")
+    with patch.object(mod, "gh", return_value=completed(stdout=payload)) as gh_mock:
+        runs = mod.list_workflow_runs_for_sha("owner/repo", "abc123")
 
     assert [run["id"] for run in runs] == [1, 2]
-    gh_mock.assert_not_called()
+    gh_mock.assert_called_once()
 
 
-def test_list_workflow_runs_for_sha_http_mode_retries_retryable_status() -> None:
-    first = _mock_response(
-        {"message": "try again"},
-        status_code=503,
-        extra_headers={"Retry-After": "0"},
-    )
-    second = _mock_response({"workflow_runs": [{"id": 7, "name": "Linux"}]})
-
-    with patch.dict(os.environ, {"QGC_GH_API_MODE": "http", "GH_TOKEN": "token"}, clear=False):
-        with patch.object(mod, "_build_http_client") as mock_client:
-            client = mock_client.return_value.__enter__.return_value
-            client.get.side_effect = [first, second]
-            with patch.object(mod.time, "sleep") as sleep_mock:
-                runs = mod.list_workflow_runs_for_sha("owner/repo", "abc123")
-
-    assert runs == [{"id": 7, "name": "Linux"}]
-    assert client.get.call_count == 2
-    sleep_mock.assert_called_once_with(1.0)
-
-
-def test_list_run_artifacts_parses_paginated_stream() -> None:
+def test_list_run_artifacts_parses_ndjson_stream() -> None:
     payload = (
-        json.dumps({"artifacts": [{"name": "QGroundControl", "size_in_bytes": 1}]})
+        json.dumps({"name": "QGroundControl", "size_in_bytes": 1})
         + "\n"
-        + json.dumps({"artifacts": [{"name": "QGroundControl2", "size_in_bytes": 2}]})
+        + json.dumps({"name": "QGroundControl2", "size_in_bytes": 2})
     )
-    with patch.object(mod, "gh", return_value=_cp(stdout=payload)) as gh_mock:
+    with patch.object(mod, "gh", return_value=completed(stdout=payload)) as gh_mock:
         artifacts = mod.list_run_artifacts("owner/repo", 77)
 
     assert [a["name"] for a in artifacts] == ["QGroundControl", "QGroundControl2"]
+    called_args = gh_mock.call_args[0]
+    assert ".artifacts[]?" in called_args
+    assert gh_mock.call_args.kwargs["retry_transient"] is True
     gh_mock.assert_called_once()
 
 
@@ -123,6 +123,26 @@ def test_list_run_artifacts_rejects_invalid_run_id() -> None:
         assert "run_id must be an integer" in str(exc)
     else:
         raise AssertionError("Expected ValueError for invalid run_id")
+
+
+def test_require_repository_prefers_override_and_requires_value(capsys) -> None:
+    with patch.dict(
+        os.environ,
+        {"GH_REPO": "override/repo", "GITHUB_REPOSITORY": "event/repo"},
+        clear=True,
+    ):
+        assert mod.require_repository() == "override/repo"
+    with patch.dict(os.environ, {"GITHUB_REPOSITORY": "event/repo"}, clear=True):
+        assert mod.require_repository() == "event/repo"
+    with patch.dict(
+        os.environ,
+        {"GH_REPO": "  ", "GITHUB_REPOSITORY": " fallback/repo "},
+        clear=True,
+    ):
+        assert mod.require_repository() == "fallback/repo"
+    with patch.dict(os.environ, {}, clear=True), pytest.raises(SystemExit):
+        mod.require_repository()
+    assert capsys.readouterr().out == "::error::GH_REPO or GITHUB_REPOSITORY must be set\n"
 
 
 class TestIsForkPr:
@@ -160,15 +180,19 @@ class TestResolveCachePolicy:
     def test_auto_same_repo_pr(self) -> None:
         env = {"EVENT_NAME": "pull_request", "PR_REPO": "owner/repo", "THIS_REPO": "owner/repo"}
         with patch.dict(os.environ, env, clear=False):
-            assert mod.resolve_cache_policy("auto") == "false"
+            assert mod.resolve_cache_policy("auto") == "true"
 
     def test_auto_fork_pr(self) -> None:
         env = {"EVENT_NAME": "pull_request", "PR_REPO": "fork/repo", "THIS_REPO": "owner/repo"}
         with patch.dict(os.environ, env, clear=False):
-            assert mod.resolve_cache_policy("auto") == "false"
+            assert mod.resolve_cache_policy("auto") == "true"
 
     def test_auto_pull_request_target(self) -> None:
-        env = {"EVENT_NAME": "pull_request_target", "PR_REPO": "owner/repo", "THIS_REPO": "owner/repo"}
+        env = {
+            "EVENT_NAME": "pull_request_target",
+            "PR_REPO": "owner/repo",
+            "THIS_REPO": "owner/repo",
+        }
         with patch.dict(os.environ, env, clear=False):
             assert mod.resolve_cache_policy("auto") == "false"
 
@@ -179,6 +203,24 @@ class TestResolveCachePolicy:
     def test_auto_workflow_dispatch(self) -> None:
         with patch.dict(os.environ, {"EVENT_NAME": "workflow_dispatch"}, clear=False):
             assert mod.resolve_cache_policy("auto") == "true"
+
+
+@pytest.mark.parametrize("cache_dir", [".ccache", ".cache/moccache", ".cache/CPM", ".qt"])
+def test_cache_path_survives_runner_workspace_changes(monkeypatch, tmp_path, cache_dir):
+    paths = []
+    for root in ("actions-runner/_work/qgc/qgc", "a/qgc/qgc"):
+        workspace = tmp_path / root
+        monkeypatch.setenv("GITHUB_WORKSPACE", str(workspace))
+        paths.append(mod.github_cache_path(workspace / cache_dir))
+        assert mod.github_cache_path(Path(cache_dir)) == cache_dir
+    assert paths == [cache_dir, cache_dir]
+
+
+def test_external_cache_path_is_not_relocated(monkeypatch, tmp_path):
+    monkeypatch.setenv("GITHUB_WORKSPACE", str(tmp_path / "workspace"))
+    external = tmp_path / "sdk"
+    assert mod.github_cache_path(external) == external.as_posix()
+    assert mod.github_cache_path(Path("../sdk")) == external.as_posix()
 
 
 class TestWriteGithubOutput:
@@ -200,6 +242,17 @@ class TestWriteGithubOutput:
         assert "body<<EOF_body_" in content
         assert "line1\nline2\n" in content
 
+    def test_multiline_delimiter_resists_collision(self, tmp_path) -> None:
+        out = tmp_path / "output"
+        out.touch()
+        value = "line1\nEOF_body_deadbeef\ntail"
+        with patch.dict(os.environ, {"GITHUB_OUTPUT": str(out)}, clear=False):
+            mod.write_github_output({"body": value})
+        content = out.read_text()
+        assert "body<<EOF_body_" in content
+        assert "EOF_body\n" not in content
+        assert value in content
+
     def test_noop_without_env(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
             mod.write_github_output({"key": "val"})
@@ -216,6 +269,30 @@ class TestWriteStepSummary:
     def test_noop_without_env(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
             mod.write_step_summary("test")
+
+
+class TestAnnotations:
+    def test_gh_error_format(self, capsys) -> None:
+        mod.gh_error("boom")
+        assert capsys.readouterr().out == "::error::boom\n"
+
+    def test_gh_warning_format(self, capsys) -> None:
+        mod.gh_warning("careful")
+        assert capsys.readouterr().out == "::warning::careful\n"
+
+    def test_gh_notice_format(self, capsys) -> None:
+        mod.gh_notice("fyi")
+        assert capsys.readouterr().out == "::notice::fyi\n"
+
+    def test_escapes_newlines_and_percent(self, capsys) -> None:
+        mod.gh_error("a\nb\rc%d")
+        assert capsys.readouterr().out == "::error::a%0Ab%0Dc%25d\n"
+
+    def test_emits_to_stdout_not_stderr(self, capsys) -> None:
+        mod.gh_warning("x")
+        captured = capsys.readouterr()
+        assert captured.out == "::warning::x\n"
+        assert captured.err == ""
 
 
 class TestAppendGithubEnv:

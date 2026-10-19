@@ -2,10 +2,12 @@
 #include "MAVLinkLib.h"
 #include "StateTestCommon.h"
 
+#include "Fixtures/RAIIFixtures.h"
 #include "QGCStateMachine.h"
 #include "MultiVehicleManager.h"
 #include "MockLink.h"
 
+#include <QtCore/QRegularExpression>
 #include <QtTest/QSignalSpy>
 
 void RetryableRequestMessageStateTest::_testSuccessFirstAttempt()
@@ -48,6 +50,13 @@ void RetryableRequestMessageStateTest::_testSuccessFirstAttempt()
 
 void RetryableRequestMessageStateTest::_testRetryOnFailure()
 {
+    // FailRequestMessageCommandAcceptedMsgNotSent triggers duplicate-request warnings and retries exhausted.
+    ignoreLogMessage("Vehicle.RequestMessageCoordinator", QtWarningMsg,
+                     QRegularExpression("failing exact duplicate compId:msgId"));
+    ignoreLogMessage("Utilities.QGCStateMachine", QtWarningMsg,
+                     QRegularExpression("^Timeout \"TestMachine:RequestDebug\""));
+    ignoreLogMessage("Utilities.StateMachine.RetryableRequestMessageState", QtWarningMsg,
+                     QRegularExpression("Max retries exhausted"));
     _connectMockLinkNoInitialConnectSequence();
 
     Vehicle* vehicle = MultiVehicleManager::instance()->activeVehicle();
@@ -94,6 +103,14 @@ void RetryableRequestMessageStateTest::_testRetryOnFailure()
 
 void RetryableRequestMessageStateTest::_testMaxRetriesExhausted()
 {
+    TestFixtures::MavCommandAckTimeoutFixture shortAckTimeout;
+    // FailRequestMessageCommandNoResponse triggers duplicate-request warnings and retries exhausted.
+    ignoreLogMessage("Vehicle.RequestMessageCoordinator", QtWarningMsg,
+                     QRegularExpression("failing exact duplicate compId:msgId"));
+    ignoreLogMessage("Utilities.QGCStateMachine", QtWarningMsg,
+                     QRegularExpression("^Timeout \"TestMachine:RequestDebug\""));
+    ignoreLogMessage("Utilities.StateMachine.RetryableRequestMessageState", QtWarningMsg,
+                     QRegularExpression("Max retries exhausted"));
     _connectMockLinkNoInitialConnectSequence();
 
     Vehicle* vehicle = MultiVehicleManager::instance()->activeVehicle();
@@ -135,6 +152,14 @@ void RetryableRequestMessageStateTest::_testMaxRetriesExhausted()
 
 void RetryableRequestMessageStateTest::_testFailOnMaxRetries()
 {
+    TestFixtures::MavCommandAckTimeoutFixture shortAckTimeout;
+    // Timeout + no-response mode causes MavCommandQueue and state machine to emit expected warnings.
+    ignoreLogMessage("Utilities.StateMachine.RetryableRequestMessageState", QtWarningMsg,
+                     QRegularExpression("Max retries exhausted"));
+    ignoreLogMessage("Utilities.QGCStateMachine", QtWarningMsg,
+                     QRegularExpression("^Timeout \"TestMachine:RequestDebug\""));
+    ignoreLogMessage("Vehicle.MavCommandQueue", QtWarningMsg,
+                     QRegularExpression("Giving up sending command after max retries:"));
     _connectMockLinkNoInitialConnectSequence();
 
     Vehicle* vehicle = MultiVehicleManager::instance()->activeVehicle();

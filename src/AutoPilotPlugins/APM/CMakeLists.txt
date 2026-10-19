@@ -31,6 +31,8 @@ target_sources(${CMAKE_PROJECT_NAME}
         APMHeliComponent.h
         APMLightsComponent.cc
         APMLightsComponent.h
+        APMLoggingComponent.cc
+        APMLoggingComponent.h
         APMMotorComponent.cc
         APMMotorComponent.h
         APMServoComponent.cc
@@ -62,7 +64,6 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_
 # ----------------------------------------------------------------------------
 # Code-generation: produce QML config pages from VehicleConfig.json definitions
 # ----------------------------------------------------------------------------
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 set(APM_CONFIG_QML_GENERATOR_DIR "${CMAKE_SOURCE_DIR}/tools/generators/config_qml")
 set(APM_CONFIG_PAGES_DIR         "${CMAKE_CURRENT_SOURCE_DIR}/VehicleConfig")
@@ -71,7 +72,9 @@ set(APM_CONFIG_QML_GEN_DIR       "${CMAKE_CURRENT_BINARY_DIR}/generated")
 # Generator source files (changes here trigger regeneration)
 file(GLOB _apm_config_generator_sources CONFIGURE_DEPENDS
     "${APM_CONFIG_QML_GENERATOR_DIR}/*.py"
+    "${APM_CONFIG_QML_GENERATOR_DIR}/templates/*.j2"
     "${CMAKE_SOURCE_DIR}/tools/generators/common/*.py"
+    "${CMAKE_SOURCE_DIR}/tools/generators/*.py"
 )
 
 # JSON inputs
@@ -80,37 +83,22 @@ file(GLOB _apm_config_page_definitions CONFIGURE_DEPENDS "${APM_CONFIG_PAGES_DIR
 # Generated QML outputs (must match what generate_pages.py produces)
 set(_apm_config_generated_qml_names
     APMFailsafesComponent.qml
+    APMLoggingComponent.qml
     APMPowerComponent.qml
     APMFlightSafetyComponent.qml
     APMTuningCopterComponent.qml
 )
 
-# Full paths in the build tree
-set(_apm_config_generated_qml "")
-foreach(_name IN LISTS _apm_config_generated_qml_names)
-    list(APPEND _apm_config_generated_qml "${APM_CONFIG_QML_GEN_DIR}/${_name}")
-endforeach()
-
-add_custom_command(
-    OUTPUT  ${_apm_config_generated_qml}
-    COMMAND ${Python3_EXECUTABLE} -m tools.generators.config_qml.generate_pages
-            --pages-dir "${APM_CONFIG_PAGES_DIR}"
-            --output-dir "${APM_CONFIG_QML_GEN_DIR}"
-    DEPENDS ${_apm_config_generator_sources} ${_apm_config_page_definitions}
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    COMMENT "Generating APM QML config pages from VehicleConfig.json definitions"
-    VERBATIM
+qgc_add_qml_codegen(GenerateConfigQmlAPM
+    GENERATE_AT_CONFIGURE
+    GENERATOR_MODULE tools.generators.config_qml.generate_pages
+    OUTPUT_DIR       "${APM_CONFIG_QML_GEN_DIR}"
+    QML_NAMES        ${_apm_config_generated_qml_names}
+    EXTRA_ARGS       --pages-dir "${APM_CONFIG_PAGES_DIR}"
+    DEPENDS          ${_apm_config_generator_sources} ${_apm_config_page_definitions}
+    COMMENT          "Generating APM QML config pages from VehicleConfig.json definitions"
 )
-
-add_custom_target(GenerateConfigQmlAPM DEPENDS ${_apm_config_generated_qml})
-
-# Set QT_RESOURCE_ALIAS so qt_add_qml_module places generated files at the
-# correct QRC path despite living in the build tree.
-foreach(_name IN LISTS _apm_config_generated_qml_names)
-    set_source_files_properties("${APM_CONFIG_QML_GEN_DIR}/${_name}"
-        PROPERTIES QT_RESOURCE_ALIAS "${_name}"
-    )
-endforeach()
+set(_apm_config_generated_qml ${GenerateConfigQmlAPM_OUTPUTS})
 
 # ----------------------------------------------------------------------------
 # APM QML Module
@@ -166,11 +154,11 @@ qt_add_qml_module(AutoPilotPluginsAPMModule
         APMSubFrameComponent.qml
         APMSubFrameComponentSummary.qml
         APMSubMotorComponent.qml
-        APMTuningComponentSub.qml
         APMAutoTuneChannelSelector.qml
         APMAdvancedTuningCopterComponent.qml
     RESOURCES
         VehicleConfig/APMFailsafes.VehicleConfig.json
+        VehicleConfig/APMLogging.VehicleConfig.json
         VehicleConfig/APMPower.VehicleConfig.json
         VehicleConfig/APMFlightSafety.VehicleConfig.json
         VehicleConfig/APMTuningCopter.VehicleConfig.json

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Verify QGroundControl executable with a boot test.
 
 Resolves paths, sets permissions, and delegates to run_tests.py --verify-only.
@@ -7,17 +6,24 @@ Resolves paths, sets permissions, and delegates to run_tests.py --verify-only.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import os
 import platform
-import re
 import stat
 import subprocess
 import sys
 from pathlib import Path
 
+from ci_bootstrap import ensure_tools_dir
+
+ensure_tools_dir(__file__)
+
+from common.cmake import read_cache_var
+from common.gh_actions import gh_error
+
 
 def _setup_gstreamer_env(build_dir: Path) -> None:
-    """Extract GStreamer_ROOT_DIR from CMakeCache and set plugin env vars.
+    """Read the resolved GStreamer SDK root from CMakeCache and set plugin env vars.
 
     For dev builds (before cmake --install), GStreamer plugins haven't been
     copied into the app bundle yet. This lets the runtime find the
@@ -27,23 +33,19 @@ def _setup_gstreamer_env(build_dir: Path) -> None:
     if not cache.is_file():
         return
 
-    match = re.search(
-        r"^GStreamer_ROOT_DIR:\w*=(.+)$", cache.read_text(), re.MULTILINE
-    )
-    if not match:
+    value = read_cache_var(str(cache), "QGC_GST_RESOLVED_ROOT")
+    if not value:
         return
 
-    gst_root = Path(match.group(1))
+    gst_root = Path(value)
     plugin_dir = gst_root / "lib" / "gstreamer-1.0"
     if not plugin_dir.is_dir():
         return
 
     print(f"Setting GStreamer env from build cache: {gst_root}")
     plugin_str = str(plugin_dir)
-    for var in (
-        "GST_PLUGIN_PATH", "GST_PLUGIN_PATH_1_0",
-        "GST_PLUGIN_SYSTEM_PATH", "GST_PLUGIN_SYSTEM_PATH_1_0",
-    ):
+    # SYSTEM_PATH replaces the default plugin dirs; GST_PLUGIN_PATH would only rescan the same dir.
+    for var in ("GST_PLUGIN_SYSTEM_PATH", "GST_PLUGIN_SYSTEM_PATH_1_0"):
         os.environ[var] = plugin_str
 
     scanner = gst_root / "libexec" / "gstreamer-1.0" / "gst-plugin-scanner"
@@ -57,13 +59,60 @@ def _setup_gstreamer_env(build_dir: Path) -> None:
     lib_dir = str(gst_root / "lib")
     if platform.system() == "Darwin":
         existing = os.environ.get("DYLD_LIBRARY_PATH", "")
-        os.environ["DYLD_LIBRARY_PATH"] = (
-            f"{lib_dir}:{existing}" if existing else lib_dir
-        )
+        os.environ["DYLD_LIBRARY_PATH"] = f"{lib_dir}:{existing}" if existing else lib_dir
     elif platform.system() == "Windows":
         bin_dir = str(gst_root / "bin")
         existing = os.environ.get("PATH", "")
         os.environ["PATH"] = f"{bin_dir};{existing}" if existing else bin_dir
+
+
+def _verify_archs(binary_path: Path, expected: str) -> None:
+    """Fail if the Mach-O binary's architectures differ from the expected set."""
+    result = subprocess.run(
+        ["lipo", "-archs", str(binary_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        gh_error(f"lipo -archs failed for {binary_path}: {result.stderr.strip()}")
+        sys.exit(1)
+    actual = set(result.stdout.split())
+    wanted = set(expected.split())
+    if actual != wanted:
+        gh_error(
+            f"Architecture mismatch for {binary_path}: "
+            f"expected {sorted(wanted)}, got {sorted(actual)}"
+        )
+        sys.exit(1)
+    print(f"Verified architectures: {' '.join(sorted(actual))}")
+
+
+def _verify_appimage_update_information(binary_path: Path, expected: str) -> None:
+    """Verify embedded AppImage update metadata and its zsync sidecar."""
+    result = subprocess.run(
+        [str(binary_path), "--appimage-updateinformation"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Failed to read AppImage update information from {binary_path}: "
+            f"{result.stderr.strip()}"
+        )
+
+    actual = result.stdout.strip()
+    if actual != expected:
+        raise RuntimeError(
+            f"Unexpected AppImage update information: {actual!r} (expected {expected!r})"
+        )
+
+    zsync_path = Path(f"{binary_path}.zsync")
+    if not zsync_path.is_file() or zsync_path.stat().st_size == 0:
+        raise RuntimeError(f"AppImage zsync sidecar is missing or empty: {zsync_path}")
+
+    print(f"Verified AppImage update information: {actual}")
 
 
 def main() -> None:
@@ -73,17 +122,22 @@ def main() -> None:
     parser.add_argument("--build-dir", default="")
     parser.add_argument("--type", default="binary", dest="exe_type")
     parser.add_argument("--timeout", default="60")
+    parser.add_argument("--expect-archs", default="")
+    parser.add_argument("--expected-appimage-update-information", default="")
     args = parser.parse_args()
 
     binary_path = Path(args.binary_path)
     work_dir = Path(args.working_dir) if args.working_dir else binary_path.parent
 
     if not work_dir.is_dir():
-        print(f"::error::Working directory not found: {work_dir}", file=sys.stderr)
+        gh_error(f"Working directory not found: {work_dir}")
         sys.exit(1)
 
     if args.build_dir:
         _setup_gstreamer_env(Path(args.build_dir))
+
+    if args.expect_archs and platform.system() == "Darwin":
+        _verify_archs(binary_path, args.expect_archs)
 
     binary_name = binary_path.name
     headless = True
@@ -94,19 +148,29 @@ def main() -> None:
 
     if os.name != "nt":
         exe = work_dir / binary_name
-        try:
+        with contextlib.suppress(OSError):
             exe.chmod(exe.stat().st_mode | stat.S_IEXEC)
-        except OSError:
-            pass
         run_binary = str(exe.resolve())
     else:
         run_binary = str(binary_path.resolve())
 
+    if args.expected_appimage_update_information:
+        try:
+            _verify_appimage_update_information(
+                Path(run_binary), args.expected_appimage_update_information
+            )
+        except RuntimeError as error:
+            gh_error(str(error))
+            sys.exit(1)
+
     workspace = os.environ.get("GITHUB_WORKSPACE", ".")
     cmd = [
-        sys.executable, os.path.join(workspace, "tools", "run_tests.py"),
-        "--binary", run_binary,
-        "--timeout", args.timeout,
+        sys.executable,
+        os.path.join(workspace, "tools", "run_tests.py"),
+        "--binary",
+        run_binary,
+        "--timeout",
+        args.timeout,
         "--verify-only",
         "-v",
     ]

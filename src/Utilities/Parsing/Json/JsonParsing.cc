@@ -7,7 +7,6 @@
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonParseError>
 #include <QtCore/QObject>
-#include <QtCore/QSet>
 #include <QtCore/QTranslator>
 
 #include "QGCCompression.h"
@@ -15,84 +14,7 @@
 
 QGC_LOGGING_CATEGORY(JsonParsingLog, "Utilities.Parsing.Json")
 
-namespace {
-
-QString jsonValueTypeToString(QJsonValue::Type type)
-{
-    struct TypeToString
-    {
-        QJsonValue::Type type;
-        const char* string;
-    };
-
-    static constexpr const TypeToString typeToStringMap[] = {
-        {QJsonValue::Null, "NULL"},           {QJsonValue::Bool, "Bool"},   {QJsonValue::Double, "Double"},
-        {QJsonValue::String, "String"},       {QJsonValue::Array, "Array"}, {QJsonValue::Object, "Object"},
-        {QJsonValue::Undefined, "Undefined"},
-    };
-
-    for (const TypeToString& entry : typeToStringMap) {
-        if (type == entry.type) {
-            return entry.string;
-        }
-    }
-
-    return QObject::tr("Unknown type: %1").arg(type);
-}
-
-}  // namespace
-
 namespace JsonParsing {
-
-bool validateRequiredKeys(const QJsonObject& jsonObject, const QStringList& keys, QString& errorString)
-{
-    QString missingKeys;
-
-    for (const QString& key : keys) {
-        if (!jsonObject.contains(key)) {
-            if (!missingKeys.isEmpty()) {
-                missingKeys += QStringLiteral(", ");
-            }
-            missingKeys += key;
-        }
-    }
-
-    if (!missingKeys.isEmpty()) {
-        errorString = QObject::tr("The following required keys are missing: %1").arg(missingKeys);
-        return false;
-    }
-
-    return true;
-}
-
-bool validateKeyTypes(const QJsonObject& jsonObject, const QStringList& keys, const QList<QJsonValue::Type>& types,
-                      QString& errorString)
-{
-    if (keys.count() != types.count()) {
-        errorString = QObject::tr("Mismatched key and type list sizes: keys=%1 types=%2")
-                          .arg(keys.count()).arg(types.count());
-        return false;
-    }
-
-    for (qsizetype i = 0; i < types.count(); i++) {
-        const QString& valueKey = keys[i];
-        if (jsonObject.contains(valueKey)) {
-            const QJsonValue& jsonValue = jsonObject[valueKey];
-            if ((jsonValue.type() == QJsonValue::Double) && (types[i] == QJsonValue::Null)) {
-                // Null type signals a possible NaN on a double value.
-                continue;
-            }
-            if (jsonValue.type() != types[i]) {
-                errorString = QObject::tr("Incorrect value type - key:type:expected %1:%2:%3")
-                                  .arg(valueKey, jsonValueTypeToString(jsonValue.type()),
-                                       jsonValueTypeToString(types[i]));
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
 
 bool isJsonFile(const QByteArray& bytes, QJsonDocument& jsonDoc, QString& errorString)
 {
@@ -103,10 +25,15 @@ bool isJsonFile(const QByteArray& bytes, QJsonDocument& jsonDoc, QString& errorS
         return true;
     }
 
-    const int startPos = qMax(0, parseError.offset - 100);
-    const int length = qMin(bytes.length() - startPos, 200);
-    qCDebug(JsonParsingLog) << "Json read error" << bytes.mid(startPos, length).constData();
-    errorString = parseError.errorString();
+    if (QGCCompression::looksLikeCompressedData(bytes)) {
+        // parseError.offset refers to the decompressed text, so a slice of `bytes` would be garbage.
+        qCDebug(JsonParsingLog) << "Json read error (compressed input) offset" << parseError.offset;
+    } else {
+        const int startPos = qMax(0, parseError.offset - 100);
+        const int length = qMin(bytes.length() - startPos, 200);
+        qCDebug(JsonParsingLog) << "Json read error" << bytes.mid(startPos, length).constData();
+    }
+    errorString = QStringLiteral("%1 (offset %2)").arg(parseError.errorString()).arg(parseError.offset);
 
     return false;
 }
@@ -115,6 +42,7 @@ bool isJsonFile(const QString& fileName, QJsonDocument& jsonDoc, QString& errorS
 {
     const QByteArray jsonBytes = QGCCompression::readFile(fileName, &errorString);
     if (jsonBytes.isEmpty() && !errorString.isEmpty()) {
+        jsonDoc = {};
         return false;
     }
 
@@ -128,51 +56,6 @@ double possibleNaNJsonValue(const QJsonValue& value)
     }
 
     return value.toDouble();
-}
-
-bool validateKeys(const QJsonObject& jsonObject, const QList<KeyValidateInfo>& keyInfo, QString& errorString)
-{
-    QStringList keyList;
-    QList<QJsonValue::Type> typeList;
-
-    for (const KeyValidateInfo& info : keyInfo) {
-        if (info.required) {
-            keyList.append(info.key);
-        }
-    }
-    if (!validateRequiredKeys(jsonObject, keyList, errorString)) {
-        return false;
-    }
-
-    keyList.clear();
-    for (const KeyValidateInfo& info : keyInfo) {
-        keyList.append(info.key);
-        typeList.append(info.type);
-    }
-
-    return validateKeyTypes(jsonObject, keyList, typeList, errorString);
-}
-
-bool validateKeysStrict(const QJsonObject& jsonObject, const QList<KeyValidateInfo>& keyInfo, QString& errorString)
-{
-    if (!validateKeys(jsonObject, keyInfo, errorString)) {
-        return false;
-    }
-
-    QSet<QString> expectedKeys;
-    expectedKeys.reserve(keyInfo.size());
-    for (const KeyValidateInfo &info : keyInfo) {
-        expectedKeys.insert(QLatin1String(info.key));
-    }
-
-    for (const QString &key : jsonObject.keys()) {
-        if (!expectedKeys.contains(key)) {
-            errorString = QStringLiteral("Unknown key: %1").arg(key);
-            return false;
-        }
-    }
-
-    return true;
 }
 
 }  // namespace JsonParsing
@@ -337,17 +220,9 @@ QJsonObject openInternalQGCJsonFile(const QString &jsonFilename, const QString &
                                     const QStringList &defaultTranslateKeys,
                                     const QStringList &defaultArrayIDKeys)
 {
-    const QByteArray bytes = QGCCompression::readFile(jsonFilename, &errorString);
-    if (bytes.isEmpty() && !errorString.isEmpty()) {
-        return {};
-    }
-
-    QJsonParseError jsonParseError;
-    const QJsonDocument doc = QGCCompression::parseCompressedJson(bytes, &jsonParseError);
-    if (jsonParseError.error != QJsonParseError::NoError) {
-        errorString = QObject::tr("Unable to parse json file: %1 error: %2 offset: %3")
-                          .arg(jsonFilename, jsonParseError.errorString())
-                          .arg(jsonParseError.offset);
+    QJsonDocument doc;
+    if (!isJsonFile(jsonFilename, doc, errorString)) {
+        errorString = QObject::tr("Unable to parse json file: %1 error: %2").arg(jsonFilename, errorString);
         return {};
     }
 

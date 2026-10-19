@@ -5,7 +5,9 @@
 
 #include <QtCore/QRegularExpression>
 #include <QtCore/QApplicationStatic>
+#include <QtCore/QTimer>
 #include <QtTextToSpeech/QTextToSpeech>
+#include <QtTextToSpeech/QVoice>
 
 #include <algorithm>
 
@@ -13,32 +15,56 @@ QGC_LOGGING_CATEGORY(AudioOutputLog, "Utilities.AudioOutput");
 // qt.speech.tts.flite
 // qt.speech.tts.android
 
+// Keys in both tables must not end in a digit: trailing instance digits are split off before lookup.
 const QHash<QString, QString> AudioOutput::_textHash = {
-    { "ERR",            "error" },
-    { "POSCTL",         "Position Control" },
-    { "ALTCTL",         "Altitude Control" },
-    { "AUTO_RTL",       "auto return to launch" },
-    { "RTL",            "return To launch" },
-    { "ACCEL",          "accelerometer" },
-    { "RC_MAP_MODE_SW", "RC mode switch" },
-    { "REJ",            "rejected" },
-    { "WP",             "waypoint" },
-    { "CMD",            "command" },
-    { "COMPID",         "component eye dee" },
-    { "PARAMS",         "parameters" },
-    { "ID",             "I.D." },
-    { "ADSB",           "A.D.S.B." },
-    { "EKF",            "E.K.F." },
-    { "PREARM",         "pre arm" },
-    { "PITOT",          "pee toe" },
-    { "SERVOX_FUNCTION","Servo X Function" },
+    {"ERR", "error"},
+    {"POSCTL", "Position Control"},
+    {"ALTCTL", "Altitude Control"},
+    {"AUTO_RTL", "auto return to launch"},
+    {"RTL", "return To launch"},
+    {"ACCEL", "accelerometer"},
+    {"RC_MAP_MODE_SW", "RC mode switch"},
+    {"REJ", "rejected"},
+    {"WP", "waypoint"},
+    {"CMD", "command"},
+    {"COMPID", "component eye dee"},
+    {"PARAMS", "parameters"},
+    {"ID", "I.D."},
+    {"ADSB", "A.D.S.B."},
+    {"EKF", "E.K.F."},
+    {"PREARM", "pre arm"},
+    {"PITOT", "pee toe"},
+    {"SERVOX_FUNCTION", "Servo X Function"},
+    {"CNT", "count"},
+    {"DNST", "density"},
+    {"TKOFF", "takeoff"},
+    {"TERRN", "terrain"},
+    {"AROT", "autorotation"},
+    {"TCAL", "temperature calibration"},
+    {"PWR", "power"},
+    {"PERF", "performance"},
+    {"CFG", "config"},
+    {"FBWA", "fly-by-wire A"},
+};
+
+// Matched case-sensitively so lowercase words ("rc", "ins") are left alone. CAN is omitted: it is spoken as a word.
+const QSet<QString> AudioOutput::_spelledAcronyms = {
+    "GPS",  "GNSS", "GCS",  "ESC",  "VTOL", "RC",   "IMU",  "AHRS", "INS",   "CPU",  "RPM",  "SD",   "USB",
+    "PWM",  "PPS",  "CRC",  "ICAO", "SIH",  "HAGL", "FMU",  "UTM",  "MAV",   "FFT",  "AFS",  "AMSL", "MSL",
+    "HDOP", "GPIO", "SITL", "ODID", "TCP",  "UDP",  "UART", "I2C",  "IOMCU", "FTP",  "NACK", "NED",  "RSSI",
+    "OSD",  "MSP",  "DMA",  "DFU",  "DNA",  "EFI",  "ISR",  "WDG",  "NMEA",  "RTCM", "VTX",  "WMM",  "HW",
+    "SW",   "FW",   "RX",   "LLH",  "IP",   "IO",   "RF",   "LQ",   "DEVID",
 };
 
 Q_APPLICATION_STATIC(AudioOutput, _audioOutput);
 
 AudioOutput::AudioOutput(QObject *parent)
     : QObject(parent)
-    , _engine(new QTextToSpeech(QStringLiteral("none"), this))
+    // Auto-select a real engine, except under unit tests where the "none" backend avoids probing
+    // system plugins (e.g. speechd) that emit critical load errors and trip the strict log check.
+    , _engine(QGC::runningUnitTests()
+                  ? new QTextToSpeech(QStringLiteral("none"), this)
+                  : new QTextToSpeech(this))
 {
     // qCDebug(AudioOutputLog) << this;
 }
@@ -62,33 +88,59 @@ void AudioOutput::init(Fact* volumeFact, Fact* mutedFact)
         return;
     }
 
-    if (QTextToSpeech::availableEngines().isEmpty()) {
-        qCWarning(AudioOutputLog) << "No available QTextToSpeech engines found.";
-        return;
-    }
+    _volumeFact = volumeFact;
+    _mutedFact = mutedFact;
 
-    // Autoselect engine by priority
-    if (!_engine->setEngine(QString())) {
-        qCWarning(AudioOutputLog) << "Failed to set the TTS engine.";
-        return;
-    }
+    // Some QTextToSpeech backends (notably Android) initialize asynchronously, so finalize on Ready rather than bailing (Qt docs).
+    (void) connect(_engine, &QTextToSpeech::stateChanged, this, [this](QTextToSpeech::State state) {
+        if (state == QTextToSpeech::State::Ready) {
+            _textQueueSize = 0;
+            if (!_initialized) {
+                _finishInit();
+            }
+        }
+        qCDebug(AudioOutputLog) << "TTS State changed to:" << state;
+    });
 
-    (void) connect(_engine, &QTextToSpeech::engineChanged, this, [this](const QString &engine) {
-        qCDebug(AudioOutputLog) << "TTS Engine set to:" << engine;
-        const QLocale defaultLocale = QLocale("en_US");
-        if (_engine->availableLocales().contains(defaultLocale)) {
-            _engine->setLocale(defaultLocale);
+    (void) connect(_engine, &QTextToSpeech::errorOccurred, this, [this](QTextToSpeech::ErrorReason reason, const QString &errorString) {
+        qCWarning(AudioOutputLog) << "TTS error occurred. Reason:" << reason << ", Message:" << errorString;
+        _textQueueSize = 0;
+    });
+
+    // Decrement as each utterance leaves the queue so the counter tracks live backlog, not cumulative enqueues since drain.
+    (void) connect(_engine, &QTextToSpeech::aboutToSynthesize, this, [this](qsizetype) {
+        if (_textQueueSize > 0) {
+            _textQueueSize--;
         }
     });
 
-    (void) connect(_engine, &QTextToSpeech::aboutToSynthesize, this, [this](qsizetype id) {
-        qCDebug(AudioOutputLog) << "TTS About To Synthesize ID:" << id;
-        _textQueueSize--;
-        qCDebug(AudioOutputLog) << "Queue Size:" << _textQueueSize;
+    (void) connect(_engine, &QTextToSpeech::engineChanged, this, [this](const QString &engine) {
+        qCDebug(AudioOutputLog) << "TTS Engine set to:" << engine;
+        _applyEngineSettings();
     });
 
-    _volumeFact = volumeFact;
-    _mutedFact = mutedFact;
+    if (_engine->state() == QTextToSpeech::State::Ready) {
+        _finishInit();
+    } else {
+        // Some backends (notably Android) start in Error state while binding to the system TTS
+        // service, then transition to Ready. Defer and only warn if the engine never becomes usable.
+        qCDebug(AudioOutputLog) << "QTextToSpeech engine not ready; deferring init. State:" << _engine->state();
+        if (!QGC::runningUnitTests()) {
+            // Skip under unit tests: the "none" backend never becomes Ready and the warning would trip the strict log check.
+            QTimer::singleShot(kEngineInitWarnTimeout, this, [this]() {
+                if (!_initialized) {
+                    qCWarning(AudioOutputLog) << "No usable QTextToSpeech engine available. Engine:" << _engine->engine()
+                                              << "State:" << _engine->state()
+                                              << "Reason:" << _engine->errorReason() << _engine->errorString();
+                }
+            });
+        }
+    }
+}
+
+void AudioOutput::_finishInit()
+{
+    _applyEngineSettings();
 
     (void) connect(_volumeFact, &Fact::valueChanged, this, [this]() {
         _setVolume();
@@ -98,22 +150,16 @@ void AudioOutput::init(Fact* volumeFact, Fact* mutedFact)
         _setVolume();
     });
 
-    // Restore mute state when speech finishes (for ignoreMute calls)
+    // Return to the muted volume once an ignoreMute utterance finishes
     (void) connect(_engine, &QTextToSpeech::stateChanged, this, [this](QTextToSpeech::State state) {
-        qCDebug(AudioOutputLog) << "TTS State changed to:" << state;
-        if (state == QTextToSpeech::Ready && _pendingMuteRestore) {
+        if ((state == QTextToSpeech::State::Ready) && _pendingMuteRestore) {
             _pendingMuteRestore = false;
-            if (_muted) {
-                (void) QMetaObject::invokeMethod(_engine, "setVolume", Qt::AutoConnection, 0.0);
-                qCDebug(AudioOutputLog) << "Restored muted volume after ignoreMute speech";
-            }
+            _engine->setVolume(_lastVolume / 100.0);
+            qCDebug(AudioOutputLog) << "Restored muted volume after ignoreMute speech";
         }
     });
 
     if (AudioOutputLog().isDebugEnabled()) {
-        (void) connect(_engine, &QTextToSpeech::errorOccurred, this, [](QTextToSpeech::ErrorReason reason, const QString &errorString) {
-            qCDebug(AudioOutputLog) << "TTS Error occurred. Reason:" << reason << ", Message:" << errorString;
-        });
         (void) connect(_engine, &QTextToSpeech::localeChanged, this, [](const QLocale &locale) {
             qCDebug(AudioOutputLog) << "TTS Locale change to:" << locale;
         });
@@ -141,6 +187,26 @@ bool AudioOutput::_mutedSetting() const
     return _mutedFact->rawValue().toBool();
 }
 
+void AudioOutput::_applyEngineSettings()
+{
+    if (_engine->state() != QTextToSpeech::State::Ready) {
+        return;
+    }
+
+    const QLocale defaultLocale("en_US");
+    if (_engine->availableLocales().contains(defaultLocale)) {
+        _engine->setLocale(defaultLocale);
+    }
+
+    // Pin an explicit voice so output doesn't depend on the engine's per-OS default.
+    const QList<QVoice> voices = _engine->availableVoices();
+    if (!voices.isEmpty()) {
+        _engine->setVoice(voices.constFirst());
+    }
+
+    _speakCapable = _engine->engineCapabilities().testFlag(QTextToSpeech::Capability::Speak);
+}
+
 void AudioOutput::_setVolume()
 {
     const bool muted = _mutedSetting();
@@ -152,15 +218,16 @@ void AudioOutput::_setVolume()
     }
     _lastVolume = volume;
 
-    if (volume == 0.0) {
-        // Prevent any queued text from being spoken once muted
-        (void) QMetaObject::invokeMethod(_engine, "stop", Qt::AutoConnection, QTextToSpeech::BoundaryHint::Default);
-        _textQueueSize = 0;
-    }
-
     // Must normalize volume to 0.0 - 1.0 for QTextToSpeech
     const double normalizedVolume = volume / 100.0;
-    (void) QMetaObject::invokeMethod(_engine, "setVolume", Qt::AutoConnection, normalizedVolume);
+    (void) QMetaObject::invokeMethod(_engine, [this, volume, normalizedVolume]() {
+        if (volume == 0.0) {
+            // Prevent any queued text from being spoken once muted
+            _engine->stop(QTextToSpeech::BoundaryHint::Immediate);
+            _textQueueSize = 0;
+        }
+        _engine->setVolume(normalizedVolume);
+    });
     qCDebug(AudioOutputLog) << "AudioOutput volume set to:" << volume << "%";
 }
 
@@ -170,11 +237,11 @@ void AudioOutput::stop()
         return;
     }
 
-    if (_textQueueSize > 0) {
-        (void) QMetaObject::invokeMethod(_engine, "stop", Qt::AutoConnection, QTextToSpeech::BoundaryHint::Immediate);
+    (void) QMetaObject::invokeMethod(_engine, [this]() {
+        _engine->stop(QTextToSpeech::BoundaryHint::Immediate);
         _textQueueSize = 0;
         qCDebug(AudioOutputLog) << "Stopped current speech";
-    }
+    });
 }
 
 void AudioOutput::say(const QString &text, TextMods textMods, bool ignoreMute, double rate)
@@ -186,30 +253,14 @@ void AudioOutput::say(const QString &text, TextMods textMods, bool ignoreMute, d
         return;
     }
 
-    if ((_muted && !ignoreMute) || _volumeSetting() <= 0.0 || _mutedSetting()) {
+    const bool silenced = (_volumeSetting() <= 0.0) || _mutedSetting();
+    if (silenced && !ignoreMute) {
         return;
     }
 
-    if (!_engine->engineCapabilities().testFlag(QTextToSpeech::Capability::Speak)) {
+    if (!_speakCapable) {
         qCWarning(AudioOutputLog) << "Speech Not Supported:" << text;
         return;
-    }
-
-    // If muted but ignoreMute is true, temporarily restore volume for this utterance
-    if (_muted && ignoreMute) {
-        (void) QMetaObject::invokeMethod(_engine, "setVolume", Qt::AutoConnection, 1.0);
-        _pendingMuteRestore = true;  // Will be restored when speech finishes
-    }
-
-    // Set speech rate (clamped to valid range)
-    double clampedRate = qBound(-1.0, rate, 1.0);
-    (void) QMetaObject::invokeMethod(_engine, "setRate", Qt::AutoConnection, clampedRate);
-
-    // Stop any currently playing speech to start the new one immediately
-    if (_textQueueSize > 0) {
-        (void) QMetaObject::invokeMethod(_engine, "stop", Qt::AutoConnection, QTextToSpeech::BoundaryHint::Immediate);
-        _textQueueSize = 0;
-        qCDebug(AudioOutputLog) << "Stopped current speech to play new audio";
     }
 
     QString outText = _fixTextMessageForAudio(text);
@@ -218,15 +269,38 @@ void AudioOutput::say(const QString &text, TextMods textMods, bool ignoreMute, d
         outText = tr("%1").arg(outText);
     }
 
-    qsizetype index;
-    if (QMetaObject::invokeMethod(_engine, "enqueue", Qt::AutoConnection, qReturnArg(index), outText)) {
-        if (index != -1) {
-            _textQueueSize++;
-            qCDebug(AudioOutputLog) << "Enqueued text with index:" << index << ", Queue Size:" << _textQueueSize;
-        }
-    } else {
-        qCWarning(AudioOutputLog) << "Failed to invoke Enqueue method.";
+    if (outText.isEmpty()) {
+        return;
     }
+
+    const double clampedRate = std::clamp(rate, -1.0, 1.0);
+
+    // All queue/counter mutation must stay on the engine thread (where stateChanged resets it).
+    (void) QMetaObject::invokeMethod(_engine, [this, outText, silenced, clampedRate]() {
+        // Interrupt current speech so the new utterance plays immediately
+        if ((_engine->state() == QTextToSpeech::State::Speaking) || (_textQueueSize > 0)) {
+            _engine->stop(QTextToSpeech::BoundaryHint::Immediate);
+            _textQueueSize = 0;
+            qCDebug(AudioOutputLog) << "Stopped current speech to play new audio";
+        }
+
+        if (silenced) {
+            // ignoreMute: play this utterance at full volume, restored when the engine returns to Ready
+            _engine->setVolume(1.0);
+            _pendingMuteRestore = true;
+        }
+        _engine->setRate(clampedRate);
+
+        const qsizetype index = _engine->enqueue(outText);
+        if (index < 0) {
+            qCWarning(AudioOutputLog) << "Failed to enqueue speech. State:" << _engine->state()
+                                      << "Reason:" << _engine->errorReason();
+            return;
+        }
+
+        _textQueueSize++;
+        qCDebug(AudioOutputLog) << "Enqueued text with index:" << index << ", Queue Size:" << _textQueueSize;
+    });
 }
 
 void AudioOutput::testAudioOutput()
@@ -236,7 +310,8 @@ void AudioOutput::testAudioOutput()
         return;
     }
 
-    (void) QMetaObject::invokeMethod(_engine, "stop", Qt::AutoConnection, QTextToSpeech::BoundaryHint::Default);
+    // Main-thread only (QML-invoked): mutates the engine and counter directly without marshaling.
+    _engine->stop(QTextToSpeech::BoundaryHint::Immediate);
     _textQueueSize = 0;
 
     const QString testText = tr("Audio test. Volume is %1 percent").arg(_volumeSetting(), 0, 'f', 1);
@@ -246,33 +321,69 @@ void AudioOutput::testAudioOutput()
 QString AudioOutput::_fixTextMessageForAudio(const QString &string)
 {
     QString result = string;
-    result = _replaceAbbreviations(result);
+    // Before abbreviations: spelled acronyms end in '.', which would hide the word a hyphen is attached to.
     result = _replaceNegativeSigns(result);
+    result = _replaceAbbreviations(result);
     result = _replaceDecimalPoints(result);
     result = _replaceMeters(result);
     result = _convertMilliseconds(result);
     return result;
 }
 
+QString AudioOutput::_spokenAbbreviation(const QString& token)
+{
+    const auto it = _textHash.constFind(token.toUpper());
+    if (it != _textHash.constEnd()) {
+        return it.value();
+    }
+
+    if (!_spelledAcronyms.contains(token)) {
+        return QString();
+    }
+
+    QString spelled;
+    spelled.reserve(token.size() * 2);
+    for (const QChar c : token) {
+        spelled.append(c);
+        spelled.append(QLatin1Char('.'));
+    }
+    return spelled;
+}
+
 QString AudioOutput::_replaceAbbreviations(const QString &input)
 {
-    QString output = input;
+    // Captures a whole identifier-like token, splitting off trailing instance digits ("EKF3" -> "EKF", "3").
+    static const QRegularExpression tokenRegex(
+        QStringLiteral("(?<![A-Za-z0-9_])([A-Za-z][A-Za-z0-9_]*?)([0-9]*)(?![A-Za-z0-9_])"));
 
-    const QStringList wordList = input.split(' ', Qt::SkipEmptyParts);
-    for (const QString &word : wordList) {
-        const QString upperWord = word.toUpper();
-        if (_textHash.contains(upperWord)) {
-            (void) output.replace(word, _textHash.value(upperWord));
+    QString output;
+    output.reserve(input.size());
+    qsizetype last = 0;
+
+    QRegularExpressionMatchIterator it = tokenRegex.globalMatch(input);
+    while (it.hasNext()) {
+        const QRegularExpressionMatch match = it.next();
+        const QString spoken = _spokenAbbreviation(match.captured(1));
+        if (spoken.isEmpty()) {
+            continue;
         }
+
+        output.append(QStringView(input).mid(last, match.capturedStart() - last));
+        output.append(spoken);
+        if (match.capturedLength(2) > 0) {
+            output.append(QLatin1Char(' '));
+            output.append(match.capturedView(2));
+        }
+        last = match.capturedEnd();
     }
+    output.append(QStringView(input).mid(last));
 
     return output;
 }
 
 QString AudioOutput::_replaceNegativeSigns(const QString &input)
 {
-    static const QRegularExpression negNumRegex(QStringLiteral("-\\s*(?=\\d)"));
-    Q_ASSERT(negNumRegex.isValid());
+    static const QRegularExpression negNumRegex(QStringLiteral("(?<![A-Za-z0-9_])-\\s*(?=\\d)"));
 
     QString output = input;
     (void) output.replace(negNumRegex, "negative ");
@@ -282,7 +393,6 @@ QString AudioOutput::_replaceNegativeSigns(const QString &input)
 QString AudioOutput::_replaceDecimalPoints(const QString &input)
 {
     static const QRegularExpression realNumRegex(QStringLiteral("([0-9]+)(\\.)([0-9]+)"));
-    Q_ASSERT(realNumRegex.isValid());
 
     QString output = input;
     QRegularExpressionMatch realNumRegexMatch = realNumRegex.match(output);
@@ -299,7 +409,6 @@ QString AudioOutput::_replaceDecimalPoints(const QString &input)
 QString AudioOutput::_replaceMeters(const QString &input)
 {
     static const QRegularExpression realNumMeterRegex(QStringLiteral("[0-9]*\\.?[0-9]\\s?(m)([^A-Za-z]|$)"));
-    Q_ASSERT(realNumMeterRegex.isValid());
 
     QString output = input;
     QRegularExpressionMatch realNumMeterRegexMatch = realNumMeterRegex.match(output);
@@ -345,7 +454,6 @@ QString AudioOutput::_convertMilliseconds(const QString &input)
 bool AudioOutput::_getMillisecondString(const QString &string, QString &match, int &number)
 {
     static const QRegularExpression msRegex("((?<number>[0-9]+)ms)");
-    Q_ASSERT(msRegex.isValid());
 
     bool result = false;
 

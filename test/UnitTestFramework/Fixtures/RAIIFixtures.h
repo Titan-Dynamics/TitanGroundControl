@@ -1,94 +1,30 @@
 #pragma once
 
+#include <memory>
+#include <optional>
+
 #include <QtCore/QByteArray>
-#include <QtCore/QList>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonParseError>
+#include <QtCore/QList>
+#include <QtCore/QString>
 #include <QtCore/QTemporaryDir>
 #include <QtCore/QTemporaryFile>
 #include <QtCore/QUrl>
 #include <QtCore/QVariant>
 #include <QtNetwork/QNetworkReply>
 
-#include <chrono>
-#include <memory>
-
-#include "BaseClasses/VehicleTest.h"
+#include "MAVLinkEnums.h"
 #include "MAVLinkMessageType.h"
-#include "MultiSignalSpy.h"
 
-class MockLink;
 class RunGuard;
-class Vehicle;
 class Fact;
 
 /// @file
 /// @brief RAII wrappers for test resources
 
 namespace TestFixtures {
-
-// ============================================================================
-// VehicleFixture - RAII wrapper for MockLink vehicle connection
-// ============================================================================
-
-/// RAII fixture that connects a MockLink vehicle and auto-disconnects on destruction
-/// Usage:
-///   VehicleFixture vehicle(this, MAV_AUTOPILOT_PX4);
-///   QVERIFY(vehicle.isConnected());
-///   vehicle->doSomething();  // Access via operator->
-class VehicleFixture
-{
-public:
-    /// Connect a MockLink vehicle
-    /// @param test The VehicleTest instance (for access to _connectMockLink)
-    /// @param autopilot Autopilot type to simulate
-    /// @param waitForInitialConnect If true, wait for full initial connect sequence
-    explicit VehicleFixture(VehicleTest* test, MAV_AUTOPILOT autopilot = MAV_AUTOPILOT_PX4,
-                            bool waitForInitialConnect = true);
-
-    /// Disconnects the MockLink automatically
-    ~VehicleFixture();
-
-    // Non-copyable
-    VehicleFixture(const VehicleFixture&) = delete;
-    VehicleFixture& operator=(const VehicleFixture&) = delete;
-
-    /// Check if vehicle is connected
-    bool isConnected() const
-    {
-        return _vehicle != nullptr;
-    }
-
-    /// Get the Vehicle pointer
-    Vehicle* vehicle() const
-    {
-        return _vehicle;
-    }
-
-    /// Get the MockLink pointer
-    MockLink* mockLink() const
-    {
-        return _mockLink;
-    }
-
-    /// Pointer-like access to Vehicle
-    Vehicle* operator->() const
-    {
-        return _vehicle;
-    }
-
-    /// Simulate communication loss
-    void setCommLost(bool lost);
-
-    /// Simulate connection removed
-    void simulateConnectionRemoved();
-
-private:
-    VehicleTest* _test = nullptr;
-    Vehicle* _vehicle = nullptr;
-    MockLink* _mockLink = nullptr;
-};
 
 // ============================================================================
 // SettingsFixture - RAII wrapper for settings save/restore
@@ -129,90 +65,6 @@ private:
 
     MAV_AUTOPILOT _originalFirmware;
     MAV_TYPE _originalVehicleType;
-};
-
-// ============================================================================
-// SignalSpyFixture - Enhanced signal monitoring with expectations
-// ============================================================================
-
-/// Enhanced signal spy that tracks expected signals and provides verification
-/// Usage:
-///   SignalSpyFixture spy(myObject);
-///   spy.expect("valueChanged");
-///   spy.expect("stateChanged");
-///   // ... do something that should emit signals ...
-///   QVERIFY(spy.verify());
-class SignalSpyFixture
-{
-public:
-    /// Create a signal spy for the given object
-    /// @param target Object to monitor for signals
-    explicit SignalSpyFixture(QObject* target);
-
-    ~SignalSpyFixture();
-
-    // Non-copyable
-    SignalSpyFixture(const SignalSpyFixture&) = delete;
-    SignalSpyFixture& operator=(const SignalSpyFixture&) = delete;
-
-    /// Expect a signal to be emitted (at least once)
-    /// @param signalName Signal name without SIGNAL() macro
-    void expect(const char* signalName);
-
-    /// Expect a signal to be emitted exactly N times
-    /// @param signalName Signal name
-    /// @param count Expected emission count
-    void expectExactly(const char* signalName, int count);
-
-    /// Expect a signal to NOT be emitted
-    /// @param signalName Signal name
-    void expectNot(const char* signalName);
-
-    /// Clear all signals and expectations
-    void clear();
-
-    /// Verify all expectations are met
-    /// @return true if all expectations passed
-    bool verify() const;
-
-    /// Verify and return detailed error message if failed
-    /// @param errorMsg Output: error message if verification fails
-    /// @return true if all expectations passed
-    bool verify(QString& errorMsg) const;
-
-    /// Wait for expected signals with timeout
-    /// @param timeoutMs Maximum time to wait
-    /// @return true if all expected signals received within timeout
-    bool waitAndVerify(int timeoutMs = TestTimeout::mediumMs());
-
-    /// std::chrono overload — prefer in new code
-    bool waitAndVerify(std::chrono::milliseconds timeout)
-    {
-        return waitAndVerify(static_cast<int>(timeout.count()));
-    }
-
-    /// Get underlying MultiSignalSpy for advanced usage
-    MultiSignalSpy* spy() const
-    {
-        return _spy.get();
-    }
-
-    /// Check if a specific signal was emitted
-    bool wasEmitted(const char* signalName) const;
-
-    /// Get emission count for a signal
-    int emissionCount(const char* signalName) const;
-
-private:
-    struct Expectation
-    {
-        QString signalName;
-        int expectedCount;  // -1 = at least once, 0 = never, >0 = exactly N times
-    };
-
-    QObject* _target = nullptr;
-    std::unique_ptr<MultiSignalSpy> _spy;
-    QList<Expectation> _expectations;
 };
 
 // ============================================================================
@@ -378,6 +230,47 @@ private:
     const char* _name;
     QByteArray _value;
     bool _wasSet;
+};
+
+// ============================================================================
+// LoggingCategoryFixture - RAII guard that enables a logging category
+// ============================================================================
+
+/// Enables a QGC logging category so its debug messages are captured, and restores it on destruction.
+class LoggingCategoryFixture
+{
+public:
+    explicit LoggingCategoryFixture(const QString& category);
+    ~LoggingCategoryFixture();
+
+    LoggingCategoryFixture(const LoggingCategoryFixture&) = delete;
+    LoggingCategoryFixture& operator=(const LoggingCategoryFixture&) = delete;
+
+private:
+    QString _category;
+    bool _wasEnabled;
+};
+
+// ============================================================================
+// MavCommandAckTimeoutFixture - short MavCommandQueue ack timeout for timeout-driven tests
+// ============================================================================
+
+/// Shortens the COMMAND_ACK timeout for tests whose outcome depends on at least one ack window
+/// expiring (no ack, or ack only after a retry), so the retry/give-up path doesn't wait the full
+/// production window. Restores the previous override on destruction.
+class MavCommandAckTimeoutFixture
+{
+public:
+    static constexpr int kDefaultTimeoutMs = 500;
+
+    explicit MavCommandAckTimeoutFixture(int timeoutMs = kDefaultTimeoutMs);
+    ~MavCommandAckTimeoutFixture();
+
+    MavCommandAckTimeoutFixture(const MavCommandAckTimeoutFixture&) = delete;
+    MavCommandAckTimeoutFixture& operator=(const MavCommandAckTimeoutFixture&) = delete;
+
+private:
+    std::optional<int> _previousOverride;
 };
 
 // ============================================================================

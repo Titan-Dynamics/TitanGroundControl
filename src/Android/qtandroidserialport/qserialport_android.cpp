@@ -1,8 +1,11 @@
+#include <algorithm>
+#include <iterator>
+#include <limits>
+#include <utility>
+
 #include <QtCore/QMetaObject>
 #include <QtCore/QPointer>
 #include <QtCore/QScopeGuard>
-
-#include <iterator>
 
 #include "QGCLoggingCategory.h"
 #include "qserialport_p.h"
@@ -13,6 +16,10 @@ QT_BEGIN_NAMESPACE
 
 bool QSerialPortPrivate::open(QIODevice::OpenMode mode)
 {
+    if (AndroidSerial::usePosixSerial()) {
+        return _posixOpen(mode);
+    }
+
     qCDebug(AndroidSerialPortLog) << "Opening" << systemLocation;
 
     AndroidSerial::registerPointer(this);
@@ -65,9 +72,24 @@ bool QSerialPortPrivate::open(QIODevice::OpenMode mode)
 
 void QSerialPortPrivate::close()
 {
+    if (AndroidSerial::usePosixSerial()) {
+        _posixClose();
+        return;
+    }
+
     qCDebug(AndroidSerialPortLog) << "Closing" << systemLocation;
 
     _stopAsyncRead();
+
+    {
+        // Drop any undelivered data so a queued drain or later re-open can't
+        // deliver stale bytes into cleared QIODevice buffers.
+        QMutexLocker locker(&_readMutex);
+        _pendingData.clear();
+        _pendingDataOffset = 0;
+        _readyReadPending.store(false);
+        _bufferBytesEstimate.store(0, std::memory_order_relaxed);
+    }
 
     if (_deviceId != INVALID_DEVICE_ID) {
         if (!AndroidSerial::close(_deviceId)) {
@@ -90,6 +112,10 @@ void QSerialPortPrivate::exceptionArrived(const QString& ex)
 
 bool QSerialPortPrivate::startAsyncRead()
 {
+    if (AndroidSerial::usePosixSerial()) {
+        return _posixStartAsyncRead();
+    }
+
     if (!AndroidSerial::readThreadRunning(_deviceId)) {
         const bool result = AndroidSerial::startReadThread(_deviceId);
         if (!result) {
@@ -108,6 +134,10 @@ bool QSerialPortPrivate::startAsyncRead()
 
 bool QSerialPortPrivate::_stopAsyncRead()
 {
+    if (AndroidSerial::usePosixSerial()) {
+        return _posixStopAsyncRead();
+    }
+
     bool result = true;
 
     if (AndroidSerial::readThreadRunning(_deviceId)) {
@@ -226,7 +256,10 @@ void QSerialPortPrivate::_scheduleReadyRead()
         QMetaObject::invokeMethod(
             q,
             [this, guard]() {
-                if (!guard) {
+                if (!guard || !guard->isOpen()) {
+                    // Device closed before the queued drain ran. close() clears the
+                    // QIODevice read buffers, so draining into them would assert.
+                    _readyReadPending.store(false);
                     return;
                 }
 
@@ -266,6 +299,15 @@ void QSerialPortPrivate::_scheduleReadyRead()
 
 bool QSerialPortPrivate::waitForReadyRead(int msecs)
 {
+    // One deadline covers both steps, so the wait never exceeds msecs.
+    const QDeadlineTimer deadline(msecs);
+    // Desktop QSerialPort also sends pending writes while waiting for input.
+    (void) _writeDataOneShot(msecs);
+
+    if (AndroidSerial::usePosixSerial()) {
+        return _posixWaitForReadyRead(static_cast<int>(deadline.remainingTime()));
+    }
+
     QMutexLocker locker(&_readMutex);
     if (!buffer.isEmpty()) {
         return true;
@@ -276,7 +318,6 @@ bool QSerialPortPrivate::waitForReadyRead(int msecs)
         return true;
     }
 
-    QDeadlineTimer deadline(msecs);
     while (buffer.isEmpty() && (_pendingSizeLocked() <= 0)) {
         if (!_readWaitCondition.wait(&_readMutex, deadline)) {
             break;
@@ -293,7 +334,7 @@ bool QSerialPortPrivate::waitForReadyRead(int msecs)
     }
     locker.unlock();
 
-    qCWarning(AndroidSerialPortLog) << "Timeout while waiting for ready read on device ID" << _deviceId;
+    qCDebug(AndroidSerialPortLog) << "Timeout while waiting for ready read on device ID" << _deviceId;
     setError(QSerialPortErrorInfo(QSerialPort::TimeoutError, QSerialPort::tr("Timeout while waiting for ready read")));
 
     return false;
@@ -301,57 +342,117 @@ bool QSerialPortPrivate::waitForReadyRead(int msecs)
 
 bool QSerialPortPrivate::waitForBytesWritten(int msecs)
 {
-    const bool result = _writeDataOneShot(msecs);
-    if (!result) {
-        qCWarning(AndroidSerialPortLog) << "Timeout while waiting for bytes written on device ID" << _deviceId;
-        setError(QSerialPortErrorInfo(QSerialPort::TimeoutError,
-                                      QSerialPort::tr("Timeout while waiting for bytes written")));
+    if (writeBuffer.isEmpty()) {
+        return false;
     }
 
-    return result;
+    return _writeDataOneShot(msecs);
+}
+
+int QSerialPortPrivate::_writeTimeoutMs(const QDeadlineTimer& deadline)
+{
+    // The USB backend treats zero as unbounded, so an expired deadline still gets a minimal attempt.
+    if (deadline.isForever()) {
+        return 0;
+    }
+    return static_cast<int>(std::clamp<qint64>(deadline.remainingTime(), 1, std::numeric_limits<int>::max()));
 }
 
 bool QSerialPortPrivate::_writeDataOneShot(int msecs)
 {
+    Q_Q(QSerialPort);
+
     if (writeBuffer.isEmpty()) {
         return true;
     }
 
-    qint64 pendingBytesWritten = 0;
-
+    const QDeadlineTimer deadline(msecs);
+    qint64 written = 0;
+    bool complete = true;
     while (!writeBuffer.isEmpty()) {
-        const char* dataPtr = writeBuffer.readPointer();
-        const qint64 dataSize = writeBuffer.nextDataBlockSize();
-
-        const qint64 written = _writeToPort(dataPtr, dataSize, msecs);
-        if (written < 0) {
-            qCWarning(AndroidSerialPortLog) << "Failed to write data one shot on device ID" << _deviceId;
-            setError(QSerialPortErrorInfo(QSerialPort::WriteError, QSerialPort::tr("Failed to write data one shot")));
-            return false;
+        const qint64 blockSize = writeBuffer.nextDataBlockSize();
+        const qint64 result = _writeToPortWithProgress(writeBuffer.readPointer(), blockSize, _writeTimeoutMs(deadline));
+        if (result < 0) {
+            complete = false;
+            break;
         }
 
-        writeBuffer.free(written);
-        pendingBytesWritten += written;
+        writeBuffer.free(result);
+        written += result;
+        if (result < blockSize) {
+            qCDebug(AndroidSerialPortLog)
+                << "Write timed out on device ID" << _deviceId << "after" << written << "bytes";
+            setError(QSerialPortErrorInfo(QSerialPort::TimeoutError, QSerialPort::tr("Timeout while writing data")));
+            complete = false;
+            break;
+        }
     }
 
-    const bool result = (pendingBytesWritten > 0);
-    if (result) {
-        Q_Q(QSerialPort);
-        emit q->bytesWritten(pendingBytesWritten);
+    if (written > 0) {
+        emit q->bytesWritten(written);
+    }
+
+    return complete;
+}
+
+void QSerialPortPrivate::_scheduleWrite()
+{
+    Q_Q(QSerialPort);
+
+    if (std::exchange(_writePending, true)) {
+        return;
+    }
+
+    QPointer<QSerialPort> guard(q);
+    QMetaObject::invokeMethod(
+        q,
+        [this, guard]() {
+            if (!guard) {
+                return;
+            }
+            _writePending = false;
+            if (!guard->isOpen() || writeBuffer.isEmpty()) {
+                return;
+            }
+
+            const qint64 pending = writeBuffer.size();
+            (void) _writeDataOneShot();
+            // Keep draining while the backend makes progress; errors wait for the next write or wait call.
+            if (guard && guard->isOpen() && !writeBuffer.isEmpty() && writeBuffer.size() < pending) {
+                _scheduleWrite();
+            }
+        },
+        Qt::QueuedConnection);
+}
+
+qint64 QSerialPortPrivate::_writeToPort(const char* data, qint64 maxSize, int timeout, bool async)
+{
+    if (async && AndroidSerial::usePosixSerial()) {
+        qCWarning(AndroidSerialPortLog) << "Async write is not supported by the POSIX backend; writing synchronously";
+    }
+
+    const qint64 result = AndroidSerial::usePosixSerial()
+                              ? _posixWrite(data, maxSize, timeout)
+                              : AndroidSerial::write(_deviceId, data, maxSize, timeout, async);
+    if (result < 0) {
+        qCWarning(AndroidSerialPortLog) << "Failed to write to port" << systemLocation;
+        setError(QSerialPortErrorInfo(QSerialPort::WriteError, QSerialPort::tr("Failed to write to port")));
     }
 
     return result;
 }
 
-qint64 QSerialPortPrivate::_writeToPort(const char* data, qint64 maxSize, int timeout, bool async)
+qint64 QSerialPortPrivate::_writeToPortWithProgress(const char* data, qint64 maxSize, int timeout)
 {
-    const qint64 result = AndroidSerial::write(_deviceId, data, maxSize, timeout, async);
+    const qint64 result = AndroidSerial::usePosixSerial()
+                              ? _posixWriteWithProgress(data, maxSize, timeout)
+                              : AndroidSerial::writeWithProgress(_deviceId, data, static_cast<int>(maxSize), timeout);
     if (result < 0) {
-        qCWarning(AndroidSerialPortLog) << "Failed to write to port ID" << _deviceId;
+        qCWarning(AndroidSerialPortLog) << "Failed to write to port" << systemLocation;
         setError(QSerialPortErrorInfo(QSerialPort::WriteError, QSerialPort::tr("Failed to write to port")));
     }
 
-    return result;
+    return std::min(result, maxSize);
 }
 
 qint64 QSerialPortPrivate::writeData(const char* data, qint64 maxSize)
@@ -362,22 +463,24 @@ qint64 QSerialPortPrivate::writeData(const char* data, qint64 maxSize)
         return -1;
     }
 
-    return _writeToPort(data, maxSize);
+    // Like desktop QSerialPort, writes are buffered and sent from the owner's event loop,
+    // waitForBytesWritten(), waitForReadyRead(), flush() or close().
+    writeBuffer.append(data, maxSize);
+    _scheduleWrite();
+    return maxSize;
 }
 
 bool QSerialPortPrivate::flush()
 {
-    const bool result = _writeDataOneShot();
-    if (!result) {
-        qCWarning(AndroidSerialPortLog) << "Flush operation failed for device ID" << _deviceId;
-        setError(QSerialPortErrorInfo(QSerialPort::UnknownError, QSerialPort::tr("Failed to flush")));
-    }
-
-    return result;
+    return _writeDataOneShot();
 }
 
 bool QSerialPortPrivate::clear(QSerialPort::Directions directions)
 {
+    if (AndroidSerial::usePosixSerial()) {
+        return _posixClear(directions);
+    }
+
     const bool input = directions & QSerialPort::Input;
     const bool output = directions & QSerialPort::Output;
 
@@ -392,15 +495,26 @@ bool QSerialPortPrivate::clear(QSerialPort::Directions directions)
 
 QSerialPort::PinoutSignals QSerialPortPrivate::pinoutSignals()
 {
+    if (AndroidSerial::usePosixSerial()) {
+        return _posixPinoutSignals();
+    }
+
     return AndroidSerial::getControlLines(_deviceId);
 }
 
 bool QSerialPortPrivate::setDataTerminalReady(bool set)
 {
+    if (AndroidSerial::usePosixSerial()) {
+        return _posixSetDataTerminalReady(set);
+    }
+
     const bool result = AndroidSerial::setDataTerminalReady(_deviceId, set);
     if (!result) {
         qCWarning(AndroidSerialPortLog) << "Failed to set DTR for device ID" << _deviceId;
-        setError(QSerialPortErrorInfo(QSerialPort::UnknownError, QSerialPort::tr("Failed to set DTR")));
+        const auto dtrError = AndroidSerial::dataTerminalReadySupport(_deviceId) == 0
+                                  ? QSerialPort::UnsupportedOperationError
+                                  : QSerialPort::UnknownError;
+        setError(QSerialPortErrorInfo(dtrError, QSerialPort::tr("Failed to set DTR")));
     }
 
     return result;
@@ -408,10 +522,17 @@ bool QSerialPortPrivate::setDataTerminalReady(bool set)
 
 bool QSerialPortPrivate::setRequestToSend(bool set)
 {
+    if (AndroidSerial::usePosixSerial()) {
+        return _posixSetRequestToSend(set);
+    }
+
     const bool result = AndroidSerial::setRequestToSend(_deviceId, set);
     if (!result) {
         qCWarning(AndroidSerialPortLog) << "Failed to set RTS for device ID" << _deviceId;
-        setError(QSerialPortErrorInfo(QSerialPort::UnknownError, QSerialPort::tr("Failed to set RTS")));
+        const auto rtsError = AndroidSerial::requestToSendSupport(_deviceId) == 0
+                                  ? QSerialPort::UnsupportedOperationError
+                                  : QSerialPort::UnknownError;
+        setError(QSerialPortErrorInfo(rtsError, QSerialPort::tr("Failed to set RTS")));
     }
 
     return result;
@@ -420,6 +541,10 @@ bool QSerialPortPrivate::setRequestToSend(bool set)
 bool QSerialPortPrivate::_setParameters(qint32 baudRate, QSerialPort::DataBits dataBits_,
                                         QSerialPort::StopBits stopBits_, QSerialPort::Parity parity_)
 {
+    if (AndroidSerial::usePosixSerial()) {
+        return _posixApplyPortSettings(baudRate, dataBits_, stopBits_, parity_, flowControl);
+    }
+
     const bool result =
         AndroidSerial::setParameters(_deviceId, baudRate, _dataBitsToAndroidDataBits(dataBits_),
                                      _stopBitsToAndroidStopBits(stopBits_), _parityToAndroidParity(parity_));
@@ -564,6 +689,10 @@ int QSerialPortPrivate::_flowControlToAndroidFlowControl(QSerialPort::FlowContro
 
 bool QSerialPortPrivate::setFlowControl(QSerialPort::FlowControl flowControl_)
 {
+    if (AndroidSerial::usePosixSerial()) {
+        return _posixApplyPortSettings(inputBaudRate, dataBits, stopBits, parity, flowControl_);
+    }
+
     const bool result = AndroidSerial::setFlowControl(_deviceId, _flowControlToAndroidFlowControl(flowControl_));
     if (!result) {
         qCWarning(AndroidSerialPortLog) << "Failed to set Flow Control for device ID" << _deviceId;
@@ -575,6 +704,10 @@ bool QSerialPortPrivate::setFlowControl(QSerialPort::FlowControl flowControl_)
 
 bool QSerialPortPrivate::setBreakEnabled(bool set)
 {
+    if (AndroidSerial::usePosixSerial()) {
+        return _posixSetBreakEnabled(set);
+    }
+
     const bool result = AndroidSerial::setBreak(_deviceId, set);
     if (!result) {
         setError(QSerialPortErrorInfo(QSerialPort::UnknownError, QSerialPort::tr("Failed to set Break Enabled")));

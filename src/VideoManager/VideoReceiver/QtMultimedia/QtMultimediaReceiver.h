@@ -22,7 +22,6 @@ public:
     explicit QtMultimediaReceiver(QObject *parent = nullptr);
     virtual ~QtMultimediaReceiver();
 
-    static bool enabled();
     static void *createVideoSink(QQuickItem *widget, QObject *parent = nullptr);
     static void releaseVideoSink(void *sink);
     static VideoReceiver *createVideoReceiver(QObject *parent);
@@ -34,7 +33,6 @@ public slots:
     void stopDecoding() override;
     void startRecording(const QString &videoFile, VideoReceiver::FILE_FORMAT format) override;
     void stopRecording() override;
-    void takeScreenshot(const QString &imageFile) override;
 
 protected:
     QTimer _frameTimer;

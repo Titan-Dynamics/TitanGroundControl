@@ -8,14 +8,21 @@ import json
 import logging
 import os
 import re
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any
 from urllib.parse import quote, urlsplit, urlunsplit
 
-import jinja2
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
-from xml_utils import XMLParseError, xml_parse as _xml_parse
+import jinja2
+from ci_bootstrap import ensure_tools_dir
+
+ensure_tools_dir(__file__)
+
+from common.cobertura import CoberturaError, read_cobertura
+from common.format import format_bytes, format_delta_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +37,12 @@ def _parse_coverage_percent(path: Path) -> float | None:
     if not path.exists():
         return None
     try:
-        root = _xml_parse(path).getroot()
-        if int(root.get("lines-valid", 0)) == 0:
+        metrics = read_cobertura(path)
+        if metrics.lines_valid == 0:
             return None
-        return float(root.get("line-rate", 0.0)) * 100.0
-    except (XMLParseError, OSError, ValueError):
-        logger.debug("Failed to parse coverage from %s", path, exc_info=True)
+        return metrics.line_percent
+    except CoberturaError:
+        logger.warning("Failed to parse coverage from %s", path, exc_info=True)
         return None
 
 
@@ -45,8 +52,8 @@ def _parse_precommit_results(path: Path) -> tuple[str | None, str | None, str | 
 
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        logger.debug("Failed to parse pre-commit results from %s", path, exc_info=True)
+    except (json.JSONDecodeError, OSError):
+        logger.warning("Failed to parse pre-commit results from %s", path, exc_info=True)
         return None, None, None
 
     exit_code = str(data.get("exit_code", "1")).strip()
@@ -55,7 +62,7 @@ def _parse_precommit_results(path: Path) -> tuple[str | None, str | None, str | 
     skipped = str(data.get("skipped", "0")).strip()
     run_url = str(data.get("run_url", "")).strip()
 
-    status = "Passed" if exit_code == "0" else "Failed (non-blocking)"
+    status = "Passed" if exit_code == "0" else "Failed"
     details = _view_link(run_url)
     note = f"Pre-commit hooks: {passed} passed, {failed or '0'} failed, {skipped or '0'} skipped."
     return status, details, note
@@ -98,30 +105,14 @@ def _count_test_results(content: str) -> tuple[int, int, int]:
     return passed, failed, skipped
 
 
-def _failed_test_lines(content: str, limit: int = 20) -> list[str]:
+def _failed_test_lines(content: str, limit: int = 20, max_len: int = 500) -> list[str]:
     lines: list[str] = []
     for line in content.splitlines():
         if re.search(r"Test #[0-9]+: .* \*\*\*Failed|^FAIL", line):
-            lines.append(line)
+            lines.append(line[:max_len])
             if len(lines) >= limit:
                 break
     return lines
-
-
-def _format_delta_mb(delta_bytes: int) -> str:
-    delta_mb = delta_bytes / 1024.0 / 1024.0
-    if delta_bytes > 0:
-        return f"+{delta_mb:.2f} MB (increase)"
-    if delta_bytes < 0:
-        return f"{delta_mb:.2f} MB (decrease)"
-    return "No change"
-
-
-def _format_size_human(size_bytes: int) -> str:
-    size_mb = size_bytes / 1024.0 / 1024.0
-    if size_mb >= 1024:
-        return f"{(size_mb / 1024):.2f} GB"
-    return f"{size_mb:.2f} MB"
 
 
 def _collect_test_data(base_dir: Path, env: Mapping[str, str]) -> dict[str, Any] | None:
@@ -142,7 +133,12 @@ def _collect_test_data(base_dir: Path, env: Mapping[str, str]) -> dict[str, Any]
         total_failed += failed
         total_skipped += skipped
 
-        entry: dict[str, Any] = {"arch": arch, "passed": passed, "failed": failed, "skipped": skipped}
+        entry: dict[str, Any] = {
+            "arch": arch,
+            "passed": passed,
+            "failed": failed,
+            "skipped": skipped,
+        }
         if failed > 0:
             has_failures = True
             entry["failed_lines"] = _failed_test_lines(content)
@@ -179,16 +175,26 @@ def _collect_artifact_data(base_dir: Path, env: Mapping[str, str]) -> dict[str, 
 
     try:
         pr_data = json.loads(pr_sizes_path.read_text(encoding="utf-8"))
-    except Exception:
-        logger.debug("Failed to parse PR sizes from %s", pr_sizes_path, exc_info=True)
+    except (json.JSONDecodeError, OSError):
+        logger.warning("Failed to parse PR sizes from %s", pr_sizes_path, exc_info=True)
         return None
 
     baseline_path = base_dir / _env(env, "BASELINE_SIZES_JSON", "baseline-sizes.json")
+    expected_base_sha = _env(env, "BASELINE_SHA")
     baseline: dict[str, int] = {}
     if baseline_path.exists():
         try:
             baseline_data = json.loads(baseline_path.read_text(encoding="utf-8"))
-            for artifact in baseline_data.get("artifacts", []):
+            if expected_base_sha and baseline_data.get("head_sha") != expected_base_sha:
+                logger.warning(
+                    "Ignoring size baseline for %s; PR base is %s",
+                    baseline_data.get("head_sha", "unknown revision"),
+                    expected_base_sha,
+                )
+                baseline_artifacts = []
+            else:
+                baseline_artifacts = baseline_data.get("artifacts", [])
+            for artifact in baseline_artifacts:
                 if not isinstance(artifact, dict):
                     continue
                 name = str(artifact.get("name", "")).strip()
@@ -198,8 +204,8 @@ def _collect_artifact_data(base_dir: Path, env: Mapping[str, str]) -> dict[str, 
                     baseline[name] = int(artifact.get("size_bytes", 0))
                 except (TypeError, ValueError):
                     continue
-        except Exception:
-            logger.debug("Failed to parse baseline sizes from %s", baseline_path, exc_info=True)
+        except (json.JSONDecodeError, OSError):
+            logger.warning("Failed to parse baseline sizes from %s", baseline_path, exc_info=True)
             baseline = {}
 
     artifacts = pr_data.get("artifacts", [])
@@ -218,35 +224,47 @@ def _collect_artifact_data(base_dir: Path, env: Mapping[str, str]) -> dict[str, 
             new_size = int(artifact.get("size_bytes", 0))
         except (TypeError, ValueError):
             continue
-        size_human = str(artifact.get("size_human", "")).strip() or _format_size_human(new_size)
+        size_human = str(artifact.get("size_human", "")).strip() or format_bytes(new_size)
 
-        entry: dict[str, Any] = {"name": name, "size_human": size_human}
+        entry: dict[str, Any] = {
+            "name": name,
+            "size_human": size_human,
+            "delta_human": "N/A (no matching artifact)",
+        }
         if baseline and name in baseline:
             delta = new_size - baseline[name]
             total_delta += delta
             entry["delta"] = delta
-            entry["delta_human"] = _format_delta_mb(delta)
+            entry["delta_human"] = format_delta_bytes(delta)
         items.append(entry)
 
+    if not items:
+        return None
     return {
         "entries": items,
-        "has_baseline": bool(baseline),
+        "has_baseline": any("delta" in item for item in items),
+        "baseline_sha": expected_base_sha[:7],
         "total_delta": total_delta,
         "total_delta_mb": abs(total_delta) / 1024.0 / 1024.0,
     }
 
 
-def generate_comment(env: Mapping[str, str], base_dir: Path, now_utc: datetime | None = None) -> str:
+def generate_comment(
+    env: Mapping[str, str], base_dir: Path, now_utc: datetime | None = None
+) -> str:
     table = _env(env, "BUILD_TABLE")
     summary = _env(env, "BUILD_SUMMARY", "Some builds still in progress.")
     precommit_status = _env(env, "PRECOMMIT_STATUS", "Not Triggered")
     precommit_url = _env(env, "PRECOMMIT_URL")
     triggered_by = _env(env, "TRIGGERED_BY", "Unknown")
+    commit = _env(env, "COMMIT_SHA")[:7]
 
     precommit_details = _view_link(precommit_url) or "-"
     precommit_note = ""
 
-    precommit_path = base_dir / _env(env, "PRECOMMIT_RESULTS_PATH", "artifacts/pre-commit-results/pre-commit-results.json")
+    precommit_path = base_dir / _env(
+        env, "PRECOMMIT_RESULTS_PATH", "artifacts/pre-commit-results/pre-commit-results.json"
+    )
     parsed_status, parsed_details, parsed_note = _parse_precommit_results(precommit_path)
     if parsed_status:
         precommit_status = parsed_status
@@ -255,10 +273,11 @@ def generate_comment(env: Mapping[str, str], base_dir: Path, now_utc: datetime |
     if parsed_note:
         precommit_note = parsed_note
 
-    now = now_utc or datetime.now(UTC)
+    now = now_utc or datetime.now(timezone.utc)
 
     jinja_env = jinja2.Environment(
         loader=jinja2.FileSystemLoader(_TEMPLATE_DIR),
+        autoescape=jinja2.select_autoescape(),  # CodeQL py/jinja2/autoescape-false; no-op for non-html/xml templates.
         keep_trailing_newline=True,
         trim_blocks=True,
         lstrip_blocks=True,
@@ -268,12 +287,17 @@ def generate_comment(env: Mapping[str, str], base_dir: Path, now_utc: datetime |
     rendered = template.render(
         table=table,
         summary=summary,
-        precommit={"status": precommit_status, "details": precommit_details, "note": precommit_note},
+        precommit={
+            "status": precommit_status,
+            "details": precommit_details,
+            "note": precommit_note,
+        },
         tests=_collect_test_data(base_dir, env),
         coverage=_collect_coverage_data(base_dir, env),
         artifacts=_collect_artifact_data(base_dir, env),
         timestamp=now.strftime("%Y-%m-%d %H:%M:%S UTC"),
         triggered_by=triggered_by,
+        commit=commit,
     )
 
     # Normalize: collapse 3+ blank lines to 2, strip trailing whitespace per line

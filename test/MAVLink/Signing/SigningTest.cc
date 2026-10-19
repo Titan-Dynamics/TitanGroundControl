@@ -1,6 +1,7 @@
 #include "SigningTest.h"
 
 #include <QtCore/QSettings>
+#include <QtCore/QRegularExpression>
 #include <QtTest/QTest>
 
 #include "MAVLinkLib.h"
@@ -265,18 +266,28 @@ void SigningTest::_testAddRawKey()
     };
     QCOMPARE(toQBA(signingKeys->keyAt(0)->keyBytes()), QByteArray::fromHex(hexKey.toLatin1()));
 
+    expectLogMessage("MAVLink.SigningKeys", QtWarningMsg, QRegularExpression("Key with name already exists:"));
     signingKeys->addRawKey(QStringLiteral("RawKey"), hexKey);
+    verifyExpectedLogMessage();
     QCOMPARE(signingKeys->keys()->count(), 1);
 
+    expectLogMessage("MAVLink.SigningKeys", QtWarningMsg, QRegularExpression("Raw key must be exactly 32 bytes"));
     signingKeys->addRawKey(QStringLiteral("ShortKey"), QStringLiteral("0102030405"));
+    verifyExpectedLogMessage();
     QCOMPARE(signingKeys->keys()->count(), 1);
 
+    expectLogMessage("MAVLink.SigningKeys", QtWarningMsg, QRegularExpression("Raw key must be exactly 32 bytes"));
     signingKeys->addRawKey(QStringLiteral("LongKey"), hexKey + QStringLiteral("ff"));
+    verifyExpectedLogMessage();
     QCOMPARE(signingKeys->keys()->count(), 1);
 
+    expectLogMessage("MAVLink.SigningKeys", QtWarningMsg, QRegularExpression("Key name must not be empty"));
     signingKeys->addRawKey(QString(), hexKey);
+    verifyExpectedLogMessage();
     QCOMPARE(signingKeys->keys()->count(), 1);
+    expectLogMessage("MAVLink.SigningKeys", QtWarningMsg, QRegularExpression("Hex key must not be empty"));
     signingKeys->addRawKey(QStringLiteral("EmptyHex"), QString());
+    verifyExpectedLogMessage();
     QCOMPARE(signingKeys->keys()->count(), 1);
 
     const MAVLinkSigning::SigningKey expectedBytes = signingKeys->keyAt(0)->keyBytes();
@@ -302,11 +313,15 @@ void SigningTest::_testMaxKeyLimit()
     }
     QCOMPARE(signingKeys->keys()->count(), MAVLinkSigningKeys::kMaxKeys);
 
+    expectLogMessage("MAVLink.SigningKeys", QtWarningMsg, QRegularExpression("Maximum key count reached:"));
     signingKeys->addKey(QStringLiteral("Overflow"), QStringLiteral("overflow"));
+    verifyExpectedLogMessage();
     QCOMPARE(signingKeys->keys()->count(), MAVLinkSigningKeys::kMaxKeys);
 
     const QString hexKey = QStringLiteral("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
+    expectLogMessage("MAVLink.SigningKeys", QtWarningMsg, QRegularExpression("Maximum key count reached:"));
     signingKeys->addRawKey(QStringLiteral("OverflowRaw"), hexKey);
+    verifyExpectedLogMessage();
     QCOMPARE(signingKeys->keys()->count(), MAVLinkSigningKeys::kMaxKeys);
 
     signingKeys->removeAllKeys();
@@ -533,7 +548,9 @@ void SigningTest::_testTryDetectKeySuspended()
     QVERIFY(suspendedCtrl.channel().isAutoDetectSuspended());
     QVERIFY(MAVLinkSigningKeys::instance()->tryDetectKey(&suspendedCtrl, message).isEmpty());
     QVERIFY(!suspendedCtrl.isEnabled());
+    expectLogMessage("MAVLink.SigningController", QtWarningMsg, QRegularExpression("Signing operation cancelled"));
     suspendedCtrl.cancelPending();
+    verifyExpectedLogMessage();
     QVERIFY(!suspendedCtrl.channel().isAutoDetectSuspended());
 
     constexpr auto kActiveCh = static_cast<mavlink_channel_t>(6);
@@ -687,6 +704,110 @@ void SigningTest::_testTryDetectKeyInstallsSecureCallback()
             MAVLinkSigning::secureConnectionAcceptUnsignedCallback);
     QVERIFY(status->signing->accept_unsigned_callback !=
             MAVLinkSigning::insecureConnectionAcceptUnsignedCallback);
+
+    signingKeys->removeAllKeys();
+}
+
+void SigningTest::_testRefreshOutgoingTimestamp()
+{
+    SigningChannel ch;
+    const QByteArray rawKey(32, '\x77');
+    QVERIFY(ch.init(MAVLINK_COMM_0, rawKey, MAVLinkSigning::insecureConnectionAcceptUnsignedCallback));
+
+    const mavlink_signing_t* const signing = mavlink_get_channel_status(MAVLINK_COMM_0)->signing;
+    QVERIFY(signing);
+
+    // Simulate the issue #14375 stall: init was 3 minutes ago, no outbound packets sent since.
+    constexpr uint64_t kThreeMinutesTicks = 3ULL * 60 * 100'000;  // 10µs ticks
+    const uint64_t stale = MAVLinkSigning::currentSigningTimestampTicks() - kThreeMinutesTicks;
+    const_cast<mavlink_signing_t*>(signing)->timestamp = stale;
+
+    QVERIFY(ch.refreshOutgoingTimestamp());
+    QVERIFY(signing->timestamp >= MAVLinkSigning::currentSigningTimestampTicks() - 100'000);  // within 1s of wall clock
+
+    // Second call with no wall-clock advance should be a no-op (already at/ahead of wall clock).
+    const uint64_t afterFirst = signing->timestamp;
+    const_cast<mavlink_signing_t*>(signing)->timestamp = afterFirst + (10ULL * 100'000);  // 10s into the future
+    QVERIFY(!ch.refreshOutgoingTimestamp());
+    QCOMPARE(signing->timestamp, afterFirst + (10ULL * 100'000));
+
+    QVERIFY(ch.init(MAVLINK_COMM_0, QByteArrayView(), nullptr));
+    QVERIFY(!ch.refreshOutgoingTimestamp());  // disabled → no-op
+}
+
+// Regression: mavlink/qgroundcontrol#14430 — sendMessageMultiple caches signed bytes; without send-time re-signing
+// the frozen timestamp drifts behind wall clock and the receiver rejects with OLD_TIMESTAMP.
+void SigningTest::_testSignOutgoingRefreshesCachedTimestamp()
+{
+    SigningChannel ch;
+    QByteArray rawKey(32, '\0');
+    for (int i = 0; i < 32; ++i) {
+        rawKey[i] = static_cast<char>(i + 1);
+    }
+    QVERIFY(ch.init(MAVLINK_COMM_1, rawKey, MAVLinkSigning::insecureConnectionAcceptUnsignedCallback));
+
+    auto* const signing = mavlink_get_channel_status(MAVLINK_COMM_1)->signing;
+    QVERIFY(signing);
+
+    // Encode once while the clock is stalled 3 minutes in the past: this is the cached message whose signature
+    // timestamp is frozen stale, exactly as sendMessageMultiple would hold it across retries.
+    constexpr uint64_t kThreeMinutesTicks = 3ULL * 60 * 100'000;
+    const uint64_t stale = MAVLinkSigning::currentSigningTimestampTicks() - kThreeMinutesTicks;
+    signing->timestamp = stale;
+
+    const mavlink_heartbeat_t heartbeat{};
+    mavlink_message_t cached;
+    (void)mavlink_msg_heartbeat_encode_chan(1, MAV_COMP_ID_AUTOPILOT1, MAVLINK_COMM_1, &cached, &heartbeat);
+    QVERIFY(MAVLinkSigning::isMessageSigned(cached));
+    QVERIFY(MAVLinkSigning::verifySignature(rawKey, cached));
+
+    const auto sigTimestamp = [](const mavlink_message_t& m) {
+        uint64_t ts = 0;
+        for (int i = 0; i < 6; ++i) {
+            ts |= static_cast<uint64_t>(m.signature[1 + i]) << (8 * i);
+        }
+        return ts;
+    };
+    const uint64_t cachedTs = sigTimestamp(cached);
+    QVERIFY(cachedTs < MAVLinkSigning::currentSigningTimestampTicks() - (60ULL * 100'000));  // genuinely stale
+
+    // Re-sign the cached bytes at send time.
+    QVERIFY(ch.signOutgoing(cached));
+
+    // Refreshed signature jumps forward to ~wall clock, stays monotonic, and still verifies against the key.
+    const uint64_t refreshedTs = sigTimestamp(cached);
+    QVERIFY(refreshedTs > cachedTs);
+    QVERIFY(refreshedTs >= MAVLinkSigning::currentSigningTimestampTicks() - 100'000);
+    QVERIFY(MAVLinkSigning::isMessageSigned(cached));
+    QVERIFY(MAVLinkSigning::verifySignature(rawKey, cached));
+
+    // Disabled channel → no-op.
+    QVERIFY(ch.init(MAVLINK_COMM_1, QByteArrayView(), nullptr));
+    QVERIFY(!ch.signOutgoing(cached));
+}
+
+// Round-trips key bytes through the QSettings store (QGCKeychain removed): _save persists, _load re-reads,
+// and removal must not resurrect on reload.
+void SigningTest::_testKeyStorePersistRoundTrip()
+{
+    auto* signingKeys = MAVLinkSigningKeys::instance();
+    signingKeys->removeAllKeys();
+
+    const QString hexA = QStringLiteral("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
+    const QString hexB = QStringLiteral("202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f");
+    QVERIFY(signingKeys->addRawKey(QStringLiteral("PersistA"), hexA));
+    QVERIFY(signingKeys->addRawKey(QStringLiteral("PersistB"), hexB));
+
+    signingKeys->_load();
+    QCOMPARE(signingKeys->keys()->count(), 2);
+    QCOMPARE(signingKeys->keyHexByName(QStringLiteral("PersistA")), hexA);
+    QCOMPARE(signingKeys->keyHexByName(QStringLiteral("PersistB")), hexB);
+
+    signingKeys->removeKey(QStringLiteral("PersistA"));
+    signingKeys->_load();
+    QCOMPARE(signingKeys->keys()->count(), 1);
+    QVERIFY(signingKeys->keyHexByName(QStringLiteral("PersistA")).isEmpty());
+    QCOMPARE(signingKeys->keyHexByName(QStringLiteral("PersistB")), hexB);
 
     signingKeys->removeAllKeys();
 }

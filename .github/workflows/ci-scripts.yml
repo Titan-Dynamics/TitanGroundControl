@@ -9,13 +9,16 @@ concurrency:
 
 permissions:
   contents: read
-  checks: write
 
 jobs:
   lint-workflows:
     name: Lint Workflows
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # checks: write scoped here: only actionlint reports via github-pr-check.
+    permissions:
+      contents: read
+      checks: write
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@v2
@@ -23,7 +26,7 @@ jobs:
           egress-policy: audit
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
           sparse-checkout: |
@@ -31,6 +34,7 @@ jobs:
             .github/workflows
             .github/actions
           sparse-checkout-cone-mode: false
+          persist-credentials: false
 
       - name: Run actionlint
         uses: reviewdog/action-actionlint@v1
@@ -41,8 +45,8 @@ jobs:
           fail_level: error
           level: warning
 
-  test-ci-scripts:
-    name: Test CI Scripts
+  validate-runner-images:
+    name: Validate Runner Images
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -52,37 +56,149 @@ jobs:
           egress-policy: audit
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          sparse-checkout: .github/runner-images
+          persist-credentials: false
+
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@v3
+        with:
+          version: '1.16.0'
+
+      - name: Validate Packer template
+        working-directory: .github/runner-images
+        env:
+          PKR_VAR_aws_region: us-west-2
+          PKR_VAR_subnet_id: subnet-00000000000000000
+          PKR_VAR_source_repository: https://github.com/mavlink/qgroundcontrol.git
+          PKR_VAR_source_ref: '0000000000000000000000000000000000000000'
+          PKR_VAR_qt_version: 0.0.0
+          PKR_VAR_qt_modules: ''
+        run: |
+          packer fmt -check qgc-ubuntu24-x64.pkr.hcl
+          packer init qgc-ubuntu24-x64.pkr.hcl
+          packer validate qgc-ubuntu24-x64.pkr.hcl
+
+  test-ci-scripts:
+    name: Test CI Scripts (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.12']
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
           sparse-checkout: |
-            .github/actions/setup-python
-            .github/build-config.json
-            .github/scripts
-            .github/workflows/build-results.yml
-            tools/pyproject.toml
-            tools/uv.lock
-            tools/*.py
-            tools/setup
-            tools/tests
-            tools/common
-            tools/generators
-            tools/analyzers
-            tools/locators
-            tools/log-analyzer
-            tools/lsp
-            tools/simulation
-            tools/translations
+            .clusterfuzzlite
+            .github
+            .vscode
+            .gitattributes
+            .releaserc.json
+            .pre-commit-config.yaml
+            CMakeLists.txt
+            CMakePresets.json
+            cmake
+            justfile
+            src/AppSettings/pages
+            src/Settings
+            src/Vehicle/FactGroups/VehicleGPSFactGroup.h
+            tools
+            deploy
           sparse-checkout-cone-mode: false
+          persist-credentials: false
 
       - name: Setup Python
         uses: ./.github/actions/setup-python
         with:
           groups: scripts,test
-          python-version: '3.12'
+          python-version: ${{ matrix.python-version }}
 
       - name: Python syntax smoke test
-        run: python3 -m compileall .github/scripts tools/*.py tools/setup tools/common tools/generators tools/analyzers tools/locators tools/log-analyzer tools/lsp tools/simulation tools/translations
+        run: python3 -m compileall .github/scripts tools/*.py tools/setup tools/common tools/qgc_tools tools/generators tools/analyzers tools/simulation tools/translations
 
       - name: Run CI script tests
         run: pytest -q tools/tests .github/scripts/tests
+
+  test-tools-windows:
+    name: Test Python Tools (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            .github/actions/setup-python
+            cmake/Helpers.cmake
+            cmake/ccache-launcher.cmd.in
+            tools
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: ./.github/actions/setup-python
+        with:
+          groups: test
+          python-version: '3.12'
+
+      - name: Run environment, process, download, and cache tests
+        run: >-
+          pytest -q tools/tests/test_moccache.py tools/tests/test_install_python.py
+          tools/tests/test_deps.py tools/tests/test_tool_version.py tools/tests/test_net.py
+          tools/tests/test_proc.py tools/tests/test_install_qt.py tools/tests/test_ccache_launcher.py
+          tools/tests/test_gh_actions.py
+
+  lint-python:
+    name: Lint Python
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Setup Python
+        uses: ./.github/actions/setup-python
+        with:
+          groups: dev
+          python-version: '3.10'
+      - name: Validate configuration
+        run: python tools/validate_configs.py
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: Validate release rules
+        run: |
+          npm ci --prefix tools/release --ignore-scripts
+          npm test --prefix tools/release
+      - name: Ruff
+        run: |
+          ruff check tools .github/scripts .github/runner-images .clusterfuzzlite deploy test/ADSB/ADSB_Simulator.py
+          ruff format --check tools .github/scripts .github/runner-images .clusterfuzzlite deploy test/ADSB/ADSB_Simulator.py
+      - name: Pyright
+        run: pyright
+      - name: Import boundaries
+        working-directory: tools
+        run: lint-imports --config pyproject.toml

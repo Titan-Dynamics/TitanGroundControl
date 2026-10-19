@@ -377,7 +377,7 @@
   <context>
     <name>APMAutoPilotPlugin</name>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMAutoPilotPlugin.cc" line="261"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMAutoPilotPlugin.cc" line="268"/>
       <source>WARNING: The flight board you are using has a critical service bulletin against it which advises against flying. For details see: https://discuss.cubepilot.org/t/sb-0000002-critical-service-bulletin-for-cubes-purchased-between-january-2019-to-present-do-not-fly/406</source>
       <translation>警告: お使いのボードには、飛行を控えるよう勧告する重大なサービス情報が含まれています。詳細は以下をご覧ください: https://discuss.cubepilot.org/t/sb-0000002-critical-service-bulletin-for-cubes-purchased-between-january-2019-to-present-do-not-fly/406</translation>
     </message>
@@ -464,37 +464,37 @@
   <context>
     <name>APMCalcAmpsPerVoltDialog</name>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMCalcAmpsPerVoltDialog.qml" line="9"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMCalcAmpsPerVoltDialog.qml" line="10"/>
       <source>Calculate Amps per Volt</source>
       <translation type="unfinished">Calculate Amps per Volt</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMCalcAmpsPerVoltDialog.qml" line="28"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMCalcAmpsPerVoltDialog.qml" line="29"/>
       <source>Measure current draw using an external current meter and enter the value below. Click Calculate to set the new amps per volt value.</source>
       <translation type="unfinished">Measure current draw using an external current meter and enter the value below. Click Calculate to set the new amps per volt value.</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMCalcAmpsPerVoltDialog.qml" line="35"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMCalcAmpsPerVoltDialog.qml" line="36"/>
       <source>Vehicle current telemetry is not available. Connect to a vehicle with a powered battery to enable automatic calculation.</source>
       <translation type="unfinished">Vehicle current telemetry is not available. Connect to a vehicle with a powered battery to enable automatic calculation.</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMCalcAmpsPerVoltDialog.qml" line="43"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMCalcAmpsPerVoltDialog.qml" line="44"/>
       <source>Measured current:</source>
       <translation type="unfinished">Measured current:</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMCalcAmpsPerVoltDialog.qml" line="47"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMCalcAmpsPerVoltDialog.qml" line="48"/>
       <source>Vehicle current:</source>
       <translation type="unfinished">Vehicle current:</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMCalcAmpsPerVoltDialog.qml" line="55"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMCalcAmpsPerVoltDialog.qml" line="56"/>
       <source>Amps per volt:</source>
       <translation type="unfinished">Amps per volt:</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMCalcAmpsPerVoltDialog.qml" line="60"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMCalcAmpsPerVoltDialog.qml" line="61"/>
       <source>Calculate And Set</source>
       <translation type="unfinished">Calculate And Set</translation>
     </message>
@@ -502,39 +502,807 @@
   <context>
     <name>APMCalcVoltageDividerDialog</name>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMCalcVoltageDividerDialog.qml" line="9"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMCalcVoltageDividerDialog.qml" line="10"/>
       <source>Calculate Voltage Multiplier</source>
       <translation type="unfinished">Calculate Voltage Multiplier</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMCalcVoltageDividerDialog.qml" line="28"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMCalcVoltageDividerDialog.qml" line="29"/>
       <source>Measure battery voltage using an external voltmeter and enter the value below. Click Calculate to set the new adjusted voltage multiplier.</source>
       <translation type="unfinished">Measure battery voltage using an external voltmeter and enter the value below. Click Calculate to set the new adjusted voltage multiplier.</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMCalcVoltageDividerDialog.qml" line="35"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMCalcVoltageDividerDialog.qml" line="36"/>
       <source>Vehicle voltage telemetry is not available. Connect to a vehicle with a powered battery to enable automatic calculation.</source>
       <translation type="unfinished">Vehicle voltage telemetry is not available. Connect to a vehicle with a powered battery to enable automatic calculation.</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMCalcVoltageDividerDialog.qml" line="43"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMCalcVoltageDividerDialog.qml" line="44"/>
       <source>Measured voltage:</source>
       <translation type="unfinished">Measured voltage:</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMCalcVoltageDividerDialog.qml" line="47"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMCalcVoltageDividerDialog.qml" line="48"/>
       <source>Vehicle voltage:</source>
       <translation type="unfinished">Vehicle voltage:</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMCalcVoltageDividerDialog.qml" line="55"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMCalcVoltageDividerDialog.qml" line="56"/>
       <source>Voltage multiplier:</source>
       <translation type="unfinished">Voltage multiplier:</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMCalcVoltageDividerDialog.qml" line="60"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMCalcVoltageDividerDialog.qml" line="61"/>
       <source>Calculate And Set</source>
       <translation type="unfinished">Calculate And Set</translation>
+    </message>
+  </context>
+  <context>
+    <name>APMDataFlashLogParser</name>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="128"/>
+      <source>Main</source>
+      <translation type="unfinished">Main</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="129"/>
+      <source>Radio</source>
+      <translation type="unfinished">Radio</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="130"/>
+      <source>Compass</source>
+      <translation type="unfinished">Compass</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="131"/>
+      <source>Optflow</source>
+      <translation type="unfinished">Optflow</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="132"/>
+      <source>Radio Failsafe</source>
+      <translation type="unfinished">Radio Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="133"/>
+      <source>Battery Failsafe</source>
+      <translation type="unfinished">Battery Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="134"/>
+      <source>GPS Failsafe</source>
+      <translation type="unfinished">GPS Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="135"/>
+      <source>GCS Failsafe</source>
+      <translation type="unfinished">GCS Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="136"/>
+      <source>Fence Failsafe</source>
+      <translation type="unfinished">Fence Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="137"/>
+      <source>Flight mode</source>
+      <translation type="unfinished">Flight mode</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="138"/>
+      <source>GPS</source>
+      <translation type="unfinished">GPS</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="139"/>
+      <source>Crash Check</source>
+      <translation type="unfinished">Crash Check</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="140"/>
+      <source>Flip</source>
+      <translation type="unfinished">Flip</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="141"/>
+      <source>Autotune</source>
+      <translation type="unfinished">Autotune</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="142"/>
+      <source>Parachute</source>
+      <translation type="unfinished">Parachute</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="143"/>
+      <source>EKF Check</source>
+      <translation type="unfinished">EKF Check</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="144"/>
+      <source>EKF Failsafe</source>
+      <translation type="unfinished">EKF Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="145"/>
+      <source>Barometer</source>
+      <translation type="unfinished">Barometer</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="146"/>
+      <source>CPU Load Watchdog</source>
+      <translation type="unfinished">CPU Load Watchdog</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="147"/>
+      <source>ADSB Failsafe</source>
+      <translation type="unfinished">ADSB Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="148"/>
+      <source>Terrain Data</source>
+      <translation type="unfinished">Terrain Data</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="149"/>
+      <source>Navigation</source>
+      <translation type="unfinished">Navigation</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="150"/>
+      <source>Terrain Failsafe</source>
+      <translation type="unfinished">Terrain Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="151"/>
+      <source>EKF Primary</source>
+      <translation type="unfinished">EKF Primary</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="152"/>
+      <source>Thrust Loss Check</source>
+      <translation type="unfinished">Thrust Loss Check</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="153"/>
+      <source>Sensor Failsafe</source>
+      <translation type="unfinished">Sensor Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="154"/>
+      <source>Leak Failsafe</source>
+      <translation type="unfinished">Leak Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="155"/>
+      <source>Pilot Input</source>
+      <translation type="unfinished">Pilot Input</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="156"/>
+      <source>Vibration Failsafe</source>
+      <translation type="unfinished">Vibration Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="157"/>
+      <source>Internal Error</source>
+      <translation type="unfinished">Internal Error</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="158"/>
+      <source>Deadreckon Failsafe</source>
+      <translation type="unfinished">Deadreckon Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="159"/>
+      <source>Subsystem %1</source>
+      <translation type="unfinished">Subsystem %1</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="165"/>
+      <source>INS delay</source>
+      <translation type="unfinished">INS delay</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="168"/>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="172"/>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="220"/>
+      <source>Errors Resolved</source>
+      <translation type="unfinished">Errors Resolved</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="169"/>
+      <source>Late Frame</source>
+      <translation type="unfinished">Late Frame</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="173"/>
+      <source>Failed to initialise</source>
+      <translation type="unfinished">Failed to initialise</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="174"/>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="223"/>
+      <source>Unhealthy</source>
+      <translation type="unfinished">Unhealthy</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="187"/>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="191"/>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="226"/>
+      <source>Failsafe Resolved</source>
+      <translation type="unfinished">Failsafe Resolved</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="188"/>
+      <source>Failsafe Triggered</source>
+      <translation type="unfinished">Failsafe Triggered</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="192"/>
+      <source>Altitude fence breach</source>
+      <translation type="unfinished">Altitude fence breach</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="193"/>
+      <source>Circular fence breach</source>
+      <translation type="unfinished">Circular fence breach</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="194"/>
+      <source>Altitude and circular fence breach</source>
+      <translation type="unfinished">Altitude and circular fence breach</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="195"/>
+      <source>Polygon fence breach</source>
+      <translation type="unfinished">Polygon fence breach</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="198"/>
+      <source>Flight mode change failure</source>
+      <translation type="unfinished">Flight mode change failure</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="201"/>
+      <source>Glitch cleared</source>
+      <translation type="unfinished">Glitch cleared</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="202"/>
+      <source>GPS glitch occurred</source>
+      <translation type="unfinished">GPS glitch occurred</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="205"/>
+      <source>Crash into ground detected</source>
+      <translation type="unfinished">Crash into ground detected</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="206"/>
+      <source>Loss of control detected</source>
+      <translation type="unfinished">Loss of control detected</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="209"/>
+      <source>Flip abandoned</source>
+      <translation type="unfinished">Flip abandoned</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="212"/>
+      <source>Parachute not deployed (too low)</source>
+      <translation type="unfinished">Parachute not deployed (too low)</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="213"/>
+      <source>Parachute not deployed (landed)</source>
+      <translation type="unfinished">Parachute not deployed (landed)</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="216"/>
+      <source>Variance cleared</source>
+      <translation type="unfinished">Variance cleared</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="217"/>
+      <source>Bad variance</source>
+      <translation type="unfinished">Bad variance</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="221"/>
+      <source>Baro glitch</source>
+      <translation type="unfinished">Baro glitch</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="222"/>
+      <source>Bad depth</source>
+      <translation type="unfinished">Bad depth</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="227"/>
+      <source>No action report only</source>
+      <translation type="unfinished">No action report only</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="228"/>
+      <source>Avoid by climb/descend</source>
+      <translation type="unfinished">Avoid by climb/descend</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="229"/>
+      <source>Avoid by horizontal move</source>
+      <translation type="unfinished">Avoid by horizontal move</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="230"/>
+      <source>Avoid perpendicular move</source>
+      <translation type="unfinished">Avoid perpendicular move</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="231"/>
+      <source>RTL invoked</source>
+      <translation type="unfinished">RTL invoked</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="234"/>
+      <source>Missing terrain data</source>
+      <translation type="unfinished">Missing terrain data</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="237"/>
+      <source>Failed to set destination</source>
+      <translation type="unfinished">Failed to set destination</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="238"/>
+      <source>RTL restarted</source>
+      <translation type="unfinished">RTL restarted</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="239"/>
+      <source>Circle initialisation failed</source>
+      <translation type="unfinished">Circle initialisation failed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="240"/>
+      <source>Destination outside fence</source>
+      <translation type="unfinished">Destination outside fence</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="241"/>
+      <source>RTL missing rangefinder</source>
+      <translation type="unfinished">RTL missing rangefinder</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="244"/>
+      <source>1st EKF became primary</source>
+      <translation type="unfinished">1st EKF became primary</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="245"/>
+      <source>2nd EKF became primary</source>
+      <translation type="unfinished">2nd EKF became primary</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="248"/>
+      <source>Thrust restored</source>
+      <translation type="unfinished">Thrust restored</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="249"/>
+      <source>Thrust loss detected</source>
+      <translation type="unfinished">Thrust loss detected</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="252"/>
+      <source>Excessive vibration compensation de-activated</source>
+      <translation type="unfinished">Excessive vibration compensation de-activated</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="253"/>
+      <source>Excessive vibration compensation activated</source>
+      <translation type="unfinished">Excessive vibration compensation activated</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="256"/>
+      <source>Internal errors detected</source>
+      <translation type="unfinished">Internal errors detected</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="263"/>
+      <source>Code %1</source>
+      <translation type="unfinished">Code %1</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="272"/>
+      <source>Armed</source>
+      <translation type="unfinished">Armed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="273"/>
+      <source>Disarmed</source>
+      <translation type="unfinished">Disarmed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="274"/>
+      <source>Auto Armed</source>
+      <translation type="unfinished">Auto Armed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="275"/>
+      <source>Land Complete Maybe</source>
+      <translation type="unfinished">Land Complete Maybe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="276"/>
+      <source>Land Complete</source>
+      <translation type="unfinished">Land Complete</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="277"/>
+      <source>Lost GPS</source>
+      <translation type="unfinished">Lost GPS</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="278"/>
+      <source>Flip Start</source>
+      <translation type="unfinished">Flip Start</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="279"/>
+      <source>Flip End</source>
+      <translation type="unfinished">Flip End</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="280"/>
+      <source>Set Home</source>
+      <translation type="unfinished">Set Home</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="281"/>
+      <source>Simple Mode Enabled</source>
+      <translation type="unfinished">Simple Mode Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="282"/>
+      <source>Simple Mode Disabled</source>
+      <translation type="unfinished">Simple Mode Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="283"/>
+      <source>Not Landed</source>
+      <translation type="unfinished">Not Landed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="284"/>
+      <source>Super Simple Mode Enabled</source>
+      <translation type="unfinished">Super Simple Mode Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="285"/>
+      <source>AutoTune Initialised</source>
+      <translation type="unfinished">AutoTune Initialised</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="286"/>
+      <source>AutoTune Off</source>
+      <translation type="unfinished">AutoTune Off</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="287"/>
+      <source>AutoTune Restart</source>
+      <translation type="unfinished">AutoTune Restart</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="288"/>
+      <source>AutoTune Success</source>
+      <translation type="unfinished">AutoTune Success</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="289"/>
+      <source>AutoTune Failed</source>
+      <translation type="unfinished">AutoTune Failed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="290"/>
+      <source>AutoTune Reached Limit</source>
+      <translation type="unfinished">AutoTune Reached Limit</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="291"/>
+      <source>AutoTune Pilot Testing</source>
+      <translation type="unfinished">AutoTune Pilot Testing</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="292"/>
+      <source>AutoTune Saved Gains</source>
+      <translation type="unfinished">AutoTune Saved Gains</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="293"/>
+      <source>Save Trim</source>
+      <translation type="unfinished">Save Trim</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="294"/>
+      <source>Save Waypoint Add</source>
+      <translation type="unfinished">Save Waypoint Add</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="295"/>
+      <source>Fence Enabled</source>
+      <translation type="unfinished">Fence Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="296"/>
+      <source>Fence Disabled</source>
+      <translation type="unfinished">Fence Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="297"/>
+      <source>Acro Trainer Off</source>
+      <translation type="unfinished">Acro Trainer Off</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="298"/>
+      <source>Acro Trainer Leveling</source>
+      <translation type="unfinished">Acro Trainer Leveling</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="299"/>
+      <source>Acro Trainer Limited</source>
+      <translation type="unfinished">Acro Trainer Limited</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="300"/>
+      <source>Gripper Grab</source>
+      <translation type="unfinished">Gripper Grab</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="301"/>
+      <source>Gripper Release</source>
+      <translation type="unfinished">Gripper Release</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="302"/>
+      <source>Parachute Disabled</source>
+      <translation type="unfinished">Parachute Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="303"/>
+      <source>Parachute Enabled</source>
+      <translation type="unfinished">Parachute Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="304"/>
+      <source>Parachute Released</source>
+      <translation type="unfinished">Parachute Released</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="305"/>
+      <source>Landing Gear Deployed</source>
+      <translation type="unfinished">Landing Gear Deployed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="306"/>
+      <source>Landing Gear Retracted</source>
+      <translation type="unfinished">Landing Gear Retracted</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="307"/>
+      <source>Motors Emergency Stopped</source>
+      <translation type="unfinished">Motors Emergency Stopped</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="308"/>
+      <source>Motors Emergency Stop Cleared</source>
+      <translation type="unfinished">Motors Emergency Stop Cleared</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="309"/>
+      <source>Motors Interlock Disabled</source>
+      <translation type="unfinished">Motors Interlock Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="310"/>
+      <source>Motors Interlock Enabled</source>
+      <translation type="unfinished">Motors Interlock Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="311"/>
+      <source>Rotor Runup Complete</source>
+      <translation type="unfinished">Rotor Runup Complete</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="312"/>
+      <source>Rotor Speed Below Critical</source>
+      <translation type="unfinished">Rotor Speed Below Critical</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="313"/>
+      <source>EKF Altitude Reset</source>
+      <translation type="unfinished">EKF Altitude Reset</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="314"/>
+      <source>Land Cancelled By Pilot</source>
+      <translation type="unfinished">Land Cancelled By Pilot</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="315"/>
+      <source>EKF Yaw Reset</source>
+      <translation type="unfinished">EKF Yaw Reset</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="316"/>
+      <source>ADSB Avoidance Enabled</source>
+      <translation type="unfinished">ADSB Avoidance Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="317"/>
+      <source>ADSB Avoidance Disabled</source>
+      <translation type="unfinished">ADSB Avoidance Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="318"/>
+      <source>Proximity Avoidance Enabled</source>
+      <translation type="unfinished">Proximity Avoidance Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="319"/>
+      <source>Proximity Avoidance Disabled</source>
+      <translation type="unfinished">Proximity Avoidance Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="320"/>
+      <source>GPS Primary Changed</source>
+      <translation type="unfinished">GPS Primary Changed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="321"/>
+      <source>ZigZag Store A</source>
+      <translation type="unfinished">ZigZag Store A</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="322"/>
+      <source>ZigZag Store B</source>
+      <translation type="unfinished">ZigZag Store B</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="323"/>
+      <source>Land Repo Active</source>
+      <translation type="unfinished">Land Repo Active</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="324"/>
+      <source>Standby Enabled</source>
+      <translation type="unfinished">Standby Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="325"/>
+      <source>Standby Disabled</source>
+      <translation type="unfinished">Standby Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="326"/>
+      <source>Fence Alt Max Enabled</source>
+      <translation type="unfinished">Fence Alt Max Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="327"/>
+      <source>Fence Alt Max Disabled</source>
+      <translation type="unfinished">Fence Alt Max Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="328"/>
+      <source>Fence Circle Enabled</source>
+      <translation type="unfinished">Fence Circle Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="329"/>
+      <source>Fence Circle Disabled</source>
+      <translation type="unfinished">Fence Circle Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="330"/>
+      <source>Fence Alt Min Enabled</source>
+      <translation type="unfinished">Fence Alt Min Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="331"/>
+      <source>Fence Alt Min Disabled</source>
+      <translation type="unfinished">Fence Alt Min Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="332"/>
+      <source>Fence Polygon Enabled</source>
+      <translation type="unfinished">Fence Polygon Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="333"/>
+      <source>Fence Polygon Disabled</source>
+      <translation type="unfinished">Fence Polygon Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="334"/>
+      <source>EK3 Source Set: Primary</source>
+      <translation type="unfinished">EK3 Source Set: Primary</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="335"/>
+      <source>EK3 Source Set: Secondary</source>
+      <translation type="unfinished">EK3 Source Set: Secondary</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="336"/>
+      <source>EK3 Source Set: Tertiary</source>
+      <translation type="unfinished">EK3 Source Set: Tertiary</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="337"/>
+      <source>Airspeed Primary Changed</source>
+      <translation type="unfinished">Airspeed Primary Changed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="338"/>
+      <source>Surfaced</source>
+      <translation type="unfinished">Surfaced</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="339"/>
+      <source>Not Surfaced</source>
+      <translation type="unfinished">Not Surfaced</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="340"/>
+      <source>Bottomed</source>
+      <translation type="unfinished">Bottomed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="341"/>
+      <source>Not Bottomed</source>
+      <translation type="unfinished">Not Bottomed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="342"/>
+      <source>Event %1</source>
+      <translation type="unfinished">Event %1</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="380"/>
+      <source>Failed to open DataFlash file</source>
+      <translation type="unfinished">Failed to open DataFlash file</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="386"/>
+      <source>DataFlash file is empty</source>
+      <translation type="unfinished">DataFlash file is empty</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="390"/>
+      <source>DataFlash file is too large to parse</source>
+      <translation type="unfinished">DataFlash file is too large to parse</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="396"/>
+      <source>Failed to memory-map DataFlash file</source>
+      <translation type="unfinished">Failed to memory-map DataFlash file</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="415"/>
+      <source>No valid FMT messages were found</source>
+      <translation type="unfinished">No valid FMT messages were found</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="485"/>
+      <source>Unknown</source>
+      <translation type="unfinished">Unknown</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/APMDataFlashLogParser.cc" line="487"/>
+      <source>Mode: %1</source>
+      <translation type="unfinished">Mode: %1</translation>
     </message>
   </context>
   <context>
@@ -863,22 +1631,22 @@
       <translation>ミッションを開始できません: 機体はアームできませんでした。</translation>
     </message>
     <message>
-      <location filename="../src/FirmwarePlugin/APM/APMFirmwarePlugin.h" line="87"/>
+      <location filename="../src/FirmwarePlugin/APM/APMFirmwarePlugin.h" line="88"/>
       <source>Guided</source>
       <translation type="unfinished">Guided</translation>
     </message>
     <message>
-      <location filename="../src/FirmwarePlugin/APM/APMFirmwarePlugin.h" line="88"/>
+      <location filename="../src/FirmwarePlugin/APM/APMFirmwarePlugin.h" line="89"/>
       <source>RTL</source>
       <translation type="unfinished">RTL</translation>
     </message>
     <message>
-      <location filename="../src/FirmwarePlugin/APM/APMFirmwarePlugin.h" line="89"/>
+      <location filename="../src/FirmwarePlugin/APM/APMFirmwarePlugin.h" line="90"/>
       <source>Smart RTL</source>
       <translation type="unfinished">Smart RTL</translation>
     </message>
     <message>
-      <location filename="../src/FirmwarePlugin/APM/APMFirmwarePlugin.h" line="90"/>
+      <location filename="../src/FirmwarePlugin/APM/APMFirmwarePlugin.h" line="91"/>
       <source>Auto</source>
       <translation type="unfinished">Auto</translation>
     </message>
@@ -1012,22 +1780,22 @@
   <context>
     <name>APMFlightModesComponentController</name>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMFlightModesComponentController.h" line="64"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMFlightModesComponentController.h" line="65"/>
       <source>Off</source>
       <translation>OFF</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMFlightModesComponentController.h" line="64"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMFlightModesComponentController.h" line="65"/>
       <source>Simple</source>
       <translation>簡易</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMFlightModesComponentController.h" line="64"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMFlightModesComponentController.h" line="65"/>
       <source>Super-Simple</source>
       <translation>より簡易</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMFlightModesComponentController.h" line="64"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMFlightModesComponentController.h" line="65"/>
       <source>Custom</source>
       <translation>カスタム</translation>
     </message>
@@ -1816,6 +2584,19 @@
     </message>
   </context>
   <context>
+    <name>APMLoggingComponent</name>
+    <message>
+      <location filename="../src/AutoPilotPlugins/APM/APMLoggingComponent.h" line="15"/>
+      <source>Configure ArduPilot logging parameters.</source>
+      <translation type="unfinished">Configure ArduPilot logging parameters.</translation>
+    </message>
+    <message>
+      <location filename="../src/AutoPilotPlugins/APM/APMLoggingComponent.h" line="26"/>
+      <source>Logging</source>
+      <translation type="unfinished">Logging</translation>
+    </message>
+  </context>
+  <context>
     <name>APMMainStatusIndicator</name>
     <message>
       <location filename="../src/FirmwarePlugin/APM/APMMainStatusIndicator.qml" line="15"/>
@@ -2031,7 +2812,7 @@
     </message>
     <message>
       <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="83"/>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="690"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="709"/>
       <source>Calibrate Compass</source>
       <translation>コンパス キャリブレーション</translation>
     </message>
@@ -2042,262 +2823,267 @@
     </message>
     <message>
       <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="95"/>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="747"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="766"/>
       <source>Sensor Settings</source>
       <translation>センサ設定</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="178"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="196"/>
       <source>Calibration Cancel</source>
       <translation>キャリブレーション キャンセル</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="268"/>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="307"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="286"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="325"/>
       <source>Calibration complete</source>
       <translation>キャリブレーション完了</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="179"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="197"/>
       <source>Waiting for Vehicle to response to Cancel. This may take a few seconds.</source>
       <translation>機体がキャンセルに応答するのを待機しています。数秒かかる場合があります。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="111"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="119"/>
       <source>(primary</source>
       <translation>(プライマリ</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="111"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="119"/>
       <source>(secondary</source>
       <translation>(セカンダリ</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="356"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="374"/>
       <source>Use Compass</source>
       <translation>コンパスを使用</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="284"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="302"/>
       <source>Shown in the indicator bars is the quality of the calibration for each compass.
 
 </source>
       <translation>インジケータバーに表示されているのは各コンパス キャリブレーションの品質状態です。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="107"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="115"/>
       <source>Compass %1 </source>
       <translation>コンパス %1 </translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="120"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="128"/>
       <source>, </source>
       <translation>, </translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="122"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="130"/>
       <source>external</source>
       <translation>外部</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="122"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="130"/>
       <source>internal</source>
       <translation>内部</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="285"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="175"/>
+      <source>Complete or cancel the current calibration first</source>
+      <translation type="unfinished">Complete or cancel the current calibration first</translation>
+    </message>
+    <message>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="303"/>
       <source>- Green indicates a well functioning compass.
 </source>
       <translation>- 緑色はコンパスが正常に機能していることを示しています。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="286"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="304"/>
       <source>- Yellow indicates a questionable compass or calibration.
 </source>
       <translation>- 黄色はコンパスやキャリブレーションに問題があることを示しています。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="287"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="305"/>
       <source>- Red indicates a compass which should not be used.
 
 </source>
       <translation>- 赤色は使用してはいけないコンパスを示しています。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="288"/>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="317"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="306"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="335"/>
       <source>YOU MUST REBOOT YOUR VEHICLE AFTER EACH CALIBRATION.</source>
       <translation>キャリブレーションのたびに機体を再起動する必要があります。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="292"/>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="321"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="310"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="339"/>
       <source>Reboot Vehicle</source>
       <translation>機体 再起動</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="362"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="380"/>
       <source>Priority 1</source>
       <translation>優先度1</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="362"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="380"/>
       <source>Priority 2</source>
       <translation>優先度2</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="362"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="380"/>
       <source>Priority 3</source>
       <translation>優先度3</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="362"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="380"/>
       <source>Not Set</source>
       <translation>未設定</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="395"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="412"/>
       <source>Orientation:</source>
       <translation>方向:</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="461"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="478"/>
       <source>Autopilot Rotation:</source>
       <translation>AutoPilotの回転:</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="478"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="495"/>
       <source>Simple accelerometer calibration is less precise but allows calibrating without rotating the vehicle. Check this if you have a large/heavy vehicle.</source>
       <translation>シンプルな加速度センサのキャリブレーションは精度が落ちますが、機体を回転させることなくキャリブレーションを行うことができます。機体が大きい / 重い場合はこちらをご確認ください。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="496"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="513"/>
       <source>Magnetic Declination</source>
       <translation>磁針の偏角</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="508"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="525"/>
       <source>Manual Magnetic Declination</source>
       <translation>手動による方位偏角</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="530"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="547"/>
       <source>Fast compass calibration given vehicle position and yaw. This </source>
       <translation>機体の位置とヨーに応じた高速コンパスキャリブレーション </translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="531"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="548"/>
       <source>results in zero diagonal and off-diagonal elements, so is only </source>
       <translation>です。この結果、対角要素と非対角要素がゼロになるため </translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="532"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="549"/>
       <source>suitable for vehicles where the field is close to spherical. It is </source>
       <translation>フィールドが球面に近い機体にのみ適しています。それは </translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="533"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="550"/>
       <source>useful for large vehicles where moving the vehicle to calibrate it </source>
       <translation>キャリブレーションを行うために機体を移動させるのが困難な</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="534"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="551"/>
       <source>is difficult. Point the vehicle North before using it.</source>
       <translation>大型機体に有効です。使用前に機体を北に向けてください。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="547"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="564"/>
       <source>Fast Calibration</source>
       <translation>高速キャリブレーション</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="555"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="572"/>
       <source>Vehicle has no Valid positon, please provide it</source>
       <translation>機体に有効なポジションがありません。登録してください。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="561"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="578"/>
       <source>Use GCS position instead</source>
       <translation>代わりにGCSポジションを使用</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="567"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="584"/>
       <source>Use current map position instead</source>
       <translation>代わりに現在のマップポジションを使用</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="607"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="624"/>
       <source>Compass Motor Interference Calibration</source>
       <translation>コンパスとモーターの干渉におけるキャリブレーション</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="620"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="637"/>
       <source>This is recommended for vehicles that have only an internal compass and on vehicles where there is significant interference on the compass from the motors, power wires, etc. </source>
       <translation>内蔵コンパスのみの機体や、モーターや電源ライン等からコンパスへの干渉が大きい機体に推奨します。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="621"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="638"/>
       <source>CompassMot only works well if you have a battery current monitor because the magnetic interference is linear with current drawn. </source>
       <translation>CompassMotは磁気干渉が電流に比例するため、バッテリー電流モニターがある場合にのみ有効です。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="622"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="639"/>
       <source>It is technically possible to set-up CompassMot using throttle but this is not recommended.</source>
       <translation>スロットルを使用してCompassMotを設定することは技術的に可能ですが、これは推奨されません。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="629"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="646"/>
       <source>Disconnect your props, flip them over and rotate them one position around the frame. </source>
       <translation>プロペラを取り外し、裏返して機体のフレーム一つ分ずらし回転させます。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="630"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="647"/>
       <source>In this configuration they should push the copter down into the ground when the throttle is raised.</source>
       <translation>この設定は、スロットルを上げたときに機体を地面に押し付ける必要があります。
 </translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="637"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="654"/>
       <source>Secure the copter (perhaps with tape) so that it does not move.</source>
       <translation>機体が動かないように (テープ等で) 固定します。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="644"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="661"/>
       <source>Turn on your transmitter and keep throttle at zero.</source>
       <translation>送信機の電源を入れ、スロットルを最下位 (ゼロ) にしてください。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="651"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="668"/>
       <source>Click Ok to start CompassMot calibration.</source>
       <translation>【OK】をクリックすると、CompassMotのキャリブレーションが開始されます。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="708"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="727"/>
       <source>To level the horizon you need to place the vehicle in its level flight position and press Ok.</source>
       <translation>水平レベルを確定するには、機体を飛行位置に配置してOKを押します。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="733"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="752"/>
       <source>depth</source>
       <translation>深度</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="733"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="752"/>
       <source>altitude</source>
       <translation>高度</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="729"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="748"/>
       <source>Pressure calibration will set the %1 to zero at the current pressure reading. %2</source>
       <translation>気圧キャリブレーションは、現在の測定値で %1 がゼロに設定されます。 %2</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="734"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="753"/>
       <source>To calibrate the airspeed sensor shield it from the wind. Do not touch the sensor or obstruct any holes during the calibration.</source>
       <translation>対気速度センサをキャリブレーションする際には、風を遮るようにしてください。またキャリブレーション中はセンサに触れたり、穴を塞いだりしないでください。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="720"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="739"/>
       <source>For Gyroscope calibration you will need to place your vehicle on a surface and leave it still.
 
 Click Ok to start calibration.</source>
@@ -2306,82 +3092,82 @@ Click Ok to start calibration.</source>
 キャリブレーションを開始するには【OK】をクリックしてください。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="674"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="692"/>
       <source>Accelerometer</source>
       <translation>加速度センサ</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="685"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="704"/>
       <source>Compass</source>
       <translation>コンパス</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="690"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="709"/>
       <source>Accelerometer must be calibrated prior to Compass.</source>
       <translation>加速度センサはコンパスより前にキャリブレーションする必要があります。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="701"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="720"/>
       <source>Level Horizon</source>
       <translation>ホライゾンレベリング</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="705"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="724"/>
       <source>Accelerometer must be calibrated prior to Level Horizon.</source>
       <translation>加速度センサはホライゾンレベリング(水平維持機能)より前にキャリブレーションする必要があります。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="717"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="736"/>
       <source>Gyro</source>
       <translation>ジャイロ</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="719"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="738"/>
       <source>Calibrate Gyro</source>
       <translation>ジャイロ キャリブレーション</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="735"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="754"/>
       <source>Baro/Airspeed</source>
       <translation>気圧 / 対気速度</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="735"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="754"/>
       <source>Pressure</source>
       <translation>気圧</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="740"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="759"/>
       <source>CompassMot</source>
       <translation>CompassMot</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="762"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="782"/>
       <source>Next</source>
       <translation>次へ</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="770"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="791"/>
       <source>Cancel</source>
       <translation>キャンセル</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="840"/>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="849"/>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="858"/>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="867"/>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="876"/>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="885"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="862"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="871"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="880"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="889"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="898"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="907"/>
       <source>Rotate</source>
       <translation>回転</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="840"/>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="849"/>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="858"/>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="867"/>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="876"/>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="885"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="862"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="871"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="880"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="889"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="898"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponent.qml" line="907"/>
       <source>Hold Still</source>
       <translation>動かないでください</translation>
     </message>
@@ -2399,104 +3185,109 @@ Click Ok to start calibration.</source>
   <context>
     <name>APMSensorsComponentController</name>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="137"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="139"/>
       <source>Calibration complete</source>
       <translation>キャリブレーション完了</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="151"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="153"/>
       <source>Calibration failed. Calibration log will be displayed.</source>
       <translation>キャリブレーションに失敗しました。キャリブレーションログを表示します。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="215"/>
-      <source>Rotate the vehicle randomly around all axes until the progress bar fills all the way to the right .</source>
-      <translation>進捗バーが右端いっぱいになるまで、すべての軸に対してランダムに機体を回転させてください。</translation>
-    </message>
-    <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="322"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="316"/>
       <source>Raise the throttle slowly to between 50% ~ 75% (the props will spin!) for 5 ~ 10 seconds.</source>
       <translation>スロットルをゆっくりと50～75%まで (プロペラが回転します！)、5～10秒ほど上げ続けてください。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="323"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="317"/>
       <source>Quickly bring the throttle back down to zero</source>
       <translation>素早くスロットルをゼロに戻してください</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="324"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="318"/>
       <source>Press the Next button to complete the calibration</source>
       <translation>次のボタンを押しキャリブレーションが完了します</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="333"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="327"/>
       <source>Hold the vehicle in its level flight position.</source>
       <translation>そのレベルの飛行位置に機体を保持します。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="342"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="336"/>
       <source>Requesting pressure calibration...</source>
       <translation>気圧 キャリブレーションをリクエスト中...</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="351"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="345"/>
       <source>Requesting gyro calibration...</source>
       <translation>ジャイロ キャリブレーションをリクエスト中...</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="236"/>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="479"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="179"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="467"/>
       <source>Successfully completed</source>
       <translation>正常に完了しました</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="239"/>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="483"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="173"/>
+      <source>Failed to start compass calibration</source>
+      <translation type="unfinished">Failed to start compass calibration</translation>
+    </message>
+    <message>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="182"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="471"/>
       <source>Failed</source>
       <translation>失敗しました</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="277"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="237"/>
+      <source>Rotate the vehicle randomly around all axes until the progress bar fills all the way to the right.</source>
+      <translation type="unfinished">Rotate the vehicle randomly around all axes until the progress bar fills all the way to the right.</translation>
+    </message>
+    <message>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="271"/>
       <source>Hold still in the current orientation and press Next when ready</source>
       <translation>機体の現在の向きを保持し、準備ができたら次へを押してください</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="476"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="464"/>
       <source>In progress</source>
       <translation>進行中</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="538"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="526"/>
       <source>Compass %1 calibration complete</source>
       <translation>コンパス %1 キャリブレーション完了</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="540"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="528"/>
       <source>Compass %1 calibration below quality threshold</source>
       <translation>コンパス %1 キャリブレーションが品質のしきい値を下回っています</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="559"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="547"/>
       <source>All compasses calibrated successfully</source>
       <translation>すべてのコンパス キャリブレーションに成功しました</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="560"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="548"/>
       <source>YOU MUST REBOOT YOUR VEHICLE NOW FOR NEW SETTINGS TO TAKE AFFECT</source>
       <translation>新しい設定を有効にするには、機体を再起動する必要があります。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="563"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="551"/>
       <source>Compass calibration failed</source>
       <translation>コンパス キャリブレーションに失敗しました</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="564"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="552"/>
       <source>YOU MUST REBOOT YOUR VEHICLE NOW AND RETRY COMPASS CALIBRATION PRIOR TO FLIGHT</source>
       <translation>今すぐ機体を再起動して、飛行前にコンパス キャリブレーションをやり直す必要があります。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="568"/>
+      <location filename="../src/AutoPilotPlugins/APM/APMSensorsComponentController.cc" line="556"/>
       <source>Continue rotating...</source>
       <translation>回転継続中...</translation>
     </message>
@@ -2722,31 +3513,6 @@ Please place your vehicle in water, click the button, and wait. Note that the th
     </message>
   </context>
   <context>
-    <name>APMTuningComponentSub</name>
-    <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMTuningComponentSub.qml" line="30"/>
-      <location filename="../src/AutoPilotPlugins/APM/APMTuningComponentSub.qml" line="55"/>
-      <source>Attitude Controller Parameters</source>
-      <translation>姿勢制御パラメータ</translation>
-    </message>
-    <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMTuningComponentSub.qml" line="38"/>
-      <location filename="../src/AutoPilotPlugins/APM/APMTuningComponentSub.qml" line="84"/>
-      <source>Position Controller Parameters</source>
-      <translation>ポジション制御パラメータ</translation>
-    </message>
-    <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMTuningComponentSub.qml" line="45"/>
-      <source>Waypoint navigation parameters</source>
-      <translation>ポイントナビゲーションパラメータ</translation>
-    </message>
-    <message>
-      <location filename="../src/AutoPilotPlugins/APM/APMTuningComponentSub.qml" line="151"/>
-      <source>Waypoint Navigation Parameters</source>
-      <translation type="unfinished">Waypoint Navigation Parameters</translation>
-    </message>
-  </context>
-  <context>
     <name>ActuatorAction</name>
     <message>
       <location filename="../src/Vehicle/Actuators/ActuatorActions.cc" line="14"/>
@@ -2916,7 +3682,7 @@ Please place your vehicle in water, click the button, and wait. Note that the th
       <translation type="unfinished"> To change this configuration, select the desired airframe below then click &apos;Apply and Restart&apos;.</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/AirframeComponent.qml" line="108"/>
+      <location filename="../src/AutoPilotPlugins/PX4/AirframeComponent.qml" line="109"/>
       <source>Clicking &apos;Apply&apos; will save the changes you have made to your airframe configuration.&lt;br&gt;&lt;br&gt;                                                                        All vehicle parameters other than Radio Calibration will be reset.&lt;br&gt;&lt;br&gt;                                                                        Your vehicle will also be restarted in order to complete the process.</source>
       <translation>&apos;適用&apos; をクリックすると、機体設定に加えた変更が保存されます。&lt;br&gt;&lt;br&gt;                                                                        送信機キャリブレーション以外のすべての機体パラメータがリセットされます。&lt;br&gt;&lt;br&gt;                                                                        
 また、プロセスを完了させるために機体が再起動されます。</translation>
@@ -2932,8 +3698,8 @@ Please place your vehicle in water, click the button, and wait. Note that the th
       <translation>フレームは設定されていません。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/AirframeComponent.qml" line="106"/>
       <location filename="../src/AutoPilotPlugins/PX4/AirframeComponent.qml" line="107"/>
+      <location filename="../src/AutoPilotPlugins/PX4/AirframeComponent.qml" line="108"/>
       <source>Apply and Restart</source>
       <translation>適用して再起動</translation>
     </message>
@@ -2951,7 +3717,7 @@ Please place your vehicle in water, click the button, and wait. Note that the th
   <context>
     <name>AirframeComponentController</name>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/AirframeComponentController.cc" line="79"/>
+      <location filename="../src/AutoPilotPlugins/PX4/AirframeComponentController.cc" line="76"/>
       <source>You cannot change airframe configuration while connected to multiple vehicles.</source>
       <translation>複数の機体に接続した状態でフレーム設定を変更することはできません。</translation>
     </message>
@@ -3044,7 +3810,7 @@ Please place your vehicle in water, click the button, and wait. Note that the th
   <context>
     <name>AnalyzeView</name>
     <message>
-      <location filename="../src/AnalyzeView/AnalyzeView.qml" line="136"/>
+      <location filename="../src/AnalyzeView/AnalyzeView.qml" line="169"/>
       <source>Requires a connected vehicle</source>
       <translation type="unfinished">Requires a connected vehicle</translation>
     </message>
@@ -3052,125 +3818,135 @@ Please place your vehicle in water, click the button, and wait. Note that the th
   <context>
     <name>AppLogging</name>
     <message>
-      <location filename="../src/LogManager/AppLogging.qml" line="166"/>
+      <location filename="../src/AppSettings/AppLogging.qml" line="198"/>
       <source>No log entries</source>
       <translation type="unfinished">No log entries</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/AppLogging.qml" line="224"/>
+      <location filename="../src/AppSettings/AppLogging.qml" line="247"/>
       <source>All Levels</source>
       <translation type="unfinished">All Levels</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/AppLogging.qml" line="224"/>
+      <location filename="../src/AppSettings/AppLogging.qml" line="247"/>
       <source>Debug</source>
       <translation type="unfinished">Debug</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/AppLogging.qml" line="224"/>
+      <location filename="../src/AppSettings/AppLogging.qml" line="247"/>
       <source>Info</source>
       <translation type="unfinished">Info</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/AppLogging.qml" line="224"/>
+      <location filename="../src/AppSettings/AppLogging.qml" line="247"/>
       <source>Warning</source>
       <translation type="unfinished">Warning</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/AppLogging.qml" line="224"/>
+      <location filename="../src/AppSettings/AppLogging.qml" line="247"/>
       <source>Critical</source>
       <translation type="unfinished">Critical</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/AppLogging.qml" line="224"/>
+      <location filename="../src/AppSettings/AppLogging.qml" line="247"/>
       <source>Fatal</source>
       <translation type="unfinished">Fatal</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/AppLogging.qml" line="236"/>
+      <location filename="../src/AppSettings/AppLogging.qml" line="259"/>
       <source>All Categories</source>
       <translation type="unfinished">All Categories</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/AppLogging.qml" line="249"/>
+      <location filename="../src/AppSettings/AppLogging.qml" line="272"/>
       <source>Search…</source>
       <translation type="unfinished">Search…</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/AppLogging.qml" line="255"/>
+      <location filename="../src/AppSettings/AppLogging.qml" line="278"/>
       <source>Regex search</source>
       <translation type="unfinished">Regex search</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/AppLogging.qml" line="259"/>
+      <location filename="../src/AppSettings/AppLogging.qml" line="282"/>
       <source>.*</source>
       <translation type="unfinished">.*</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/AppLogging.qml" line="267"/>
+      <location filename="../src/AppSettings/AppLogging.qml" line="290"/>
       <source>⚠ Disk Error</source>
       <translation type="unfinished">⚠ Disk Error</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/AppLogging.qml" line="282"/>
-      <source>Follow</source>
-      <translation type="unfinished">Follow</translation>
+      <location filename="../src/AppSettings/AppLogging.qml" line="307"/>
+      <source>Save</source>
+      <translation type="unfinished">Save</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/AppLogging.qml" line="291"/>
+      <location filename="../src/AppSettings/AppLogging.qml" line="313"/>
+      <source>Clear</source>
+      <translation type="unfinished">Clear</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/AppLogging.qml" line="325"/>
+      <source>Show Latest</source>
+      <translation type="unfinished">Show Latest</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/AppLogging.qml" line="351"/>
+      <source>Save app log</source>
+      <translation type="unfinished">Save app log</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/AppLogging.qml" line="301"/>
       <source>Categories</source>
       <translation type="unfinished">Categories</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/AppLogging.qml" line="297"/>
-      <source>Settings</source>
-      <translation type="unfinished">Settings</translation>
     </message>
   </context>
   <context>
     <name>AppSettings</name>
     <message>
-      <location filename="../src/Settings/AppSettings.h" line="117"/>
+      <location filename="../src/Settings/AppSettings.h" line="110"/>
       <source>Parameters</source>
       <translation>パラメータ</translation>
     </message>
     <message>
-      <location filename="../src/Settings/AppSettings.h" line="118"/>
+      <location filename="../src/Settings/AppSettings.h" line="111"/>
       <source>Telemetry</source>
       <translation>テレメトリー</translation>
     </message>
     <message>
-      <location filename="../src/Settings/AppSettings.h" line="119"/>
+      <location filename="../src/Settings/AppSettings.h" line="112"/>
       <source>Missions</source>
       <translation>ミッション</translation>
     </message>
     <message>
-      <location filename="../src/Settings/AppSettings.h" line="120"/>
+      <location filename="../src/Settings/AppSettings.h" line="113"/>
       <source>Logs</source>
       <translation>ログ</translation>
     </message>
     <message>
-      <location filename="../src/Settings/AppSettings.h" line="121"/>
+      <location filename="../src/Settings/AppSettings.h" line="114"/>
       <source>Video</source>
       <translation>動画</translation>
     </message>
     <message>
-      <location filename="../src/Settings/AppSettings.h" line="122"/>
+      <location filename="../src/Settings/AppSettings.h" line="115"/>
       <source>Photo</source>
       <translation>写真</translation>
     </message>
     <message>
-      <location filename="../src/Settings/AppSettings.h" line="123"/>
+      <location filename="../src/Settings/AppSettings.h" line="116"/>
       <source>CrashLogs</source>
       <translation>クラッシュログ</translation>
     </message>
     <message>
-      <location filename="../src/Settings/AppSettings.h" line="124"/>
+      <location filename="../src/Settings/AppSettings.h" line="117"/>
       <source>MavlinkActions</source>
       <translation>MavLink アクション</translation>
     </message>
     <message>
-      <location filename="../src/Settings/AppSettings.h" line="125"/>
+      <location filename="../src/Settings/AppSettings.h" line="118"/>
       <source>Settings</source>
       <translation type="unfinished">Settings</translation>
     </message>
@@ -3180,17 +3956,17 @@ Please place your vehicle in water, click the button, and wait. Note that the th
       <translation>アプリケーションデータをSDカードに保存します。しかしながらSDカードは書き込み保護されています。現在、内部ストレージを使用しています。</translation>
     </message>
     <message>
-      <location filename="../src/Settings/AppSettings.cc" line="204"/>
+      <location filename="../src/Settings/AppSettings.cc" line="196"/>
       <source> (Partial)</source>
       <translation> (部分的)</translation>
     </message>
     <message>
-      <location filename="../src/Settings/AppSettings.cc" line="212"/>
+      <location filename="../src/Settings/AppSettings.cc" line="204"/>
       <source> (Test Only)</source>
       <translation> (テストのみ)</translation>
     </message>
     <message>
-      <location filename="../src/Settings/AppSettings.cc" line="219"/>
+      <location filename="../src/Settings/AppSettings.cc" line="211"/>
       <source>Pseudo Localization (Test Only)</source>
       <translation type="unfinished">Pseudo Localization (Test Only)</translation>
     </message>
@@ -3547,57 +4323,57 @@ Please place your vehicle in water, click the button, and wait. Note that the th
   <context>
     <name>ArduSubFirmwarePlugin</name>
     <message>
-      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="110"/>
+      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="111"/>
       <source>Manual</source>
       <translation type="unfinished">Manual</translation>
     </message>
     <message>
-      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="111"/>
+      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="112"/>
       <source>Stabilize</source>
       <translation type="unfinished">Stabilize</translation>
     </message>
     <message>
-      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="112"/>
+      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="113"/>
       <source>Acro</source>
       <translation type="unfinished">Acro</translation>
     </message>
     <message>
-      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="113"/>
+      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="114"/>
       <source>Depth Hold</source>
       <translation type="unfinished">Depth Hold</translation>
     </message>
     <message>
-      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="114"/>
+      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="115"/>
       <source>Auto</source>
       <translation type="unfinished">Auto</translation>
     </message>
     <message>
-      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="115"/>
+      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="116"/>
       <source>Guided</source>
       <translation type="unfinished">Guided</translation>
     </message>
     <message>
-      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="116"/>
+      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="117"/>
       <source>Circle</source>
       <translation type="unfinished">Circle</translation>
     </message>
     <message>
-      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="117"/>
+      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="118"/>
       <source>Surface</source>
       <translation type="unfinished">Surface</translation>
     </message>
     <message>
-      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="118"/>
+      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="119"/>
       <source>Position Hold</source>
       <translation type="unfinished">Position Hold</translation>
     </message>
     <message>
-      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="119"/>
+      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="120"/>
       <source>Motor Detection</source>
       <translation type="unfinished">Motor Detection</translation>
     </message>
     <message>
-      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="120"/>
+      <location filename="../src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h" line="121"/>
       <source>Surftrak</source>
       <translation type="unfinished">Surftrak</translation>
     </message>
@@ -3605,22 +4381,22 @@ Please place your vehicle in water, click the button, and wait. Note that the th
   <context>
     <name>ArmedIndicator</name>
     <message>
-      <location filename="../src/UI/toolbar/ArmedIndicator.qml" line="12"/>
+      <location filename="../src/Toolbar/ArmedIndicator.qml" line="12"/>
       <source>Armed</source>
       <translation>アーム済</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/ArmedIndicator.qml" line="12"/>
+      <location filename="../src/Toolbar/ArmedIndicator.qml" line="12"/>
       <source>Disarmed</source>
       <translation>アーム解除しました</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/ArmedIndicator.qml" line="13"/>
+      <location filename="../src/Toolbar/ArmedIndicator.qml" line="13"/>
       <source>Arm</source>
       <translation>アーム</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/ArmedIndicator.qml" line="13"/>
+      <location filename="../src/Toolbar/ArmedIndicator.qml" line="13"/>
       <source>Disarm</source>
       <translation>ディスアーム</translation>
     </message>
@@ -3628,12 +4404,12 @@ Please place your vehicle in water, click the button, and wait. Note that the th
   <context>
     <name>AudioOutput</name>
     <message>
-      <location filename="../src/Utilities/Audio/AudioOutput.cc" line="185"/>
+      <location filename="../src/Utilities/Audio/AudioOutput.cc" line="219"/>
       <source>%1</source>
       <translation>%1</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/Audio/AudioOutput.cc" line="209"/>
+      <location filename="../src/Utilities/Audio/AudioOutput.cc" line="257"/>
       <source>Audio test. Volume is %1 percent</source>
       <translation type="unfinished">Audio test. Volume is %1 percent</translation>
     </message>
@@ -3762,95 +4538,95 @@ OKをクリックして、自動調整プロセスを開始します。</transla
   <context>
     <name>BatteryIndicator</name>
     <message>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="264"/>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="475"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="265"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="476"/>
       <source>100%</source>
       <translation>100％</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="273"/>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="282"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="274"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="283"/>
       <source>n/a</source>
       <translation>n/a</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="374"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="375"/>
       <source>Battery %1</source>
       <translation>バッテリー %1</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="374"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="375"/>
       <source>Status</source>
       <translation>状態</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="388"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="389"/>
       <source>Charge State</source>
       <translation>充電状態</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="394"/>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="400"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="395"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="401"/>
       <source>Remaining</source>
       <translation>残り</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="406"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="407"/>
       <source>Voltage</source>
       <translation>電圧</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="411"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="412"/>
       <source>Consumed</source>
       <translation>電力消費</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="417"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="418"/>
       <source>Temperature</source>
       <translation>温度</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="423"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="424"/>
       <source>Function</source>
       <translation>機能</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="443"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="444"/>
       <source>Battery Display</source>
       <translation>バッテリー表示</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="449"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="450"/>
       <source>Only show battery with lowest charge</source>
       <translation type="unfinished">Only show battery with lowest charge</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="454"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="455"/>
       <source>Value</source>
       <translation>値</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="460"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="461"/>
       <source>Coloring</source>
       <translation>カラーリング</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="533"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="534"/>
       <source>Low</source>
       <translation>低</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="546"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="547"/>
       <source>Critical</source>
       <translation>限界 [Critical]</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="562"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="563"/>
       <source>Vehicle Power</source>
       <translation>機体電源</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/BatteryIndicator.qml" line="563"/>
+      <location filename="../src/Toolbar/BatteryIndicator.qml" line="564"/>
       <source>Configure</source>
       <translation>設定</translation>
     </message>
@@ -4208,196 +4984,196 @@ OKをクリックして、自動調整プロセスを開始します。</transla
   <context>
     <name>BluetoothSettings</name>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="163"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="163"/>
       <source>Bluetooth Error</source>
       <translation type="unfinished">Bluetooth Error</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="182"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="182"/>
       <source>Bluetooth Adapter</source>
       <translation type="unfinished">Bluetooth Adapter</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="192"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="192"/>
       <source>Adapter</source>
       <translation type="unfinished">Adapter</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="209"/>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="471"/>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="573"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="209"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="471"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="573"/>
       <source>Unknown</source>
       <translation type="unfinished">Unknown</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="232"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="232"/>
       <source>Status</source>
       <translation type="unfinished">Status</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="243"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="243"/>
       <source>Bluetooth adapter unavailable</source>
       <translation type="unfinished">Bluetooth adapter unavailable</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="256"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="256"/>
       <source>Powered On</source>
       <translation type="unfinished">Powered On</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="266"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="266"/>
       <source>Discoverable</source>
       <translation type="unfinished">Discoverable</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="278"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="278"/>
       <source>Connection</source>
       <translation type="unfinished">Connection</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="287"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="287"/>
       <source>Mode</source>
       <translation type="unfinished">Mode</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="293"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="293"/>
       <source>Classic</source>
       <translation type="unfinished">Classic</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="299"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="299"/>
       <source>BLE</source>
       <translation type="unfinished">BLE</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="305"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="305"/>
       <source>Selected Device</source>
       <translation type="unfinished">Selected Device</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="308"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="308"/>
       <source>None</source>
       <translation type="unfinished">None</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="311"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="311"/>
       <source>Device Address</source>
       <translation type="unfinished">Device Address</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="314"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="314"/>
       <source>N/A</source>
       <translation type="unfinished">N/A</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="319"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="319"/>
       <source>Pairing</source>
       <translation type="unfinished">Pairing</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="333"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="333"/>
       <source>Unpair</source>
       <translation type="unfinished">Unpair</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="333"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="333"/>
       <source>Pair</source>
       <translation type="unfinished">Pair</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="344"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="344"/>
       <source>Signal Strength</source>
       <translation type="unfinished">Signal Strength</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="389"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="389"/>
       <source>(Connected)</source>
       <translation type="unfinished">(Connected)</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="389"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="389"/>
       <source>(Last Scan)</source>
       <translation type="unfinished">(Last Scan)</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="401"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="401"/>
       <source>Advanced BLE Configuration</source>
       <translation type="unfinished">Advanced BLE Configuration</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="413"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="413"/>
       <source>Service UUID</source>
       <translation type="unfinished">Service UUID</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="418"/>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="427"/>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="436"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="418"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="427"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="436"/>
       <source>Auto-detect</source>
       <translation type="unfinished">Auto-detect</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="422"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="422"/>
       <source>RX Characteristic</source>
       <translation type="unfinished">RX Characteristic</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="431"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="431"/>
       <source>TX Characteristic</source>
       <translation type="unfinished">TX Characteristic</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="442"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="442"/>
       <source>UUIDs are auto-detected for most devices. Only configure if connection fails.</source>
       <translation type="unfinished">UUIDs are auto-detected for most devices. Only configure if connection fails.</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="455"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="455"/>
       <source>Known Devices</source>
       <translation type="unfinished">Known Devices</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="484"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="484"/>
       <source>Available BLE Devices</source>
       <translation type="unfinished">Available BLE Devices</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="484"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="484"/>
       <source>Available Devices</source>
       <translation type="unfinished">Available Devices</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="500"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="500"/>
       <source>Scanning for devices...</source>
       <translation type="unfinished">Scanning for devices...</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="581"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="581"/>
       <source>Paired</source>
       <translation type="unfinished">Paired</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="611"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="611"/>
       <source>No devices found</source>
       <translation type="unfinished">No devices found</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="618"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="618"/>
       <source>Make sure your BLE device is powered on and advertising</source>
       <translation type="unfinished">Make sure your BLE device is powered on and advertising</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="619"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="619"/>
       <source>Make sure your Bluetooth device is powered on and discoverable</source>
       <translation type="unfinished">Make sure your Bluetooth device is powered on and discoverable</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="631"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="631"/>
       <source>Stop Scan</source>
       <translation type="unfinished">Stop Scan</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/BluetoothSettings.qml" line="631"/>
+      <location filename="../src/AppSettings/BluetoothSettings.qml" line="631"/>
       <source>Scan for Devices</source>
       <translation type="unfinished">Scan for Devices</translation>
     </message>
@@ -4582,32 +5358,32 @@ OKをクリックして、自動調整プロセスを開始します。</transla
   <context>
     <name>CalcAmpsPerVoltDialog</name>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/CalcAmpsPerVoltDialog.qml" line="9"/>
+      <location filename="../src/AutoPilotPlugins/PX4/CalcAmpsPerVoltDialog.qml" line="10"/>
       <source>Calculate Amps per Volt</source>
       <translation type="unfinished">Calculate Amps per Volt</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/CalcAmpsPerVoltDialog.qml" line="28"/>
+      <location filename="../src/AutoPilotPlugins/PX4/CalcAmpsPerVoltDialog.qml" line="29"/>
       <source>Measure current draw using an external current meter and enter the value below. Click Calculate to set the new amps per volt value.</source>
       <translation type="unfinished">Measure current draw using an external current meter and enter the value below. Click Calculate to set the new amps per volt value.</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/CalcAmpsPerVoltDialog.qml" line="35"/>
+      <location filename="../src/AutoPilotPlugins/PX4/CalcAmpsPerVoltDialog.qml" line="36"/>
       <source>Measured current:</source>
       <translation type="unfinished">Measured current:</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/CalcAmpsPerVoltDialog.qml" line="38"/>
+      <location filename="../src/AutoPilotPlugins/PX4/CalcAmpsPerVoltDialog.qml" line="39"/>
       <source>Vehicle current:</source>
       <translation type="unfinished">Vehicle current:</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/CalcAmpsPerVoltDialog.qml" line="41"/>
+      <location filename="../src/AutoPilotPlugins/PX4/CalcAmpsPerVoltDialog.qml" line="42"/>
       <source>Amps per volt:</source>
       <translation type="unfinished">Amps per volt:</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/CalcAmpsPerVoltDialog.qml" line="46"/>
+      <location filename="../src/AutoPilotPlugins/PX4/CalcAmpsPerVoltDialog.qml" line="47"/>
       <source>Calculate</source>
       <translation type="unfinished">Calculate</translation>
     </message>
@@ -4615,32 +5391,32 @@ OKをクリックして、自動調整プロセスを開始します。</transla
   <context>
     <name>CalcVoltageDividerDialog</name>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/CalcVoltageDividerDialog.qml" line="9"/>
+      <location filename="../src/AutoPilotPlugins/PX4/CalcVoltageDividerDialog.qml" line="10"/>
       <source>Calculate Voltage Divider</source>
       <translation type="unfinished">Calculate Voltage Divider</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/CalcVoltageDividerDialog.qml" line="28"/>
+      <location filename="../src/AutoPilotPlugins/PX4/CalcVoltageDividerDialog.qml" line="29"/>
       <source>Measure battery voltage using an external voltmeter and enter the value below. Click Calculate to set the new voltage multiplier.</source>
       <translation type="unfinished">Measure battery voltage using an external voltmeter and enter the value below. Click Calculate to set the new voltage multiplier.</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/CalcVoltageDividerDialog.qml" line="35"/>
+      <location filename="../src/AutoPilotPlugins/PX4/CalcVoltageDividerDialog.qml" line="36"/>
       <source>Measured voltage:</source>
       <translation type="unfinished">Measured voltage:</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/CalcVoltageDividerDialog.qml" line="38"/>
+      <location filename="../src/AutoPilotPlugins/PX4/CalcVoltageDividerDialog.qml" line="39"/>
       <source>Vehicle voltage:</source>
       <translation type="unfinished">Vehicle voltage:</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/CalcVoltageDividerDialog.qml" line="41"/>
+      <location filename="../src/AutoPilotPlugins/PX4/CalcVoltageDividerDialog.qml" line="42"/>
       <source>Voltage divider:</source>
       <translation type="unfinished">Voltage divider:</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/CalcVoltageDividerDialog.qml" line="46"/>
+      <location filename="../src/AutoPilotPlugins/PX4/CalcVoltageDividerDialog.qml" line="47"/>
       <source>Calculate</source>
       <translation type="unfinished">Calculate</translation>
     </message>
@@ -4929,152 +5705,152 @@ OKをクリックして、自動調整プロセスを開始します。</transla
   <context>
     <name>DebugWindow</name>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="25"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="25"/>
       <source>Qt Platform:</source>
       <translation>Qt  プラットフォーム:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="35"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="35"/>
       <source>Font Point Size 10</source>
       <translation>フォントサイズ 10</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="41"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="41"/>
       <source>Default font width:</source>
       <translation>既定フォント幅:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="51"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="51"/>
       <source>Font Point Size 10.5</source>
       <translation>フォントサイズ 10.5</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="57"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="57"/>
       <source>Default font height:</source>
       <translation>既定フォント高さ:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="67"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="67"/>
       <source>Font Point Size 11</source>
       <translation>フォントサイズ 11</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="73"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="73"/>
       <source>Default font pixel size:</source>
       <translation>既定フォントサイズ:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="83"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="83"/>
       <source>Font Point Size 11.5</source>
       <translation>フォントサイズ 11.5</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="89"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="89"/>
       <source>Default font point size:</source>
       <translation>既定フォントサイズ:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="99"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="99"/>
       <source>Font Point Size 12</source>
       <translation>フォントサイズ 12</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="105"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="105"/>
       <source>QML Screen Desktop:</source>
       <translation>QML 画面デスクトップ:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="115"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="115"/>
       <source>Font Point Size 12.5</source>
       <translation>フォントサイズ 12.5</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="121"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="121"/>
       <source>QML Screen Size:</source>
       <translation>QML 画面サイズ:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="131"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="131"/>
       <source>Font Point Size 13</source>
       <translation>フォントサイズ 13</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="137"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="137"/>
       <source>QML Pixel Density:</source>
       <translation>QML ピクセル密度:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="147"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="147"/>
       <source>Font Point Size 13.5</source>
       <translation>フォントサイズ 13.5</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="153"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="153"/>
       <source>QML Pixel Ratio:</source>
       <translation>QML ピクセル比:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="163"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="163"/>
       <source>Font Point Size 14</source>
       <translation>フォントサイズ 14</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="169"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="169"/>
       <source>Default Point:</source>
       <translation>既定サイズ:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="179"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="179"/>
       <source>Font Point Size 14.5</source>
       <translation>フォントサイズ 14.5</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="185"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="185"/>
       <source>Computed Font Height:</source>
       <translation>計算されたフォント高さ:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="195"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="195"/>
       <source>Font Point Size 15</source>
       <translation>フォントサイズ 15</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="201"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="201"/>
       <source>Computed Screen Height:</source>
       <translation>計算されたスクリーン高さ:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="211"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="211"/>
       <source>Font Point Size 15.5</source>
       <translation>フォントサイズ 15.5</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="217"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="217"/>
       <source>Computed Screen Width:</source>
       <translation>計算されたスクリーン幅:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="227"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="227"/>
       <source>Font Point Size 16</source>
       <translation>フォントサイズ 16</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="233"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="233"/>
       <source>Desktop Available Width:</source>
       <translation>利用可能なデスクトップ幅:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="243"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="243"/>
       <source>Font Point Size 16.5</source>
       <translation>フォントサイズ 16.5</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="249"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="249"/>
       <source>Desktop Available Height:</source>
       <translation>利用可能なデスクトップ高さ:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/DebugWindow.qml" line="259"/>
+      <location filename="../src/AppSettings/DebugWindow.qml" line="259"/>
       <source>Font Point Size 17</source>
       <translation>フォントサイズ 17</translation>
     </message>
@@ -5511,12 +6287,12 @@ OKをクリックして、自動調整プロセスを開始します。</transla
   <context>
     <name>EscIndicator</name>
     <message>
-      <location filename="../src/UI/toolbar/EscIndicator.qml" line="93"/>
+      <location filename="../src/Toolbar/EscIndicator.qml" line="94"/>
       <source>OK</source>
       <translation type="unfinished">OK</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/EscIndicator.qml" line="93"/>
+      <location filename="../src/Toolbar/EscIndicator.qml" line="94"/>
       <source>ERR</source>
       <translation type="unfinished">ERR</translation>
     </message>
@@ -5524,64 +6300,64 @@ OKをクリックして、自動調整プロセスを開始します。</transla
   <context>
     <name>EscIndicatorPage</name>
     <message>
-      <location filename="../src/UI/toolbar/EscIndicatorPage.qml" line="13"/>
+      <location filename="../src/Toolbar/EscIndicatorPage.qml" line="13"/>
       <source>N/A</source>
       <comment>No data to display</comment>
       <translation type="unfinished">N/A</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/EscIndicatorPage.qml" line="14"/>
+      <location filename="../src/Toolbar/EscIndicatorPage.qml" line="14"/>
       <source>–</source>
       <comment>No data to display</comment>
       <translation type="unfinished">–</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/EscIndicatorPage.qml" line="32"/>
+      <location filename="../src/Toolbar/EscIndicatorPage.qml" line="32"/>
       <source>ESC Status Overview</source>
       <translation type="unfinished">ESC Status Overview</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/EscIndicatorPage.qml" line="42"/>
+      <location filename="../src/Toolbar/EscIndicatorPage.qml" line="42"/>
       <source>Healthy Motors</source>
       <translation type="unfinished">Healthy Motors</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/EscIndicatorPage.qml" line="54"/>
+      <location filename="../src/Toolbar/EscIndicatorPage.qml" line="54"/>
       <source>Total Errors</source>
       <translation type="unfinished">Total Errors</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/EscIndicatorPage.qml" line="70"/>
+      <location filename="../src/Toolbar/EscIndicatorPage.qml" line="70"/>
       <source>Motor %1 %2</source>
       <translation type="unfinished">Motor %1 %2</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/EscIndicatorPage.qml" line="70"/>
+      <location filename="../src/Toolbar/EscIndicatorPage.qml" line="70"/>
       <source>- OFFLINE</source>
       <translation type="unfinished">- OFFLINE</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/EscIndicatorPage.qml" line="82"/>
+      <location filename="../src/Toolbar/EscIndicatorPage.qml" line="82"/>
       <source>RPM</source>
       <translation type="unfinished">RPM</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/EscIndicatorPage.qml" line="87"/>
+      <location filename="../src/Toolbar/EscIndicatorPage.qml" line="87"/>
       <source>Temp</source>
       <translation type="unfinished">Temp</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/EscIndicatorPage.qml" line="92"/>
+      <location filename="../src/Toolbar/EscIndicatorPage.qml" line="92"/>
       <source>Voltage</source>
       <translation type="unfinished">Voltage</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/EscIndicatorPage.qml" line="97"/>
+      <location filename="../src/Toolbar/EscIndicatorPage.qml" line="97"/>
       <source>Current</source>
       <translation type="unfinished">Current</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/EscIndicatorPage.qml" line="102"/>
+      <location filename="../src/Toolbar/EscIndicatorPage.qml" line="102"/>
       <source>Errors</source>
       <translation type="unfinished">Errors</translation>
     </message>
@@ -5662,82 +6438,82 @@ OKをクリックして、自動調整プロセスを開始します。</transla
   <context>
     <name>FTPManager</name>
     <message>
-      <location filename="../src/Vehicle/FTPManager.cc" line="719"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="724"/>
       <source>Invalid Nak format</source>
       <translation>無効なNAKフォーマット</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/FTPManager.cc" line="721"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="726"/>
       <source>errno %1</source>
       <translation>エラーNo %1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/FTPManager.cc" line="980"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="989"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="1004"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="1013"/>
       <source>List directory failed</source>
       <translation>ディレクトリ リスト表示に失敗しました</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/FTPManager.cc" line="299"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="743"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="765"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="778"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="782"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="891"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="900"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="1027"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="1062"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="1108"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="1116"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="304"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="748"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="770"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="783"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="787"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="896"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="905"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="1051"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="1086"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="1132"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="1140"/>
       <source>Download failed</source>
       <translation>ダウンロード失敗</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/FTPManager.cc" line="234"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="258"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="268"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="239"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="263"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="273"/>
       <source>Aborted</source>
       <translation type="unfinished">Aborted</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/FTPManager.cc" line="386"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="394"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="391"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="399"/>
       <source>Delete failed</source>
       <translation type="unfinished">Delete failed</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/FTPManager.cc" line="450"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="555"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="603"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="455"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="560"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="608"/>
       <source>Upload failed for: %1 - error: %2</source>
       <translation type="unfinished">Upload failed for: %1 - error: %2</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/FTPManager.cc" line="457"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="563"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="611"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="462"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="568"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="616"/>
       <source>Upload failed for: %1 - no response from vehicle</source>
       <translation type="unfinished">Upload failed for: %1 - no response from vehicle</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/FTPManager.cc" line="468"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="473"/>
       <source>Upload failed for: %1 - file not open</source>
       <translation type="unfinished">Upload failed for: %1 - file not open</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/FTPManager.cc" line="498"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="505"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="503"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="510"/>
       <source>Upload failed for: %1 - error reading file</source>
       <translation type="unfinished">Upload failed for: %1 - error reading file</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/FTPManager.cc" line="620"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="625"/>
       <source>Aborted for: %1</source>
       <translation type="unfinished">Aborted for: %1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/FTPManager.cc" line="853"/>
-      <location filename="../src/Vehicle/FTPManager.cc" line="1075"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="858"/>
+      <location filename="../src/Vehicle/FTPManager.cc" line="1099"/>
       <source>Download failed: Error saving file</source>
       <translation>ダウンロード失敗: ファイル保存中にエラーが発生しました</translation>
     </message>
@@ -5878,27 +6654,27 @@ OKをクリックして、自動調整プロセスを開始します。</transla
   <context>
     <name>Fact</name>
     <message>
-      <location filename="../src/FactSystem/Fact.cc" line="266"/>
+      <location filename="../src/FactSystem/Fact.cc" line="272"/>
       <source>Unknown: %1</source>
       <translation>不明: %1</translation>
     </message>
     <message>
-      <location filename="../src/FactSystem/Fact.cc" line="390"/>
+      <location filename="../src/FactSystem/Fact.cc" line="396"/>
       <source>true</source>
       <translation>true</translation>
     </message>
     <message>
-      <location filename="../src/FactSystem/Fact.cc" line="390"/>
+      <location filename="../src/FactSystem/Fact.cc" line="396"/>
       <source>false</source>
       <translation>false</translation>
     </message>
     <message>
-      <location filename="../src/FactSystem/Fact.cc" line="872"/>
+      <location filename="../src/FactSystem/Fact.cc" line="911"/>
       <source>Reboot vehicle for changes to take effect.</source>
       <translation>変更を反映させるには、機体を再起動してください。</translation>
     </message>
     <message>
-      <location filename="../src/FactSystem/Fact.cc" line="874"/>
+      <location filename="../src/FactSystem/Fact.cc" line="913"/>
       <source>Restart application for changes to take effect.</source>
       <translation>変更を反映させるには、アプリケーションを再起動してください。</translation>
     </message>
@@ -5906,34 +6682,34 @@ OKをクリックして、自動調整プロセスを開始します。</transla
   <context>
     <name>FactMetaData</name>
     <message>
-      <location filename="../src/FactSystem/FactMetaData.h" line="225"/>
+      <location filename="../src/FactSystem/FactMetaData.h" line="235"/>
       <source>Other</source>
       <translation>それ以外</translation>
     </message>
     <message>
-      <location filename="../src/FactSystem/FactMetaData.h" line="226"/>
+      <location filename="../src/FactSystem/FactMetaData.h" line="236"/>
       <source>Misc</source>
       <translation>その他</translation>
     </message>
     <message>
-      <location filename="../src/FactSystem/FactMetaData.cc" line="341"/>
-      <location filename="../src/FactSystem/FactMetaData.cc" line="349"/>
+      <location filename="../src/FactSystem/FactMetaData.cc" line="351"/>
       <location filename="../src/FactSystem/FactMetaData.cc" line="359"/>
-      <location filename="../src/FactSystem/FactMetaData.cc" line="367"/>
-      <location filename="../src/FactSystem/FactMetaData.cc" line="375"/>
-      <location filename="../src/FactSystem/FactMetaData.cc" line="384"/>
-      <location filename="../src/FactSystem/FactMetaData.cc" line="429"/>
-      <location filename="../src/FactSystem/FactMetaData.cc" line="437"/>
+      <location filename="../src/FactSystem/FactMetaData.cc" line="369"/>
+      <location filename="../src/FactSystem/FactMetaData.cc" line="377"/>
+      <location filename="../src/FactSystem/FactMetaData.cc" line="385"/>
+      <location filename="../src/FactSystem/FactMetaData.cc" line="394"/>
+      <location filename="../src/FactSystem/FactMetaData.cc" line="439"/>
       <location filename="../src/FactSystem/FactMetaData.cc" line="447"/>
-      <location filename="../src/FactSystem/FactMetaData.cc" line="455"/>
-      <location filename="../src/FactSystem/FactMetaData.cc" line="463"/>
-      <location filename="../src/FactSystem/FactMetaData.cc" line="472"/>
+      <location filename="../src/FactSystem/FactMetaData.cc" line="457"/>
+      <location filename="../src/FactSystem/FactMetaData.cc" line="465"/>
+      <location filename="../src/FactSystem/FactMetaData.cc" line="473"/>
+      <location filename="../src/FactSystem/FactMetaData.cc" line="482"/>
       <source>Value must be within %1 and %2</source>
       <translation>値は %1 と %2 以内でなければなりません</translation>
     </message>
     <message>
-      <location filename="../src/FactSystem/FactMetaData.cc" line="403"/>
-      <location filename="../src/FactSystem/FactMetaData.cc" line="491"/>
+      <location filename="../src/FactSystem/FactMetaData.cc" line="413"/>
+      <location filename="../src/FactSystem/FactMetaData.cc" line="501"/>
       <source>Invalid number</source>
       <translation>無効な番号</translation>
     </message>
@@ -6056,67 +6832,62 @@ OKをクリックして、自動調整プロセスを開始します。</transla
       <translation>ダウンロードされたファームウェアボードIDがハードウェアボードIDと一致しません: %1 != %2</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="264"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="263"/>
       <source>Write failed for parameter meta data file, error: %1</source>
       <translation>パラメータのメタデータファイルへの書き込みに失敗しました。エラー: %1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="271"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="270"/>
       <source>Unable to open parameter meta data file %1 for writing, error: %2</source>
       <translation>パラメータを書き込むメタデータファイル %1 を開けません。エラー: %2</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="295"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="294"/>
       <source>Write failed for airframe meta data file, error: %1</source>
       <translation>フレームのメタデータファイルへの書き込みに失敗しました。エラー: %1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="302"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="301"/>
       <source>Unable to open airframe meta data file %1 for writing, error: %2</source>
       <translation>フレームを書き込むメタデータファイル %1 を開けません。エラー: %2</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="328"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="327"/>
       <source>Unable to open decompressed file %1 for writing, error: %2</source>
       <translation>解凍されたファイル %1 を開けません。エラー: %2</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="334"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="333"/>
       <source>Write failed for decompressed image file, error: %1</source>
       <translation>解凍されたファームウェアイメージファイルの書き込みに失敗しました。エラー: %1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="358"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="357"/>
       <source>Firmware file has invalid decompressed size for %1</source>
       <translation>%1におけるファームウェアファイルの解凍サイズが無効です</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="370"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="369"/>
       <source>Could not find compressed bytes for %1 in Firmware file</source>
       <translation>ファームウェアファイルで %1 の圧縮バイトが見つかりませんでした</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="375"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="374"/>
       <source>Incorrectly formed compressed bytes section for %1 in Firmware file</source>
       <translation>ファームウェアファイルの %1 の圧縮バイトセクションが正しく形成されていません</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="391"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="390"/>
       <source>Firmware file has 0 length %1</source>
       <translation>ファームウェアファイル長が0です %1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="395"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="394"/>
       <source>Size for decompressed %1 does not match stored size: Expected(%1) Actual(%2)</source>
       <translation>解凍された %1 のサイズが保存されたサイズと一致しません。想定値(%1) 実数値(%2)</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="399"/>
-      <source>Successfully decompressed %1</source>
-      <translation>%1 の解凍に成功しました</translation>
-    </message>
-    <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="427"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareImage.cc" line="424"/>
       <source>Unabled to open firmware file %1, %2</source>
       <translation>ファームウェアファイル %1, %2 を開けません</translation>
     </message>
@@ -6124,7 +6895,7 @@ OKをクリックして、自動調整プロセスを開始します。</transla
   <context>
     <name>FirmwarePlugin</name>
     <message>
-      <location filename="../src/FirmwarePlugin/FirmwarePlugin.cc" line="363"/>
+      <location filename="../src/FirmwarePlugin/FirmwarePlugin.cc" line="362"/>
       <source>Vehicle is not running latest stable firmware! Running %1, latest stable is %2.</source>
       <translation>機体は最新安定版ファームウェアを適用していません。適用中 %1, 最新安定版 %2</translation>
     </message>
@@ -6138,7 +6909,7 @@ OKをクリックして、自動調整プロセスを開始します。</transla
     </message>
     <message>
       <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="29"/>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="132"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="195"/>
       <source>Firmware Setup</source>
       <translation>ファームウェア設定</translation>
     </message>
@@ -6148,17 +6919,12 @@ OKをクリックして、自動調整プロセスを開始します。</transla
       <translation>AutoPilotファームウェアを最新バージョンにアップデート</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="37"/>
-      <source>All %1 connections to vehicles must be </source>
-      <translation>すべての %1 への機体接続が必要 </translation>
-    </message>
-    <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="221"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="303"/>
       <source>Upgrade cancelled</source>
       <translation>アップグレードがキャンセルされました</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="61"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="202"/>
       <source>Select Firmware File</source>
       <translation>ファームウェアファイルを選択</translation>
     </message>
@@ -6173,224 +6939,225 @@ OKをクリックして、自動調整プロセスを開始します。</transla
       <translation>デバイスを接続します</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="34"/>
-      <source> via USB to </source>
-      <translation> USB経由で </translation>
-    </message>
-    <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="34"/>
-      <source>start</source>
-      <translation>開始</translation>
-    </message>
-    <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="34"/>
-      <source> firmware upgrade.</source>
-      <translation>ファームウェア更新</translation>
-    </message>
-    <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="35"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="36"/>
       <source>If upgrade failed, make sure to connect </source>
       <translation>アップグレードに失敗した場合は、接続してください </translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="35"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="36"/>
       <source>directly</source>
       <translation>直接</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="35"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="36"/>
       <source> to a powered USB port on your computer, not through a USB hub. </source>
       <translation> USBハブではなく、コンピュータの電源付きUSBポートに接続してください。 </translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="36"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="37"/>
       <source>Also make sure you are only powered via USB </source>
       <translation>また、USB経由でのみ電源が供給されていることを確認してください </translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="36"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="37"/>
       <source>not battery</source>
       <translation>バッテリーがありません</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="37"/>
-      <source> disconnected </source>
-      <translation>切断されました</translation>
-    </message>
-    <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="37"/>
-      <source>prior to firmware upgrade.</source>
-      <translation>ファームウェアのアップグレードの前に</translation>
-    </message>
-    <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="38"/>
-      <source>Please unplug your Pixhawk and/or Radio from USB.</source>
-      <translation>Pixhawkまたは送信機をUSBから抜いてください。</translation>
-    </message>
-    <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="62"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="203"/>
       <source>Firmware Files (*.px4 *.apj *.bin *.ihx)</source>
       <translation>ファームウェアファイル (*.px4 *.apj *.bin *.ihx)</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="62"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="203"/>
       <source>All Files (*)</source>
       <translation>すべてのファイル (*)</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="105"/>
-      <source>Multiple devices detected! Remove all detected devices to perform the firmware upgrade.</source>
-      <translation>複数のデバイスが検出されました！検出されたデバイスをすべて削除し、ファームウェアのアップグレードを実施してください。</translation>
-    </message>
-    <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="106"/>
-      <source>Detected [%1]: </source>
-      <translation>検出された [%1]: </translation>
-    </message>
-    <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="113"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="164"/>
       <source>Found device</source>
       <translation>デバイスが見つかりました</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="162"/>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="289"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="237"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="370"/>
       <source>PX4 Pro </source>
       <translation> PX4 Pro </translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="191"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="273"/>
       <source>Either firmware list is still downloading, or no firmware is available for current selection.</source>
       <translation>ファームウェア一覧がダウンロード中か、もしくは現在選択可能なファームウェアがありません。</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="196"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="278"/>
       <source>You must choose a board type.</source>
       <translation>ボードタイプを選択する必要があります。</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="203"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="285"/>
       <source>No firmware was found for the current selection.</source>
       <translation>現在選択されているファームウェアが見つかりません。</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="231"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="312"/>
       <source>Standard Version (stable)</source>
       <translation>標準バージョン (安定版)</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="235"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="316"/>
       <source>Beta Testing (beta)</source>
       <translation>ベータテスト版 (beta)</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="239"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="320"/>
       <source>Developer Build (master)</source>
       <translation>開発者ビルド版 (master)</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="243"/>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="256"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="324"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="337"/>
       <source>Custom firmware file...</source>
       <translation>カスタムファームウェアファイル...</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="301"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="382"/>
       <source>ArduPilot</source>
       <translation>ArduPilot</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="252"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="333"/>
       <source>Standard Version</source>
       <translation>標準バージョン</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="270"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="34"/>
+      <source> via USB, then select it below and press </source>
+      <translation type="unfinished"> via USB, then select it below and press </translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="34"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="538"/>
+      <source>Flash</source>
+      <translation type="unfinished">Flash</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="35"/>
+      <source>Now unplug your device and plug it back in to enter bootloader mode.</source>
+      <translation type="unfinished">Now unplug your device and plug it back in to enter bootloader mode.</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="103"/>
+      <source>Multiple devices detected. Make sure to select the correct one from the list.</source>
+      <translation type="unfinished">Multiple devices detected. Make sure to select the correct one from the list.</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="158"/>
+      <source>Device disconnected — waiting for it to reappear in bootloader mode...</source>
+      <translation type="unfinished">Device disconnected — waiting for it to reappear in bootloader mode...</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="351"/>
       <source>Detected Pixhawk board. You can select from the following flight stacks:</source>
       <translation>Pixhawkボードを検出しました。以下の飛行スタックから選択できます:</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="271"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="352"/>
       <source>Press Ok to upgrade your vehicle.</source>
       <translation>OKを押し、機体のアップグレードを実施します。</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="338"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="419"/>
       <source>Downloading list of available firmwares...</source>
       <translation>利用可能なファームウェアのリストをダウンロードしています...</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="345"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="426"/>
       <source>No Firmware Available</source>
       <translation>ファームウェアがありません</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="351"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="432"/>
       <source>Advanced settings</source>
       <translation>詳細設定</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="365"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="446"/>
       <source>Select the standard version or one from the file system (previously downloaded):</source>
       <translation>標準バージョンまたはファイルシステムから (あらかじめダウンロードしておいた) バージョンを選択します:</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="366"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="447"/>
       <source>Select which version of the above flight stack you would like to install:</source>
       <translation>上記の飛行スタックの、どのバージョンをインストールするかを選択します:</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="380"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="462"/>
       <source>WARNING: BETA FIRMWARE. </source>
       <translation>警告：ベータ版のファームウェア. </translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="381"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="463"/>
       <source>This firmware version is ONLY intended for beta testers. </source>
       <translation>このバージョンのファームウェアは【ベータテスターのみ】ご利用ください。 </translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="382"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="464"/>
       <source>Although it has received FLIGHT TESTING, it represents actively changed code. </source>
       <translation>飛行テストを実施していますが、積極的にコードを変更しています。 </translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="383"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="465"/>
       <source>Do NOT use for normal operation.</source>
       <translation>通常の操作では【使用しないでください】 </translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="386"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="468"/>
       <source>WARNING: CONTINUOUS BUILD FIRMWARE. </source>
       <translation>警告: 継続ビルドされているファームウェア. </translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="387"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="469"/>
       <source>This firmware has NOT BEEN FLIGHT TESTED. </source>
       <translation>このファームウェアは【飛行テストを行っていません】 </translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="388"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="470"/>
       <source>It is only intended for DEVELOPERS. </source>
       <translation>あくまでも【開発者向け】のものです。 </translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="389"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="471"/>
       <source>Run bench tests without props first. </source>
       <translation>まずはプロペラを装着せずにベンチテストを実施します。 </translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="390"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="472"/>
       <source>Do NOT fly this without additional safety precautions. </source>
       <translation>安全対策をせずに【飛行しないでください】 </translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="391"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="473"/>
       <source>Follow the forums actively when using it.</source>
       <translation>積極的にフォーラムにご参加ください。</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="417"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="532"/>
+      <source>Flashing - %1</source>
+      <translation type="unfinished">Flashing - %1</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="560"/>
+      <source>Cancel</source>
+      <translation type="unfinished">Cancel</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="568"/>
+      <source>Cancelled. Select a port and press Flash to try again.</source>
+      <translation type="unfinished">Cancelled. Select a port and press Flash to try again.</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgrade.qml" line="581"/>
       <source>Flash ChibiOS Bootloader</source>
       <translation>ChibiOSブートローダーの書き込み</translation>
     </message>
@@ -6398,87 +7165,87 @@ OKをクリックして、自動調整プロセスを開始します。</transla
   <context>
     <name>FirmwareUpgradeController</name>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="162"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="166"/>
       <source>Connect not allowed during Firmware Upgrade.</source>
       <translation>ファームウェアのアップグレード中は接続できません。</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="280"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="308"/>
       <source>Connected to bootloader:</source>
       <translation>ブートローダーに接続しました:</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="281"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="309"/>
       <source>  Version: %1</source>
       <translation>バージョン: %1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="282"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="310"/>
       <source>  Board ID: %1</source>
       <translation>  ボードID: %1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="283"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="311"/>
       <source>  Flash size: %1</source>
       <translation>  フラッシュサイズ: %1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="338"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="366"/>
       <source>Custom firmware selected but no filename given.</source>
       <translation>カスタムファームウェアが選択されましたがファイル名が指定されていません。</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="343"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="371"/>
       <source>Unable to find specified firmware for board type</source>
       <translation>ボードの種類に応じたファームウェアが見つかりません</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="349"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="377"/>
       <source>No firmware file selected</source>
       <translation>ファームウェアファイルが選択されていません</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="360"/>
-      <source>Downloading firmware...</source>
-      <translation>ファームウェアをダウンロード中...</translation>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="392"/>
+      <source>Downloading firmware from %1</source>
+      <translation type="unfinished">Downloading firmware from %1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="361"/>
-      <source> From: %1</source>
-      <translation> 元: %1</translation>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="394"/>
+      <source>Using firmware file %1</source>
+      <translation type="unfinished">Using firmware file %1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="387"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="432"/>
       <source>Download complete</source>
       <translation>ダウンロードが完了しました</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="395"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="441"/>
       <source>Image load failed</source>
       <translation>ファームウェア読み込みに失敗しました</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="401"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="447"/>
       <source>Bootloader not found</source>
       <translation>ブートローダーが見つかりません</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="406"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="452"/>
       <source>Image size of %1 is too large for board flash size %2</source>
       <translation>%1 のファームウェアイメージサイズがボード書き込みサイズ %2 に対して大きすぎます。</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="438"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="484"/>
       <source>Upgrade complete</source>
       <translation>アップグレードが完了しました</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="494"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="539"/>
       <source>Upgrade cancelled</source>
       <translation>アップグレードがキャンセルされました</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="566"/>
+      <location filename="../src/Vehicle/VehicleSetup/FirmwareUpgradeController.cc" line="611"/>
       <source>Choose board type</source>
       <translation>ボードの種類を選択</translation>
     </message>
@@ -6605,7 +7372,7 @@ OKをクリックして、自動調整プロセスを開始します。</transla
   <context>
     <name>FlightMap</name>
     <message>
-      <location filename="../src/FlightMap/FlightMap.qml" line="65"/>
+      <location filename="../src/FlightMap/FlightMap.qml" line="64"/>
       <source>Specify Position</source>
       <translation>ポジションを指定</translation>
     </message>
@@ -6613,57 +7380,57 @@ OKをクリックして、自動調整プロセスを開始します。</transla
   <context>
     <name>FlightModeIndicator</name>
     <message>
-      <location filename="../src/UI/toolbar/FlightModeIndicator.qml" line="44"/>
+      <location filename="../src/Toolbar/FlightModeIndicator.qml" line="44"/>
       <source>N/A</source>
       <comment>No data to display</comment>
       <translation>N/A</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/FlightModeIndicator.qml" line="54"/>
+      <location filename="../src/Toolbar/FlightModeIndicator.qml" line="54"/>
       <source>FW
 VTOL</source>
       <translation type="unfinished">FW
 VTOL</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/FlightModeIndicator.qml" line="54"/>
+      <location filename="../src/Toolbar/FlightModeIndicator.qml" line="54"/>
       <source>MR
 VTOL</source>
       <translation type="unfinished">MR
 VTOL</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/FlightModeIndicator.qml" line="139"/>
+      <location filename="../src/Toolbar/FlightModeIndicator.qml" line="139"/>
       <source>Transition to Multi-Rotor</source>
       <translation type="unfinished">Transition to Multi-Rotor</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/FlightModeIndicator.qml" line="139"/>
+      <location filename="../src/Toolbar/FlightModeIndicator.qml" line="139"/>
       <source>Transition to Fixed Wing</source>
       <translation type="unfinished">Transition to Fixed Wing</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/FlightModeIndicator.qml" line="195"/>
+      <location filename="../src/Toolbar/FlightModeIndicator.qml" line="195"/>
       <source>Some Modes Hidden</source>
       <translation>一部のモードは非表示</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/FlightModeIndicator.qml" line="229"/>
+      <location filename="../src/Toolbar/FlightModeIndicator.qml" line="229"/>
       <source>Click and Hold to Confirm Mode Change</source>
       <translation type="unfinished">Click and Hold to Confirm Mode Change</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/FlightModeIndicator.qml" line="239"/>
+      <location filename="../src/Toolbar/FlightModeIndicator.qml" line="239"/>
       <source>Edit Displayed Flight Modes</source>
       <translation>表示された飛行モードの編集</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/FlightModeIndicator.qml" line="249"/>
+      <location filename="../src/Toolbar/FlightModeIndicator.qml" line="249"/>
       <source>Flight Modes</source>
       <translation>飛行モード</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/FlightModeIndicator.qml" line="250"/>
+      <location filename="../src/Toolbar/FlightModeIndicator.qml" line="250"/>
       <source>Configure</source>
       <translation>設定</translation>
     </message>
@@ -6680,23 +7447,23 @@ VTOL</translation>
   <context>
     <name>FlightModeMenuIndicator</name>
     <message>
-      <location filename="../src/UI/toolbar/FlightModeMenuIndicator.qml" line="46"/>
+      <location filename="../src/Toolbar/FlightModeMenuIndicator.qml" line="46"/>
       <source>N/A</source>
       <comment>No data to display</comment>
       <translation>N/A</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/FlightModeMenuIndicator.qml" line="116"/>
+      <location filename="../src/Toolbar/FlightModeMenuIndicator.qml" line="116"/>
       <source>RTL Altitude</source>
       <translation>RTL 高度</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/FlightModeMenuIndicator.qml" line="127"/>
+      <location filename="../src/Toolbar/FlightModeMenuIndicator.qml" line="127"/>
       <source>Land Descent Rate:</source>
       <translation>着陸降下レート:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/FlightModeMenuIndicator.qml" line="138"/>
+      <location filename="../src/Toolbar/FlightModeMenuIndicator.qml" line="138"/>
       <source>Precision Landing</source>
       <translation>高精度着陸</translation>
     </message>
@@ -6903,7 +7670,7 @@ VTOL</translation>
   <context>
     <name>FlyViewToolBar</name>
     <message>
-      <location filename="../src/UI/toolbar/FlyViewToolBar.qml" line="93"/>
+      <location filename="../src/Toolbar/FlyViewToolBar.qml" line="95"/>
       <source>Disconnect</source>
       <translation>切断</translation>
     </message>
@@ -6962,113 +7729,113 @@ VTOL</translation>
   <context>
     <name>GCSControlIndicator</name>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="106"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="106"/>
       <source>GCS </source>
       <translation>GCS </translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="106"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="106"/>
       <source> is requesting control</source>
       <translation> 制御を要求しています</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="111"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="111"/>
       <source>Allow &lt;br&gt; takeover</source>
       <translation>&lt;br&gt; のテイクオーバーを許可</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="128"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="128"/>
       <source>Ignoring automatically in </source>
       <translation>自動的に無視 </translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="128"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="128"/>
       <source> seconds</source>
       <translation> 秒</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="132"/>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="189"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="132"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="189"/>
       <source>Ignore</source>
       <translation>無視</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="183"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="183"/>
       <source>Reverting back to takeover not allowed if GCS </source>
       <translation>GCSの場合はテイクオーバーに復帰することはできません</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="184"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="184"/>
       <source> doesn&apos;t take control in </source>
       <translation> 制御を取得しません </translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="185"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="185"/>
       <source> seconds ...</source>
       <translation> 秒...</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="234"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="234"/>
       <source>System in control: </source>
       <translation>システム制御: </translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="238"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="238"/>
       <source>This GCS</source>
       <translation>この GCS</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="246"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="246"/>
       <source>Takeover allowed</source>
       <translation>テイクオーバー許可</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="246"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="246"/>
       <source>Takeover NOT allowed</source>
       <translation>テイクオーバー禁止</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="262"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="262"/>
       <source>Send Control Request:</source>
       <translation>制御リクエストを送信:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="267"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="267"/>
       <source>Change takeover condition:</source>
       <translation>テイクオーバー条件を変更:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="273"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="273"/>
       <source>Request sent: </source>
       <translation>リクエスト送信済み: </translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="278"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="278"/>
       <source>Allow takeover</source>
       <translation>テイクオーバー許可</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="283"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="283"/>
       <source>Adquire Control</source>
       <translation>制御権を取得</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="283"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="283"/>
       <source>Send Request</source>
       <translation>リクエストを送信</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="297"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="297"/>
       <source>Request Timeout (sec):</source>
       <translation>リクエスト タイムアウト (秒):</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="307"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="307"/>
       <source>Change</source>
       <translation>変更</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GCSControlIndicator.qml" line="324"/>
+      <location filename="../src/Toolbar/GCSControlIndicator.qml" line="324"/>
       <source>This GCS Mavlink System ID: </source>
       <translation>このGCS上のMavLink システムID: </translation>
     </message>
@@ -7076,7 +7843,7 @@ VTOL</translation>
   <context>
     <name>GPSIndicator</name>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicator.qml" line="34"/>
+      <location filename="../src/Toolbar/GPSIndicator.qml" line="34"/>
       <source>RTK</source>
       <translation>RTK</translation>
     </message>
@@ -7084,171 +7851,171 @@ VTOL</translation>
   <context>
     <name>GPSIndicatorPage</name>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="14"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="14"/>
       <source>N/A</source>
       <comment>No data to display</comment>
       <translation>N/A</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="15"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="15"/>
       <source>–.––</source>
       <comment>No data to display</comment>
       <translation type="unfinished">–.––</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="59"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="59"/>
       <source>Disconnected</source>
       <translation type="unfinished">Disconnected</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="64"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="64"/>
       <source>Incoming correction</source>
       <translation type="unfinished">Incoming correction</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="66"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="66"/>
       <source>Configuration</source>
       <translation type="unfinished">Configuration</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="68"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="68"/>
       <source>Software</source>
       <translation type="unfinished">Software</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="70"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="70"/>
       <source>Antenna</source>
       <translation type="unfinished">Antenna</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="72"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="72"/>
       <source>Event congestion</source>
       <translation type="unfinished">Event congestion</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="74"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="74"/>
       <source>CPU overload</source>
       <translation type="unfinished">CPU overload</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="76"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="76"/>
       <source>Output congestion</source>
       <translation type="unfinished">Output congestion</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="78"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="78"/>
       <source>Multiple errors</source>
       <translation type="unfinished">Multiple errors</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="87"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="87"/>
       <source>Vehicle GPS Status</source>
       <translation>機体のGPS状態</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="91"/>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="131"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="91"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="131"/>
       <source>Satellites</source>
       <translation>人工衛星</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="96"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="96"/>
       <source>GPS Lock</source>
       <translation>GPSロック</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="101"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="101"/>
       <source>HDOP</source>
       <translation>HDOP</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="106"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="106"/>
       <source>VDOP</source>
       <translation>VDOP</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="111"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="111"/>
       <source>Course Over Ground</source>
       <translation>地上コース</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="116"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="116"/>
       <source>GPS Error</source>
       <translation type="unfinished">GPS Error</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="123"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="123"/>
       <source>RTK GPS Status</source>
       <translation>RTK GPS状態</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="127"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="127"/>
       <source>Survey-in Active</source>
       <translation>サーベイイン 有効</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="127"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="127"/>
       <source>RTK Streaming</source>
       <translation>RTK ストリーミング</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="136"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="136"/>
       <source>Duration</source>
       <translation>期間</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="141"/>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="194"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="141"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="194"/>
       <source>Accuracy</source>
       <translation>精度</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="141"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="141"/>
       <source>Current Accuracy</source>
       <translation>現在の精度</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="151"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="151"/>
       <source>RTK GPS Settings</source>
       <translation>RTK GPS 設定</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="157"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="157"/>
       <source>AutoConnect</source>
       <translation>自動接続</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="166"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="166"/>
       <source>Settings displayed</source>
       <translation type="unfinished">Settings displayed</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="177"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="177"/>
       <source>Survey-In</source>
       <translation>測位調査 (サーベイイン)</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="184"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="184"/>
       <source>Specify position</source>
       <translation>位置を指定</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="207"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="207"/>
       <source>Min Duration</source>
       <translation>最小時間</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="254"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="254"/>
       <source>Current Base Position</source>
       <translation>現在のベースポジション</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="255"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="255"/>
       <source>Save</source>
       <translation>保存</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSIndicatorPage.qml" line="255"/>
+      <location filename="../src/Toolbar/GPSIndicatorPage.qml" line="255"/>
       <source>Not Yet Valid</source>
       <translation>まだ有効ではありません</translation>
     </message>
@@ -7256,63 +8023,63 @@ VTOL</translation>
   <context>
     <name>GPSResilienceIndicator</name>
     <message>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="103"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="103"/>
       <source>GPS Resilience Status</source>
       <translation type="unfinished">GPS Resilience Status</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="107"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="107"/>
       <source>GPS Jamming</source>
       <translation type="unfinished">GPS Jamming</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="108"/>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="114"/>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="120"/>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="137"/>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="142"/>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="147"/>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="164"/>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="169"/>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="174"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="108"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="114"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="120"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="137"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="142"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="147"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="164"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="169"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="174"/>
       <source>n/a</source>
       <translation type="unfinished">n/a</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="113"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="113"/>
       <source>GPS Spoofing</source>
       <translation type="unfinished">GPS Spoofing</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="119"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="119"/>
       <source>GPS Authentication</source>
       <translation type="unfinished">GPS Authentication</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="127"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="127"/>
       <source>GPS 1 Details</source>
       <translation type="unfinished">GPS 1 Details</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="136"/>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="163"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="136"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="163"/>
       <source>Jamming</source>
       <translation type="unfinished">Jamming</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="141"/>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="168"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="141"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="168"/>
       <source>Spoofing</source>
       <translation type="unfinished">Spoofing</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="146"/>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="173"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="146"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="173"/>
       <source>Authentication</source>
       <translation type="unfinished">Authentication</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GPSResilienceIndicator.qml" line="154"/>
+      <location filename="../src/Toolbar/GPSResilienceIndicator.qml" line="154"/>
       <source>GPS 2 Details</source>
       <translation type="unfinished">GPS 2 Details</translation>
     </message>
@@ -7320,29 +8087,29 @@ VTOL</translation>
   <context>
     <name>GcsPositionStatus</name>
     <message>
-      <location filename="../src/UI/AppSettings/GcsPositionStatus.qml" line="8"/>
+      <location filename="../src/AppSettings/GcsPositionStatus.qml" line="8"/>
       <source>GCS Position</source>
       <translation type="unfinished">GCS Position</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/GcsPositionStatus.qml" line="16"/>
+      <location filename="../src/AppSettings/GcsPositionStatus.qml" line="16"/>
       <source>Latitude</source>
       <translation type="unfinished">Latitude</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/GcsPositionStatus.qml" line="17"/>
-      <location filename="../src/UI/AppSettings/GcsPositionStatus.qml" line="23"/>
-      <location filename="../src/UI/AppSettings/GcsPositionStatus.qml" line="29"/>
+      <location filename="../src/AppSettings/GcsPositionStatus.qml" line="17"/>
+      <location filename="../src/AppSettings/GcsPositionStatus.qml" line="23"/>
+      <location filename="../src/AppSettings/GcsPositionStatus.qml" line="29"/>
       <source>N/A</source>
       <translation type="unfinished">N/A</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/GcsPositionStatus.qml" line="22"/>
+      <location filename="../src/AppSettings/GcsPositionStatus.qml" line="22"/>
       <source>Longitude</source>
       <translation type="unfinished">Longitude</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/GcsPositionStatus.qml" line="28"/>
+      <location filename="../src/AppSettings/GcsPositionStatus.qml" line="28"/>
       <source>HDOP</source>
       <translation type="unfinished">HDOP</translation>
     </message>
@@ -7925,152 +8692,152 @@ VTOL</translation>
   <context>
     <name>GimbalIndicator</name>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="176"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="177"/>
       <source>Center</source>
       <translation>中央</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="185"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="186"/>
       <source>Tilt 90</source>
       <translation>傾き 90</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="203"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="204"/>
       <source>Retract</source>
       <translation>取り消し</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="249"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="250"/>
       <source>Horizontal FOV</source>
       <translation>水平方向 FOV</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="255"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="256"/>
       <source>Vertical FOV</source>
       <translation>垂直方向 FOV</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="285"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="286"/>
       <source>Joystick buttons speed:</source>
       <translation>ジョイスティックボタンの速度:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="292"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="293"/>
       <source>Show gimbal Azimuth indicator in map</source>
       <translation>ジンバル方位計を地図上に表示</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="298"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="299"/>
       <source>Use Azimuth instead of local yaw on top toolbar indicator</source>
       <translation>トップツールバーのインジケータにローカル・ヨーの代わりに方位角を使用する</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="304"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="305"/>
       <source>Show Acquire/Release control button</source>
       <translation>コントロール取得 / 解除ボタンを表示</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="81"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="82"/>
       <source>Retracted</source>
       <translation>取り消し</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="82"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="83"/>
       <source>Yaw locked</source>
       <translation>ヨー・固定</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="82"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="83"/>
       <source>Yaw follow</source>
       <translation>ヨー・フォロー</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="90"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="91"/>
       <source>P: </source>
       <translation>P: </translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="98"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="99"/>
       <source>Az: </source>
       <translation>Az: </translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="99"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="100"/>
       <source>Y: </source>
       <translation>Y: </translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="129"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="130"/>
       <source>Active Gimbal</source>
       <translation type="unfinished">Active Gimbal</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="143"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="144"/>
       <source>Gimbal %1</source>
       <translation type="unfinished">Gimbal %1</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="161"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="162"/>
       <source>Commands</source>
       <translation type="unfinished">Commands</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="166"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="167"/>
       <source>Yaw Follow</source>
       <translation type="unfinished">Yaw Follow</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="166"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="167"/>
       <source>Yaw Lock</source>
       <translation type="unfinished">Yaw Lock</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="194"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="195"/>
       <source>Point Home</source>
       <translation type="unfinished">Point Home</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="213"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="214"/>
       <source>Release Control</source>
       <translation type="unfinished">Release Control</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="213"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="214"/>
       <source>Acquire Control</source>
       <translation type="unfinished">Acquire Control</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="231"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="232"/>
       <source>On-Screen Control</source>
       <translation type="unfinished">On-Screen Control</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="237"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="238"/>
       <source>Enabled</source>
       <translation type="unfinished">Enabled</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="243"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="244"/>
       <source>Click and drag</source>
       <translation type="unfinished">Click and drag</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="261"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="262"/>
       <source>Max speed</source>
       <translation type="unfinished">Max speed</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="268"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="269"/>
       <source>Zoom speed</source>
       <translation type="unfinished">Zoom speed</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="272"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="273"/>
       <source>Max speed (min zoom)</source>
       <translation type="unfinished">Max speed (min zoom)</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/GimbalIndicator.qml" line="277"/>
+      <location filename="../src/Toolbar/GimbalIndicator.qml" line="278"/>
       <source>Min speed (max zoom)</source>
       <translation type="unfinished">Min speed (max zoom)</translation>
     </message>
@@ -8383,12 +9150,12 @@ VTOL</translation>
       <translation>高度 (rel)</translation>
     </message>
     <message>
-      <location filename="../src/FlyView/GuidedActionsController.qml" line="466"/>
+      <location filename="../src/FlyView/GuidedActionsController.qml" line="465"/>
       <source>Smart RTL</source>
       <translation>Smart RTL</translation>
     </message>
     <message>
-      <location filename="../src/FlyView/GuidedActionsController.qml" line="686"/>
+      <location filename="../src/FlyView/GuidedActionsController.qml" line="683"/>
       <source>Internal error: unknown actionCode</source>
       <translation>内部エラー: 不明なアクションコード</translation>
     </message>
@@ -8404,22 +9171,22 @@ VTOL</translation>
   <context>
     <name>HelpSettings</name>
     <message>
-      <location filename="../src/UI/AppSettings/HelpSettings.qml" line="26"/>
+      <location filename="../src/AppSettings/HelpSettings.qml" line="27"/>
       <source>QGroundControl User Guide</source>
       <translation>QGroundControl ユーザガイド</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/HelpSettings.qml" line="33"/>
+      <location filename="../src/AppSettings/HelpSettings.qml" line="34"/>
       <source>PX4 Users Discussion Forum</source>
       <translation>PX4 ユーザディスカッションフォーラム</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/HelpSettings.qml" line="40"/>
+      <location filename="../src/AppSettings/HelpSettings.qml" line="41"/>
       <source>ArduPilot Users Discussion Forum</source>
       <translation>ArduPilot ユーザディスカッションフォーラム</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/HelpSettings.qml" line="47"/>
+      <location filename="../src/AppSettings/HelpSettings.qml" line="48"/>
       <source>QGroundControl Discord Channel</source>
       <translation>QGroundControl Discord チャンネル</translation>
     </message>
@@ -8442,87 +9209,77 @@ VTOL</translation>
   <context>
     <name>InitialSetupPrompt</name>
     <message>
-      <location filename="../src/UI/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="9"/>
+      <location filename="../src/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="9"/>
       <source>Preferences</source>
       <translation type="unfinished">Preferences</translation>
     </message>
     <message>
-      <location filename="../src/UI/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="17"/>
+      <location filename="../src/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="17"/>
       <source>Horizontal Distance</source>
       <translation type="unfinished">Horizontal Distance</translation>
     </message>
     <message>
-      <location filename="../src/UI/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="17"/>
+      <location filename="../src/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="17"/>
       <source>Vertical Distance</source>
       <translation type="unfinished">Vertical Distance</translation>
     </message>
     <message>
-      <location filename="../src/UI/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="17"/>
+      <location filename="../src/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="17"/>
       <source>Area</source>
       <translation type="unfinished">Area</translation>
     </message>
     <message>
-      <location filename="../src/UI/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="17"/>
+      <location filename="../src/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="17"/>
       <source>Speed</source>
       <translation type="unfinished">Speed</translation>
     </message>
     <message>
-      <location filename="../src/UI/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="17"/>
+      <location filename="../src/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="17"/>
       <source>Temperature</source>
       <translation type="unfinished">Temperature</translation>
     </message>
     <message>
-      <location filename="../src/UI/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="45"/>
+      <location filename="../src/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="56"/>
       <source>Vehicle Preferences</source>
       <translation type="unfinished">Vehicle Preferences</translation>
     </message>
     <message>
-      <location filename="../src/UI/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="46"/>
-      <source>Select the firmware and vehicle type you use. This tailors the interface for a simpler experience. Choose &apos;All&apos; if you use multiple types.</source>
-      <translation type="unfinished">Select the firmware and vehicle type you use. This tailors the interface for a simpler experience. Choose &apos;All&apos; if you use multiple types.</translation>
+      <location filename="../src/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="57"/>
+      <source>Select the firmware and vehicle type you typically use.</source>
+      <translation type="unfinished">Select the firmware and vehicle type you typically use.</translation>
     </message>
     <message>
-      <location filename="../src/UI/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="50"/>
+      <location filename="../src/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="61"/>
       <source>Preferred Firmware</source>
       <translation type="unfinished">Preferred Firmware</translation>
     </message>
     <message>
-      <location filename="../src/UI/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="58"/>
+      <location filename="../src/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="69"/>
       <source>Preferred Vehicle</source>
       <translation type="unfinished">Preferred Vehicle</translation>
     </message>
     <message>
-      <location filename="../src/UI/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="66"/>
-      <source>Offline Firmware</source>
-      <translation type="unfinished">Offline Firmware</translation>
-    </message>
-    <message>
-      <location filename="../src/UI/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="74"/>
-      <source>Offline Vehicle</source>
-      <translation type="unfinished">Offline Vehicle</translation>
-    </message>
-    <message>
-      <location filename="../src/UI/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="83"/>
+      <location filename="../src/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="79"/>
       <source>Measurement Units</source>
       <translation type="unfinished">Measurement Units</translation>
     </message>
     <message>
-      <location filename="../src/UI/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="84"/>
+      <location filename="../src/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="80"/>
       <source>Choose the measurement units you want to use. You can also change it later in General Settings.</source>
       <translation type="unfinished">Choose the measurement units you want to use. You can also change it later in General Settings.</translation>
     </message>
     <message>
-      <location filename="../src/UI/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="92"/>
+      <location filename="../src/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="88"/>
       <source>System of units</source>
       <translation type="unfinished">System of units</translation>
     </message>
     <message>
-      <location filename="../src/UI/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="97"/>
+      <location filename="../src/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="93"/>
       <source>Metric System</source>
       <translation type="unfinished">Metric System</translation>
     </message>
     <message>
-      <location filename="../src/UI/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="97"/>
+      <location filename="../src/FirstRunPromptDialogs/InitialSetupPrompt.qml" line="93"/>
       <source>Imperial System</source>
       <translation type="unfinished">Imperial System</translation>
     </message>
@@ -8658,187 +9415,187 @@ VTOL</translation>
   <context>
     <name>Joystick</name>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="481"/>
+      <location filename="../src/Joystick/Joystick.h" line="484"/>
       <source>No Action</source>
       <translation>アクションなし</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="482"/>
+      <location filename="../src/Joystick/Joystick.h" line="485"/>
       <source>Arm</source>
       <translation>アーム</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="483"/>
+      <location filename="../src/Joystick/Joystick.h" line="486"/>
       <source>Disarm</source>
       <translation>ディスアーム</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="484"/>
+      <location filename="../src/Joystick/Joystick.h" line="487"/>
       <source>Toggle Arm</source>
       <translation>アーム切替</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="485"/>
+      <location filename="../src/Joystick/Joystick.h" line="488"/>
       <source>VTOL: Fixed Wing</source>
       <translation>VTOL: 固定翼機</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="486"/>
+      <location filename="../src/Joystick/Joystick.h" line="489"/>
       <source>VTOL: Multi-Rotor</source>
       <translation>VTOL: マルチコプター</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="487"/>
+      <location filename="../src/Joystick/Joystick.h" line="490"/>
       <source>Continuous Zoom In</source>
       <translation>連続ズームイン</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="488"/>
+      <location filename="../src/Joystick/Joystick.h" line="491"/>
       <source>Continuous Zoom Out</source>
       <translation>連続ズームアウト</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="489"/>
+      <location filename="../src/Joystick/Joystick.h" line="492"/>
       <source>Step Zoom In</source>
       <translation>ステップズームイン</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="490"/>
+      <location filename="../src/Joystick/Joystick.h" line="493"/>
       <source>Step Zoom Out</source>
       <translation>ステップズームアウト</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="491"/>
+      <location filename="../src/Joystick/Joystick.h" line="494"/>
       <source>Continuous Focus In</source>
       <translation type="unfinished">Continuous Focus In</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="492"/>
+      <location filename="../src/Joystick/Joystick.h" line="495"/>
       <source>Continuous Focus Out</source>
       <translation type="unfinished">Continuous Focus Out</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="493"/>
+      <location filename="../src/Joystick/Joystick.h" line="496"/>
       <source>Step Focus In</source>
       <translation type="unfinished">Step Focus In</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="494"/>
+      <location filename="../src/Joystick/Joystick.h" line="497"/>
       <source>Step Focus Out</source>
       <translation type="unfinished">Step Focus Out</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="499"/>
+      <location filename="../src/Joystick/Joystick.h" line="502"/>
       <source>Trigger Camera</source>
       <translation>カメラトリガー</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="500"/>
+      <location filename="../src/Joystick/Joystick.h" line="503"/>
       <source>Start Recording Video</source>
       <translation>録画を開始</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="501"/>
+      <location filename="../src/Joystick/Joystick.h" line="504"/>
       <source>Stop Recording Video</source>
       <translation>録画を停止</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="502"/>
+      <location filename="../src/Joystick/Joystick.h" line="505"/>
       <source>Toggle Recording Video</source>
       <translation>録画を切り替え</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="503"/>
+      <location filename="../src/Joystick/Joystick.h" line="506"/>
       <source>Gimbal Down</source>
       <translation>ジンバル 下</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="504"/>
+      <location filename="../src/Joystick/Joystick.h" line="507"/>
       <source>Gimbal Up</source>
       <translation>ジンバル 上</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="505"/>
+      <location filename="../src/Joystick/Joystick.h" line="508"/>
       <source>Gimbal Left</source>
       <translation>ジンバル 左</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="506"/>
+      <location filename="../src/Joystick/Joystick.h" line="509"/>
       <source>Gimbal Right</source>
       <translation>ジンバル 右</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="507"/>
+      <location filename="../src/Joystick/Joystick.h" line="510"/>
       <source>Gimbal Center</source>
       <translation>ジンバル 中央</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="508"/>
+      <location filename="../src/Joystick/Joystick.h" line="511"/>
       <source>Gimbal Yaw Lock</source>
       <translation>ジンバル ヨー・固定</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="509"/>
+      <location filename="../src/Joystick/Joystick.h" line="512"/>
       <source>Gimbal Yaw Follow</source>
       <translation>ジンバル ヨー・フォロー</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="510"/>
+      <location filename="../src/Joystick/Joystick.h" line="513"/>
       <source>Emergency Stop</source>
       <translation>緊急停止</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="511"/>
+      <location filename="../src/Joystick/Joystick.h" line="514"/>
       <source>Gripper Grab</source>
       <translation type="unfinished">Gripper Grab</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="512"/>
+      <location filename="../src/Joystick/Joystick.h" line="515"/>
       <source>Gripper Release</source>
       <translation type="unfinished">Gripper Release</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="513"/>
+      <location filename="../src/Joystick/Joystick.h" line="516"/>
       <source>Gripper Hold</source>
       <translation type="unfinished">Gripper Hold</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="514"/>
+      <location filename="../src/Joystick/Joystick.h" line="517"/>
       <source>Landing gear deploy</source>
       <translation>ランディングギア 展開</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="515"/>
+      <location filename="../src/Joystick/Joystick.h" line="518"/>
       <source>Landing gear retract</source>
       <translation>ランディングギア 格納</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="516"/>
+      <location filename="../src/Joystick/Joystick.h" line="519"/>
       <source>Motor Interlock enable</source>
       <translation>モーターインターロック 有効</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="517"/>
+      <location filename="../src/Joystick/Joystick.h" line="520"/>
       <source>Motor Interlock disable</source>
       <translation>モーターインターロック 無効</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="495"/>
+      <location filename="../src/Joystick/Joystick.h" line="498"/>
       <source>Next Video Stream</source>
       <translation>次のビデオストリーム</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="496"/>
+      <location filename="../src/Joystick/Joystick.h" line="499"/>
       <source>Previous Video Stream</source>
       <translation>前のビデオストリーム</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="497"/>
+      <location filename="../src/Joystick/Joystick.h" line="500"/>
       <source>Next Camera</source>
       <translation>次のカメラ</translation>
     </message>
     <message>
-      <location filename="../src/Joystick/Joystick.h" line="498"/>
+      <location filename="../src/Joystick/Joystick.h" line="501"/>
       <source>Previous Camera</source>
       <translation>前のカメラ</translation>
     </message>
@@ -8968,80 +9725,130 @@ VTOL</translation>
   <context>
     <name>JoystickComponentSettings</name>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="27"/>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="38"/>
       <source>Center stick is zero throttle</source>
       <translation type="unfinished">Center stick is zero throttle</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="34"/>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="45"/>
       <source>Spring loaded throttle smoothing</source>
       <translation type="unfinished">Spring loaded throttle smoothing</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="47"/>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="58"/>
       <source>Negative Thrust</source>
       <translation type="unfinished">Negative Thrust</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="55"/>
-      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="61"/>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="66"/>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="73"/>
       <source>Advanced Settings</source>
       <translation type="unfinished">Advanced Settings</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="66"/>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="78"/>
       <source>Circle Correction</source>
       <translation type="unfinished">Circle Correction</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="91"/>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="102"/>
       <source>Deadband</source>
       <translation type="unfinished">Deadband</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="100"/>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="112"/>
       <source>Deadband can be set during the first step of calibration by gently wiggling each axis. </source>
       <translation type="unfinished">Deadband can be set during the first step of calibration by gently wiggling each axis. </translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="106"/>
-      <source>MANUAL_CONTROL Pitch Extension</source>
-      <translation type="unfinished">MANUAL_CONTROL Pitch Extension</translation>
-    </message>
-    <message>
-      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="113"/>
-      <source>MANUAL_CONTROL Roll Extension</source>
-      <translation type="unfinished">MANUAL_CONTROL Roll Extension</translation>
-    </message>
-    <message>
       <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="120"/>
-      <source>MANUAL_CONTROL Aux1</source>
-      <translation type="unfinished">MANUAL_CONTROL Aux1</translation>
+      <source>MANUAL_CONTROL Extensions</source>
+      <translation type="unfinished">MANUAL_CONTROL Extensions</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="127"/>
-      <source>MANUAL_CONTROL Aux2</source>
-      <translation type="unfinished">MANUAL_CONTROL Aux2</translation>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="129"/>
+      <source>Pitch</source>
+      <translation type="unfinished">Pitch</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="134"/>
-      <source>MANUAL_CONTROL Aux3</source>
-      <translation type="unfinished">MANUAL_CONTROL Aux3</translation>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="136"/>
+      <source>Roll</source>
+      <translation type="unfinished">Roll</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="141"/>
-      <source>MANUAL_CONTROL Aux4</source>
-      <translation type="unfinished">MANUAL_CONTROL Aux4</translation>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="147"/>
+      <source>Additional Axes</source>
+      <translation type="unfinished">Additional Axes</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="148"/>
-      <source>MANUAL_CONTROL Aux5</source>
-      <translation type="unfinished">MANUAL_CONTROL Aux5</translation>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="159"/>
+      <source>Send using MANUAL_CONTROL</source>
+      <translation type="unfinished">Send using MANUAL_CONTROL</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="155"/>
-      <source>MANUAL_CONTROL Aux6</source>
-      <translation type="unfinished">MANUAL_CONTROL Aux6</translation>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="166"/>
+      <source>Send using RC_CHANNELS_OVERRIDE</source>
+      <translation type="unfinished">Send using RC_CHANNELS_OVERRIDE</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="174"/>
+      <source>Aux1</source>
+      <translation type="unfinished">Aux1</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="174"/>
+      <source>Channel 5</source>
+      <translation type="unfinished">Channel 5</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="181"/>
+      <source>Aux2</source>
+      <translation type="unfinished">Aux2</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="181"/>
+      <source>Channel 6</source>
+      <translation type="unfinished">Channel 6</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="188"/>
+      <source>Aux3</source>
+      <translation type="unfinished">Aux3</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="188"/>
+      <source>Channel 7</source>
+      <translation type="unfinished">Channel 7</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="195"/>
+      <source>Aux4</source>
+      <translation type="unfinished">Aux4</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="195"/>
+      <source>Channel 8</source>
+      <translation type="unfinished">Channel 8</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="202"/>
+      <source>Aux5</source>
+      <translation type="unfinished">Aux5</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="202"/>
+      <source>Channel 9</source>
+      <translation type="unfinished">Channel 9</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="209"/>
+      <source>Aux6</source>
+      <translation type="unfinished">Aux6</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/JoystickComponentSettings.qml" line="209"/>
+      <source>Channel 10</source>
+      <translation type="unfinished">Channel 10</translation>
     </message>
   </context>
   <context>
@@ -9185,201 +9992,201 @@ VTOL</translation>
   <context>
     <name>JoystickIndicator</name>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="27"/>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="49"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="27"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="49"/>
       <source>Joystick</source>
       <translation type="unfinished">Joystick</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="37"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="37"/>
       <source>No Vehicle</source>
       <translation type="unfinished">No Vehicle</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="38"/>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="190"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="38"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="190"/>
       <source>Yes</source>
       <translation>はい</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="38"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="38"/>
       <source>No</source>
       <translation>いいえ</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="47"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="47"/>
       <source>Type:</source>
       <translation type="unfinished">Type:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="49"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="49"/>
       <source>Gamepad</source>
       <translation type="unfinished">Gamepad</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="53"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="53"/>
       <source>Connection:</source>
       <translation type="unfinished">Connection:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="61"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="61"/>
       <source>Inputs:</source>
       <translation type="unfinished">Inputs:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="65"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="65"/>
       <source>%1 axes</source>
       <translation type="unfinished">%1 axes</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="65"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="65"/>
       <source>%1 buttons</source>
       <translation type="unfinished">%1 buttons</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="66"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="66"/>
       <source>%1 balls</source>
       <translation type="unfinished">%1 balls</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="67"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="67"/>
       <source>%1 touchpads</source>
       <translation type="unfinished">%1 touchpads</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="73"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="73"/>
       <source>Battery:</source>
       <translation type="unfinished">Battery:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="79"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="79"/>
       <source>%1%</source>
       <translation type="unfinished">%1%</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="88"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="88"/>
       <source>Features:</source>
       <translation type="unfinished">Features:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="95"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="95"/>
       <source>Rumble</source>
       <translation type="unfinished">Rumble</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="96"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="96"/>
       <source>Trigger Rumble</source>
       <translation type="unfinished">Trigger Rumble</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="97"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="97"/>
       <source>LED</source>
       <translation type="unfinished">LED</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="98"/>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="231"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="98"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="231"/>
       <source>Gyro</source>
       <translation type="unfinished">Gyro</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="99"/>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="235"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="99"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="235"/>
       <source>Accel</source>
       <translation type="unfinished">Accel</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="108"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="108"/>
       <source>Player:</source>
       <translation type="unfinished">Player:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="119"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="119"/>
       <source>Device Details</source>
       <translation type="unfinished">Device Details</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="126"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="126"/>
       <source>Device Type:</source>
       <translation type="unfinished">Device Type:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="135"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="135"/>
       <source>Vendor/Product:</source>
       <translation type="unfinished">Vendor/Product:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="144"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="144"/>
       <source>Serial:</source>
       <translation type="unfinished">Serial:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="153"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="153"/>
       <source>Firmware:</source>
       <translation type="unfinished">Firmware:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="162"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="162"/>
       <source>Path:</source>
       <translation type="unfinished">Path:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="173"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="173"/>
       <source>GUID:</source>
       <translation type="unfinished">GUID:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="186"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="186"/>
       <source>Virtual:</source>
       <translation type="unfinished">Virtual:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="195"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="195"/>
       <source>LED Types:</source>
       <translation type="unfinished">LED Types:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="202"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="202"/>
       <source>Mono</source>
       <translation type="unfinished">Mono</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="203"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="203"/>
       <source>RGB</source>
       <translation type="unfinished">RGB</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="204"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="204"/>
       <source>Player</source>
       <translation type="unfinished">Player</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="213"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="213"/>
       <source>Haptic:</source>
       <translation type="unfinished">Haptic:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="217"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="217"/>
       <source>%1 effects</source>
       <translation type="unfinished">%1 effects</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="222"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="222"/>
       <source>Motion Sensors:</source>
       <translation type="unfinished">Motion Sensors:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="231"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="231"/>
       <source>Gyro (%1 Hz)</source>
       <translation type="unfinished">Gyro (%1 Hz)</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="235"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="235"/>
       <source>Accel (%1 Hz)</source>
       <translation type="unfinished">Accel (%1 Hz)</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/JoystickIndicator.qml" line="33"/>
+      <location filename="../src/Toolbar/JoystickIndicator.qml" line="33"/>
       <source>Enabled:</source>
       <translation>有効:</translation>
     </message>
@@ -9507,68 +10314,68 @@ VTOL</translation>
   <context>
     <name>LinkConfigurationManager</name>
     <message>
-      <location filename="../src/UI/AppSettings/LinkConfigurationManager.qml" line="11"/>
+      <location filename="../src/AppSettings/LinkConfigurationManager.qml" line="11"/>
       <source>Links</source>
       <translation type="unfinished">Links</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/LinkConfigurationManager.qml" line="69"/>
+      <location filename="../src/AppSettings/LinkConfigurationManager.qml" line="69"/>
       <source>Delete Link</source>
       <translation type="unfinished">Delete Link</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/LinkConfigurationManager.qml" line="70"/>
+      <location filename="../src/AppSettings/LinkConfigurationManager.qml" line="70"/>
       <source>Are you sure you want to delete &apos;%1&apos;?</source>
       <translation type="unfinished">Are you sure you want to delete &apos;%1&apos;?</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/LinkConfigurationManager.qml" line="78"/>
+      <location filename="../src/AppSettings/LinkConfigurationManager.qml" line="78"/>
       <source>Disconnect</source>
       <translation type="unfinished">Disconnect</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/LinkConfigurationManager.qml" line="78"/>
+      <location filename="../src/AppSettings/LinkConfigurationManager.qml" line="78"/>
       <source>Connect</source>
       <translation type="unfinished">Connect</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/LinkConfigurationManager.qml" line="91"/>
-      <location filename="../src/UI/AppSettings/LinkConfigurationManager.qml" line="110"/>
+      <location filename="../src/AppSettings/LinkConfigurationManager.qml" line="91"/>
+      <location filename="../src/AppSettings/LinkConfigurationManager.qml" line="110"/>
       <source>Add New Link</source>
       <translation type="unfinished">Add New Link</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/LinkConfigurationManager.qml" line="92"/>
+      <location filename="../src/AppSettings/LinkConfigurationManager.qml" line="92"/>
       <source>Add</source>
       <translation type="unfinished">Add</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/LinkConfigurationManager.qml" line="110"/>
+      <location filename="../src/AppSettings/LinkConfigurationManager.qml" line="110"/>
       <source>Edit Link</source>
       <translation type="unfinished">Edit Link</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/LinkConfigurationManager.qml" line="137"/>
+      <location filename="../src/AppSettings/LinkConfigurationManager.qml" line="137"/>
       <source>Name</source>
       <translation type="unfinished">Name</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/LinkConfigurationManager.qml" line="142"/>
+      <location filename="../src/AppSettings/LinkConfigurationManager.qml" line="142"/>
       <source>Enter name</source>
       <translation type="unfinished">Enter name</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/LinkConfigurationManager.qml" line="148"/>
+      <location filename="../src/AppSettings/LinkConfigurationManager.qml" line="148"/>
       <source>Automatically Connect on Start</source>
       <translation type="unfinished">Automatically Connect on Start</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/LinkConfigurationManager.qml" line="155"/>
+      <location filename="../src/AppSettings/LinkConfigurationManager.qml" line="155"/>
       <source>High Latency</source>
       <translation type="unfinished">High Latency</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/LinkConfigurationManager.qml" line="161"/>
+      <location filename="../src/AppSettings/LinkConfigurationManager.qml" line="161"/>
       <source>Type</source>
       <translation type="unfinished">Type</translation>
     </message>
@@ -9576,17 +10383,7 @@ VTOL</translation>
   <context>
     <name>LinkInterface</name>
     <message>
-      <location filename="../src/Comms/LinkInterface.cc" line="127"/>
-      <source>Signing Failure</source>
-      <translation>署名の失敗</translation>
-    </message>
-    <message>
-      <location filename="../src/Comms/LinkInterface.cc" line="127"/>
-      <source>Signing signature mismatch</source>
-      <translation>署名が一致しません</translation>
-    </message>
-    <message>
-      <location filename="../src/Comms/LinkInterface.cc" line="140"/>
+      <location filename="../src/Comms/LinkInterface.cc" line="141"/>
       <source>MAVLink v1 traffic detected on link &apos;%1&apos;. %2 only supports MAVLink v2. Please ensure your vehicle is configured to use MAVLink v2.</source>
       <translation type="unfinished">MAVLink v1 traffic detected on link &apos;%1&apos;. %2 only supports MAVLink v2. Please ensure your vehicle is configured to use MAVLink v2.</translation>
     </message>
@@ -9594,75 +10391,639 @@ VTOL</translation>
   <context>
     <name>LinkManager</name>
     <message>
-      <location filename="../src/Comms/LinkManager.cc" line="270"/>
+      <location filename="../src/Comms/LinkManager.cc" line="321"/>
       <source>Connect not allowed: %1</source>
       <translation>接続できません: %1</translation>
     </message>
     <message>
-      <location filename="../src/Comms/LinkManager.cc" line="805"/>
-      <location filename="../src/Comms/LinkManager.cc" line="809"/>
-      <location filename="../src/Comms/LinkManager.cc" line="812"/>
+      <location filename="../src/Comms/LinkManager.cc" line="882"/>
+      <location filename="../src/Comms/LinkManager.cc" line="886"/>
+      <location filename="../src/Comms/LinkManager.cc" line="889"/>
       <source>%1 on %2 (AutoConnect)</source>
       <translation>%1 on %2 (自動接続)</translation>
     </message>
     <message>
-      <location filename="../src/Comms/LinkManager.cc" line="462"/>
+      <location filename="../src/Comms/LinkManager.cc" line="538"/>
       <source>Shutdown</source>
       <translation>シャットダウン</translation>
     </message>
     <message>
-      <location filename="../src/Comms/LinkManager.cc" line="480"/>
+      <location filename="../src/Comms/LinkManager.cc" line="556"/>
       <source>Serial</source>
       <translation>シリアル</translation>
     </message>
     <message>
-      <location filename="../src/Comms/LinkManager.cc" line="482"/>
+      <location filename="../src/Comms/LinkManager.cc" line="558"/>
       <source>UDP</source>
       <translation>UDP</translation>
     </message>
     <message>
-      <location filename="../src/Comms/LinkManager.cc" line="483"/>
+      <location filename="../src/Comms/LinkManager.cc" line="559"/>
       <source>TCP</source>
       <translation>TCP</translation>
     </message>
     <message>
-      <location filename="../src/Comms/LinkManager.cc" line="484"/>
+      <location filename="../src/Comms/LinkManager.cc" line="560"/>
       <source>Bluetooth</source>
       <translation>Bluetooth</translation>
     </message>
     <message>
-      <location filename="../src/Comms/LinkManager.cc" line="486"/>
+      <location filename="../src/Comms/LinkManager.cc" line="562"/>
       <source>Mock Link</source>
       <translation>擬似リンク</translation>
     </message>
     <message>
-      <location filename="../src/Comms/LinkManager.cc" line="488"/>
-      <location filename="../src/Comms/LinkManager.cc" line="654"/>
+      <location filename="../src/Comms/LinkManager.cc" line="564"/>
+      <location filename="../src/Comms/LinkManager.cc" line="731"/>
       <source>Log Replay</source>
       <translation>ログの再生</translation>
     </message>
   </context>
   <context>
-    <name>LogManager</name>
+    <name>LogFileParser</name>
     <message>
-      <location filename="../src/LogManager/LogManager.cc" line="315"/>
-      <source>Debug</source>
-      <translation type="unfinished">Debug</translation>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="97"/>
+      <source>Main</source>
+      <translation type="unfinished">Main</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/LogManager.cc" line="315"/>
-      <source>Info</source>
-      <translation type="unfinished">Info</translation>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="98"/>
+      <source>Radio</source>
+      <translation type="unfinished">Radio</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/LogManager.cc" line="315"/>
-      <source>Warning</source>
-      <translation type="unfinished">Warning</translation>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="99"/>
+      <source>Compass</source>
+      <translation type="unfinished">Compass</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/LogManager.cc" line="315"/>
-      <source>Critical</source>
-      <translation type="unfinished">Critical</translation>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="100"/>
+      <source>Optflow</source>
+      <translation type="unfinished">Optflow</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="101"/>
+      <source>Radio Failsafe</source>
+      <translation type="unfinished">Radio Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="102"/>
+      <source>Battery Failsafe</source>
+      <translation type="unfinished">Battery Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="103"/>
+      <source>GPS Failsafe</source>
+      <translation type="unfinished">GPS Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="104"/>
+      <source>GCS Failsafe</source>
+      <translation type="unfinished">GCS Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="105"/>
+      <source>Fence Failsafe</source>
+      <translation type="unfinished">Fence Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="106"/>
+      <source>Flight mode</source>
+      <translation type="unfinished">Flight mode</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="107"/>
+      <source>GPS</source>
+      <translation type="unfinished">GPS</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="108"/>
+      <source>Crash Check</source>
+      <translation type="unfinished">Crash Check</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="109"/>
+      <source>Flip</source>
+      <translation type="unfinished">Flip</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="110"/>
+      <source>Autotune</source>
+      <translation type="unfinished">Autotune</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="111"/>
+      <source>Parachute</source>
+      <translation type="unfinished">Parachute</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="112"/>
+      <source>EKF Check</source>
+      <translation type="unfinished">EKF Check</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="113"/>
+      <source>EKF Failsafe</source>
+      <translation type="unfinished">EKF Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="114"/>
+      <source>Barometer</source>
+      <translation type="unfinished">Barometer</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="115"/>
+      <source>CPU Load Watchdog</source>
+      <translation type="unfinished">CPU Load Watchdog</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="116"/>
+      <source>ADSB Failsafe</source>
+      <translation type="unfinished">ADSB Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="117"/>
+      <source>Terrain Data</source>
+      <translation type="unfinished">Terrain Data</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="118"/>
+      <source>Navigation</source>
+      <translation type="unfinished">Navigation</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="119"/>
+      <source>Terrain Failsafe</source>
+      <translation type="unfinished">Terrain Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="120"/>
+      <source>EKF Primary</source>
+      <translation type="unfinished">EKF Primary</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="121"/>
+      <source>Thrust Loss Check</source>
+      <translation type="unfinished">Thrust Loss Check</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="122"/>
+      <source>Sensor Failsafe</source>
+      <translation type="unfinished">Sensor Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="123"/>
+      <source>Leak Failsafe</source>
+      <translation type="unfinished">Leak Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="124"/>
+      <source>Pilot Input</source>
+      <translation type="unfinished">Pilot Input</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="125"/>
+      <source>Vibration Failsafe</source>
+      <translation type="unfinished">Vibration Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="126"/>
+      <source>Internal Error</source>
+      <translation type="unfinished">Internal Error</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="127"/>
+      <source>Deadreckon Failsafe</source>
+      <translation type="unfinished">Deadreckon Failsafe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="128"/>
+      <source>Subsystem %1</source>
+      <translation type="unfinished">Subsystem %1</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="136"/>
+      <source>Armed</source>
+      <translation type="unfinished">Armed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="137"/>
+      <source>Disarmed</source>
+      <translation type="unfinished">Disarmed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="138"/>
+      <source>Auto Armed</source>
+      <translation type="unfinished">Auto Armed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="139"/>
+      <source>Land Complete Maybe</source>
+      <translation type="unfinished">Land Complete Maybe</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="140"/>
+      <source>Land Complete</source>
+      <translation type="unfinished">Land Complete</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="141"/>
+      <source>Lost GPS</source>
+      <translation type="unfinished">Lost GPS</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="142"/>
+      <source>Flip Start</source>
+      <translation type="unfinished">Flip Start</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="143"/>
+      <source>Flip End</source>
+      <translation type="unfinished">Flip End</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="144"/>
+      <source>Set Home</source>
+      <translation type="unfinished">Set Home</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="145"/>
+      <source>Simple Mode Enabled</source>
+      <translation type="unfinished">Simple Mode Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="146"/>
+      <source>Simple Mode Disabled</source>
+      <translation type="unfinished">Simple Mode Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="147"/>
+      <source>Not Landed</source>
+      <translation type="unfinished">Not Landed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="148"/>
+      <source>Super Simple Mode Enabled</source>
+      <translation type="unfinished">Super Simple Mode Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="149"/>
+      <source>AutoTune Initialised</source>
+      <translation type="unfinished">AutoTune Initialised</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="150"/>
+      <source>AutoTune Off</source>
+      <translation type="unfinished">AutoTune Off</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="151"/>
+      <source>AutoTune Restart</source>
+      <translation type="unfinished">AutoTune Restart</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="152"/>
+      <source>AutoTune Success</source>
+      <translation type="unfinished">AutoTune Success</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="153"/>
+      <source>AutoTune Failed</source>
+      <translation type="unfinished">AutoTune Failed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="154"/>
+      <source>AutoTune Reached Limit</source>
+      <translation type="unfinished">AutoTune Reached Limit</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="155"/>
+      <source>AutoTune Pilot Testing</source>
+      <translation type="unfinished">AutoTune Pilot Testing</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="156"/>
+      <source>AutoTune Saved Gains</source>
+      <translation type="unfinished">AutoTune Saved Gains</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="157"/>
+      <source>Save Trim</source>
+      <translation type="unfinished">Save Trim</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="158"/>
+      <source>Save Waypoint Add</source>
+      <translation type="unfinished">Save Waypoint Add</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="159"/>
+      <source>Fence Enabled</source>
+      <translation type="unfinished">Fence Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="160"/>
+      <source>Fence Disabled</source>
+      <translation type="unfinished">Fence Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="161"/>
+      <source>Acro Trainer Off</source>
+      <translation type="unfinished">Acro Trainer Off</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="162"/>
+      <source>Acro Trainer Leveling</source>
+      <translation type="unfinished">Acro Trainer Leveling</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="163"/>
+      <source>Acro Trainer Limited</source>
+      <translation type="unfinished">Acro Trainer Limited</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="164"/>
+      <source>Gripper Grab</source>
+      <translation type="unfinished">Gripper Grab</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="165"/>
+      <source>Gripper Release</source>
+      <translation type="unfinished">Gripper Release</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="166"/>
+      <source>Parachute Disabled</source>
+      <translation type="unfinished">Parachute Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="167"/>
+      <source>Parachute Enabled</source>
+      <translation type="unfinished">Parachute Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="168"/>
+      <source>Parachute Released</source>
+      <translation type="unfinished">Parachute Released</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="169"/>
+      <source>Landing Gear Deployed</source>
+      <translation type="unfinished">Landing Gear Deployed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="170"/>
+      <source>Landing Gear Retracted</source>
+      <translation type="unfinished">Landing Gear Retracted</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="171"/>
+      <source>Motors Emergency Stopped</source>
+      <translation type="unfinished">Motors Emergency Stopped</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="172"/>
+      <source>Motors Emergency Stop Cleared</source>
+      <translation type="unfinished">Motors Emergency Stop Cleared</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="173"/>
+      <source>Motors Interlock Disabled</source>
+      <translation type="unfinished">Motors Interlock Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="174"/>
+      <source>Motors Interlock Enabled</source>
+      <translation type="unfinished">Motors Interlock Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="175"/>
+      <source>Rotor Runup Complete</source>
+      <translation type="unfinished">Rotor Runup Complete</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="176"/>
+      <source>Rotor Speed Below Critical</source>
+      <translation type="unfinished">Rotor Speed Below Critical</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="177"/>
+      <source>EKF Altitude Reset</source>
+      <translation type="unfinished">EKF Altitude Reset</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="178"/>
+      <source>Land Cancelled By Pilot</source>
+      <translation type="unfinished">Land Cancelled By Pilot</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="179"/>
+      <source>EKF Yaw Reset</source>
+      <translation type="unfinished">EKF Yaw Reset</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="180"/>
+      <source>ADSB Avoidance Enabled</source>
+      <translation type="unfinished">ADSB Avoidance Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="181"/>
+      <source>ADSB Avoidance Disabled</source>
+      <translation type="unfinished">ADSB Avoidance Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="182"/>
+      <source>Proximity Avoidance Enabled</source>
+      <translation type="unfinished">Proximity Avoidance Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="183"/>
+      <source>Proximity Avoidance Disabled</source>
+      <translation type="unfinished">Proximity Avoidance Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="184"/>
+      <source>GPS Primary Changed</source>
+      <translation type="unfinished">GPS Primary Changed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="185"/>
+      <source>ZigZag Store A</source>
+      <translation type="unfinished">ZigZag Store A</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="186"/>
+      <source>ZigZag Store B</source>
+      <translation type="unfinished">ZigZag Store B</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="187"/>
+      <source>Land Repo Active</source>
+      <translation type="unfinished">Land Repo Active</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="188"/>
+      <source>Standby Enabled</source>
+      <translation type="unfinished">Standby Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="189"/>
+      <source>Standby Disabled</source>
+      <translation type="unfinished">Standby Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="190"/>
+      <source>Fence Alt Max Enabled</source>
+      <translation type="unfinished">Fence Alt Max Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="191"/>
+      <source>Fence Alt Max Disabled</source>
+      <translation type="unfinished">Fence Alt Max Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="192"/>
+      <source>Fence Circle Enabled</source>
+      <translation type="unfinished">Fence Circle Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="193"/>
+      <source>Fence Circle Disabled</source>
+      <translation type="unfinished">Fence Circle Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="194"/>
+      <source>Fence Alt Min Enabled</source>
+      <translation type="unfinished">Fence Alt Min Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="195"/>
+      <source>Fence Alt Min Disabled</source>
+      <translation type="unfinished">Fence Alt Min Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="196"/>
+      <source>Fence Polygon Enabled</source>
+      <translation type="unfinished">Fence Polygon Enabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="197"/>
+      <source>Fence Polygon Disabled</source>
+      <translation type="unfinished">Fence Polygon Disabled</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="198"/>
+      <source>EK3 Source Set: Primary</source>
+      <translation type="unfinished">EK3 Source Set: Primary</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="199"/>
+      <source>EK3 Source Set: Secondary</source>
+      <translation type="unfinished">EK3 Source Set: Secondary</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="200"/>
+      <source>EK3 Source Set: Tertiary</source>
+      <translation type="unfinished">EK3 Source Set: Tertiary</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="201"/>
+      <source>Airspeed Primary Changed</source>
+      <translation type="unfinished">Airspeed Primary Changed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="202"/>
+      <source>Surfaced</source>
+      <translation type="unfinished">Surfaced</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="203"/>
+      <source>Not Surfaced</source>
+      <translation type="unfinished">Not Surfaced</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="204"/>
+      <source>Bottomed</source>
+      <translation type="unfinished">Bottomed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="205"/>
+      <source>Not Bottomed</source>
+      <translation type="unfinished">Not Bottomed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="206"/>
+      <source>Event %1</source>
+      <translation type="unfinished">Event %1</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="247"/>
+      <location filename="../src/AnalyzeView/LogViewer/PX4ULog/LogViewerULogParser.cc" line="22"/>
+      <source>Failed to open file</source>
+      <translation type="unfinished">Failed to open file</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="253"/>
+      <location filename="../src/AnalyzeView/LogViewer/PX4ULog/LogViewerULogParser.cc" line="28"/>
+      <source>File is empty</source>
+      <translation type="unfinished">File is empty</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="257"/>
+      <location filename="../src/AnalyzeView/LogViewer/PX4ULog/LogViewerULogParser.cc" line="32"/>
+      <source>File is too large to parse</source>
+      <translation type="unfinished">File is too large to parse</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="263"/>
+      <location filename="../src/AnalyzeView/LogViewer/PX4ULog/LogViewerULogParser.cc" line="38"/>
+      <source>Failed to memory-map file</source>
+      <translation type="unfinished">Failed to memory-map file</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="279"/>
+      <source>File does not appear to be a DataFlash log (invalid header)</source>
+      <translation type="unfinished">File does not appear to be a DataFlash log (invalid header)</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="287"/>
+      <source>No valid FMT messages were found</source>
+      <translation type="unfinished">No valid FMT messages were found</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="380"/>
+      <source>Unknown</source>
+      <translation type="unfinished">Unknown</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/APMDataFlash/LogViewerDataFlashParser.cc" line="383"/>
+      <source>Mode: %1</source>
+      <translation type="unfinished">Mode: %1</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogFileParser.cc" line="35"/>
+      <source>no extension</source>
+      <translation type="unfinished">no extension</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogFileParser.cc" line="39"/>
+      <source>Unsupported file type (%1) for file &apos;%2&apos;. Expected .bin, .log, or .ulg.</source>
+      <translation type="unfinished">Unsupported file type (%1) for file &apos;%2&apos;. Expected .bin, .log, or .ulg.</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/PX4ULog/LogViewerULogParser.cc" line="52"/>
+      <source>File does not appear to be a ULog file (invalid header)</source>
+      <translation type="unfinished">File does not appear to be a ULog file (invalid header)</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/PX4ULog/LogViewerULogParser.cc" line="76"/>
+      <source>Fatal error while parsing ULog file</source>
+      <translation type="unfinished">Fatal error while parsing ULog file</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/PX4ULog/LogViewerULogParser.cc" line="82"/>
+      <source>ULog file header is incomplete or corrupt</source>
+      <translation type="unfinished">ULog file header is incomplete or corrupt</translation>
     </message>
   </context>
   <context>
@@ -9689,27 +11050,27 @@ VTOL</translation>
   <context>
     <name>LogReplaySettings</name>
     <message>
-      <location filename="../src/UI/AppSettings/LogReplaySettings.qml" line="16"/>
+      <location filename="../src/AppSettings/LogReplaySettings.qml" line="16"/>
       <source>Log File</source>
       <translation>ログファイル</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/LogReplaySettings.qml" line="25"/>
+      <location filename="../src/AppSettings/LogReplaySettings.qml" line="25"/>
       <source>Browse</source>
       <translation>参照</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/LogReplaySettings.qml" line="31"/>
+      <location filename="../src/AppSettings/LogReplaySettings.qml" line="31"/>
       <source>Select Telemetery Log</source>
       <translation>テレメトリーログを選択</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/LogReplaySettings.qml" line="32"/>
+      <location filename="../src/AppSettings/LogReplaySettings.qml" line="32"/>
       <source>Telemetry Logs (*.%1)</source>
       <translation>テレメトリーログ (*.%1)</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/LogReplaySettings.qml" line="32"/>
+      <location filename="../src/AppSettings/LogReplaySettings.qml" line="32"/>
       <source>All Files (*)</source>
       <translation>すべてのファイル (*)</translation>
     </message>
@@ -9797,452 +11158,373 @@ VTOL</translation>
     </message>
   </context>
   <context>
-    <name>LoggingCategoriesDialog</name>
+    <name>LogViewerAltChart</name>
     <message>
-      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="16"/>
-      <source>Logging Categories</source>
-      <translation type="unfinished">Logging Categories</translation>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerAltChart.qml" line="151"/>
+      <source>Alt (m)</source>
+      <translation type="unfinished">Alt (m)</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="29"/>
-      <source>Search</source>
-      <translation type="unfinished">Search</translation>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerAltChart.qml" line="165"/>
+      <source>Current</source>
+      <translation type="unfinished">Current</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="39"/>
-      <source>Filter categories…</source>
-      <translation type="unfinished">Filter categories…</translation>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerAltChart.qml" line="170"/>
+      <source>Min</source>
+      <translation type="unfinished">Min</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="45"/>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerAltChart.qml" line="175"/>
+      <source>Max</source>
+      <translation type="unfinished">Max</translation>
+    </message>
+  </context>
+  <context>
+    <name>LogViewerBaseChart</name>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerBaseChart.qml" line="213"/>
+      <source>Time (local)</source>
+      <translation type="unfinished">Time (local)</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerBaseChart.qml" line="213"/>
+      <source>Elapsed</source>
+      <translation type="unfinished">Elapsed</translation>
+    </message>
+  </context>
+  <context>
+    <name>LogViewerChart</name>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerChart.qml" line="96"/>
+      <source>Mode</source>
+      <translation type="unfinished">Mode</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerChart.qml" line="97"/>
+      <source>Event</source>
+      <translation type="unfinished">Event</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerChart.qml" line="98"/>
+      <source>Error</source>
+      <translation type="unfinished">Error</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerChart.qml" line="99"/>
+      <source>Warning</source>
+      <translation type="unfinished">Warning</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerChart.qml" line="344"/>
+      <source>Modes</source>
+      <translation type="unfinished">Modes</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerChart.qml" line="374"/>
+      <source>Dropouts</source>
+      <translation type="unfinished">Dropouts</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerChart.qml" line="404"/>
+      <source>Events</source>
+      <translation type="unfinished">Events</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerChart.qml" line="438"/>
+      <source>Value</source>
+      <translation type="unfinished">Value</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerChart.qml" line="451"/>
+      <source>Mode:</source>
+      <translation type="unfinished">Mode:</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerChart.qml" line="482"/>
+      <source>Current</source>
+      <translation type="unfinished">Current</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerChart.qml" line="487"/>
+      <source>Min</source>
+      <translation type="unfinished">Min</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerChart.qml" line="492"/>
+      <source>Max</source>
+      <translation type="unfinished">Max</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerChart.qml" line="529"/>
+      <source>Modes:</source>
+      <translation type="unfinished">Modes:</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerChart.qml" line="554"/>
+      <source>Events:</source>
+      <translation type="unfinished">Events:</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerChart.qml" line="588"/>
+      <source>Click to place cursor. Shift+drag to move cursor. Drag to zoom X-axis. Double-click to reset zoom.</source>
+      <translation type="unfinished">Click to place cursor. Shift+drag to move cursor. Drag to zoom X-axis. Double-click to reset zoom.</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerChart.qml" line="592"/>
+      <source>Reset Zoom</source>
+      <translation type="unfinished">Reset Zoom</translation>
+    </message>
+  </context>
+  <context>
+    <name>LogViewerController</name>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerController.cc" line="148"/>
+      <source>Other</source>
+      <translation type="unfinished">Other</translation>
+    </message>
+  </context>
+  <context>
+    <name>LogViewerCursorPopup</name>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerCursorPopup.qml" line="87"/>
+      <source> (local)  /  </source>
+      <translation type="unfinished"> (local)  /  </translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerCursorPopup.qml" line="87"/>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerCursorPopup.qml" line="90"/>
+      <source> (elapsed)</source>
+      <translation type="unfinished"> (elapsed)</translation>
+    </message>
+  </context>
+  <context>
+    <name>LogViewerFieldsPanel</name>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerFieldsPanel.qml" line="64"/>
+      <source>Other</source>
+      <translation type="unfinished">Other</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerFieldsPanel.qml" line="184"/>
+      <source>Fields: %1  Parameters: %2  Events: %3</source>
+      <translation type="unfinished">Fields: %1  Parameters: %2  Events: %3</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerFieldsPanel.qml" line="197"/>
+      <source>X axis:</source>
+      <translation type="unfinished">X axis:</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerFieldsPanel.qml" line="202"/>
+      <source>Elapsed</source>
+      <translation type="unfinished">Elapsed</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerFieldsPanel.qml" line="209"/>
+      <source>Local time</source>
+      <translation type="unfinished">Local time</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerFieldsPanel.qml" line="221"/>
+      <source>Fields</source>
+      <translation type="unfinished">Fields</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerFieldsPanel.qml" line="230"/>
+      <source>Search fields</source>
+      <translation type="unfinished">Search fields</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerFieldsPanel.qml" line="250"/>
+      <source>Clear Selected</source>
+      <translation type="unfinished">Clear Selected</translation>
+    </message>
+  </context>
+  <context>
+    <name>LogViewerPage</name>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="15"/>
+      <source>Open and inspect DataFlash (.bin), PX4 ULog (.ulg), and telemetry (.tlog) logs in a unified workflow.</source>
+      <translation type="unfinished">Open and inspect DataFlash (.bin), PX4 ULog (.ulg), and telemetry (.tlog) logs in a unified workflow.</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="80"/>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="132"/>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="488"/>
+      <source>Log Viewer</source>
+      <translation type="unfinished">Log Viewer</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="111"/>
+      <source>Open .bin</source>
+      <translation type="unfinished">Open .bin</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="120"/>
+      <source>Open .ulg</source>
+      <translation type="unfinished">Open .ulg</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="128"/>
+      <source>Open .tlog</source>
+      <translation type="unfinished">Open .tlog</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="132"/>
+      <source>Close active vehicle connections before starting telemetry replay.</source>
+      <translation type="unfinished">Close active vehicle connections before starting telemetry replay.</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="141"/>
       <source>Clear</source>
       <translation type="unfinished">Clear</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="54"/>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="151"/>
+      <source>No log selected</source>
+      <translation type="unfinished">No log selected</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="156"/>
+      <source>Start time:</source>
+      <translation type="unfinished">Start time:</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="166"/>
+      <source>N/A</source>
+      <translation type="unfinished">N/A</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="171"/>
+      <source>Vehicle:</source>
+      <translation type="unfinished">Vehicle:</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="186"/>
+      <source>Loading...</source>
+      <translation type="unfinished">Loading...</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="204"/>
+      <source>Pause</source>
+      <translation type="unfinished">Pause</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="204"/>
+      <source>Play</source>
+      <translation type="unfinished">Play</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="258"/>
+      <source>Charting</source>
+      <translation type="unfinished">Charting</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="259"/>
+      <source>Map</source>
+      <translation type="unfinished">Map</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="260"/>
+      <source>Parameters</source>
+      <translation type="unfinished">Parameters</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="261"/>
+      <source>Messages</source>
+      <translation type="unfinished">Messages</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="418"/>
+      <source>No GPS data found in this log</source>
+      <translation type="unfinished">No GPS data found in this log</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="425"/>
+      <source>Load a log file to view the flight path</source>
+      <translation type="unfinished">Load a log file to view the flight path</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="474"/>
+      <source>Select log file</source>
+      <translation type="unfinished">Select log file</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerPage.qml" line="489"/>
+      <source>Failed to start telemetry replay for the selected .tlog file.</source>
+      <translation type="unfinished">Failed to start telemetry replay for the selected .tlog file.</translation>
+    </message>
+  </context>
+  <context>
+    <name>LogViewerParametersTab</name>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerParametersTab.qml" line="68"/>
+      <source>Search parameters</source>
+      <translation type="unfinished">Search parameters</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerParametersTab.qml" line="88"/>
+      <source>Changed only</source>
+      <translation type="unfinished">Changed only</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerParametersTab.qml" line="119"/>
+      <source>N/A</source>
+      <translation type="unfinished">N/A</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/LogViewer/LogViewerParametersTab.qml" line="159"/>
+      <source> (default: %1)</source>
+      <translation type="unfinished"> (default: %1)</translation>
+    </message>
+  </context>
+  <context>
+    <name>LoggingCategoriesDialog</name>
+    <message>
+      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="13"/>
+      <source>Logging Categories</source>
+      <translation type="unfinished">Logging Categories</translation>
+    </message>
+    <message>
+      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="25"/>
+      <source>Search</source>
+      <translation type="unfinished">Search</translation>
+    </message>
+    <message>
+      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="34"/>
+      <source>Filter categories…</source>
+      <translation type="unfinished">Filter categories…</translation>
+    </message>
+    <message>
+      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="47"/>
+      <source>Clear</source>
+      <translation type="unfinished">Clear</translation>
+    </message>
+    <message>
+      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="55"/>
       <source>Active Categories</source>
       <translation type="unfinished">Active Categories</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="65"/>
-      <source>Warning</source>
-      <translation type="unfinished">Warning</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="71"/>
+      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="76"/>
       <source>Reset All</source>
       <translation type="unfinished">Reset All</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="80"/>
+      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="85"/>
       <source>Categories</source>
       <translation type="unfinished">Categories</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="165"/>
-      <source>No categories registered</source>
-      <translation type="unfinished">No categories registered</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="173"/>
+      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="167"/>
       <source>Search Results</source>
       <translation type="unfinished">Search Results</translation>
     </message>
     <message>
-      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="208"/>
+      <location filename="../src/LogManager/LoggingCategoriesDialog.qml" line="203"/>
       <source>No matching categories</source>
       <translation type="unfinished">No matching categories</translation>
-    </message>
-  </context>
-  <context>
-    <name>LoggingSettingsDialog</name>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="16"/>
-      <source>Text (.txt)</source>
-      <translation type="unfinished">Text (.txt)</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="16"/>
-      <source>Text files (*.txt)</source>
-      <translation type="unfinished">Text files (*.txt)</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="16"/>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="17"/>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="18"/>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="19"/>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="242"/>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="287"/>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="298"/>
-      <source>All Files (*)</source>
-      <translation type="unfinished">All Files (*)</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="17"/>
-      <source>JSON (.json)</source>
-      <translation type="unfinished">JSON (.json)</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="17"/>
-      <source>JSON files (*.json)</source>
-      <translation type="unfinished">JSON files (*.json)</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="18"/>
-      <source>CSV (.csv)</source>
-      <translation type="unfinished">CSV (.csv)</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="18"/>
-      <source>CSV files (*.csv)</source>
-      <translation type="unfinished">CSV files (*.csv)</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="19"/>
-      <source>JSONL (.jsonl)</source>
-      <translation type="unfinished">JSONL (.jsonl)</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="19"/>
-      <source>JSON Lines files (*.jsonl)</source>
-      <translation type="unfinished">JSON Lines files (*.jsonl)</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="24"/>
-      <source>Logging Settings</source>
-      <translation type="unfinished">Logging Settings</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="33"/>
-      <source>Disk Logging</source>
-      <translation type="unfinished">Disk Logging</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="38"/>
-      <source>Enable disk logging</source>
-      <translation type="unfinished">Enable disk logging</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="46"/>
-      <source>Log files are saved to: %1</source>
-      <translation type="unfinished">Log files are saved to: %1</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="57"/>
-      <source>Flush on level:</source>
-      <translation type="unfinished">Flush on level:</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="65"/>
-      <source>Off</source>
-      <translation type="unfinished">Off</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="65"/>
-      <source>Warning</source>
-      <translation type="unfinished">Warning</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="65"/>
-      <source>Critical</source>
-      <translation type="unfinished">Critical</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="82"/>
-      <source>Remote Logging</source>
-      <translation type="unfinished">Remote Logging</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="87"/>
-      <source>Enable remote logging</source>
-      <translation type="unfinished">Enable remote logging</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="96"/>
-      <source>Host:</source>
-      <translation type="unfinished">Host:</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="105"/>
-      <source>Port:</source>
-      <translation type="unfinished">Port:</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="120"/>
-      <source>Protocol:</source>
-      <translation type="unfinished">Protocol:</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="129"/>
-      <source>UDP</source>
-      <translation type="unfinished">UDP</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="129"/>
-      <source>TCP</source>
-      <translation type="unfinished">TCP</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="129"/>
-      <source>Auto Fallback</source>
-      <translation type="unfinished">Auto Fallback</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="141"/>
-      <source>UDP is fire-and-forget, TCP is reliable, Auto Fallback starts with UDP and switches to TCP on failures.</source>
-      <translation type="unfinished">UDP is fire-and-forget, TCP is reliable, Auto Fallback starts with UDP and switches to TCP on failures.</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="152"/>
-      <source>Vehicle ID:</source>
-      <translation type="unfinished">Vehicle ID:</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="158"/>
-      <source>Optional identifier</source>
-      <translation type="unfinished">Optional identifier</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="170"/>
-      <source>%1 KB sent</source>
-      <translation type="unfinished">%1 KB sent</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="170"/>
-      <source>%1 MB sent</source>
-      <translation type="unfinished">%1 MB sent</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="175"/>
-      <source>Reset</source>
-      <translation type="unfinished">Reset</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="184"/>
-      <source>Error: %1</source>
-      <translation type="unfinished">Error: %1</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="199"/>
-      <source>TLS Encryption</source>
-      <translation type="unfinished">TLS Encryption</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="205"/>
-      <source>Enable TLS</source>
-      <translation type="unfinished">Enable TLS</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="211"/>
-      <source>Verify server certificate</source>
-      <translation type="unfinished">Verify server certificate</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="221"/>
-      <source>CA Certificate</source>
-      <translation type="unfinished">CA Certificate</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="230"/>
-      <source>Not loaded</source>
-      <translation type="unfinished">Not loaded</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="234"/>
-      <source>Browse</source>
-      <translation type="unfinished">Browse</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="242"/>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="287"/>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="298"/>
-      <source>PEM files (*.pem)</source>
-      <translation type="unfinished">PEM files (*.pem)</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="243"/>
-      <source>Select CA Certificate</source>
-      <translation type="unfinished">Select CA Certificate</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="258"/>
-      <source>Client Certificate</source>
-      <translation type="unfinished">Client Certificate</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="266"/>
-      <source>Cert ✓</source>
-      <translation type="unfinished">Cert ✓</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="266"/>
-      <source>Cert</source>
-      <translation type="unfinished">Cert</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="272"/>
-      <source>Key ✓</source>
-      <translation type="unfinished">Key ✓</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="272"/>
-      <source>Key</source>
-      <translation type="unfinished">Key</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="279"/>
-      <source>Load</source>
-      <translation type="unfinished">Load</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="288"/>
-      <source>Select Client Certificate</source>
-      <translation type="unfinished">Select Client Certificate</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="299"/>
-      <source>Select Client Key</source>
-      <translation type="unfinished">Select Client Key</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="310"/>
-      <source>TLS Error: %1</source>
-      <translation type="unfinished">TLS Error: %1</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="319"/>
-      <source>Compression</source>
-      <translation type="unfinished">Compression</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="325"/>
-      <source>Enable compression</source>
-      <translation type="unfinished">Enable compression</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="334"/>
-      <source>Level</source>
-      <translation type="unfinished">Level</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="361"/>
-      <source>Compresses log data using zlib. Level 1 is fastest, level 9 provides best compression.</source>
-      <translation type="unfinished">Compresses log data using zlib. Level 1 is fastest, level 9 provides best compression.</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="370"/>
-      <source>Console Buffer</source>
-      <translation type="unfinished">Console Buffer</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="377"/>
-      <source>Max entries</source>
-      <translation type="unfinished">Max entries</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="404"/>
-      <source>Number of log entries kept in memory for the console view. Higher values use more RAM.</source>
-      <translation type="unfinished">Number of log entries kept in memory for the console view. Higher values use more RAM.</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="412"/>
-      <source>Log History</source>
-      <translation type="unfinished">Log History</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="418"/>
-      <source>Session: %1 (%2 entries)</source>
-      <translation type="unfinished">Session: %1 (%2 entries)</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="426"/>
-      <source>Browse session:</source>
-      <translation type="unfinished">Browse session:</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="454"/>
-      <source>%1 entries in selected session</source>
-      <translation type="unfinished">%1 entries in selected session</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="464"/>
-      <source>Export Session</source>
-      <translation type="unfinished">Export Session</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="470"/>
-      <source>Delete Session</source>
-      <translation type="unfinished">Delete Session</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="481"/>
-      <source>Confirm Delete</source>
-      <translation type="unfinished">Confirm Delete</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="482"/>
-      <source>Delete session &quot;%1&quot; and all its log entries?</source>
-      <translation type="unfinished">Delete session &quot;%1&quot; and all its log entries?</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="495"/>
-      <source>Export session log</source>
-      <translation type="unfinished">Export session log</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="506"/>
-      <source>GStreamer</source>
-      <translation type="unfinished">GStreamer</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="514"/>
-      <source>Debug level:</source>
-      <translation type="unfinished">Debug level:</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="531"/>
-      <source>Export</source>
-      <translation type="unfinished">Export</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="538"/>
-      <source>Format:</source>
-      <translation type="unfinished">Format:</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="560"/>
-      <source>Save Log</source>
-      <translation type="unfinished">Save Log</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="569"/>
-      <source>Save Filtered</source>
-      <translation type="unfinished">Save Filtered</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="583"/>
-      <source>Actions</source>
-      <translation type="unfinished">Actions</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="590"/>
-      <source>Clear Log</source>
-      <translation type="unfinished">Clear Log</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="597"/>
-      <source>Flush to Disk</source>
-      <translation type="unfinished">Flush to Disk</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="610"/>
-      <source>Save filtered log</source>
-      <translation type="unfinished">Save filtered log</translation>
-    </message>
-    <message>
-      <location filename="../src/LogManager/LoggingSettingsDialog.qml" line="610"/>
-      <source>Save app log</source>
-      <translation type="unfinished">Save app log</translation>
     </message>
   </context>
   <context>
@@ -10414,14 +11696,14 @@ VTOL</translation>
   <context>
     <name>MAVLinkChart</name>
     <message>
-      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkChart.qml" line="127"/>
-      <source>Scale:</source>
-      <translation>スケール:</translation>
+      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkChart.qml" line="69"/>
+      <source>Scale</source>
+      <translation type="unfinished">Scale</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkChart.qml" line="140"/>
-      <source>Range:</source>
-      <translation>レンジ:</translation>
+      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkChart.qml" line="76"/>
+      <source>Range</source>
+      <translation type="unfinished">Range</translation>
     </message>
   </context>
   <context>
@@ -10465,59 +11747,67 @@ VTOL</translation>
       <translation>60 秒</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="59"/>
+      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="57"/>
+      <source>2 Min</source>
+      <translation type="unfinished">2 Min</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="58"/>
+      <source>5 Min</source>
+      <translation type="unfinished">5 Min</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="60"/>
       <source>Auto</source>
       <translation>自動</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="60"/>
+      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="61"/>
       <source>10,000</source>
       <translation>10,000</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="61"/>
+      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="62"/>
       <source>1,000</source>
       <translation>1,000</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="62"/>
+      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="63"/>
       <source>100</source>
       <translation>100</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="63"/>
+      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="64"/>
       <source>10</source>
       <translation>10</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="64"/>
+      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="65"/>
       <source>1</source>
       <translation>1</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="65"/>
+      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="66"/>
       <source>0.1</source>
       <translation>0.1</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="66"/>
+      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="67"/>
       <source>0.01</source>
       <translation>0.01</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="67"/>
+      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="68"/>
       <source>0.001</source>
       <translation>0.001</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="68"/>
+      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="69"/>
       <source>0.0001</source>
       <translation>0.0001</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="157"/>
-      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="183"/>
-      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="199"/>
+      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkInspectorController.cc" line="87"/>
       <source>System %1</source>
       <translation>システム %1</translation>
     </message>
@@ -10663,37 +11953,37 @@ VTOL</translation>
   <context>
     <name>MAVLinkProtocol</name>
     <message>
-      <location filename="../src/Comms/MAVLinkProtocol.cc" line="400"/>
+      <location filename="../src/Comms/MAVLinkProtocol.cc" line="437"/>
       <source>Unable to save telemetry log. Error opening source &apos;%1&apos;: &apos;%2&apos;.</source>
       <translation type="unfinished">Unable to save telemetry log. Error opening source &apos;%1&apos;: &apos;%2&apos;.</translation>
     </message>
     <message>
-      <location filename="../src/Comms/MAVLinkProtocol.cc" line="410"/>
+      <location filename="../src/Comms/MAVLinkProtocol.cc" line="447"/>
       <source>Unable to save telemetry log. Error opening destination &apos;%1&apos;: &apos;%2&apos;.</source>
       <translation type="unfinished">Unable to save telemetry log. Error opening destination &apos;%1&apos;: &apos;%2&apos;.</translation>
     </message>
     <message>
-      <location filename="../src/Comms/MAVLinkProtocol.cc" line="426"/>
+      <location filename="../src/Comms/MAVLinkProtocol.cc" line="464"/>
       <source>Unable to save telemetry log. Error reading source &apos;%1&apos;: &apos;%2&apos;.</source>
       <translation type="unfinished">Unable to save telemetry log. Error reading source &apos;%1&apos;: &apos;%2&apos;.</translation>
     </message>
     <message>
-      <location filename="../src/Comms/MAVLinkProtocol.cc" line="433"/>
+      <location filename="../src/Comms/MAVLinkProtocol.cc" line="472"/>
       <source>Unable to save telemetry log. Error writing destination &apos;%1&apos;: &apos;%2&apos;.</source>
       <translation type="unfinished">Unable to save telemetry log. Error writing destination &apos;%1&apos;: &apos;%2&apos;.</translation>
     </message>
     <message>
-      <location filename="../src/Comms/MAVLinkProtocol.cc" line="442"/>
+      <location filename="../src/Comms/MAVLinkProtocol.cc" line="483"/>
       <source>Unable to finalize telemetry log &apos;%1&apos;: &apos;%2&apos;.</source>
       <translation type="unfinished">Unable to finalize telemetry log &apos;%1&apos;: &apos;%2&apos;.</translation>
     </message>
     <message>
-      <location filename="../src/Comms/MAVLinkProtocol.cc" line="462"/>
+      <location filename="../src/Comms/MAVLinkProtocol.cc" line="501"/>
       <source>Unable to save telemetry log. Application save directory is not set.</source>
       <translation>テレメトリーログを保存できません。アプリケーションの保存ディレクトリが設定されていません。</translation>
     </message>
     <message>
-      <location filename="../src/Comms/MAVLinkProtocol.cc" line="469"/>
+      <location filename="../src/Comms/MAVLinkProtocol.cc" line="509"/>
       <source>Unable to save telemetry log. Telemetry save directory &quot;%1&quot; does not exist.</source>
       <translation>テレメトリーログを保存できません。テレメトリー保存ディレクトリ &quot;%1&quot; が存在しません。</translation>
     </message>
@@ -10849,119 +12139,119 @@ VTOL</translation>
   <context>
     <name>MainStatusIndicator</name>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="39"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="39"/>
       <source>Not Ready</source>
       <translation>準備ができていません</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="41"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="41"/>
       <source>Armed</source>
       <translation>アームしました</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="42"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="42"/>
       <source>Flying</source>
       <translation>飛行中</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="43"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="43"/>
       <source>Landing</source>
       <translation>着陸中</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="145"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="145"/>
       <source>FW(vtol)</source>
       <translation>FW(vtol)</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="145"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="145"/>
       <source>MR(vtol)</source>
       <translation>MR(vtol)</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="259"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="265"/>
       <source>Sensor Status</source>
       <translation>センサの状態</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="193"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="199"/>
       <source>Disarm</source>
       <translation>ディスアーム</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="37"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="37"/>
       <source>Comms Lost</source>
       <translation>通信損失</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="38"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="38"/>
       <source>Ready</source>
       <translation type="unfinished">Ready</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="40"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="40"/>
       <source>Disconnected - Click to manually connect</source>
       <translation>切断 - クリックして手動接続</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="193"/>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="390"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="199"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="396"/>
       <source>Force Arm</source>
       <translation>アーム強制</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="193"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="199"/>
       <source>Arm</source>
       <translation>アーム</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="213"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="219"/>
       <source>Primary Link</source>
       <translation type="unfinished">Primary Link</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="244"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="250"/>
       <source>Vehicle Messages</source>
       <translation>機体メッセージ</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="252"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="258"/>
       <source>No new vehicle messages</source>
       <translation type="unfinished">No new vehicle messages</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="282"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="288"/>
       <source>Overall Status</source>
       <translation>全体の状態</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="363"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="369"/>
       <source>Edit Parameter</source>
       <translation>パラメータを編集</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="391"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="397"/>
       <source>Force arming bypasses pre-arm checks. Use with caution.</source>
       <translation type="unfinished">Force arming bypasses pre-arm checks. Use with caution.</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="396"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="402"/>
       <source>Allow Force Arm</source>
       <translation type="unfinished">Allow Force Arm</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="412"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="418"/>
       <source>Vehicle Parameters</source>
       <translation>機体パラメータ</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="414"/>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="423"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="420"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="429"/>
       <source>Configure</source>
       <translation>設定</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicator.qml" line="421"/>
+      <location filename="../src/Toolbar/MainStatusIndicator.qml" line="427"/>
       <source>Vehicle Configuration</source>
       <translation>機体設定</translation>
     </message>
@@ -10969,62 +12259,62 @@ VTOL</translation>
   <context>
     <name>MainStatusIndicatorOfflinePage</name>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicatorOfflinePage.qml" line="30"/>
+      <location filename="../src/Toolbar/MainStatusIndicatorOfflinePage.qml" line="30"/>
       <source>Select Link to Connect</source>
       <translation>接続するリンクを選択</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicatorOfflinePage.qml" line="33"/>
+      <location filename="../src/Toolbar/MainStatusIndicatorOfflinePage.qml" line="33"/>
       <source>No Links Configured</source>
       <translation>設定されたリンクはありません</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicatorOfflinePage.qml" line="42"/>
+      <location filename="../src/Toolbar/MainStatusIndicatorOfflinePage.qml" line="42"/>
       <source>Connected</source>
       <translation>接続しました</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicatorOfflinePage.qml" line="62"/>
+      <location filename="../src/Toolbar/MainStatusIndicatorOfflinePage.qml" line="62"/>
       <source>Communication Links</source>
       <translation>通信リンク</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicatorOfflinePage.qml" line="63"/>
+      <location filename="../src/Toolbar/MainStatusIndicatorOfflinePage.qml" line="63"/>
       <source>Configure</source>
       <translation>設定</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicatorOfflinePage.qml" line="66"/>
+      <location filename="../src/Toolbar/MainStatusIndicatorOfflinePage.qml" line="66"/>
       <source>Comm Links</source>
       <translation>通信リンク</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicatorOfflinePage.qml" line="73"/>
+      <location filename="../src/Toolbar/MainStatusIndicatorOfflinePage.qml" line="73"/>
       <source>AutoConnect</source>
       <translation>自動接続</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicatorOfflinePage.qml" line="87"/>
+      <location filename="../src/Toolbar/MainStatusIndicatorOfflinePage.qml" line="87"/>
       <source>Pixhawk</source>
       <translation>Pixhawk</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicatorOfflinePage.qml" line="87"/>
+      <location filename="../src/Toolbar/MainStatusIndicatorOfflinePage.qml" line="87"/>
       <source>SiK Radio</source>
       <translation>SiK 送信機</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicatorOfflinePage.qml" line="87"/>
+      <location filename="../src/Toolbar/MainStatusIndicatorOfflinePage.qml" line="87"/>
       <source>LibrePilot</source>
       <translation>LibrePilot</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicatorOfflinePage.qml" line="87"/>
+      <location filename="../src/Toolbar/MainStatusIndicatorOfflinePage.qml" line="87"/>
       <source>UDP</source>
       <translation>UDP</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MainStatusIndicatorOfflinePage.qml" line="87"/>
+      <location filename="../src/Toolbar/MainStatusIndicatorOfflinePage.qml" line="87"/>
       <source>RTK</source>
       <translation>RTK</translation>
     </message>
@@ -11032,74 +12322,84 @@ VTOL</translation>
   <context>
     <name>MainWindow</name>
     <message>
-      <location filename="../src/UI/MainWindow.qml" line="149"/>
+      <location filename="../src/MainWindow/MainWindow.qml" line="149"/>
       <source>Analyze Tools</source>
       <translation>解析ツール</translation>
     </message>
     <message>
-      <location filename="../src/UI/MainWindow.qml" line="153"/>
+      <location filename="../src/MainWindow/MainWindow.qml" line="153"/>
       <source>Vehicle Configuration</source>
       <translation>機体設定</translation>
     </message>
     <message>
-      <location filename="../src/UI/MainWindow.qml" line="170"/>
+      <location filename="../src/MainWindow/MainWindow.qml" line="170"/>
       <source>Application Settings</source>
       <translation>アプリケーション設定</translation>
     </message>
     <message>
-      <location filename="../src/UI/MainWindow.qml" line="236"/>
-      <source>Close %1</source>
-      <translation>%1 を閉じる</translation>
-    </message>
-    <message>
-      <location filename="../src/UI/MainWindow.qml" line="119"/>
-      <location filename="../src/UI/MainWindow.qml" line="346"/>
+      <location filename="../src/MainWindow/MainWindow.qml" line="119"/>
+      <location filename="../src/MainWindow/MainWindow.qml" line="364"/>
       <source>Please correct the invalid value before continuing</source>
       <translation type="unfinished">Please correct the invalid value before continuing</translation>
     </message>
     <message>
-      <location filename="../src/UI/MainWindow.qml" line="241"/>
+      <location filename="../src/MainWindow/MainWindow.qml" line="242"/>
+      <source>Unsaved Mission</source>
+      <translation type="unfinished">Unsaved Mission</translation>
+    </message>
+    <message>
+      <location filename="../src/MainWindow/MainWindow.qml" line="243"/>
       <source>You have a mission edit in progress which has not been saved/uploaded. If you close you will lose changes. Are you sure you want to close?</source>
       <translation type="unfinished">You have a mission edit in progress which has not been saved/uploaded. If you close you will lose changes. Are you sure you want to close?</translation>
     </message>
     <message>
-      <location filename="../src/UI/MainWindow.qml" line="254"/>
+      <location filename="../src/MainWindow/MainWindow.qml" line="259"/>
+      <source>Pending Parameter Updates</source>
+      <translation type="unfinished">Pending Parameter Updates</translation>
+    </message>
+    <message>
+      <location filename="../src/MainWindow/MainWindow.qml" line="260"/>
       <source>You have pending parameter updates to a vehicle. If you close you will lose changes. Are you sure you want to close?</source>
       <translation>機体へのパラメータ更新が保留中です。このまま閉じると変更が失われます。閉じてもよろしいですか？</translation>
     </message>
     <message>
-      <location filename="../src/UI/MainWindow.qml" line="266"/>
+      <location filename="../src/MainWindow/MainWindow.qml" line="275"/>
+      <source>Active Vehicle Connections</source>
+      <translation type="unfinished">Active Vehicle Connections</translation>
+    </message>
+    <message>
+      <location filename="../src/MainWindow/MainWindow.qml" line="276"/>
       <source>There are still active connections to vehicles. Are you sure you want to exit?</source>
       <translation>機体への接続がまだ有効です。本当に終了してもよろしいですか？</translation>
     </message>
     <message>
-      <location filename="../src/UI/MainWindow.qml" line="304"/>
+      <location filename="../src/MainWindow/MainWindow.qml" line="322"/>
       <source>Debug Touch Areas</source>
       <translation>タッチエリアのデバッグ</translation>
     </message>
     <message>
-      <location filename="../src/UI/MainWindow.qml" line="305"/>
+      <location filename="../src/MainWindow/MainWindow.qml" line="323"/>
       <source>Touch Area display toggled</source>
       <translation>タッチエリアの表示切り替え</translation>
     </message>
     <message>
-      <location filename="../src/UI/MainWindow.qml" line="311"/>
-      <location filename="../src/UI/MainWindow.qml" line="323"/>
+      <location filename="../src/MainWindow/MainWindow.qml" line="329"/>
+      <location filename="../src/MainWindow/MainWindow.qml" line="341"/>
       <source>Advanced Mode</source>
       <translation>詳細設定モード</translation>
     </message>
     <message>
-      <location filename="../src/UI/MainWindow.qml" line="324"/>
+      <location filename="../src/MainWindow/MainWindow.qml" line="342"/>
       <source>Turn off Advanced Mode?</source>
       <translation>詳細設定モードをOFFにしますか？</translation>
     </message>
     <message>
-      <location filename="../src/UI/MainWindow.qml" line="486"/>
+      <location filename="../src/MainWindow/MainWindow.qml" line="502"/>
       <source>Vehicle Error</source>
       <translation>機体エラー</translation>
     </message>
     <message>
-      <location filename="../src/UI/MainWindow.qml" line="510"/>
+      <location filename="../src/MainWindow/MainWindow.qml" line="526"/>
       <source>Additional errors received</source>
       <translation>追加エラーを受信しました</translation>
     </message>
@@ -11107,17 +12407,17 @@ VTOL</translation>
   <context>
     <name>MapProviderSettings</name>
     <message>
-      <location filename="../src/UI/AppSettings/MapProviderSettings.qml" line="18"/>
+      <location filename="../src/AppSettings/MapProviderSettings.qml" line="18"/>
       <source>Provider</source>
       <translation type="unfinished">Provider</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MapProviderSettings.qml" line="34"/>
+      <location filename="../src/AppSettings/MapProviderSettings.qml" line="34"/>
       <source>Type</source>
       <translation type="unfinished">Type</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MapProviderSettings.qml" line="47"/>
+      <location filename="../src/AppSettings/MapProviderSettings.qml" line="47"/>
       <source>Elevation Provider</source>
       <translation type="unfinished">Elevation Provider</translation>
     </message>
@@ -11220,27 +12520,27 @@ VTOL</translation>
   <context>
     <name>MavlinkActionSettings</name>
     <message>
-      <location filename="../src/UI/AppSettings/MavlinkActionSettings.qml" line="10"/>
+      <location filename="../src/AppSettings/MavlinkActionSettings.qml" line="10"/>
       <source>MAVLink Actions</source>
       <translation type="unfinished">MAVLink Actions</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MavlinkActionSettings.qml" line="11"/>
+      <location filename="../src/AppSettings/MavlinkActionSettings.qml" line="11"/>
       <source>Action JSON files should be created in the &apos;%1&apos; folder.</source>
       <translation type="unfinished">Action JSON files should be created in the &apos;%1&apos; folder.</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MavlinkActionSettings.qml" line="17"/>
+      <location filename="../src/AppSettings/MavlinkActionSettings.qml" line="17"/>
       <source>&lt;None&gt;</source>
       <translation type="unfinished">&lt;None&gt;</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MavlinkActionSettings.qml" line="23"/>
+      <location filename="../src/AppSettings/MavlinkActionSettings.qml" line="23"/>
       <source>Fly View Actions</source>
       <translation type="unfinished">Fly View Actions</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MavlinkActionSettings.qml" line="36"/>
+      <location filename="../src/AppSettings/MavlinkActionSettings.qml" line="36"/>
       <source>Joystick Actions</source>
       <translation type="unfinished">Joystick Actions</translation>
     </message>
@@ -11261,49 +12561,54 @@ VTOL</translation>
   <context>
     <name>MavlinkLinkStatus</name>
     <message>
-      <location filename="../src/UI/AppSettings/MavlinkLinkStatus.qml" line="9"/>
+      <location filename="../src/AppSettings/MavlinkLinkStatus.qml" line="9"/>
       <source>Link Status (Current Vehicle)</source>
       <translation type="unfinished">Link Status (Current Vehicle)</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MavlinkLinkStatus.qml" line="12"/>
+      <location filename="../src/AppSettings/MavlinkLinkStatus.qml" line="12"/>
       <source>Not Connected</source>
       <translation type="unfinished">Not Connected</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MavlinkLinkStatus.qml" line="16"/>
+      <location filename="../src/AppSettings/MavlinkLinkStatus.qml" line="16"/>
       <source>Total messages sent (computed)</source>
       <translation type="unfinished">Total messages sent (computed)</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MavlinkLinkStatus.qml" line="22"/>
+      <location filename="../src/AppSettings/MavlinkLinkStatus.qml" line="22"/>
       <source>Total messages received</source>
       <translation type="unfinished">Total messages received</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MavlinkLinkStatus.qml" line="28"/>
+      <location filename="../src/AppSettings/MavlinkLinkStatus.qml" line="28"/>
       <source>Total message loss</source>
       <translation type="unfinished">Total message loss</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MavlinkLinkStatus.qml" line="34"/>
+      <location filename="../src/AppSettings/MavlinkLinkStatus.qml" line="34"/>
       <source>Loss rate</source>
       <translation type="unfinished">Loss rate</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MavlinkLinkStatus.qml" line="40"/>
+      <location filename="../src/AppSettings/MavlinkLinkStatus.qml" line="40"/>
       <source>Signing</source>
       <translation type="unfinished">Signing</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MavlinkLinkStatus.qml" line="41"/>
-      <source>On</source>
-      <translation type="unfinished">On</translation>
+      <location filename="../src/AppSettings/MavlinkLinkStatus.qml" line="46"/>
+      <source>Signing key</source>
+      <translation type="unfinished">Signing key</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MavlinkLinkStatus.qml" line="41"/>
-      <source>Off</source>
-      <translation type="unfinished">Off</translation>
+      <location filename="../src/AppSettings/MavlinkLinkStatus.qml" line="49"/>
+      <source>None</source>
+      <translation type="unfinished">None</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/MavlinkLinkStatus.qml" line="55"/>
+      <source>Signing streams</source>
+      <translation type="unfinished">Signing streams</translation>
     </message>
   </context>
   <context>
@@ -11330,68 +12635,68 @@ VTOL</translation>
   <context>
     <name>MissionController</name>
     <message>
-      <location filename="../src/MissionManager/MissionController.cc" line="677"/>
+      <location filename="../src/MissionManager/MissionController.cc" line="657"/>
       <source>Mission item %1 is not an object</source>
       <translation>ミッション項目 %1 はオブジェクトではありません</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/MissionController.cc" line="763"/>
+      <location filename="../src/MissionManager/MissionController.cc" line="700"/>
       <source>Unsupported complex item type: %1</source>
       <translation>サポートされていない複合項目タイプ: %1</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/MissionController.cc" line="766"/>
+      <location filename="../src/MissionManager/MissionController.cc" line="711"/>
       <source>Unknown item type: %1</source>
       <translation>不明な項目タイプ: %1</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/MissionController.cc" line="789"/>
+      <location filename="../src/MissionManager/MissionController.cc" line="734"/>
       <source>Could not find doJumpId: %1</source>
       <translation>doJumpIdが見つかりませんでした: %1</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/MissionController.cc" line="839"/>
+      <location filename="../src/MissionManager/MissionController.cc" line="784"/>
       <source>The mission file is corrupted.</source>
       <translation>ミッションファイルが破損しています。</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/MissionController.cc" line="844"/>
+      <location filename="../src/MissionManager/MissionController.cc" line="789"/>
       <source>The mission file is not compatible with this version of %1.</source>
       <translation>ミッションファイルはこのバージョンの %1 と互換性がありません。</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/MissionController.cc" line="879"/>
-      <location filename="../src/MissionManager/MissionController.cc" line="894"/>
+      <location filename="../src/MissionManager/MissionController.cc" line="824"/>
+      <location filename="../src/MissionManager/MissionController.cc" line="839"/>
       <source>Mission: %1</source>
       <translation>ミッション: %1</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/MissionController.cc" line="1300"/>
+      <location filename="../src/MissionManager/MissionController.cc" line="1245"/>
       <source>Plan Info</source>
       <translation type="unfinished">Plan Info</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/MissionController.cc" line="1308"/>
+      <location filename="../src/MissionManager/MissionController.cc" line="1253"/>
       <source>Defaults</source>
       <translation type="unfinished">Defaults</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/MissionController.cc" line="1316"/>
+      <location filename="../src/MissionManager/MissionController.cc" line="1261"/>
       <source>Mission Items</source>
       <translation type="unfinished">Mission Items</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/MissionController.cc" line="1320"/>
+      <location filename="../src/MissionManager/MissionController.cc" line="1265"/>
       <source>GeoFence</source>
       <translation type="unfinished">GeoFence</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/MissionController.cc" line="1329"/>
+      <location filename="../src/MissionManager/MissionController.cc" line="1274"/>
       <source>Rally Points</source>
       <translation type="unfinished">Rally Points</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/MissionController.cc" line="1338"/>
+      <location filename="../src/MissionManager/MissionController.cc" line="1283"/>
       <source>Transform</source>
       <translation type="unfinished">Transform</translation>
     </message>
@@ -11696,52 +13001,52 @@ VTOL</translation>
   <context>
     <name>MockLink</name>
     <message>
-      <location filename="../src/UI/AppSettings/MockLink.qml" line="31"/>
+      <location filename="../src/AppSettings/MockLink.qml" line="31"/>
       <source>Send status text + voice</source>
       <translation>ステータステキスト + 音声を送信</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLink.qml" line="35"/>
+      <location filename="../src/AppSettings/MockLink.qml" line="35"/>
       <source>Enable camera</source>
       <translation type="unfinished">Enable camera</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLink.qml" line="39"/>
+      <location filename="../src/AppSettings/MockLink.qml" line="39"/>
       <source>Enable gimbal</source>
       <translation type="unfinished">Enable gimbal</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLink.qml" line="42"/>
+      <location filename="../src/AppSettings/MockLink.qml" line="42"/>
       <source>PX4 Vehicle</source>
       <translation>PX4 機体</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLink.qml" line="47"/>
+      <location filename="../src/AppSettings/MockLink.qml" line="47"/>
       <source>APM ArduCopter Vehicle</source>
       <translation>APM ArduCopter機体</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLink.qml" line="53"/>
+      <location filename="../src/AppSettings/MockLink.qml" line="53"/>
       <source>APM ArduPlane Vehicle</source>
       <translation>APM ArduPlane機体</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLink.qml" line="59"/>
+      <location filename="../src/AppSettings/MockLink.qml" line="59"/>
       <source>APM ArduSub Vehicle</source>
       <translation>APM ArduSub機体</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLink.qml" line="65"/>
+      <location filename="../src/AppSettings/MockLink.qml" line="65"/>
       <source>APM ArduRover Vehicle</source>
       <translation>APM ArduRover機体</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLink.qml" line="71"/>
+      <location filename="../src/AppSettings/MockLink.qml" line="71"/>
       <source>Generic Vehicle</source>
       <translation>汎用機体</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLink.qml" line="76"/>
+      <location filename="../src/AppSettings/MockLink.qml" line="76"/>
       <source>Stop One MockLink</source>
       <translation>疑似リンク 停止</translation>
     </message>
@@ -11749,67 +13054,67 @@ VTOL</translation>
   <context>
     <name>MockLinkSettings</name>
     <message>
-      <location filename="../src/UI/AppSettings/MockLinkSettings.qml" line="78"/>
+      <location filename="../src/AppSettings/MockLinkSettings.qml" line="78"/>
       <source>Send Status Text and Voice</source>
       <translation>文字と音声で状態を送信します</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLinkSettings.qml" line="85"/>
+      <location filename="../src/AppSettings/MockLinkSettings.qml" line="85"/>
       <source>Enable Camera</source>
       <translation type="unfinished">Enable Camera</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLinkSettings.qml" line="92"/>
+      <location filename="../src/AppSettings/MockLinkSettings.qml" line="92"/>
       <source>Enable Gimbal</source>
       <translation type="unfinished">Enable Gimbal</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLinkSettings.qml" line="99"/>
+      <location filename="../src/AppSettings/MockLinkSettings.qml" line="99"/>
       <source>Increment Vehicle Id</source>
       <translation>機体IDの追加</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLinkSettings.qml" line="106"/>
+      <location filename="../src/AppSettings/MockLinkSettings.qml" line="106"/>
       <source>Firmware Type</source>
       <translation type="unfinished">Firmware Type</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLinkSettings.qml" line="107"/>
+      <location filename="../src/AppSettings/MockLinkSettings.qml" line="107"/>
       <source>PX4 Pro</source>
       <translation> PX4 Pro</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLinkSettings.qml" line="107"/>
+      <location filename="../src/AppSettings/MockLinkSettings.qml" line="107"/>
       <source>ArduPilot</source>
       <translation>ArduPilot</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLinkSettings.qml" line="107"/>
+      <location filename="../src/AppSettings/MockLinkSettings.qml" line="107"/>
       <source>Generic MAVLink</source>
       <translation>汎用 MAVLink</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLinkSettings.qml" line="115"/>
+      <location filename="../src/AppSettings/MockLinkSettings.qml" line="115"/>
       <source>Vehicle Type</source>
       <translation>機体タイプ</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLinkSettings.qml" line="116"/>
+      <location filename="../src/AppSettings/MockLinkSettings.qml" line="116"/>
       <source>ArduCopter</source>
       <translation>ArduCopter</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLinkSettings.qml" line="116"/>
+      <location filename="../src/AppSettings/MockLinkSettings.qml" line="116"/>
       <source>ArduPlane</source>
       <translation>ArduPlane</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLinkSettings.qml" line="122"/>
+      <location filename="../src/AppSettings/MockLinkSettings.qml" line="122"/>
       <source>Camera Capabilities</source>
       <translation type="unfinished">Camera Capabilities</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/MockLinkSettings.qml" line="200"/>
+      <location filename="../src/AppSettings/MockLinkSettings.qml" line="200"/>
       <source>Gimbal Capabilities</source>
       <translation type="unfinished">Gimbal Capabilities</translation>
     </message>
@@ -12029,18 +13334,18 @@ Do you wish to proceed?</source>
   <context>
     <name>MultiVehicleSelector</name>
     <message>
-      <location filename="../src/UI/toolbar/MultiVehicleSelector.qml" line="39"/>
-      <location filename="../src/UI/toolbar/MultiVehicleSelector.qml" line="100"/>
+      <location filename="../src/Toolbar/MultiVehicleSelector.qml" line="39"/>
+      <location filename="../src/Toolbar/MultiVehicleSelector.qml" line="100"/>
       <source>Vehicle</source>
       <translation>機体</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MultiVehicleSelector.qml" line="39"/>
+      <location filename="../src/Toolbar/MultiVehicleSelector.qml" line="39"/>
       <source>N/A</source>
       <translation>N/A</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/MultiVehicleSelector.qml" line="84"/>
+      <location filename="../src/Toolbar/MultiVehicleSelector.qml" line="84"/>
       <source>Enable Multi-Vehicle Panel</source>
       <translation>複数機体パネルを有効</translation>
     </message>
@@ -12086,39 +13391,39 @@ Do you wish to proceed?</source>
   <context>
     <name>NTRIPManager</name>
     <message>
-      <location filename="../src/GPS/NTRIP/NTRIPManager.cc" line="174"/>
+      <location filename="../src/GPS/NTRIP/NTRIPManager.cc" line="200"/>
       <source>No host address</source>
       <translation type="unfinished">No host address</translation>
     </message>
     <message>
-      <location filename="../src/GPS/NTRIP/NTRIPManager.cc" line="181"/>
+      <location filename="../src/GPS/NTRIP/NTRIPManager.cc" line="207"/>
       <source>Invalid port</source>
       <translation type="unfinished">Invalid port</translation>
     </message>
     <message>
-      <location filename="../src/GPS/NTRIP/NTRIPManager.cc" line="189"/>
+      <location filename="../src/GPS/NTRIP/NTRIPManager.cc" line="215"/>
       <source>Connecting to %1:%2...</source>
       <translation type="unfinished">Connecting to %1:%2...</translation>
     </message>
     <message>
-      <location filename="../src/GPS/NTRIP/NTRIPManager.cc" line="214"/>
-      <location filename="../src/GPS/NTRIP/NTRIPManager.cc" line="340"/>
+      <location filename="../src/GPS/NTRIP/NTRIPManager.cc" line="240"/>
+      <location filename="../src/GPS/NTRIP/NTRIPManager.cc" line="366"/>
       <source>Connected</source>
       <translation type="unfinished">Connected</translation>
     </message>
     <message>
-      <location filename="../src/GPS/NTRIP/NTRIPManager.cc" line="255"/>
-      <location filename="../src/GPS/NTRIP/NTRIPManager.cc" line="523"/>
+      <location filename="../src/GPS/NTRIP/NTRIPManager.cc" line="281"/>
+      <location filename="../src/GPS/NTRIP/NTRIPManager.cc" line="549"/>
       <source>Disconnected</source>
       <translation type="unfinished">Disconnected</translation>
     </message>
     <message>
-      <location filename="../src/GPS/NTRIP/NTRIPManager.cc" line="310"/>
+      <location filename="../src/GPS/NTRIP/NTRIPManager.cc" line="336"/>
       <source>Reconnecting in %1s...</source>
       <translation type="unfinished">Reconnecting in %1s...</translation>
     </message>
     <message>
-      <location filename="../src/GPS/NTRIP/NTRIPManager.cc" line="564"/>
+      <location filename="../src/GPS/NTRIP/NTRIPManager.cc" line="590"/>
       <source>Host address is empty</source>
       <translation type="unfinished">Host address is empty</translation>
     </message>
@@ -12139,47 +13444,47 @@ Do you wish to proceed?</source>
   <context>
     <name>NmeaGpsSettings</name>
     <message>
-      <location filename="../src/UI/AppSettings/NmeaGpsSettings.qml" line="9"/>
+      <location filename="../src/AppSettings/NmeaGpsSettings.qml" line="9"/>
       <source>NMEA GPS</source>
       <translation type="unfinished">NMEA GPS</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NmeaGpsSettings.qml" line="14"/>
+      <location filename="../src/AppSettings/NmeaGpsSettings.qml" line="14"/>
       <source>Device</source>
       <translation type="unfinished">Device</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NmeaGpsSettings.qml" line="27"/>
+      <location filename="../src/AppSettings/NmeaGpsSettings.qml" line="27"/>
       <source>Disabled</source>
       <translation type="unfinished">Disabled</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NmeaGpsSettings.qml" line="28"/>
+      <location filename="../src/AppSettings/NmeaGpsSettings.qml" line="28"/>
       <source>UDP Port</source>
       <translation type="unfinished">UDP Port</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NmeaGpsSettings.qml" line="31"/>
+      <location filename="../src/AppSettings/NmeaGpsSettings.qml" line="31"/>
       <source>Serial &lt;none available&gt;</source>
       <translation type="unfinished">Serial &lt;none available&gt;</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NmeaGpsSettings.qml" line="47"/>
+      <location filename="../src/AppSettings/NmeaGpsSettings.qml" line="47"/>
       <source>Baudrate</source>
       <translation type="unfinished">Baudrate</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NmeaGpsSettings.qml" line="49"/>
+      <location filename="../src/AppSettings/NmeaGpsSettings.qml" line="49"/>
       <source>Custom</source>
       <translation type="unfinished">Custom</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NmeaGpsSettings.qml" line="79"/>
+      <location filename="../src/AppSettings/NmeaGpsSettings.qml" line="79"/>
       <source>Custom Baud Rate</source>
       <translation type="unfinished">Custom Baud Rate</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NmeaGpsSettings.qml" line="98"/>
+      <location filename="../src/AppSettings/NmeaGpsSettings.qml" line="98"/>
       <source>NMEA stream UDP port</source>
       <translation type="unfinished">NMEA stream UDP port</translation>
     </message>
@@ -12187,42 +13492,42 @@ Do you wish to proceed?</source>
   <context>
     <name>NtripConnectionStatus</name>
     <message>
-      <location filename="../src/UI/AppSettings/NtripConnectionStatus.qml" line="11"/>
+      <location filename="../src/AppSettings/NtripConnectionStatus.qml" line="11"/>
       <source>Connection</source>
       <translation type="unfinished">Connection</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NtripConnectionStatus.qml" line="48"/>
+      <location filename="../src/AppSettings/NtripConnectionStatus.qml" line="48"/>
       <source>Disconnected</source>
       <translation type="unfinished">Disconnected</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NtripConnectionStatus.qml" line="54"/>
+      <location filename="../src/AppSettings/NtripConnectionStatus.qml" line="54"/>
       <source>Connecting…</source>
       <translation type="unfinished">Connecting…</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NtripConnectionStatus.qml" line="55"/>
+      <location filename="../src/AppSettings/NtripConnectionStatus.qml" line="55"/>
       <source>Reconnecting…</source>
       <translation type="unfinished">Reconnecting…</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NtripConnectionStatus.qml" line="56"/>
+      <location filename="../src/AppSettings/NtripConnectionStatus.qml" line="56"/>
       <source>Disconnect</source>
       <translation type="unfinished">Disconnect</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NtripConnectionStatus.qml" line="57"/>
+      <location filename="../src/AppSettings/NtripConnectionStatus.qml" line="57"/>
       <source>Connect</source>
       <translation type="unfinished">Connect</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NtripConnectionStatus.qml" line="68"/>
+      <location filename="../src/AppSettings/NtripConnectionStatus.qml" line="68"/>
       <source>%1 messages</source>
       <translation type="unfinished">%1 messages</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NtripConnectionStatus.qml" line="73"/>
+      <location filename="../src/AppSettings/NtripConnectionStatus.qml" line="73"/>
       <source>GGA: %1</source>
       <translation type="unfinished">GGA: %1</translation>
     </message>
@@ -12230,32 +13535,32 @@ Do you wish to proceed?</source>
   <context>
     <name>NtripMountpointBrowser</name>
     <message>
-      <location filename="../src/UI/AppSettings/NtripMountpointBrowser.qml" line="11"/>
+      <location filename="../src/AppSettings/NtripMountpointBrowser.qml" line="11"/>
       <source>Mountpoint</source>
       <translation type="unfinished">Mountpoint</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NtripMountpointBrowser.qml" line="35"/>
+      <location filename="../src/AppSettings/NtripMountpointBrowser.qml" line="35"/>
       <source>Browse</source>
       <translation type="unfinished">Browse</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NtripMountpointBrowser.qml" line="45"/>
+      <location filename="../src/AppSettings/NtripMountpointBrowser.qml" line="45"/>
       <source>Fetching mountpoints…</source>
       <translation type="unfinished">Fetching mountpoints…</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NtripMountpointBrowser.qml" line="99"/>
+      <location filename="../src/AppSettings/NtripMountpointBrowser.qml" line="99"/>
       <source>(selected)</source>
       <translation type="unfinished">(selected)</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NtripMountpointBrowser.qml" line="123"/>
+      <location filename="../src/AppSettings/NtripMountpointBrowser.qml" line="123"/>
       <source>Selected</source>
       <translation type="unfinished">Selected</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NtripMountpointBrowser.qml" line="123"/>
+      <location filename="../src/AppSettings/NtripMountpointBrowser.qml" line="123"/>
       <source>Select</source>
       <translation type="unfinished">Select</translation>
     </message>
@@ -12263,17 +13568,17 @@ Do you wish to proceed?</source>
   <context>
     <name>NtripServerSettings</name>
     <message>
-      <location filename="../src/UI/AppSettings/NtripServerSettings.qml" line="11"/>
+      <location filename="../src/AppSettings/NtripServerSettings.qml" line="11"/>
       <source>Server</source>
       <translation type="unfinished">Server</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NtripServerSettings.qml" line="62"/>
+      <location filename="../src/AppSettings/NtripServerSettings.qml" line="62"/>
       <source>Hide</source>
       <translation type="unfinished">Hide</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/NtripServerSettings.qml" line="62"/>
+      <location filename="../src/AppSettings/NtripServerSettings.qml" line="62"/>
       <source>Show</source>
       <translation type="unfinished">Show</translation>
     </message>
@@ -12281,149 +13586,149 @@ Do you wish to proceed?</source>
   <context>
     <name>OfflineMapEditor</name>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="201"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="201"/>
       <source>System Wide Tile Cache</source>
       <translation>システム全体のタイルキャッシュ</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="214"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="214"/>
       <source>Zoom Levels:</source>
       <translation>ズーム レベル:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="221"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="221"/>
       <source>Total:</source>
       <translation>合計:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="228"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="228"/>
       <source>Unique:</source>
       <translation>固有 (Unique):</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="236"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="236"/>
       <source>Downloaded:</source>
       <translation>ダウンロード完了:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="243"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="243"/>
       <source>Error Count:</source>
       <translation>エラー数:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="251"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="251"/>
       <source>Size:</source>
       <translation>サイズ:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="258"/>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="615"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="258"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="615"/>
       <source>Tile Count:</source>
       <translation>タイル数:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="265"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="265"/>
       <source>Resume Download</source>
       <translation>ダウンロードを再開</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="271"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="271"/>
       <source>Cancel Download</source>
       <translation>ダウンロードをキャンセル</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="277"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="277"/>
       <source>Delete</source>
       <translation>削除</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="283"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="283"/>
       <source>Ok</source>
       <translation>OK</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="295"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="295"/>
       <source>Close</source>
       <translation>閉じる</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="295"/>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="668"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="295"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="668"/>
       <source>Cancel</source>
       <translation>キャンセル</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="321"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="321"/>
       <source>Show zoom previews</source>
       <translation>ズーム時のプレビューを表示</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="355"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="355"/>
       <source>Min Zoom: %1</source>
       <translation>最小ズーム: %1</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="393"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="393"/>
       <source>Max Zoom: %1</source>
       <translation>最大ズーム: %1</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="424"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="424"/>
       <source>Add New Set</source>
       <translation>新しいセットを追加</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="452"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="452"/>
       <source>Name:</source>
       <translation>名称:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="471"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="471"/>
       <source>Map type:</source>
       <translation>マップのタイプ:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="494"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="494"/>
       <source>Fetch elevation data</source>
       <translation>標高データを取得</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="520"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="520"/>
       <source>Min/Max Zoom Levels</source>
       <translation>最小 / 最大 ズームレベル</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="624"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="624"/>
       <source>Est Size:</source>
       <translation>ESTサイズ:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="636"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="636"/>
       <source>Too many tiles</source>
       <translation>タイルが多すぎます</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="644"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="644"/>
       <source>Tile set with this name already exists</source>
       <translation type="unfinished">Tile set with this name already exists</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="655"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="655"/>
       <source>Download</source>
       <translation>ダウンロード</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="701"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="701"/>
       <source>Error Message</source>
       <translation>エラーメッセージ</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="717"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="717"/>
       <source>Confirm Delete</source>
       <translation>削除の確認</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="719"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="719"/>
       <source>This will delete all tiles INCLUDING the tile sets you have created yourself.
 
 Is this really what you want?</source>
@@ -12432,7 +13737,7 @@ Is this really what you want?</source>
 本当によろしいですか？</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapEditor.qml" line="720"/>
+      <location filename="../src/AppSettings/OfflineMapEditor.qml" line="720"/>
       <source>Delete %1 and all its tiles.
 
 Is this really what you want?</source>
@@ -12444,7 +13749,7 @@ Is this really what you want?</source>
   <context>
     <name>OfflineMapInfo</name>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapInfo.qml" line="38"/>
+      <location filename="../src/AppSettings/OfflineMapInfo.qml" line="38"/>
       <source>Edit</source>
       <translation>編集</translation>
     </message>
@@ -12452,92 +13757,92 @@ Is this really what you want?</source>
   <context>
     <name>OfflineMapSettings</name>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapSettings.qml" line="33"/>
+      <location filename="../src/AppSettings/OfflineMapSettings.qml" line="33"/>
       <source>Offline Maps</source>
       <translation type="unfinished">Offline Maps</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapSettings.qml" line="34"/>
+      <location filename="../src/AppSettings/OfflineMapSettings.qml" line="34"/>
       <source>Download map tiles for use when offline</source>
       <translation type="unfinished">Download map tiles for use when offline</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapSettings.qml" line="47"/>
+      <location filename="../src/AppSettings/OfflineMapSettings.qml" line="47"/>
       <source>Add New Set</source>
       <translation type="unfinished">Add New Set</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapSettings.qml" line="48"/>
+      <location filename="../src/AppSettings/OfflineMapSettings.qml" line="48"/>
       <source>Add</source>
       <translation type="unfinished">Add</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapSettings.qml" line="54"/>
+      <location filename="../src/AppSettings/OfflineMapSettings.qml" line="54"/>
       <source>Import Map Tiles</source>
       <translation type="unfinished">Import Map Tiles</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapSettings.qml" line="55"/>
+      <location filename="../src/AppSettings/OfflineMapSettings.qml" line="55"/>
       <source>Import</source>
       <translation type="unfinished">Import</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapSettings.qml" line="65"/>
+      <location filename="../src/AppSettings/OfflineMapSettings.qml" line="65"/>
       <source>Export Map Tiles</source>
       <translation type="unfinished">Export Map Tiles</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapSettings.qml" line="66"/>
+      <location filename="../src/AppSettings/OfflineMapSettings.qml" line="66"/>
       <source>Export</source>
       <translation type="unfinished">Export</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapSettings.qml" line="78"/>
+      <location filename="../src/AppSettings/OfflineMapSettings.qml" line="78"/>
       <source>Exporting</source>
       <translation type="unfinished">Exporting</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapSettings.qml" line="78"/>
+      <location filename="../src/AppSettings/OfflineMapSettings.qml" line="78"/>
       <source>Importing</source>
       <translation type="unfinished">Importing</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapSettings.qml" line="94"/>
+      <location filename="../src/AppSettings/OfflineMapSettings.qml" line="94"/>
       <source>Tile Sets (*.%1)</source>
       <translation type="unfinished">Tile Sets (*.%1)</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapSettings.qml" line="117"/>
+      <location filename="../src/AppSettings/OfflineMapSettings.qml" line="117"/>
       <source>Export Selected Tile Sets</source>
       <translation type="unfinished">Export Selected Tile Sets</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapSettings.qml" line="122"/>
+      <location filename="../src/AppSettings/OfflineMapSettings.qml" line="122"/>
       <source>Export Tiles</source>
       <translation type="unfinished">Export Tiles</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapSettings.qml" line="151"/>
+      <location filename="../src/AppSettings/OfflineMapSettings.qml" line="151"/>
       <source>Import TileSets</source>
       <translation type="unfinished">Import TileSets</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapSettings.qml" line="156"/>
+      <location filename="../src/AppSettings/OfflineMapSettings.qml" line="156"/>
       <source>Import Tiles</source>
       <translation type="unfinished">Import Tiles</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapSettings.qml" line="164"/>
+      <location filename="../src/AppSettings/OfflineMapSettings.qml" line="164"/>
       <source>Append to existing sets</source>
       <translation type="unfinished">Append to existing sets</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapSettings.qml" line="169"/>
+      <location filename="../src/AppSettings/OfflineMapSettings.qml" line="169"/>
       <source>Replace existing sets</source>
       <translation type="unfinished">Replace existing sets</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/OfflineMapSettings.qml" line="186"/>
+      <location filename="../src/AppSettings/OfflineMapSettings.qml" line="186"/>
       <source>Error Message</source>
       <translation type="unfinished">Error Message</translation>
     </message>
@@ -12545,28 +13850,28 @@ Is this really what you want?</source>
   <context>
     <name>OnboardLogController</name>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogController.cc" line="63"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogController.cc" line="65"/>
       <source>Waiting</source>
       <translation type="unfinished">Waiting</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogController.cc" line="110"/>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogController.cc" line="287"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogController.cc" line="112"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogController.cc" line="290"/>
       <source>Error</source>
       <translation type="unfinished">Error</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogController.cc" line="177"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogController.cc" line="180"/>
       <source>Available</source>
       <translation type="unfinished">Available</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogController.cc" line="268"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogController.cc" line="271"/>
       <source>Downloaded</source>
       <translation type="unfinished">Downloaded</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogController.cc" line="494"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogController.cc" line="565"/>
       <source>Canceled</source>
       <translation type="unfinished">Canceled</translation>
     </message>
@@ -12574,34 +13879,34 @@ Is this really what you want?</source>
   <context>
     <name>OnboardLogFtpController</name>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogsFtp/OnboardLogFtpController.cc" line="218"/>
+      <location filename="../src/AnalyzeView/OnboardLogsFtp/OnboardLogFtpController.cc" line="230"/>
       <source>Available</source>
       <translation type="unfinished">Available</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogsFtp/OnboardLogFtpController.cc" line="274"/>
+      <location filename="../src/AnalyzeView/OnboardLogsFtp/OnboardLogFtpController.cc" line="286"/>
       <source>Waiting</source>
       <translation type="unfinished">Waiting</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogsFtp/OnboardLogFtpController.cc" line="304"/>
+      <location filename="../src/AnalyzeView/OnboardLogsFtp/OnboardLogFtpController.cc" line="316"/>
       <source>Downloading</source>
       <translation type="unfinished">Downloading</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogsFtp/OnboardLogFtpController.cc" line="332"/>
-      <location filename="../src/AnalyzeView/OnboardLogsFtp/OnboardLogFtpController.cc" line="353"/>
+      <location filename="../src/AnalyzeView/OnboardLogsFtp/OnboardLogFtpController.cc" line="344"/>
+      <location filename="../src/AnalyzeView/OnboardLogsFtp/OnboardLogFtpController.cc" line="365"/>
       <source>Error</source>
       <translation type="unfinished">Error</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogsFtp/OnboardLogFtpController.cc" line="350"/>
+      <location filename="../src/AnalyzeView/OnboardLogsFtp/OnboardLogFtpController.cc" line="362"/>
       <source>Downloaded</source>
       <translation type="unfinished">Downloaded</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogsFtp/OnboardLogFtpController.cc" line="406"/>
-      <location filename="../src/AnalyzeView/OnboardLogsFtp/OnboardLogFtpController.cc" line="427"/>
+      <location filename="../src/AnalyzeView/OnboardLogsFtp/OnboardLogFtpController.cc" line="418"/>
+      <location filename="../src/AnalyzeView/OnboardLogsFtp/OnboardLogFtpController.cc" line="439"/>
       <source>Canceled</source>
       <translation type="unfinished">Canceled</translation>
     </message>
@@ -12687,82 +13992,102 @@ Is this really what you want?</source>
       <translation type="unfinished">Onboard Logs allows you to download binary log files from your vehicle. Click Refresh to get list of available logs.</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="54"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="51"/>
       <source>Id</source>
       <translation type="unfinished">Id</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="62"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="59"/>
       <source>Date</source>
       <translation type="unfinished">Date</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="74"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="71"/>
       <source>Date Unknown</source>
       <translation type="unfinished">Date Unknown</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="82"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="79"/>
       <source>Size</source>
       <translation type="unfinished">Size</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="90"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="87"/>
       <source>Status</source>
       <translation type="unfinished">Status</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="108"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="105"/>
       <source>Refresh</source>
       <translation type="unfinished">Refresh</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="112"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="109"/>
       <source>Onboard Log Refresh</source>
       <translation type="unfinished">Onboard Log Refresh</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="112"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="109"/>
       <source>You must be connected to a vehicle in order to download onboard logs.</source>
       <translation type="unfinished">You must be connected to a vehicle in order to download onboard logs.</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="123"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="120"/>
+      <source>Deselect All</source>
+      <translation type="unfinished">Deselect All</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="120"/>
+      <source>Select All</source>
+      <translation type="unfinished">Select All</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="127"/>
       <source>Download</source>
       <translation type="unfinished">Download</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="135"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="139"/>
       <source>Onboard Log</source>
       <translation type="unfinished">Onboard Log</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="135"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="139"/>
       <source>You must select at least one onboard log file to download.</source>
       <translation type="unfinished">You must select at least one onboard log file to download.</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="144"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="148"/>
       <source>Select save directory</source>
       <translation type="unfinished">Select save directory</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="162"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="166"/>
+      <source>Sort Descending</source>
+      <translation type="unfinished">Sort Descending</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="166"/>
+      <source>Sort Ascending</source>
+      <translation type="unfinished">Sort Ascending</translation>
+    </message>
+    <message>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="173"/>
       <source>Erase All</source>
       <translation type="unfinished">Erase All</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="165"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="176"/>
       <source>Delete All Onboard Log Files</source>
       <translation type="unfinished">Delete All Onboard Log Files</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="166"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="177"/>
       <source>All onboard log files will be erased permanently. Is this really what you want?</source>
       <translation type="unfinished">All onboard log files will be erased permanently. Is this really what you want?</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="174"/>
+      <location filename="../src/AnalyzeView/OnboardLogs/OnboardLogPage.qml" line="185"/>
       <source>Cancel</source>
       <translation type="unfinished">Cancel</translation>
     </message>
@@ -12778,67 +14103,67 @@ Is this really what you want?</source>
   <context>
     <name>PIDTuning</name>
     <message>
-      <location filename="../src/QmlControls/PIDTuning.qml" line="370"/>
+      <location filename="../src/QmlControls/PIDTuning.qml" line="374"/>
       <source>Select Tuning:</source>
       <translation>チューニング選択:</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/PIDTuning.qml" line="413"/>
+      <location filename="../src/QmlControls/PIDTuning.qml" line="418"/>
       <source>Clipboard Values:</source>
       <translation>クリップボードの値:</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/PIDTuning.qml" line="439"/>
+      <location filename="../src/QmlControls/PIDTuning.qml" line="444"/>
       <source>Save To Clipboard</source>
       <translation>クリップボードに保存</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/PIDTuning.qml" line="444"/>
+      <location filename="../src/QmlControls/PIDTuning.qml" line="449"/>
       <source>Restore From Clipboard</source>
       <translation>クリップボードから復元</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/PIDTuning.qml" line="287"/>
+      <location filename="../src/QmlControls/PIDTuning.qml" line="291"/>
       <source>Clear</source>
       <translation>消去</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/PIDTuning.qml" line="204"/>
+      <location filename="../src/QmlControls/PIDTuning.qml" line="208"/>
       <source>sec</source>
       <translation>秒</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/PIDTuning.qml" line="292"/>
+      <location filename="../src/QmlControls/PIDTuning.qml" line="296"/>
       <source>Stop</source>
       <translation>停止</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/PIDTuning.qml" line="292"/>
+      <location filename="../src/QmlControls/PIDTuning.qml" line="296"/>
       <source>Start</source>
       <translation>開始</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/PIDTuning.qml" line="315"/>
+      <location filename="../src/QmlControls/PIDTuning.qml" line="319"/>
       <source>Automatic Flight Mode Switching</source>
       <translation>自動飛行モード切替</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/PIDTuning.qml" line="325"/>
+      <location filename="../src/QmlControls/PIDTuning.qml" line="329"/>
       <source>Switches to &apos;Stabilized&apos; when you click Start.</source>
       <translation>【開始】をクリックすると【スタビライズ】に切り替わります。</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/PIDTuning.qml" line="330"/>
+      <location filename="../src/QmlControls/PIDTuning.qml" line="334"/>
       <source>Switches to &apos;%1&apos; when you click Stop.</source>
       <translation>【停止】をクリックすると【%1】に切り替わります。</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/PIDTuning.qml" line="346"/>
+      <location filename="../src/QmlControls/PIDTuning.qml" line="350"/>
       <source>Use auto-tuning</source>
       <translation>自動調整を使用</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/PIDTuning.qml" line="352"/>
+      <location filename="../src/QmlControls/PIDTuning.qml" line="356"/>
       <source>Use manual tuning</source>
       <translation>手動調整を使用</translation>
     </message>
@@ -13035,32 +14360,27 @@ Is this really what you want?</source>
   <context>
     <name>PX4FirmwareUpgradeThreadWorker</name>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/PX4FirmwareUpgradeThread.cc" line="141"/>
+      <location filename="../src/Vehicle/VehicleSetup/PX4FirmwareUpgradeThread.cc" line="255"/>
       <source>Programming new version...</source>
       <translation>新バージョンをプログラミングしています...</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/PX4FirmwareUpgradeThread.cc" line="151"/>
+      <location filename="../src/Vehicle/VehicleSetup/PX4FirmwareUpgradeThread.cc" line="264"/>
       <source>Verifying program...</source>
       <translation>プログラムを確認しています...</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/PX4FirmwareUpgradeThread.cc" line="155"/>
-      <source>Verify complete</source>
-      <translation>確認が完了しました</translation>
-    </message>
-    <message>
-      <location filename="../src/Vehicle/VehicleSetup/PX4FirmwareUpgradeThread.cc" line="162"/>
+      <location filename="../src/Vehicle/VehicleSetup/PX4FirmwareUpgradeThread.cc" line="274"/>
       <source>Rebooting board</source>
       <translation>ボードの再起動</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/PX4FirmwareUpgradeThread.cc" line="186"/>
+      <location filename="../src/Vehicle/VehicleSetup/PX4FirmwareUpgradeThread.cc" line="300"/>
       <source>Erasing previous program...</source>
       <translation>以前のプログラムを消去しています...</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/PX4FirmwareUpgradeThread.cc" line="190"/>
+      <location filename="../src/Vehicle/VehicleSetup/PX4FirmwareUpgradeThread.cc" line="304"/>
       <source>Erase complete</source>
       <translation>消去が完了しました</translation>
     </message>
@@ -13201,27 +14521,27 @@ Is this really what you want?</source>
   <context>
     <name>PX4LogControl</name>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogControl.qml" line="9"/>
+      <location filename="../src/AppSettings/PX4LogControl.qml" line="9"/>
       <source>MAVLink 2.0 Logging (PX4 Pro Only)</source>
       <translation type="unfinished">MAVLink 2.0 Logging (PX4 Pro Only)</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogControl.qml" line="22"/>
+      <location filename="../src/AppSettings/PX4LogControl.qml" line="22"/>
       <source>Manual Start/Stop:</source>
       <translation type="unfinished">Manual Start/Stop:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogControl.qml" line="27"/>
+      <location filename="../src/AppSettings/PX4LogControl.qml" line="27"/>
       <source>Start Logging</source>
       <translation type="unfinished">Start Logging</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogControl.qml" line="33"/>
+      <location filename="../src/AppSettings/PX4LogControl.qml" line="33"/>
       <source>Stop Logging</source>
       <translation type="unfinished">Stop Logging</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogControl.qml" line="41"/>
+      <location filename="../src/AppSettings/PX4LogControl.qml" line="41"/>
       <source>Enable automatic logging</source>
       <translation type="unfinished">Enable automatic logging</translation>
     </message>
@@ -13229,77 +14549,77 @@ Is this really what you want?</source>
   <context>
     <name>PX4LogFileManager</name>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogFileManager.qml" line="11"/>
+      <location filename="../src/AppSettings/PX4LogFileManager.qml" line="11"/>
       <source>Saved Log Files</source>
       <translation type="unfinished">Saved Log Files</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogFileManager.qml" line="85"/>
+      <location filename="../src/AppSettings/PX4LogFileManager.qml" line="85"/>
       <source>Uploaded</source>
       <translation type="unfinished">Uploaded</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogFileManager.qml" line="109"/>
+      <location filename="../src/AppSettings/PX4LogFileManager.qml" line="109"/>
       <source>Check All</source>
       <translation type="unfinished">Check All</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogFileManager.qml" line="119"/>
+      <location filename="../src/AppSettings/PX4LogFileManager.qml" line="119"/>
       <source>Check None</source>
       <translation type="unfinished">Check None</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogFileManager.qml" line="129"/>
+      <location filename="../src/AppSettings/PX4LogFileManager.qml" line="129"/>
       <source>Delete Selected</source>
       <translation type="unfinished">Delete Selected</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogFileManager.qml" line="137"/>
+      <location filename="../src/AppSettings/PX4LogFileManager.qml" line="137"/>
       <source>Delete Selected Log Files</source>
       <translation type="unfinished">Delete Selected Log Files</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogFileManager.qml" line="138"/>
+      <location filename="../src/AppSettings/PX4LogFileManager.qml" line="138"/>
       <source>Confirm deleting selected log files?</source>
       <translation type="unfinished">Confirm deleting selected log files?</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogFileManager.qml" line="147"/>
+      <location filename="../src/AppSettings/PX4LogFileManager.qml" line="147"/>
       <source>Upload Selected</source>
       <translation type="unfinished">Upload Selected</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogFileManager.qml" line="161"/>
+      <location filename="../src/AppSettings/PX4LogFileManager.qml" line="161"/>
       <source>MAVLink Logging</source>
       <translation type="unfinished">MAVLink Logging</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogFileManager.qml" line="162"/>
+      <location filename="../src/AppSettings/PX4LogFileManager.qml" line="162"/>
       <source>Please enter an email address before uploading MAVLink log files.</source>
       <translation type="unfinished">Please enter an email address before uploading MAVLink log files.</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogFileManager.qml" line="169"/>
+      <location filename="../src/AppSettings/PX4LogFileManager.qml" line="169"/>
       <source>Upload Selected Log Files</source>
       <translation type="unfinished">Upload Selected Log Files</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogFileManager.qml" line="170"/>
+      <location filename="../src/AppSettings/PX4LogFileManager.qml" line="170"/>
       <source>Confirm uploading selected log files?</source>
       <translation type="unfinished">Confirm uploading selected log files?</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogFileManager.qml" line="179"/>
+      <location filename="../src/AppSettings/PX4LogFileManager.qml" line="179"/>
       <source>Cancel</source>
       <translation type="unfinished">Cancel</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogFileManager.qml" line="188"/>
+      <location filename="../src/AppSettings/PX4LogFileManager.qml" line="188"/>
       <source>Cancel Upload</source>
       <translation type="unfinished">Cancel Upload</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogFileManager.qml" line="189"/>
+      <location filename="../src/AppSettings/PX4LogFileManager.qml" line="189"/>
       <source>Confirm canceling the upload process?</source>
       <translation type="unfinished">Confirm canceling the upload process?</translation>
     </message>
@@ -13307,118 +14627,118 @@ Is this really what you want?</source>
   <context>
     <name>PX4LogUploadSettings</name>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="11"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="11"/>
       <source>MAVLink 2.0 Log Uploads (PX4 Pro Only)</source>
       <translation type="unfinished">MAVLink 2.0 Log Uploads (PX4 Pro Only)</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="39"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="39"/>
       <source>MAVLink Logging</source>
       <translation type="unfinished">MAVLink Logging</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="40"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="40"/>
       <source>Please enter an email address before uploading MAVLink log files.</source>
       <translation type="unfinished">Please enter an email address before uploading MAVLink log files.</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="48"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="48"/>
       <source>Email address for Log Upload:</source>
       <translation type="unfinished">Email address for Log Upload:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="67"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="67"/>
       <source>Default Description:</source>
       <translation type="unfinished">Default Description:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="85"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="85"/>
       <source>Default Upload URL:</source>
       <translation type="unfinished">Default Upload URL:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="104"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="104"/>
       <source>Video URL:</source>
       <translation type="unfinished">Video URL:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="119"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="119"/>
       <source>Wind Speed</source>
       <translation type="unfinished">Wind Speed</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="121"/>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="144"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="121"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="144"/>
       <source>Please Select</source>
       <translation type="unfinished">Please Select</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="121"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="121"/>
       <source>Calm</source>
       <translation type="unfinished">Calm</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="121"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="121"/>
       <source>Breeze</source>
       <translation type="unfinished">Breeze</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="121"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="121"/>
       <source>Gale</source>
       <translation type="unfinished">Gale</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="121"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="121"/>
       <source>Storm</source>
       <translation type="unfinished">Storm</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="142"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="142"/>
       <source>Flight Rating</source>
       <translation type="unfinished">Flight Rating</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="144"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="144"/>
       <source>Crashed (Pilot Error)</source>
       <translation type="unfinished">Crashed (Pilot Error)</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="144"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="144"/>
       <source>Crashed (Software or Hardware issue)</source>
       <translation type="unfinished">Crashed (Software or Hardware issue)</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="145"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="145"/>
       <source>Unsatisfactory</source>
       <translation type="unfinished">Unsatisfactory</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="145"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="145"/>
       <source>Good</source>
       <translation type="unfinished">Good</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="145"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="145"/>
       <source>Great</source>
       <translation type="unfinished">Great</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="169"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="169"/>
       <source>Additional Feedback:</source>
       <translation type="unfinished">Additional Feedback:</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="189"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="189"/>
       <source>Make this log publicly available</source>
       <translation type="unfinished">Make this log publicly available</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="198"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="198"/>
       <source>Enable automatic log uploads</source>
       <translation type="unfinished">Enable automatic log uploads</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/PX4LogUploadSettings.qml" line="211"/>
+      <location filename="../src/AppSettings/PX4LogUploadSettings.qml" line="211"/>
       <source>Delete log file after uploading</source>
       <translation type="unfinished">Delete log file after uploading</translation>
     </message>
@@ -14306,12 +15626,12 @@ Is this really what you want?</source>
   <context>
     <name>ParameterDownloadProgress</name>
     <message>
-      <location filename="../src/UI/toolbar/ParameterDownloadProgress.qml" line="51"/>
+      <location filename="../src/Toolbar/ParameterDownloadProgress.qml" line="51"/>
       <source>Downloading</source>
       <translation type="unfinished">Downloading</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/ParameterDownloadProgress.qml" line="59"/>
+      <location filename="../src/Toolbar/ParameterDownloadProgress.qml" line="59"/>
       <source>Click anywhere to hide</source>
       <translation type="unfinished">Click anywhere to hide</translation>
     </message>
@@ -14319,93 +15639,108 @@ Is this really what you want?</source>
   <context>
     <name>ParameterEditor</name>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="161"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="169"/>
       <source>Clear</source>
       <translation>消去</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="179"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="187"/>
       <source>Tools</source>
       <translation>ツール</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="43"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="51"/>
       <source>Refresh</source>
       <translation>更新</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="47"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="32"/>
+      <source>Missing Parameters</source>
+      <translation type="unfinished">Missing Parameters</translation>
+    </message>
+    <message>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="33"/>
+      <source>The following parameters from the file were not found on the vehicle and were skipped: %1</source>
+      <translation type="unfinished">The following parameters from the file were not found on the vehicle and were skipped: %1</translation>
+    </message>
+    <message>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="55"/>
       <source>Reset all to firmware&apos;s defaults</source>
       <translation>すべての値をファームウェアのデフォルト値にリセット</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="48"/>
       <location filename="../src/QmlControls/ParameterEditor.qml" line="56"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="64"/>
       <source>Reset All</source>
       <translation>すべてリセット</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="54"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="62"/>
       <source>Reset to vehicle&apos;s configuration defaults</source>
       <translation>機体を初期設定にリセット</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="65"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="73"/>
       <source>Load Parameters</source>
       <translation>パラメータの読み込み</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="70"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="78"/>
       <source>Save to file...</source>
       <translation>ファイルに保存...</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="72"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="80"/>
       <source>Save Parameters</source>
       <translation>パラメータを保存</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="78"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="86"/>
       <source>Clear all favorites</source>
       <translation type="unfinished">Clear all favorites</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="83"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="91"/>
       <source>Clear all RC to Param</source>
       <translation>すべての送信機パラメータを消去</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="101"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="109"/>
       <source>All Files (*)</source>
       <translation>すべてのファイル (*)</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="156"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="109"/>
+      <source>Mission Planner Files (*.param)</source>
+      <translation type="unfinished">Mission Planner Files (*.param)</translation>
+    </message>
+    <message>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="164"/>
       <source>Search</source>
       <translation>検索</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="171"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="179"/>
       <source>Hide read-only</source>
       <translation type="unfinished">Hide read-only</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="191"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="199"/>
       <source>Full List</source>
       <translation type="unfinished">Full List</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="192"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="200"/>
       <source>Modified</source>
       <translation type="unfinished">Modified</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="193"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="201"/>
       <source>Favorites</source>
       <translation type="unfinished">Favorites</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="49"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="57"/>
       <source>Select Reset to reset all parameters to their defaults.
 
 Note that this will also completely reset everything, including UAVCAN nodes, all vehicle settings, setup and calibrations.</source>
@@ -14414,28 +15749,28 @@ Note that this will also completely reset everything, including UAVCAN nodes, al
 これにより、UAVCANノード、すべての機体設定、設定全般、キャリブレーションなどすべてが完全にリセットされるのでご注意ください。</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="63"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="71"/>
       <source>Load from file for review...</source>
       <translation>確認のためにファイルから読み込む…</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="89"/>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="90"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="97"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="98"/>
       <source>Reboot Vehicle</source>
       <translation>機体 再起動</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="101"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="109"/>
       <source>Parameter Files (*.%1)</source>
       <translation>パラメータファイル (*.%1)</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="57"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="65"/>
       <source>Select Reset to reset all parameters to the vehicle&apos;s configuration defaults.</source>
       <translation>【リセット】を選択すると、すべてのパラメータが機体設定のデフォルト値にリセットされます。</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditor.qml" line="91"/>
+      <location filename="../src/QmlControls/ParameterEditor.qml" line="99"/>
       <source>Select Ok to reboot vehicle.</source>
       <translation>【OK】を選択すると機体が再起動します。</translation>
     </message>
@@ -14448,9 +15783,14 @@ Note that this will also completely reset everything, including UAVCAN nodes, al
       <translation>ファイルを作成できません: %1</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/ParameterEditorController.cc" line="392"/>
+      <location filename="../src/QmlControls/ParameterEditorController.cc" line="393"/>
       <source>Unable to open file: %1</source>
       <translation>ファイルが開きません: %1</translation>
+    </message>
+    <message>
+      <location filename="../src/QmlControls/ParameterEditorController.cc" line="500"/>
+      <source>No valid parameters found in file. Check that the file is in QGC or Mission Planner format.</source>
+      <translation type="unfinished">No valid parameters found in file. Check that the file is in QGC or Mission Planner format.</translation>
     </message>
   </context>
   <context>
@@ -14534,29 +15874,17 @@ Note that this will also completely reset everything, including UAVCAN nodes, al
   <context>
     <name>ParameterManager</name>
     <message>
-      <location filename="../src/FactSystem/ParameterManager.cc" line="1135"/>
+      <location filename="../src/FactSystem/ParameterManager.cc" line="1187"/>
       <source>Parameter cache CRC match failed</source>
       <translation>パラメータキャッシュのCRC一致に失敗しました</translation>
     </message>
     <message>
-      <location filename="../src/FactSystem/ParameterManager.cc" line="1197"/>
-      <source>Parameters not loaded since they are not currently on the vehicle: %1
-</source>
-      <translation>パラメータは現在機体に搭載されていないため読み込まれませんでした: %1
-</translation>
-    </message>
-    <message>
-      <location filename="../src/FactSystem/ParameterManager.cc" line="1201"/>
-      <source>Parameters not loaded due to type mismatch: %1</source>
-      <translation>タイプが一致しないため、パラメータが読み込まれません: %1</translation>
-    </message>
-    <message>
-      <location filename="../src/FactSystem/ParameterManager.cc" line="1348"/>
+      <location filename="../src/FactSystem/ParameterManager.cc" line="1344"/>
       <source>%1 was unable to retrieve the full set of parameters from vehicle %2. This will cause %1 to be unable to display its full user interface. If you are using modified firmware, you may need to resolve any vehicle startup errors to resolve the issue. If you are using standard firmware, you may need to upgrade to a newer version to resolve the issue.</source>
       <translation>%1 は機体 %2 からパラメータのフルセットを取得できませんでした。これにより %1 は完全なユーザインタフェースを表示できなくなります。修正されたファームウェアを使用している場合は、問題を解決するために機体の起動エラーを解決する必要があります。標準のファームウェアを使用している場合は、問題を解決するために新しいバージョンにアップグレードする必要があります。</translation>
     </message>
     <message>
-      <location filename="../src/FactSystem/ParameterManager.cc" line="1396"/>
+      <location filename="../src/FactSystem/ParameterManager.cc" line="1392"/>
       <source>Vehicle %1 did not respond to request for parameters. This will cause %2 to be unable to display its full user interface.</source>
       <translation>機体 %1 はパラメータのリクエストに応答しませんでした。これにより %2 はその完全なユーザインタフェースを表示できなくなります。</translation>
     </message>
@@ -14692,42 +16020,42 @@ Note that this will also completely reset everything, including UAVCAN nodes, al
       <translation>ピクチャー・イン・ピクチャー</translation>
     </message>
     <message>
-      <location filename="../src/FlightMap/Widgets/PhotoVideoControl.qml" line="571"/>
+      <location filename="../src/FlightMap/Widgets/PhotoVideoControl.qml" line="576"/>
       <source>Single</source>
       <translation>シングル</translation>
     </message>
     <message>
-      <location filename="../src/FlightMap/Widgets/PhotoVideoControl.qml" line="571"/>
+      <location filename="../src/FlightMap/Widgets/PhotoVideoControl.qml" line="576"/>
       <source>Time Lapse</source>
       <translation>タイムラプス</translation>
     </message>
     <message>
-      <location filename="../src/FlightMap/Widgets/PhotoVideoControl.qml" line="605"/>
+      <location filename="../src/FlightMap/Widgets/PhotoVideoControl.qml" line="610"/>
       <source>Reset</source>
       <translation>リセット</translation>
     </message>
     <message>
-      <location filename="../src/FlightMap/Widgets/PhotoVideoControl.qml" line="609"/>
+      <location filename="../src/FlightMap/Widgets/PhotoVideoControl.qml" line="614"/>
       <source>Reset Camera to Factory Settings</source>
       <translation>カメラを工場出荷時の設定にリセット</translation>
     </message>
     <message>
-      <location filename="../src/FlightMap/Widgets/PhotoVideoControl.qml" line="610"/>
+      <location filename="../src/FlightMap/Widgets/PhotoVideoControl.qml" line="615"/>
       <source>Confirm resetting all settings?</source>
       <translation>すべての設定をリセットしますか？</translation>
     </message>
     <message>
-      <location filename="../src/FlightMap/Widgets/PhotoVideoControl.qml" line="629"/>
+      <location filename="../src/FlightMap/Widgets/PhotoVideoControl.qml" line="634"/>
       <source>Format</source>
       <translation>フォーマット</translation>
     </message>
     <message>
-      <location filename="../src/FlightMap/Widgets/PhotoVideoControl.qml" line="634"/>
+      <location filename="../src/FlightMap/Widgets/PhotoVideoControl.qml" line="639"/>
       <source>Format Camera Storage</source>
       <translation>カメラストレージ フォーマット</translation>
     </message>
     <message>
-      <location filename="../src/FlightMap/Widgets/PhotoVideoControl.qml" line="635"/>
+      <location filename="../src/FlightMap/Widgets/PhotoVideoControl.qml" line="640"/>
       <source>Confirm erasing all files?</source>
       <translation>すべてのファイルを消去してもよろしいですか？</translation>
     </message>
@@ -14750,32 +16078,32 @@ Note that this will also completely reset everything, including UAVCAN nodes, al
       <translation type="unfinished">Vehicle Info</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanInfoEditor.qml" line="110"/>
+      <location filename="../src/PlanView/PlanInfoEditor.qml" line="114"/>
       <source>Expected Home Position</source>
       <translation type="unfinished">Expected Home Position</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanInfoEditor.qml" line="132"/>
+      <location filename="../src/PlanView/PlanInfoEditor.qml" line="136"/>
       <source>Click in map to set position</source>
       <translation type="unfinished">Click in map to set position</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanInfoEditor.qml" line="140"/>
+      <location filename="../src/PlanView/PlanInfoEditor.qml" line="144"/>
       <source>Drag to move home position. Click to set new position.</source>
       <translation type="unfinished">Drag to move home position. Click to set new position.</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanInfoEditor.qml" line="153"/>
+      <location filename="../src/PlanView/PlanInfoEditor.qml" line="157"/>
       <source>Altitude (AMSL)</source>
       <translation type="unfinished">Altitude (AMSL)</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanInfoEditor.qml" line="174"/>
+      <location filename="../src/PlanView/PlanInfoEditor.qml" line="178"/>
       <source>Actual position/alt set by vehicle at flight time.</source>
       <translation type="unfinished">Actual position/alt set by vehicle at flight time.</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanInfoEditor.qml" line="183"/>
+      <location filename="../src/PlanView/PlanInfoEditor.qml" line="188"/>
       <source>Plan Templates</source>
       <translation type="unfinished">Plan Templates</translation>
     </message>
@@ -14967,69 +16295,69 @@ Note that this will also completely reset everything, including UAVCAN nodes, al
       <translation>高遅延のリンクは、ダウンロードがサポートされていません。</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/PlanMasterController.cc" line="309"/>
+      <location filename="../src/MissionManager/PlanMasterController.cc" line="311"/>
       <source>Upload not supported on high latency links.</source>
       <translation>高遅延のリンクは、アップロードがサポートされていません。</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/PlanMasterController.cc" line="331"/>
+      <location filename="../src/MissionManager/PlanMasterController.cc" line="333"/>
       <source>Error loading Plan file (%1). %2</source>
       <translation>プランファイル (%1) で読み込みエラーが発生しました。%2</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/PlanMasterController.cc" line="481"/>
-      <location filename="../src/MissionManager/PlanMasterController.cc" line="487"/>
+      <location filename="../src/MissionManager/PlanMasterController.cc" line="483"/>
+      <location filename="../src/MissionManager/PlanMasterController.cc" line="489"/>
       <source>Plan save error %1 : %2</source>
       <translation>プラン保存エラー %1 : %2</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/PlanMasterController.cc" line="527"/>
+      <location filename="../src/MissionManager/PlanMasterController.cc" line="529"/>
       <source>KML save error %1 : %2</source>
       <translation>KML保存エラー %1 : %2</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/PlanMasterController.cc" line="679"/>
+      <location filename="../src/MissionManager/PlanMasterController.cc" line="681"/>
       <source>Supported types (*.%1 *.%2 *.%3)</source>
       <translation type="unfinished">Supported types (*.%1 *.%2 *.%3)</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/PlanMasterController.cc" line="856"/>
+      <location filename="../src/MissionManager/PlanMasterController.cc" line="858"/>
       <source>Archive file not found: %1</source>
       <translation type="unfinished">Archive file not found: %1</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/PlanMasterController.cc" line="861"/>
+      <location filename="../src/MissionManager/PlanMasterController.cc" line="863"/>
       <source>Not a supported archive format: %1</source>
       <translation type="unfinished">Not a supported archive format: %1</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/PlanMasterController.cc" line="867"/>
+      <location filename="../src/MissionManager/PlanMasterController.cc" line="869"/>
       <source>Could not create temporary directory</source>
       <translation type="unfinished">Could not create temporary directory</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/PlanMasterController.cc" line="885"/>
+      <location filename="../src/MissionManager/PlanMasterController.cc" line="887"/>
       <source>Extraction failed</source>
       <translation type="unfinished">Extraction failed</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/PlanMasterController.cc" line="886"/>
+      <location filename="../src/MissionManager/PlanMasterController.cc" line="888"/>
       <source>Failed to extract plan archive: %1</source>
       <translation type="unfinished">Failed to extract plan archive: %1</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/PlanMasterController.cc" line="900"/>
+      <location filename="../src/MissionManager/PlanMasterController.cc" line="902"/>
       <source>No plan file found in archive</source>
       <translation type="unfinished">No plan file found in archive</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/PlanMasterController.cc" line="680"/>
-      <location filename="../src/MissionManager/PlanMasterController.cc" line="689"/>
+      <location filename="../src/MissionManager/PlanMasterController.cc" line="682"/>
+      <location filename="../src/MissionManager/PlanMasterController.cc" line="691"/>
       <source>All Files (*)</source>
       <translation>すべてのファイル (*)</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/PlanMasterController.cc" line="689"/>
+      <location filename="../src/MissionManager/PlanMasterController.cc" line="691"/>
       <source>Plan Files (*.%1)</source>
       <translation>プランファイル (*.%1)</translation>
     </message>
@@ -15038,7 +16366,7 @@ Note that this will also completely reset everything, including UAVCAN nodes, al
     <name>PlanToolBarIndicators</name>
     <message>
       <location filename="../src/PlanView/PlanToolBarIndicators.qml" line="39"/>
-      <location filename="../src/PlanView/PlanToolBarIndicators.qml" line="191"/>
+      <location filename="../src/PlanView/PlanToolBarIndicators.qml" line="195"/>
       <source>Download</source>
       <translation type="unfinished">Download</translation>
     </message>
@@ -15069,14 +16397,14 @@ Note that this will also completely reset everything, including UAVCAN nodes, al
     </message>
     <message>
       <location filename="../src/PlanView/PlanToolBarIndicators.qml" line="77"/>
-      <location filename="../src/PlanView/PlanToolBarIndicators.qml" line="126"/>
+      <location filename="../src/PlanView/PlanToolBarIndicators.qml" line="128"/>
       <source>Save</source>
       <translation type="unfinished">Save</translation>
     </message>
     <message>
       <location filename="../src/PlanView/PlanToolBarIndicators.qml" line="93"/>
       <location filename="../src/PlanView/PlanToolBarIndicators.qml" line="100"/>
-      <location filename="../src/PlanView/PlanToolBarIndicators.qml" line="144"/>
+      <location filename="../src/PlanView/PlanToolBarIndicators.qml" line="148"/>
       <source>Clear</source>
       <translation type="unfinished">Clear</translation>
     </message>
@@ -15091,22 +16419,22 @@ Note that this will also completely reset everything, including UAVCAN nodes, al
       <translation type="unfinished">Are you sure you want to remove the plan from the vehicle and the plan editor?</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanToolBarIndicators.qml" line="119"/>
+      <location filename="../src/PlanView/PlanToolBarIndicators.qml" line="120"/>
       <source>Open</source>
       <translation type="unfinished">Open</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanToolBarIndicators.qml" line="135"/>
+      <location filename="../src/PlanView/PlanToolBarIndicators.qml" line="138"/>
       <source>Upload</source>
       <translation>アップロード</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanToolBarIndicators.qml" line="163"/>
+      <location filename="../src/PlanView/PlanToolBarIndicators.qml" line="167"/>
       <source>Click in map to add rally points</source>
       <translation type="unfinished">Click in map to add rally points</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanToolBarIndicators.qml" line="180"/>
+      <location filename="../src/PlanView/PlanToolBarIndicators.qml" line="184"/>
       <source>Save as KML</source>
       <translation type="unfinished">Save as KML</translation>
     </message>
@@ -15132,107 +16460,112 @@ Note that this will also completely reset everything, including UAVCAN nodes, al
   <context>
     <name>PlanView</name>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="96"/>
+      <location filename="../src/PlanView/PlanView.qml" line="95"/>
       <source>Plan is waiting on terrain data from server for correct altitude values.</source>
       <translation>プランは正しい高度の値を取得するために、サーバからの地形データを待機をしています。</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="119"/>
+      <location filename="../src/PlanView/PlanView.qml" line="118"/>
       <source>Plan Upload</source>
       <translation>プラン アップロード</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="131"/>
+      <location filename="../src/PlanView/PlanView.qml" line="130"/>
       <source>Select Plan File</source>
       <translation>プランファイルを選択</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="141"/>
+      <location filename="../src/PlanView/PlanView.qml" line="140"/>
       <source>Save Plan</source>
       <translation>プランを保存</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="155"/>
+      <location filename="../src/PlanView/PlanView.qml" line="154"/>
       <source>Save KML</source>
       <translation>KMLを保存</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="461"/>
+      <location filename="../src/PlanView/PlanView.qml" line="464"/>
       <source>Waypoint</source>
       <translation>ポイント</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="470"/>
+      <location filename="../src/PlanView/PlanView.qml" line="474"/>
       <source>ROI</source>
       <translation>ROI</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="448"/>
+      <location filename="../src/PlanView/PlanView.qml" line="450"/>
       <source>Pattern</source>
       <translation>パターン</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="491"/>
+      <location filename="../src/PlanView/PlanView.qml" line="474"/>
+      <source>Cancel ROI</source>
+      <translation type="unfinished">Cancel ROI</translation>
+    </message>
+    <message>
+      <location filename="../src/PlanView/PlanView.qml" line="496"/>
       <source>Stats</source>
       <translation type="unfinished">Stats</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="782"/>
+      <location filename="../src/PlanView/PlanView.qml" line="787"/>
       <source>Plan View - Vehicle Disconnected</source>
       <translation>プランビュー - 機体が切断されました</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="782"/>
+      <location filename="../src/PlanView/PlanView.qml" line="787"/>
       <source>Plan View - Vehicle Changed</source>
       <translation>プランビュー - 機体を変更しました</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="790"/>
+      <location filename="../src/PlanView/PlanView.qml" line="795"/>
       <source>The vehicle associated with the plan in the Plan View is no longer available. What would you like to do with that plan?</source>
       <translation>プランビューの、プランに関連付けられた機体が使用できなくなりました。そのプランで何をしたいですか？</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="790"/>
+      <location filename="../src/PlanView/PlanView.qml" line="795"/>
       <source>The plan being worked on in the Plan View is not from the current vehicle. What would you like to do with that plan?</source>
       <translation>プランビューで作業しているプランは、現在の機体のものではありません。そのプランで何をしたいですか？</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="797"/>
+      <location filename="../src/PlanView/PlanView.qml" line="802"/>
       <source>Discard Unsaved Changes</source>
       <translation>保存されていない変更を破棄します</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="797"/>
+      <location filename="../src/PlanView/PlanView.qml" line="802"/>
       <source>Discard Unsaved Changes, Load New Plan From Vehicle</source>
       <translation>保存されていない変更を破棄し、機体から新しいプランを読み込みます</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="797"/>
+      <location filename="../src/PlanView/PlanView.qml" line="802"/>
       <source>Load New Plan From Vehicle</source>
       <translation>機体から新しいプランを読み込み</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="808"/>
+      <location filename="../src/PlanView/PlanView.qml" line="813"/>
       <source>Keep Current Plan</source>
       <translation>現在のプランを維持します</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="808"/>
+      <location filename="../src/PlanView/PlanView.qml" line="813"/>
       <source>Keep Current Plan, Don&apos;t Update From Vehicle</source>
       <translation>現在のプランを維持し、機体からのアップデートは行いません</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="833"/>
+      <location filename="../src/PlanView/PlanView.qml" line="838"/>
       <source>Insert ROI</source>
       <translation type="unfinished">Insert ROI</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="843"/>
+      <location filename="../src/PlanView/PlanView.qml" line="848"/>
       <source>Insert Cancel ROI</source>
       <translation type="unfinished">Insert Cancel ROI</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="120"/>
+      <location filename="../src/PlanView/PlanView.qml" line="119"/>
       <source>This Plan was created for a different firmware or vehicle type than the firmware/vehicle type of vehicle you are uploading to. This can lead to errors or incorrect behavior. It is recommended to recreate the Plan for the correct firmware/vehicle type.
 
 Click &apos;Ok&apos; to upload the Plan anyway.</source>
@@ -15241,60 +16574,60 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
 プランをアップロードするには【OK】をクリックしてください。</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="117"/>
+      <location filename="../src/PlanView/PlanView.qml" line="116"/>
       <source>Send To Vehicle</source>
       <translation>機体に送信</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="117"/>
+      <location filename="../src/PlanView/PlanView.qml" line="116"/>
       <source>Current mission must be paused prior to uploading a new Plan</source>
       <translation>新しいプランをアップロードする前に、現在のミッションを一時停止する必要があります。</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="439"/>
+      <location filename="../src/PlanView/PlanView.qml" line="440"/>
       <source>Takeoff</source>
       <translation>離陸</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="479"/>
+      <location filename="../src/PlanView/PlanView.qml" line="484"/>
       <source>Return</source>
       <translation>戻る</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="481"/>
+      <location filename="../src/PlanView/PlanView.qml" line="486"/>
       <source>Alt Land</source>
       <translation>着陸高度</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="482"/>
+      <location filename="../src/PlanView/PlanView.qml" line="487"/>
       <source>Land</source>
       <translation>着陸</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="755"/>
+      <location filename="../src/PlanView/PlanView.qml" line="760"/>
       <source>Create complex pattern:</source>
       <translation>複雑なパターンを作成:</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="90"/>
-      <location filename="../src/PlanView/PlanView.qml" line="95"/>
+      <location filename="../src/PlanView/PlanView.qml" line="89"/>
+      <location filename="../src/PlanView/PlanView.qml" line="94"/>
       <source>Save</source>
       <translation>保存</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="91"/>
-      <location filename="../src/PlanView/PlanView.qml" line="96"/>
+      <location filename="../src/PlanView/PlanView.qml" line="90"/>
+      <location filename="../src/PlanView/PlanView.qml" line="95"/>
       <source>Unable to %1</source>
       <translation>%1 にはできません</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="91"/>
+      <location filename="../src/PlanView/PlanView.qml" line="90"/>
       <source>Plan has incomplete items. Complete all items and %1 again.</source>
       <translation>プランに不完全な項目があります。すべての項目を完成させ再度 %1 を入力してください。</translation>
     </message>
     <message>
-      <location filename="../src/PlanView/PlanView.qml" line="90"/>
-      <location filename="../src/PlanView/PlanView.qml" line="95"/>
+      <location filename="../src/PlanView/PlanView.qml" line="89"/>
+      <location filename="../src/PlanView/PlanView.qml" line="94"/>
       <source>Upload</source>
       <translation>アップロード</translation>
     </message>
@@ -15302,17 +16635,17 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
   <context>
     <name>PlanViewToolBar</name>
     <message>
-      <location filename="../src/UI/toolbar/PlanViewToolBar.qml" line="108"/>
+      <location filename="../src/Toolbar/PlanViewToolBar.qml" line="109"/>
       <source>Syncing Mission</source>
       <translation>ミッション同期中</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/PlanViewToolBar.qml" line="115"/>
+      <location filename="../src/Toolbar/PlanViewToolBar.qml" line="116"/>
       <source>Done</source>
       <translation>完了</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/PlanViewToolBar.qml" line="124"/>
+      <location filename="../src/Toolbar/PlanViewToolBar.qml" line="125"/>
       <source>Click anywhere to hide</source>
       <translation>クリックして非表示</translation>
     </message>
@@ -15551,27 +16884,27 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
   <context>
     <name>QGCApplication</name>
     <message>
-      <location filename="../src/QGCApplication.cc" line="386"/>
+      <location filename="../src/QGCApplication.cc" line="322"/>
       <source>The current user does not have the correct permissions to access serial devices. You should also remove modemmanager since it also interferes.&lt;br/&gt;&lt;br/&gt;If you are using Ubuntu, execute the following commands to fix these issues:&lt;br/&gt;&lt;pre&gt;sudo usermod -a -G dialout $USER&lt;br/&gt;sudo apt-get remove modemmanager&lt;/pre&gt;</source>
       <translation>現在のユーザはシリアルデバイスにアクセスするための適切な権限を持っていません。また、モデムマネージャーも干渉するため削除する必要があります。&lt;br/&gt;&lt;br/&gt;Ubuntuを使用している場合は、以下のコマンドを実行してこれらの問題を解決してください。&lt;br/&gt;&lt;pre&gt;sudo usermod -a -G dialout $USER&lt;br/&gt;sudo apt-get remove modemmanager&lt;/pre&gt;</translation>
     </message>
     <message>
-      <location filename="../src/QGCApplication.cc" line="412"/>
+      <location filename="../src/QGCApplication.cc" line="348"/>
       <source>The format for %1 saved settings has been modified. Your saved settings have been reset to defaults.</source>
       <translation>保存した設定 %1 のフォーマットが変更されました。保存された設定がデフォルト値にリセットされました。</translation>
     </message>
     <message>
-      <location filename="../src/QGCApplication.cc" line="448"/>
+      <location filename="../src/QGCApplication.cc" line="384"/>
       <source>Parameters are missing from firmware. You may be running a version of firmware which is not fully supported or your firmware has a bug in it. Missing params: %1</source>
       <translation>ファームウェアにパラメータがありません。完全にサポートされていないバージョンのファームウェアを適用しているか、ファームウェアにバグがある可能性があります。Missing params: %1</translation>
     </message>
     <message>
-      <location filename="../src/QGCApplication.cc" line="587"/>
+      <location filename="../src/QGCApplication.cc" line="527"/>
       <source>There is a newer version of %1 available. You can download it from %2.</source>
       <translation>%1 の新しいバージョンがあります。 %2 からダウンロードできます。</translation>
     </message>
     <message>
-      <location filename="../src/QGCApplication.cc" line="587"/>
+      <location filename="../src/QGCApplication.cc" line="527"/>
       <source>New Version Available</source>
       <translation>新しいバージョンが利用可能です</translation>
     </message>
@@ -15626,37 +16959,42 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
   <context>
     <name>QGCCorePlugin</name>
     <message>
-      <location filename="../src/API/QGCCorePlugin.cc" line="94"/>
+      <location filename="../src/API/QGCCorePlugin.cc" line="113"/>
       <source>Vibration</source>
       <translation>バイブ機能</translation>
     </message>
     <message>
-      <location filename="../src/API/QGCCorePlugin.cc" line="70"/>
+      <location filename="../src/API/QGCCorePlugin.cc" line="89"/>
       <source>Onboard Logs</source>
       <translation type="unfinished">Onboard Logs</translation>
     </message>
     <message>
-      <location filename="../src/API/QGCCorePlugin.cc" line="75"/>
+      <location filename="../src/API/QGCCorePlugin.cc" line="84"/>
+      <source>Log Viewer</source>
+      <translation type="unfinished">Log Viewer</translation>
+    </message>
+    <message>
+      <location filename="../src/API/QGCCorePlugin.cc" line="94"/>
       <source>Onboard Logs (FTP)</source>
       <translation type="unfinished">Onboard Logs (FTP)</translation>
     </message>
     <message>
-      <location filename="../src/API/QGCCorePlugin.cc" line="80"/>
+      <location filename="../src/API/QGCCorePlugin.cc" line="99"/>
       <source>GeoTag Images</source>
       <translation>ジオタグ画像</translation>
     </message>
     <message>
-      <location filename="../src/API/QGCCorePlugin.cc" line="84"/>
+      <location filename="../src/API/QGCCorePlugin.cc" line="103"/>
       <source>MAVLink Console</source>
       <translation>MAVLink コンソール</translation>
     </message>
     <message>
-      <location filename="../src/API/QGCCorePlugin.cc" line="89"/>
+      <location filename="../src/API/QGCCorePlugin.cc" line="108"/>
       <source>MAVLink Inspector</source>
       <translation>MAVLink インスペクタ</translation>
     </message>
     <message>
-      <location filename="../src/API/QGCCorePlugin.cc" line="147"/>
+      <location filename="../src/API/QGCCorePlugin.cc" line="166"/>
       <source>WARNING: You are about to enter Advanced Mode. If used incorrectly, this may cause your vehicle to malfunction thus voiding your warranty. You should do so only if instructed by customer support. Are you sure you want to enable Advanced Mode?</source>
       <translation>警告: 詳細設定モードに入ろうとしています。誤った設定をすると機体が故障し保証が受けられなくなることがあります。カスタマーサポートからの指示があった場合のみ実施してください。詳細設定モードを有効にしてもよろしいですか？</translation>
     </message>
@@ -15688,39 +17026,39 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
   <context>
     <name>QGCFileDialog</name>
     <message>
-      <location filename="../src/QmlControls/QGCFileDialog.qml" line="105"/>
-      <location filename="../src/QmlControls/QGCFileDialog.qml" line="211"/>
+      <location filename="../src/QmlControls/QGCFileDialog.qml" line="121"/>
+      <location filename="../src/QmlControls/QGCFileDialog.qml" line="227"/>
       <source>Import</source>
       <translation type="unfinished">Import</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCFileDialog.qml" line="162"/>
+      <location filename="../src/QmlControls/QGCFileDialog.qml" line="178"/>
       <source>Path: %1</source>
       <translation>パス: %1</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCFileDialog.qml" line="193"/>
-      <location filename="../src/QmlControls/QGCFileDialog.qml" line="316"/>
+      <location filename="../src/QmlControls/QGCFileDialog.qml" line="209"/>
+      <location filename="../src/QmlControls/QGCFileDialog.qml" line="332"/>
       <source>Delete</source>
       <translation>削除</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCFileDialog.qml" line="204"/>
+      <location filename="../src/QmlControls/QGCFileDialog.qml" line="220"/>
       <source>No files</source>
       <translation>ファイルなし</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCFileDialog.qml" line="262"/>
+      <location filename="../src/QmlControls/QGCFileDialog.qml" line="278"/>
       <source>New file name:</source>
       <translation>新しいファイル名:</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCFileDialog.qml" line="276"/>
+      <location filename="../src/QmlControls/QGCFileDialog.qml" line="292"/>
       <source>The file %1 exists. Click Save again to replace it.</source>
       <translation>ファイル %1 が存在します。もう一度【保存】をクリックして置き換えてください。</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCFileDialog.qml" line="284"/>
+      <location filename="../src/QmlControls/QGCFileDialog.qml" line="300"/>
       <source>Save to existing file:</source>
       <translation>既存のファイルに保存:</translation>
     </message>
@@ -15728,17 +17066,17 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
   <context>
     <name>QGCFileDialogController</name>
     <message>
-      <location filename="../src/QmlControls/QGCFileDialogController.cc" line="119"/>
+      <location filename="../src/QmlControls/QGCFileDialogController.cc" line="172"/>
       <source>Missions directory is not configured</source>
       <translation type="unfinished">Missions directory is not configured</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCFileDialogController.cc" line="126"/>
+      <location filename="../src/QmlControls/QGCFileDialogController.cc" line="179"/>
       <source>Missions save path does not exist</source>
       <translation type="unfinished">Missions save path does not exist</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCFileDialogController.cc" line="150"/>
+      <location filename="../src/QmlControls/QGCFileDialogController.cc" line="203"/>
       <source>Failed to import file</source>
       <translation type="unfinished">Failed to import file</translation>
     </message>
@@ -15840,12 +17178,12 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
   <context>
     <name>QGCMAVLinkSystem</name>
     <message>
-      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkSystem.cc" line="129"/>
+      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkSystem.cc" line="116"/>
       <source>Comp All</source>
       <translation>すべてのコンポーネント</translation>
     </message>
     <message>
-      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkSystem.cc" line="135"/>
+      <location filename="../src/AnalyzeView/MAVLinkInspector/MAVLinkSystem.cc" line="122"/>
       <source>Comp %1</source>
       <translation>Comp %1</translation>
     </message>
@@ -16047,83 +17385,83 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
   <context>
     <name>QGCPopupDialog</name>
     <message>
-      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="136"/>
+      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="137"/>
       <source>Ok</source>
       <translation>OK</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="139"/>
-      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="148"/>
+      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="140"/>
+      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="149"/>
       <source>Open</source>
       <translation>開く</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="142"/>
+      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="143"/>
       <source>Save</source>
       <translation>保存</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="145"/>
+      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="146"/>
       <source>Apply</source>
       <translation>適用</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="151"/>
+      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="152"/>
       <source>Save All</source>
       <translation>すべて保存</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="154"/>
+      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="155"/>
       <source>Yes</source>
       <translation>はい</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="157"/>
+      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="158"/>
       <source>Yes to All</source>
       <translation>すべて『はい』</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="160"/>
+      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="161"/>
       <source>Retry</source>
       <translation>再試行</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="163"/>
+      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="164"/>
       <source>Reset</source>
       <translation>リセット</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="166"/>
+      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="167"/>
       <source>Restore to Defaults</source>
       <translation>初期設定に戻す</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="169"/>
+      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="170"/>
       <source>Ignore</source>
       <translation>無視</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="175"/>
+      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="176"/>
       <source>Cancel</source>
       <translation>キャンセル</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="178"/>
+      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="179"/>
       <source>Close</source>
       <translation>閉じる</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="181"/>
+      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="182"/>
       <source>No</source>
       <translation>いいえ</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="184"/>
+      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="185"/>
       <source>No to All</source>
       <translation>すべて『いいえ』</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="187"/>
+      <location filename="../src/QmlControls/QGCPopupDialog.qml" line="188"/>
       <source>Abort</source>
       <translation>中止</translation>
     </message>
@@ -16200,58 +17538,58 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
   <context>
     <name>QGroundControlQmlGlobal</name>
     <message>
-      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="257"/>
+      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="259"/>
       <source>32 bit</source>
       <translation>32ビット</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="261"/>
+      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="263"/>
       <source>64 bit</source>
       <translation>64ビット</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="272"/>
+      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="274"/>
       <source>Rel</source>
       <translation type="unfinished">Rel</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="276"/>
+      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="278"/>
       <source>AGLC</source>
       <translation type="unfinished">AGLC</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="278"/>
+      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="280"/>
       <source>AGL</source>
       <translation type="unfinished">AGL</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="280"/>
-      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="301"/>
+      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="282"/>
+      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="303"/>
       <source>Mixed</source>
       <translation type="unfinished">Mixed</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="293"/>
+      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="295"/>
       <source>Relative (%1)</source>
       <translation type="unfinished">Relative (%1)</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="295"/>
+      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="297"/>
       <source>Absolute (%1)</source>
       <translation type="unfinished">Absolute (%1)</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="297"/>
+      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="299"/>
       <source>Above Terrain Calced (%1)</source>
       <translation type="unfinished">Above Terrain Calced (%1)</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="299"/>
+      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="301"/>
       <source>Above Terrain (%1)</source>
       <translation type="unfinished">Above Terrain (%1)</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="274"/>
+      <location filename="../src/QmlControls/QGroundControlQmlGlobal.cc" line="276"/>
       <source>AMSL</source>
       <translation>AMSL</translation>
     </message>
@@ -16260,7 +17598,7 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
     <name>QObject</name>
     <message>
       <location filename="../src/FirmwarePlugin/FirmwarePlugin.cc" line="29"/>
-      <location filename="../src/Vehicle/Vehicle.cc" line="99"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="98"/>
       <source>Guided mode not supported by Vehicle.</source>
       <translation>機体はガイド補助モードをサポートしていません。</translation>
     </message>
@@ -16491,112 +17829,112 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
   <context>
     <name>QmlTest</name>
     <message>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="227"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="227"/>
       <source>Window Color</source>
       <translation type="unfinished">Window Color</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="231"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="231"/>
       <source>Import/Export</source>
       <translation type="unfinished">Import/Export</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="239"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="239"/>
       <source>Light</source>
       <translation type="unfinished">Light</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="246"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="246"/>
       <source>Dark</source>
       <translation type="unfinished">Dark</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="287"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="392"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="287"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="392"/>
       <source>Enabled</source>
       <translation type="unfinished">Enabled</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="293"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="305"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="293"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="305"/>
       <source>Value</source>
       <translation type="unfinished">Value</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="299"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="399"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="299"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="399"/>
       <source>Disabled</source>
       <translation type="unfinished">Disabled</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="385"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="385"/>
       <source>QGC name</source>
       <translation type="unfinished">QGC name</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="414"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="424"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="414"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="424"/>
       <source>Label</source>
       <translation type="unfinished">Label</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="437"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="442"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="455"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="460"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="506"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="512"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="437"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="442"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="455"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="460"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="506"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="512"/>
       <source>Button</source>
       <translation type="unfinished">Button</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="473"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="480"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="473"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="480"/>
       <source>Hover Button</source>
       <translation type="unfinished">Hover Button</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="494"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="623"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="628"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="494"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="623"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="628"/>
       <source>Item 1</source>
       <translation type="unfinished">Item 1</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="497"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="623"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="628"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="497"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="623"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="628"/>
       <source>Item 2</source>
       <translation type="unfinished">Item 2</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="500"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="623"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="628"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="500"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="623"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="628"/>
       <source>Item 3</source>
       <translation type="unfinished">Item 3</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="529"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="539"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="529"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="539"/>
       <source>Radio</source>
       <translation type="unfinished">Radio</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="556"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="566"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="556"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="566"/>
       <source>Check Box</source>
       <translation type="unfinished">Check Box</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="583"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="593"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="583"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="593"/>
       <source>Check Box Slider</source>
       <translation type="unfinished">Check Box Slider</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="640"/>
-      <location filename="../src/UI/AppSettings/QmlTest.qml" line="645"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="640"/>
+      <location filename="../src/AppSettings/QmlTest.qml" line="645"/>
       <source>SUB MENU</source>
       <translation type="unfinished">SUB MENU</translation>
     </message>
@@ -16617,12 +17955,12 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
   <context>
     <name>RCRSSIIndicator</name>
     <message>
-      <location filename="../src/UI/toolbar/RCRSSIIndicator.qml" line="27"/>
+      <location filename="../src/Toolbar/RCRSSIIndicator.qml" line="27"/>
       <source>RC RSSI Status</source>
       <translation>送信機 RSSI状態</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/RCRSSIIndicator.qml" line="30"/>
+      <location filename="../src/Toolbar/RCRSSIIndicator.qml" line="30"/>
       <source>RSSI</source>
       <translation>RSSI</translation>
     </message>
@@ -16820,107 +18158,117 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
     </message>
     <message>
       <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="74"/>
-      <source>Extension Controls</source>
-      <translation type="unfinished">Extension Controls</translation>
+      <source>Aux Extensions</source>
+      <translation type="unfinished">Aux Extensions</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="82"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="107"/>
+      <source>Additional Axes</source>
+      <translation type="unfinished">Additional Axes</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="114"/>
       <source>Aux 1</source>
       <translation type="unfinished">Aux 1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="83"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="115"/>
       <source>Aux 2</source>
       <translation type="unfinished">Aux 2</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="84"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="116"/>
       <source>Aux 3</source>
       <translation type="unfinished">Aux 3</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="85"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="117"/>
       <source>Aux 4</source>
       <translation type="unfinished">Aux 4</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="86"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="118"/>
       <source>Aux 5</source>
       <translation type="unfinished">Aux 5</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="87"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="119"/>
       <source>Aux 6</source>
       <translation type="unfinished">Aux 6</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="144"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="176"/>
       <source>Mode 1</source>
       <translation type="unfinished">Mode 1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="144"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="176"/>
       <source>Mode 2</source>
       <translation type="unfinished">Mode 2</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="144"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="176"/>
       <source>Mode 3</source>
       <translation type="unfinished">Mode 3</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="144"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="176"/>
       <source>Mode 4</source>
       <translation type="unfinished">Mode 4</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="154"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="186"/>
       <source>Centered Throttle</source>
       <translation type="unfinished">Centered Throttle</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="219"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="251"/>
       <source>Cancel</source>
       <translation type="unfinished">Cancel</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="226"/>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="229"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="256"/>
+      <source>One-Sided</source>
+      <translation type="unfinished">One-Sided</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="264"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="267"/>
       <source>Calibrate</source>
       <translation type="unfinished">Calibrate</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="234"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="272"/>
       <source>Joystick Not Ready</source>
       <translation type="unfinished">Joystick Not Ready</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="235"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="273"/>
       <source>%1 axes or more are needed to fly. Joystick is reporting %2 axes.</source>
       <translation type="unfinished">%1 axes or more are needed to fly. Joystick is reporting %2 axes.</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="237"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="275"/>
       <source>Not Ready</source>
       <translation type="unfinished">Not Ready</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="238"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="276"/>
       <source>Please turn on RC transmitter.</source>
       <translation type="unfinished">Please turn on RC transmitter.</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="238"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="276"/>
       <source>%1 channels or more are needed to fly.</source>
       <translation type="unfinished">%1 channels or more are needed to fly.</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="243"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="281"/>
       <source>Zero Trims</source>
       <translation type="unfinished">Zero Trims</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="244"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="282"/>
       <source>Before calibrating you should zero all your trims and subtrims. Click Ok to start Calibration.
 
 %1</source>
@@ -16929,7 +18277,7 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
 %1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="245"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibration.qml" line="283"/>
       <source>Please ensure all motor power is disconnected AND all props are removed from the vehicle.</source>
       <translation type="unfinished">Please ensure all motor power is disconnected AND all props are removed from the vehicle.</translation>
     </message>
@@ -16946,184 +18294,188 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
 * Click Next to continue</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="20"/>
-      <source>* Center all sticks as shown in diagram.
-* Please ensure all motor power is disconnected from the vehicle.
-* Click Next to continue</source>
-      <translation type="unfinished">* Center all sticks as shown in diagram.
-* Please ensure all motor power is disconnected from the vehicle.
-* Click Next to continue</translation>
-    </message>
-    <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="25"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="26"/>
       <source>Move the Throttle stick all the way up and hold it there...</source>
       <translation type="unfinished">Move the Throttle stick all the way up and hold it there...</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="26"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="27"/>
       <source>Move the Throttle stick all the way down and leave it there...</source>
       <translation type="unfinished">Move the Throttle stick all the way down and leave it there...</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="27"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="28"/>
       <source>Move the Yaw stick all the way to the left and hold it there...</source>
       <translation type="unfinished">Move the Yaw stick all the way to the left and hold it there...</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="28"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="29"/>
       <source>Move the Yaw stick all the way to the right and hold it there...</source>
       <translation type="unfinished">Move the Yaw stick all the way to the right and hold it there...</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="29"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="30"/>
       <source>Move the Roll stick all the way to the left and hold it there...</source>
       <translation type="unfinished">Move the Roll stick all the way to the left and hold it there...</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="30"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="31"/>
       <source>Move the Roll stick all the way to the right and hold it there...</source>
       <translation type="unfinished">Move the Roll stick all the way to the right and hold it there...</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="31"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="32"/>
       <source>Move the Pitch stick all the way down and hold it there...</source>
       <translation type="unfinished">Move the Pitch stick all the way down and hold it there...</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="32"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="33"/>
       <source>Move the Pitch stick all the way up and hold it there...</source>
       <translation type="unfinished">Move the Pitch stick all the way up and hold it there...</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="33"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="34"/>
       <source>Allow the Pitch stick to move back to center...</source>
       <translation type="unfinished">Allow the Pitch stick to move back to center...</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="34"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="35"/>
       <source>Move the %1 Extension stick to its high value position and hold it there...</source>
       <translation type="unfinished">Move the %1 Extension stick to its high value position and hold it there...</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="35"/>
-      <source>Move the %1 Extension stick to its low value position and hold it there...</source>
-      <translation type="unfinished">Move the %1 Extension stick to its low value position and hold it there...</translation>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="20"/>
+      <source>* Center all sticks as shown in diagram.
+* Make sure any additional axes are at a neutral position.
+* Please ensure all motor power is disconnected from the vehicle.
+* Click Next to continue</source>
+      <translation type="unfinished">* Center all sticks as shown in diagram.
+* Make sure any additional axes are at a neutral position.
+* Please ensure all motor power is disconnected from the vehicle.
+* Click Next to continue</translation>
     </message>
     <message>
       <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="36"/>
+      <source>* Move the %1 Extension stick to its low value position and hold it there...
+* Select &apos;One-Sided&apos; for controls like gamepad triggers.</source>
+      <translation type="unfinished">* Move the %1 Extension stick to its low value position and hold it there...
+* Select &apos;One-Sided&apos; for controls like gamepad triggers.</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="37"/>
       <source>Move all the transmitter switches and/or dials back and forth to their extreme positions.</source>
       <translation type="unfinished">Move all the transmitter switches and/or dials back and forth to their extreme positions.</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="37"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="38"/>
       <source>All settings have been captured. Click Next to write the new parameters to your board.</source>
       <translation type="unfinished">All settings have been captured. Click Next to write the new parameters to your board.</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="365"/>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1330"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="366"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1404"/>
       <source>Pitch</source>
       <translation type="unfinished">Pitch</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="366"/>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1328"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="367"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1402"/>
       <source>Roll</source>
       <translation type="unfinished">Roll</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="367"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="368"/>
       <source>Aux 1</source>
       <translation type="unfinished">Aux 1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="368"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="369"/>
       <source>Aux 2</source>
       <translation type="unfinished">Aux 2</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="369"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="370"/>
       <source>Aux 3</source>
       <translation type="unfinished">Aux 3</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="370"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="371"/>
       <source>Aux 4</source>
       <translation type="unfinished">Aux 4</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="371"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="372"/>
       <source>Aux 5</source>
       <translation type="unfinished">Aux 5</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="372"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="373"/>
       <source>Aux 6</source>
       <translation type="unfinished">Aux 6</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="374"/>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1352"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="375"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1426"/>
       <source>Unknown</source>
       <translation type="unfinished">Unknown</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="782"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="846"/>
       <source>Next</source>
       <translation type="unfinished">Next</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="814"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="878"/>
       <source>Calibrate</source>
       <translation type="unfinished">Calibrate</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1332"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1406"/>
       <source>Yaw</source>
       <translation type="unfinished">Yaw</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1334"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1408"/>
       <source>Throttle</source>
       <translation type="unfinished">Throttle</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1336"/>
-      <source>Aux1 Extension</source>
-      <translation type="unfinished">Aux1 Extension</translation>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1410"/>
+      <source>Additional Axis 1</source>
+      <translation type="unfinished">Additional Axis 1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1338"/>
-      <source>Aux2 Extension</source>
-      <translation type="unfinished">Aux2 Extension</translation>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1412"/>
+      <source>Additional Axis 2</source>
+      <translation type="unfinished">Additional Axis 2</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1340"/>
-      <source>Aux3 Extension</source>
-      <translation type="unfinished">Aux3 Extension</translation>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1414"/>
+      <source>Additional Axis 3</source>
+      <translation type="unfinished">Additional Axis 3</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1342"/>
-      <source>Aux4 Extension</source>
-      <translation type="unfinished">Aux4 Extension</translation>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1416"/>
+      <source>Additional Axis 4</source>
+      <translation type="unfinished">Additional Axis 4</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1344"/>
-      <source>Aux5 Extension</source>
-      <translation type="unfinished">Aux5 Extension</translation>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1418"/>
+      <source>Additional Axis 5</source>
+      <translation type="unfinished">Additional Axis 5</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1346"/>
-      <source>Aux6 Extension</source>
-      <translation type="unfinished">Aux6 Extension</translation>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1420"/>
+      <source>Additional Axis 6</source>
+      <translation type="unfinished">Additional Axis 6</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1348"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1422"/>
       <source>Pitch Extension</source>
       <translation type="unfinished">Pitch Extension</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1350"/>
+      <location filename="../src/Vehicle/VehicleSetup/RemoteControlCalibrationController.cc" line="1424"/>
       <source>Roll Extension</source>
       <translation type="unfinished">Roll Extension</translation>
     </message>
@@ -17147,33 +18499,33 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
   <context>
     <name>RemoteIDGpsLocation</name>
     <message>
-      <location filename="../src/UI/AppSettings/RemoteIDGpsLocation.qml" line="9"/>
+      <location filename="../src/AppSettings/RemoteIDGpsLocation.qml" line="9"/>
       <source>NMEA External GPS</source>
       <translation type="unfinished">NMEA External GPS</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/RemoteIDGpsLocation.qml" line="23"/>
+      <location filename="../src/AppSettings/RemoteIDGpsLocation.qml" line="23"/>
       <source>Device</source>
       <translation type="unfinished">Device</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/RemoteIDGpsLocation.qml" line="34"/>
+      <location filename="../src/AppSettings/RemoteIDGpsLocation.qml" line="34"/>
       <source>Disabled</source>
       <translation type="unfinished">Disabled</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/RemoteIDGpsLocation.qml" line="35"/>
-      <location filename="../src/UI/AppSettings/RemoteIDGpsLocation.qml" line="67"/>
+      <location filename="../src/AppSettings/RemoteIDGpsLocation.qml" line="35"/>
+      <location filename="../src/AppSettings/RemoteIDGpsLocation.qml" line="67"/>
       <source>UDP Port</source>
       <translation type="unfinished">UDP Port</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/RemoteIDGpsLocation.qml" line="43"/>
+      <location filename="../src/AppSettings/RemoteIDGpsLocation.qml" line="43"/>
       <source>Serial &lt;none available&gt;</source>
       <translation type="unfinished">Serial &lt;none available&gt;</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/RemoteIDGpsLocation.qml" line="50"/>
+      <location filename="../src/AppSettings/RemoteIDGpsLocation.qml" line="50"/>
       <source>Baudrate</source>
       <translation type="unfinished">Baudrate</translation>
     </message>
@@ -17181,92 +18533,92 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
   <context>
     <name>RemoteIDIndicatorPage</name>
     <message>
-      <location filename="../src/UI/toolbar/RemoteIDIndicatorPage.qml" line="72"/>
+      <location filename="../src/Toolbar/RemoteIDIndicatorPage.qml" line="72"/>
       <source>RemoteID Status</source>
       <translation>リモートID状態</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/RemoteIDIndicatorPage.qml" line="95"/>
+      <location filename="../src/Toolbar/RemoteIDIndicatorPage.qml" line="95"/>
       <source>ARM STATUS</source>
       <translation>アーム状態</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/RemoteIDIndicatorPage.qml" line="119"/>
+      <location filename="../src/Toolbar/RemoteIDIndicatorPage.qml" line="119"/>
       <source>RID COMMS</source>
       <translation>RID COMMS</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/RemoteIDIndicatorPage.qml" line="119"/>
+      <location filename="../src/Toolbar/RemoteIDIndicatorPage.qml" line="119"/>
       <source>NOT CONNECTED</source>
       <translation>接続されていません</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/RemoteIDIndicatorPage.qml" line="144"/>
+      <location filename="../src/Toolbar/RemoteIDIndicatorPage.qml" line="144"/>
       <source>GCS GPS</source>
       <translation>GCS GPS</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/RemoteIDIndicatorPage.qml" line="169"/>
+      <location filename="../src/Toolbar/RemoteIDIndicatorPage.qml" line="169"/>
       <source>BASIC ID</source>
       <translation>BASIC ID</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/RemoteIDIndicatorPage.qml" line="194"/>
+      <location filename="../src/Toolbar/RemoteIDIndicatorPage.qml" line="194"/>
       <source>OPERATOR ID</source>
       <translation>オペレータID</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/RemoteIDIndicatorPage.qml" line="220"/>
+      <location filename="../src/Toolbar/RemoteIDIndicatorPage.qml" line="220"/>
       <source>EMERGENCY HAS BEEN DECLARED, Press and Hold for 3 seconds to cancel</source>
       <translation>【緊急事態が宣言されました】3秒間長押しするとキャンセルされます。</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/RemoteIDIndicatorPage.qml" line="220"/>
+      <location filename="../src/Toolbar/RemoteIDIndicatorPage.qml" line="220"/>
       <source>Press and Hold below button to declare emergency</source>
       <translation>下のボタンを長押しして緊急事態を宣言</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/RemoteIDIndicatorPage.qml" line="245"/>
+      <location filename="../src/Toolbar/RemoteIDIndicatorPage.qml" line="245"/>
       <source>Clear Emergency</source>
       <translation>緊急事態を消去</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/RemoteIDIndicatorPage.qml" line="245"/>
+      <location filename="../src/Toolbar/RemoteIDIndicatorPage.qml" line="245"/>
       <source>EMERGENCY</source>
       <translation>緊急事態</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/RemoteIDIndicatorPage.qml" line="323"/>
+      <location filename="../src/Toolbar/RemoteIDIndicatorPage.qml" line="323"/>
       <source>Arm Status Error</source>
       <translation>アーム状態エラー</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/RemoteIDIndicatorPage.qml" line="330"/>
+      <location filename="../src/Toolbar/RemoteIDIndicatorPage.qml" line="330"/>
       <source>Self ID</source>
       <translation>セルフID</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/RemoteIDIndicatorPage.qml" line="348"/>
+      <location filename="../src/Toolbar/RemoteIDIndicatorPage.qml" line="348"/>
       <source>If an emergency is declared, Emergency Text will be broadcast even if Broadcast setting is not enabled.</source>
       <translation>緊急事態が宣言されると、ブロードキャスト設定が無効でも緊急通報テキストが配信されます。</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/RemoteIDIndicatorPage.qml" line="339"/>
+      <location filename="../src/Toolbar/RemoteIDIndicatorPage.qml" line="339"/>
       <source>Broadcast</source>
       <translation>ブロードキャスト</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/RemoteIDIndicatorPage.qml" line="358"/>
+      <location filename="../src/Toolbar/RemoteIDIndicatorPage.qml" line="358"/>
       <source>Broadcast Message</source>
       <translation>ブロードキャストメッセージ</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/RemoteIDIndicatorPage.qml" line="411"/>
+      <location filename="../src/Toolbar/RemoteIDIndicatorPage.qml" line="411"/>
       <source>Remote ID</source>
       <translation>リモートID</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/RemoteIDIndicatorPage.qml" line="413"/>
+      <location filename="../src/Toolbar/RemoteIDIndicatorPage.qml" line="413"/>
       <source>Configure</source>
       <translation>設定</translation>
     </message>
@@ -17617,37 +18969,37 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
   <context>
     <name>SelectViewDropdown</name>
     <message>
-      <location filename="../src/UI/toolbar/SelectViewDropdown.qml" line="22"/>
+      <location filename="../src/Toolbar/SelectViewDropdown.qml" line="23"/>
       <source>Fly</source>
       <translation type="unfinished">Fly</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/SelectViewDropdown.qml" line="35"/>
+      <location filename="../src/Toolbar/SelectViewDropdown.qml" line="37"/>
       <source>Plan</source>
       <translation type="unfinished">Plan</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/SelectViewDropdown.qml" line="48"/>
+      <location filename="../src/Toolbar/SelectViewDropdown.qml" line="51"/>
       <source>Analyze</source>
       <translation type="unfinished">Analyze</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/SelectViewDropdown.qml" line="63"/>
+      <location filename="../src/Toolbar/SelectViewDropdown.qml" line="67"/>
       <source>Configure</source>
       <translation type="unfinished">Configure</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/SelectViewDropdown.qml" line="77"/>
+      <location filename="../src/Toolbar/SelectViewDropdown.qml" line="82"/>
       <source>Settings</source>
       <translation type="unfinished">Settings</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/SelectViewDropdown.qml" line="92"/>
+      <location filename="../src/Toolbar/SelectViewDropdown.qml" line="98"/>
       <source>Close</source>
       <translation type="unfinished">Close</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/SelectViewDropdown.qml" line="111"/>
+      <location filename="../src/Toolbar/SelectViewDropdown.qml" line="121"/>
       <source>%1 Version</source>
       <translation type="unfinished">%1 Version</translation>
     </message>
@@ -17703,52 +19055,52 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
   <context>
     <name>SensorsComponentController</name>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="134"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="123"/>
       <source>Calibration complete</source>
       <translation>キャリブレーション完了</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="151"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="140"/>
       <source>Calibration failed. Calibration log will be displayed.</source>
       <translation>キャリブレーションに失敗しました。キャリブレーションログを表示します。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="245"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="234"/>
       <source>Unsupported calibration firmware version, using log</source>
       <translation>サポートされていないキャリブレーションファームウェアバージョン、ログを使用しています</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="277"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="254"/>
       <source>Place your vehicle into one of the Incomplete orientations shown below and hold it still</source>
       <translation>以下の不完全な方向に機体を置き、静止させてください</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="363"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="320"/>
       <source>Rotate the vehicle continuously as shown in the diagram until marked as Completed</source>
       <translation>【完了】と表示されるまで、ダイアグラムに示すように連続して機体を回転させます</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="365"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="322"/>
       <source>Hold still in the current orientation</source>
       <translation>現在の向きで保持してください</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="403"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="347"/>
       <source>Place you vehicle into one of the orientations shown below and hold it still</source>
       <translation>以下のいずれかの方向に機体を置き、静止させてください</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="412"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="354"/>
       <source>Orientation already completed, place you vehicle into one of the incomplete orientations shown below and hold it still</source>
       <translation>方向調整はすでに完了しています。下に示す不完全な方向に機体を向け、静止させてください。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="471"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="408"/>
       <source>Reset successful</source>
       <translation>リセットしました</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="478"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsComponentController.cc" line="415"/>
       <source>Reset failed</source>
       <translation>リセットに失敗しました</translation>
     </message>
@@ -17855,27 +19207,27 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
       <translation>左側のボタンをクリックして各キャリブレーションステップを開始します。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="143"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="127"/>
       <source>Compass Calibration Complete</source>
       <translation>コンパス キャリブレーション 完了</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="173"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="157"/>
       <source>Calibration Cancel</source>
       <translation>キャリブレーション キャンセル</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="174"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="158"/>
       <source>Waiting for Vehicle to response to Cancel. This may take a few seconds.</source>
       <translation>機体がキャンセルに応答するのを待機しています。数秒かかる場合があります。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="233"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="217"/>
       <source>Set autopilot orientation before calibrating.</source>
       <translation>キャリブレーションの前にAutoPilotの方向を設定します。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="285"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="269"/>
       <source>Reboot Vehicle</source>
       <translation>機体 再起動</translation>
     </message>
@@ -17900,33 +19252,33 @@ Click &apos;Ok&apos; to upload the Plan anyway.</source>
       <translation>水平レベルを確定するには、機体を飛行位置に配置して静止させる必要があります。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="154"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="138"/>
       <source>Complete or cancel the current calibration first</source>
       <translation type="unfinished">Complete or cancel the current calibration first</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="238"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="299"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="222"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="283"/>
       <source>Autopilot Orientation</source>
       <translation>AutoPilotの方向</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="247"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="231"/>
       <source>ROTATION_NONE indicates component points in direction of flight.</source>
       <translation>ROTATION_NONEは、コンポーネントが飛行方向を向いていることを示します。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="253"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="237"/>
       <source>Click Ok to start calibration.</source>
       <translation>【OK】をクリックしてキャリブレーションを開始します。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="280"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="264"/>
       <source>Reboot the vehicle prior to flight.</source>
       <translation>飛行前に機体を再起動してください。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="291"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="275"/>
       <source>Adjust orientations as needed.
 
 ROTATION_NONE indicates component points in direction of flight.</source>
@@ -17935,123 +19287,123 @@ ROTATION_NONE indicates component points in direction of flight.</source>
 ROTATION_NONEは、コンポーネントが飛行方向を向いていることを示します。</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="319"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="303"/>
       <source>Mag %1 Orientation</source>
       <translation>Mag %1 方向</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="335"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="351"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="354"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="375"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="324"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="345"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="348"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="370"/>
       <source>Compass</source>
       <translation>コンパス</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="374"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="376"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="369"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="371"/>
       <source>Calibrate Compass</source>
       <translation>コンパス キャリブレーション</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="336"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="325"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="345"/>
       <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="351"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="357"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="382"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="377"/>
       <source>Gyroscope</source>
       <translation>ジャイロ</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="383"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="378"/>
       <source>Calibrate Gyro</source>
       <translation>ジャイロ キャリブレーション</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="337"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="351"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="354"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="389"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="326"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="345"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="348"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="385"/>
       <source>Accelerometer</source>
       <translation>加速度センサ</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="388"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="390"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="384"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="386"/>
       <source>Calibrate Accelerometer</source>
       <translation>水平 キャリブレーション</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="338"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="360"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="395"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="397"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="398"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="327"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="354"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="391"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="393"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="394"/>
       <source>Level Horizon</source>
       <translation>ホライゾンレベリング</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="339"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="360"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="404"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="328"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="354"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="400"/>
       <source>Airspeed</source>
       <translation>対気速度</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="403"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="405"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="399"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="401"/>
       <source>Calibrate Airspeed</source>
       <translation>対気速度 キャリブレーション</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="445"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="443"/>
       <source>Cancel</source>
       <translation>キャンセル</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="427"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="423"/>
       <source>Next</source>
       <translation>次へ</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="340"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="411"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="421"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="329"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="407"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="417"/>
       <source>Orientations</source>
       <translation>方向</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="381"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="376"/>
       <source>Calibrate Gyroscope</source>
       <translation type="unfinished">Calibrate Gyroscope</translation>
     </message>
     <message>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="406"/>
       <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="410"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="414"/>
       <source>Set Orientations</source>
       <translation>方向の設定</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="420"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="416"/>
       <source>Factory Reset</source>
       <translation type="unfinished">Factory Reset</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="499"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="508"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="517"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="526"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="535"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="544"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="497"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="506"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="515"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="524"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="533"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="542"/>
       <source>Rotate</source>
       <translation>回転</translation>
     </message>
     <message>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="499"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="508"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="517"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="526"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="535"/>
-      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="544"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="497"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="506"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="515"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="524"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="533"/>
+      <location filename="../src/AutoPilotPlugins/PX4/SensorsSetup.qml" line="542"/>
       <source>Hold Still</source>
       <translation>動かないでください</translation>
     </message>
@@ -18080,72 +19432,72 @@ ROTATION_NONEは、コンポーネントが飛行方向を向いていること�
   <context>
     <name>SerialSettings</name>
     <message>
-      <location filename="../src/UI/AppSettings/SerialSettings.qml" line="131"/>
+      <location filename="../src/AppSettings/SerialSettings.qml" line="131"/>
       <source>Enable Flow Control</source>
       <translation>フロー制御 有効</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/SerialSettings.qml" line="25"/>
+      <location filename="../src/AppSettings/SerialSettings.qml" line="25"/>
       <source>Serial Port</source>
       <translation>シリアルポート</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/SerialSettings.qml" line="59"/>
+      <location filename="../src/AppSettings/SerialSettings.qml" line="59"/>
       <source>None Available</source>
       <translation>利用不可</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/SerialSettings.qml" line="67"/>
+      <location filename="../src/AppSettings/SerialSettings.qml" line="67"/>
       <source>Baud Rate</source>
       <translation>伝送速度</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/SerialSettings.qml" line="72"/>
+      <location filename="../src/AppSettings/SerialSettings.qml" line="72"/>
       <source>Custom</source>
       <translation type="unfinished">Custom</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/SerialSettings.qml" line="98"/>
+      <location filename="../src/AppSettings/SerialSettings.qml" line="98"/>
       <source>Custom Baud Rate</source>
       <translation type="unfinished">Custom Baud Rate</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/SerialSettings.qml" line="119"/>
+      <location filename="../src/AppSettings/SerialSettings.qml" line="119"/>
       <source>Advanced Settings</source>
       <translation>詳細設定</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/SerialSettings.qml" line="138"/>
+      <location filename="../src/AppSettings/SerialSettings.qml" line="138"/>
       <source>Force DTR Low</source>
       <translation type="unfinished">Force DTR Low</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/SerialSettings.qml" line="143"/>
+      <location filename="../src/AppSettings/SerialSettings.qml" line="143"/>
       <source>Parity</source>
       <translation>パリティ</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/SerialSettings.qml" line="146"/>
+      <location filename="../src/AppSettings/SerialSettings.qml" line="146"/>
       <source>None</source>
       <translation>なし</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/SerialSettings.qml" line="146"/>
+      <location filename="../src/AppSettings/SerialSettings.qml" line="146"/>
       <source>Even</source>
       <translation>偶数</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/SerialSettings.qml" line="146"/>
+      <location filename="../src/AppSettings/SerialSettings.qml" line="146"/>
       <source>Odd</source>
       <translation>奇数</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/SerialSettings.qml" line="181"/>
+      <location filename="../src/AppSettings/SerialSettings.qml" line="181"/>
       <source>Data Bits</source>
       <translation>データビット</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/SerialSettings.qml" line="189"/>
+      <location filename="../src/AppSettings/SerialSettings.qml" line="189"/>
       <source>Stop Bits</source>
       <translation>ストップビット</translation>
     </message>
@@ -18235,147 +19587,256 @@ ROTATION_NONEは、コンポーネントが飛行方向を向いていること�
     </message>
   </context>
   <context>
-    <name>SigningIndicator</name>
+    <name>SigningController</name>
     <message>
-      <location filename="../src/UI/toolbar/SigningIndicator.qml" line="51"/>
-      <source>MAVLink Signing</source>
-      <translation type="unfinished">MAVLink Signing</translation>
+      <location filename="../src/MAVLink/Signing/SigningController.cc" line="110"/>
+      <source>Configuring…</source>
+      <translation type="unfinished">Configuring…</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/SigningIndicator.qml" line="54"/>
-      <source>Status:</source>
-      <translation type="unfinished">Status:</translation>
+      <location filename="../src/MAVLink/Signing/SigningController.cc" line="113"/>
+      <source>Disabling…</source>
+      <translation type="unfinished">Disabling…</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/SigningIndicator.qml" line="57"/>
-      <source>No Vehicle</source>
-      <translation type="unfinished">No Vehicle</translation>
+      <location filename="../src/MAVLink/Signing/SigningController.cc" line="116"/>
+      <source>Off</source>
+      <translation type="unfinished">Off</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/SigningIndicator.qml" line="58"/>
-      <source>Active</source>
-      <translation type="unfinished">Active</translation>
+      <location filename="../src/MAVLink/Signing/SigningController.cc" line="120"/>
+      <source>On</source>
+      <translation type="unfinished">On</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/SigningIndicator.qml" line="58"/>
-      <source>Inactive</source>
-      <translation type="unfinished">Inactive</translation>
+      <location filename="../src/MAVLink/Signing/SigningController.cc" line="154"/>
+      <location filename="../src/MAVLink/Signing/SigningController.cc" line="192"/>
+      <source>Signing operation already pending</source>
+      <translation type="unfinished">Signing operation already pending</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/SigningIndicator.qml" line="63"/>
-      <source>Active Key:</source>
-      <translation type="unfinished">Active Key:</translation>
+      <location filename="../src/MAVLink/Signing/SigningController.cc" line="165"/>
+      <source>Failed to install signing for pending verification</source>
+      <translation type="unfinished">Failed to install signing for pending verification</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/SigningIndicator.qml" line="64"/>
-      <source>None</source>
-      <translation type="unfinished">None</translation>
+      <location filename="../src/MAVLink/Signing/SigningController.cc" line="198"/>
+      <source>Channel not signing — cannot disable</source>
+      <translation type="unfinished">Channel not signing — cannot disable</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/SigningIndicator.qml" line="69"/>
-      <source>Saved Keys:</source>
-      <translation type="unfinished">Saved Keys:</translation>
+      <location filename="../src/MAVLink/Signing/SigningController.cc" line="236"/>
+      <source>MAVLink signing: %1 consecutive bad signatures while enabling — the chosen key likely does not match the vehicle&apos;s stored key. Verify the key on the vehicle, then retry.</source>
+      <translation type="unfinished">MAVLink signing: %1 consecutive bad signatures while enabling — the chosen key likely does not match the vehicle&apos;s stored key. Verify the key on the vehicle, then retry.</translation>
+    </message>
+    <message>
+      <location filename="../src/MAVLink/Signing/SigningController.cc" line="239"/>
+      <source>MAVLink signing: %1 consecutive bad signatures on this link — wrong key or vehicle clock drift</source>
+      <translation type="unfinished">MAVLink signing: %1 consecutive bad signatures on this link — wrong key or vehicle clock drift</translation>
+    </message>
+    <message>
+      <location filename="../src/MAVLink/Signing/SigningController.cc" line="294"/>
+      <source>Vehicle rejected signing change: %1</source>
+      <translation type="unfinished">Vehicle rejected signing change: %1</translation>
+    </message>
+    <message>
+      <location filename="../src/MAVLink/Signing/SigningController.cc" line="328"/>
+      <source>Signing confirmation received but local activation failed</source>
+      <translation type="unfinished">Signing confirmation received but local activation failed</translation>
+    </message>
+    <message>
+      <location filename="../src/MAVLink/Signing/SigningController.cc" line="370"/>
+      <source>Signing disable not confirmed — vehicle is unreachable or still requires signed messages. Local signing remains enabled.</source>
+      <translation type="unfinished">Signing disable not confirmed — vehicle is unreachable or still requires signed messages. Local signing remains enabled.</translation>
+    </message>
+    <message>
+      <location filename="../src/MAVLink/Signing/SigningController.cc" line="391"/>
+      <source>Signing operation cancelled — primary link changed before vehicle confirmation</source>
+      <translation type="unfinished">Signing operation cancelled — primary link changed before vehicle confirmation</translation>
+    </message>
+    <message>
+      <location filename="../src/MAVLink/Signing/SigningController.cc" line="404"/>
+      <source>Signing setup not confirmed by vehicle (timeout)</source>
+      <translation type="unfinished">Signing setup not confirmed by vehicle (timeout)</translation>
+    </message>
+    <message>
+      <location filename="../src/MAVLink/Signing/SigningController.cc" line="405"/>
+      <source>Signing disable not confirmed by vehicle (timeout)</source>
+      <translation type="unfinished">Signing disable not confirmed by vehicle (timeout)</translation>
     </message>
   </context>
   <context>
     <name>SigningKeyManager</name>
     <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="12"/>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="14"/>
       <source>MAVLink 2 Signing</source>
       <translation type="unfinished">MAVLink 2 Signing</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="13"/>
-      <source>Signing keys should only be sent to the vehicle over secure links.</source>
-      <translation type="unfinished">Signing keys should only be sent to the vehicle over secure links.</translation>
-    </message>
-    <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="33"/>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="37"/>
       <source>Add Signing Key</source>
       <translation type="unfinished">Add Signing Key</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="44"/>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="63"/>
       <source>Key Name</source>
       <translation type="unfinished">Key Name</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="49"/>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="68"/>
       <source>Enter a friendly name</source>
       <translation type="unfinished">Enter a friendly name</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="52"/>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="75"/>
       <source>Passphrase</source>
       <translation type="unfinished">Passphrase</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="57"/>
-      <source>Enter passphrase</source>
-      <translation type="unfinished">Enter passphrase</translation>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="15"/>
+      <source>Signing keys should only be sent to the vehicle over secure links (e.g. USB).</source>
+      <translation type="unfinished">Signing keys should only be sent to the vehicle over secure links (e.g. USB).</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="66"/>
-      <source>Signing Status</source>
-      <translation type="unfinished">Signing Status</translation>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="56"/>
+      <source>Could not add key. Name may already exist or input is invalid.</source>
+      <translation type="unfinished">Could not add key. Name may already exist or input is invalid.</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="67"/>
-      <source>Active</source>
-      <translation type="unfinished">Active</translation>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="80"/>
+      <source>Raw Key (hex)</source>
+      <translation type="unfinished">Raw Key (hex)</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="67"/>
-      <source>Inactive</source>
-      <translation type="unfinished">Inactive</translation>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="91"/>
+      <source>Enter passphrase (min %1 chars)</source>
+      <translation type="unfinished">Enter passphrase (min %1 chars)</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="67"/>
-      <source>Not Connected</source>
-      <translation type="unfinished">Not Connected</translation>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="98"/>
+      <source>Passphrase too short (%1/%2)</source>
+      <translation type="unfinished">Passphrase too short (%1/%2)</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="72"/>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="111"/>
+      <source>64 hex characters</source>
+      <translation type="unfinished">64 hex characters</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="118"/>
+      <source>Generate</source>
+      <translation type="unfinished">Generate</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="125"/>
+      <source>%1/64 hex characters</source>
+      <translation type="unfinished">%1/64 hex characters</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="144"/>
       <source>Active Key</source>
       <translation type="unfinished">Active Key</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="73"/>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="147"/>
       <source>None</source>
       <translation type="unfinished">None</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="94"/>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="177"/>
+      <source>(another key active)</source>
+      <translation type="unfinished">(another key active)</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="184"/>
       <source>Enable</source>
       <translation type="unfinished">Enable</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="101"/>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="184"/>
+      <source>Configuring…</source>
+      <translation type="unfinished">Configuring…</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="193"/>
+      <source>active link</source>
+      <translation type="unfinished">active link</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="196"/>
+      <source>Send Signing Key</source>
+      <translation type="unfinished">Send Signing Key</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="197"/>
+      <source>This will transmit key &apos;%1&apos; to the vehicle over &apos;%2&apos;. Only proceed if this link is secure (USB or trusted local network).</source>
+      <translation type="unfinished">This will transmit key &apos;%1&apos; to the vehicle over &apos;%2&apos;. Only proceed if this link is secure (USB or trusted local network).</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="208"/>
       <source>Disable</source>
       <translation type="unfinished">Disable</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="107"/>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="208"/>
+      <source>Disabling…</source>
+      <translation type="unfinished">Disabling…</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="219"/>
+      <source>Disable Signing While Armed?</source>
+      <translation type="unfinished">Disable Signing While Armed?</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="220"/>
+      <source>Vehicle is armed. ArduPilot will refuse to disable signing while armed and PX4 will not accept the disable packet without a valid signature. The disable attempt will likely time out and leave the link in an inconsistent state.
+
+Disarm the vehicle first.</source>
+      <translation type="unfinished">Vehicle is armed. ArduPilot will refuse to disable signing while armed and PX4 will not accept the disable packet without a valid signature. The disable attempt will likely time out and leave the link in an inconsistent state.
+
+Disarm the vehicle first.</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="229"/>
+      <source>Export</source>
+      <translation type="unfinished">Export</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="238"/>
+      <source>Export Key: %1</source>
+      <translation type="unfinished">Export Key: %1</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="239"/>
+      <source>Key copied to clipboard. Store it securely — it will be cleared from the clipboard in 30 seconds.</source>
+      <translation type="unfinished">Key copied to clipboard. Store it securely — it will be cleared from the clipboard in 30 seconds.</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="246"/>
       <source>Delete</source>
       <translation type="unfinished">Delete</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="111"/>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="250"/>
       <source>Delete Signing Key</source>
       <translation type="unfinished">Delete Signing Key</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="112"/>
-      <source>Are you sure you want to delete &apos;%1&apos;? If a vehicle still has this key configured, you will no longer be able to communicate with it over a signed connection.</source>
-      <translation type="unfinished">Are you sure you want to delete &apos;%1&apos;? If a vehicle still has this key configured, you will no longer be able to communicate with it over a signed connection.</translation>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="251"/>
+      <source>Are you sure you want to delete &apos;%1&apos;?
+
+If a vehicle still has this key configured, you will no longer be able to communicate with it over a signed connection. Raw or generated keys cannot be recovered — Export the hex first if you may need it later.</source>
+      <translation type="unfinished">Are you sure you want to delete &apos;%1&apos;?
+
+If a vehicle still has this key configured, you will no longer be able to communicate with it over a signed connection. Raw or generated keys cannot be recovered — Export the hex first if you may need it later.</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="120"/>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="259"/>
       <source>No keys configured</source>
       <translation type="unfinished">No keys configured</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/SigningKeyManager.qml" line="125"/>
+      <location filename="../src/AppSettings/SigningKeyManager.qml" line="264"/>
       <source>Add Key</source>
       <translation type="unfinished">Add Key</translation>
     </message>
@@ -18774,30 +20235,30 @@ ROTATION_NONEは、コンポーネントが飛行方向を向いていること�
   <context>
     <name>SurveyComplexItem</name>
     <message>
-      <location filename="../src/MissionManager/SurveyComplexItem.cc" line="115"/>
+      <location filename="../src/MissionManager/SurveyComplexItem.cc" line="121"/>
       <source>Survey items do not support version %1</source>
       <translation>アンケート項目はバージョン %1 をサポートしていません</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/SurveyComplexItem.cc" line="172"/>
-      <location filename="../src/MissionManager/SurveyComplexItem.cc" line="228"/>
+      <location filename="../src/MissionManager/SurveyComplexItem.cc" line="178"/>
+      <location filename="../src/MissionManager/SurveyComplexItem.cc" line="234"/>
       <source>%1 does not support loading this complex mission item type: %2:%3</source>
       <translation>%1 はこの複雑なミッション項目タイプの読み込みをサポートしていません: %2:%3</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/SurveyComplexItem.cc" line="276"/>
+      <location filename="../src/MissionManager/SurveyComplexItem.cc" line="282"/>
       <source>%1 but %2 object is missing</source>
       <translation>%1 ですが %2 オブジェクトがありません</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/SurveyComplexItem.h" line="46"/>
       <location filename="../src/MissionManager/SurveyComplexItem.h" line="47"/>
-      <location filename="../src/MissionManager/SurveyComplexItem.h" line="62"/>
+      <location filename="../src/MissionManager/SurveyComplexItem.h" line="48"/>
+      <location filename="../src/MissionManager/SurveyComplexItem.h" line="63"/>
       <source>Survey</source>
       <translation>調査</translation>
     </message>
     <message>
-      <location filename="../src/MissionManager/SurveyComplexItem.h" line="48"/>
+      <location filename="../src/MissionManager/SurveyComplexItem.h" line="49"/>
       <source>S</source>
       <translation>S</translation>
     </message>
@@ -18976,27 +20437,27 @@ ROTATION_NONEは、コンポーネントが飛行方向を向いていること�
   <context>
     <name>TcpSettings</name>
     <message>
-      <location filename="../src/UI/AppSettings/TcpSettings.qml" line="18"/>
+      <location filename="../src/AppSettings/TcpSettings.qml" line="18"/>
       <source>Server Address</source>
       <translation>サーバアドレス</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/TcpSettings.qml" line="23"/>
+      <location filename="../src/AppSettings/TcpSettings.qml" line="23"/>
       <source>localhost or 192.168.1.1</source>
       <translation type="unfinished">localhost or 192.168.1.1</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/TcpSettings.qml" line="33"/>
+      <location filename="../src/AppSettings/TcpSettings.qml" line="33"/>
       <source>Port</source>
       <translation>ポート</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/TcpSettings.qml" line="39"/>
+      <location filename="../src/AppSettings/TcpSettings.qml" line="39"/>
       <source>5760</source>
       <translation type="unfinished">5760</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/TcpSettings.qml" line="54"/>
+      <location filename="../src/AppSettings/TcpSettings.qml" line="54"/>
       <source>You can enter an IP address (e.g. 192.168.1.1) or hostname (e.g. my-drone.local)</source>
       <translation type="unfinished">You can enter an IP address (e.g. 192.168.1.1) or hostname (e.g. my-drone.local)</translation>
     </message>
@@ -19004,48 +20465,48 @@ ROTATION_NONEは、コンポーネントが飛行方向を向いていること�
   <context>
     <name>TelemetryRSSIIndicator</name>
     <message>
-      <location filename="../src/UI/toolbar/TelemetryRSSIIndicator.qml" line="44"/>
+      <location filename="../src/Toolbar/TelemetryRSSIIndicator.qml" line="45"/>
       <source>Telemetry RSSI Status</source>
       <translation>テレメトリー RSSI状態</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/TelemetryRSSIIndicator.qml" line="47"/>
+      <location filename="../src/Toolbar/TelemetryRSSIIndicator.qml" line="48"/>
       <source>Local RSSI:</source>
       <translation>ローカル RSSI:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/TelemetryRSSIIndicator.qml" line="48"/>
-      <location filename="../src/UI/toolbar/TelemetryRSSIIndicator.qml" line="53"/>
+      <location filename="../src/Toolbar/TelemetryRSSIIndicator.qml" line="49"/>
+      <location filename="../src/Toolbar/TelemetryRSSIIndicator.qml" line="54"/>
       <source>dBm</source>
       <translation>dBm</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/TelemetryRSSIIndicator.qml" line="52"/>
+      <location filename="../src/Toolbar/TelemetryRSSIIndicator.qml" line="53"/>
       <source>Remote RSSI:</source>
       <translation>リモート RSSI:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/TelemetryRSSIIndicator.qml" line="57"/>
+      <location filename="../src/Toolbar/TelemetryRSSIIndicator.qml" line="58"/>
       <source>RX Errors:</source>
       <translation>受信エラー:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/TelemetryRSSIIndicator.qml" line="62"/>
+      <location filename="../src/Toolbar/TelemetryRSSIIndicator.qml" line="63"/>
       <source>Errors Fixed:</source>
       <translation>エラー修正:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/TelemetryRSSIIndicator.qml" line="67"/>
+      <location filename="../src/Toolbar/TelemetryRSSIIndicator.qml" line="68"/>
       <source>TX Buffer:</source>
       <translation>送信バッファ:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/TelemetryRSSIIndicator.qml" line="72"/>
+      <location filename="../src/Toolbar/TelemetryRSSIIndicator.qml" line="73"/>
       <source>Local Noise:</source>
       <translation>ローカルノイズ:</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/TelemetryRSSIIndicator.qml" line="77"/>
+      <location filename="../src/Toolbar/TelemetryRSSIIndicator.qml" line="78"/>
       <source>Remote Noise:</source>
       <translation>リモートノイズ:</translation>
     </message>
@@ -19412,7 +20873,7 @@ ROTATION_NONEは、コンポーネントが飛行方向を向いていること�
   <context>
     <name>UDPConfiguration</name>
     <message>
-      <location filename="../src/Comms/UDPLink.h" line="73"/>
+      <location filename="../src/Comms/UDPLink.h" line="82"/>
       <source>UDP Link Settings</source>
       <translation>UDPリンク設定</translation>
     </message>
@@ -19420,12 +20881,12 @@ ROTATION_NONEは、コンポーネントが飛行方向を向いていること�
   <context>
     <name>UDPLink</name>
     <message>
-      <location filename="../src/Comms/UDPLink.cc" line="552"/>
+      <location filename="../src/Comms/UDPLink.cc" line="581"/>
       <source>UDP Link Error</source>
       <translation>UDPリンクエラー</translation>
     </message>
     <message>
-      <location filename="../src/Comms/UDPLink.cc" line="552"/>
+      <location filename="../src/Comms/UDPLink.cc" line="581"/>
       <source>Link %1: %2</source>
       <translation>リンク %1: %2</translation>
     </message>
@@ -19433,22 +20894,22 @@ ROTATION_NONEは、コンポーネントが飛行方向を向いていること�
   <context>
     <name>UDPWorker</name>
     <message>
-      <location filename="../src/Comms/UDPLink.cc" line="329"/>
+      <location filename="../src/Comms/UDPLink.cc" line="355"/>
       <source>Failed to bind UDP socket to port</source>
       <translation>UDPソケットをポートに割り当てできませんでした</translation>
     </message>
     <message>
-      <location filename="../src/Comms/UDPLink.cc" line="367"/>
+      <location filename="../src/Comms/UDPLink.cc" line="393"/>
       <source>Could Not Send Data - Link is Disconnected!</source>
       <translation>データを送信できませんでした - リンクが切断されました！</translation>
     </message>
     <message>
-      <location filename="../src/Comms/UDPLink.cc" line="413"/>
+      <location filename="../src/Comms/UDPLink.cc" line="442"/>
       <source>Could Not Read Data - Link is Disconnected!</source>
       <translation>データを読み取れませんでした - リンクが切断されました！</translation>
     </message>
     <message>
-      <location filename="../src/Comms/UDPLink.cc" line="419"/>
+      <location filename="../src/Comms/UDPLink.cc" line="448"/>
       <source>Could Not Read Data - No Data Available!</source>
       <translation>データを読み取れませんでした - 利用可能なデータがありません！</translation>
     </message>
@@ -19456,47 +20917,34 @@ ROTATION_NONEは、コンポーネントが飛行方向を向いていること�
   <context>
     <name>UdpSettings</name>
     <message>
-      <location filename="../src/UI/AppSettings/UdpSettings.qml" line="20"/>
+      <location filename="../src/AppSettings/UdpSettings.qml" line="20"/>
       <source>Note: For best perfomance, please disable AutoConnect to UDP devices on the General page.</source>
       <translation>注: 最良のパフォーマンスを得るためには、【全般】ページでUDPデバイスの自動接続を無効にしてください。</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/UdpSettings.qml" line="26"/>
+      <location filename="../src/AppSettings/UdpSettings.qml" line="26"/>
       <source>Port</source>
       <translation>ポート</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/UdpSettings.qml" line="37"/>
+      <location filename="../src/AppSettings/UdpSettings.qml" line="37"/>
       <source>Server Addresses (optional)</source>
       <translation>サーバアドレス (オプション)</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/UdpSettings.qml" line="51"/>
+      <location filename="../src/AppSettings/UdpSettings.qml" line="51"/>
       <source>Remove</source>
       <translation>削除</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/UdpSettings.qml" line="63"/>
-      <source>Example: 127.0.0.1:14550</source>
-      <translation>例: 127.0.0.1:14550</translation>
+      <location filename="../src/AppSettings/UdpSettings.qml" line="63"/>
+      <source>IP or hostname, e.g. 127.0.0.1:14550 or my-drone.local:14550</source>
+      <translation type="unfinished">IP or hostname, e.g. 127.0.0.1:14550 or my-drone.local:14550</translation>
     </message>
     <message>
-      <location filename="../src/UI/AppSettings/UdpSettings.qml" line="66"/>
+      <location filename="../src/AppSettings/UdpSettings.qml" line="66"/>
       <source>Add Server</source>
       <translation>サーバ追加</translation>
-    </message>
-  </context>
-  <context>
-    <name>UdpTransport</name>
-    <message>
-      <location filename="../src/Utilities/Network/RemoteTransport.cc" line="30"/>
-      <source>UDP payload too large (%1 bytes), dropped</source>
-      <translation type="unfinished">UDP payload too large (%1 bytes), dropped</translation>
-    </message>
-    <message>
-      <location filename="../src/Utilities/Network/RemoteTransport.cc" line="39"/>
-      <source>DNS resolution failed for &apos;%1&apos;: %2</source>
-      <translation type="unfinished">DNS resolution failed for &apos;%1&apos;: %2</translation>
     </message>
   </context>
   <context>
@@ -19856,117 +21304,117 @@ ROTATION_NONEは、コンポーネントが飛行方向を向いていること�
   <context>
     <name>Vehicle</name>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="1595"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="1597"/>
       <source>Mission transfer failed. Error: %1</source>
       <translation>ミッション転送に失敗しました。エラー: %1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="1601"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="1603"/>
       <source>GeoFence transfer failed. Error: %1</source>
       <translation>ジオフェンスの転送に失敗しました。エラー: %1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="1607"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="1609"/>
       <source>Rally Point transfer failed. Error: %1</source>
       <translation>ポイントの転送に失敗しました。エラー: %1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="1142"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="1147"/>
       <source>battery %1 level low</source>
       <translation>バッテリー %1 残量低下</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="1148"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="1153"/>
       <source>battery %1 level is critical</source>
       <translation>バッテリー %1 限界レベル</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="1154"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="1159"/>
       <source>battery %1 level emergency</source>
       <translation>バッテリー %1 レベル緊急事態</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="1160"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="1165"/>
       <source>battery %1 failed</source>
       <translation>バッテリー %1 が故障です</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="1166"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="1171"/>
       <source>battery %1 unhealthy</source>
       <translation>バッテリー %1 が不安定です</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="1178"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="1183"/>
       <source>warning</source>
       <translation>警告</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="3381"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="3459"/>
       <source>Vehicle %1: </source>
       <translation type="unfinished">Vehicle %1: </translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="2905"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="2894"/>
       <source>minimum altitude</source>
       <translation>最低高度</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="2908"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="2897"/>
       <source>maximum altitude</source>
       <translation>最大高度</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="2911"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="2900"/>
       <source>boundary</source>
       <translation>境界線</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="2917"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="2906"/>
       <source>fence breached</source>
       <translation>フェンス突破</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="3151"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="3229"/>
       <source>Waiting for previous operator control request</source>
       <translation>前回のオペレータ制御リクエスト処理中のため待機しています</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="3154"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="3232"/>
       <source>No response to operator control request</source>
       <translation>オペレータ制御リクエストに応答がありません</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="1776"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="1779"/>
       <source>Vehicle %1 </source>
       <translation>機体 %1</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="2304"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="2307"/>
       <source>Vehicle reboot failed.</source>
       <translation>機体の再起動に失敗しました。</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="1786"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="1789"/>
       <source>%1 %2 flight mode</source>
       <translation>%1 %2 飛行モード</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="1793"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="1796"/>
       <source>armed</source>
       <translation>アームしました</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="1793"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="1796"/>
       <source>disarmed</source>
       <translation>ディスアームしました</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="2034"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="2037"/>
       <source>Change Heading not supported by Vehicle.</source>
       <translation>機体はヘッディング変更をサポートしていません。</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/Vehicle.cc" line="2233"/>
+      <location filename="../src/Vehicle/Vehicle.cc" line="2236"/>
       <source>Bootloader flash succeeded</source>
       <translation>ブートローダーの書き込みに成功しました</translation>
     </message>
@@ -20030,77 +21478,77 @@ ROTATION_NONEは、コンポーネントが飛行方向を向いていること�
   <context>
     <name>VehicleConfigView</name>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="25"/>
+      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="26"/>
       <source>This operation cannot be performed while the vehicle is armed.</source>
       <translation type="unfinished">This operation cannot be performed while the vehicle is armed.</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="29"/>
+      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="30"/>
       <source>missing message panel text</source>
       <translation type="unfinished">missing message panel text</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="162"/>
+      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="176"/>
       <source>%1 setup must be completed prior to %2 setup.</source>
       <translation type="unfinished">%1 setup must be completed prior to %2 setup.</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="243"/>
+      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="250"/>
       <source>%1 does not currently support configuration of your vehicle. </source>
       <translation type="unfinished">%1 does not currently support configuration of your vehicle. </translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="264"/>
+      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="271"/>
       <source>Vehicle configuration pages will display after you connect your vehicle and parameters have been downloaded.</source>
       <translation type="unfinished">Vehicle configuration pages will display after you connect your vehicle and parameters have been downloaded.</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="266"/>
+      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="273"/>
       <source>Parameter download was skipped because the vehicle is flying. Configuration pages will be available after parameters are downloaded.</source>
       <translation type="unfinished">Parameter download was skipped because the vehicle is flying. Configuration pages will be available after parameters are downloaded.</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="267"/>
+      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="274"/>
       <source>Waiting for vehicle parameters to download…</source>
       <translation type="unfinished">Waiting for vehicle parameters to download…</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="271"/>
+      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="278"/>
       <source>Download Parameters</source>
       <translation type="unfinished">Download Parameters</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="293"/>
+      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="300"/>
       <source>Vehicle did not return the full parameter list. </source>
       <translation type="unfinished">Vehicle did not return the full parameter list. </translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="294"/>
+      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="301"/>
       <source>As a result, the configuration pages are not available.</source>
       <translation type="unfinished">As a result, the configuration pages are not available.</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="328"/>
+      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="337"/>
       <source>Search configuration...</source>
       <translation type="unfinished">Search configuration...</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="353"/>
+      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="364"/>
       <source>Summary</source>
       <translation type="unfinished">Summary</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="491"/>
+      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="513"/>
       <source>Optical Flow</source>
       <translation type="unfinished">Optical Flow</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="509"/>
+      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="531"/>
       <source>Parameters</source>
       <translation type="unfinished">Parameters</translation>
     </message>
     <message>
-      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="521"/>
+      <location filename="../src/Vehicle/VehicleSetup/VehicleConfigView.qml" line="543"/>
       <source>Firmware</source>
       <translation type="unfinished">Firmware</translation>
     </message>
@@ -20166,12 +21614,12 @@ ROTATION_NONEは、コンポーネントが飛行方向を向いていること�
   <context>
     <name>VehicleMessageList</name>
     <message>
-      <location filename="../src/UI/toolbar/VehicleMessageList.qml" line="15"/>
+      <location filename="../src/Toolbar/VehicleMessageList.qml" line="15"/>
       <source>No Messages</source>
       <translation>メッセージはありません</translation>
     </message>
     <message>
-      <location filename="../src/UI/toolbar/VehicleMessageList.qml" line="69"/>
+      <location filename="../src/Toolbar/VehicleMessageList.qml" line="69"/>
       <source>Edit Parameter</source>
       <translation>パラメータを編集</translation>
     </message>
@@ -20179,19 +21627,32 @@ ROTATION_NONEは、コンポーネントが飛行方向を向いていること�
   <context>
     <name>VehicleRotationCal</name>
     <message>
-      <location filename="../src/QmlControls/VehicleRotationCal.qml" line="15"/>
+      <location filename="../src/QmlControls/VehicleRotationCal.qml" line="22"/>
       <source>Hold Still</source>
       <translation>保留中</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/VehicleRotationCal.qml" line="47"/>
+      <location filename="../src/QmlControls/VehicleRotationCal.qml" line="59"/>
       <source>Completed</source>
       <translation>完了しました</translation>
     </message>
     <message>
-      <location filename="../src/QmlControls/VehicleRotationCal.qml" line="47"/>
+      <location filename="../src/QmlControls/VehicleRotationCal.qml" line="43"/>
       <source>Incomplete</source>
       <translation>未完了</translation>
+    </message>
+  </context>
+  <context>
+    <name>VehicleSigningController</name>
+    <message>
+      <location filename="../src/Vehicle/VehicleSigningController.cc" line="92"/>
+      <source>Vehicle %1: %2</source>
+      <translation type="unfinished">Vehicle %1: %2</translation>
+    </message>
+    <message>
+      <location filename="../src/Vehicle/VehicleSigningController.cc" line="170"/>
+      <source>Failed to transmit SETUP_SIGNING to vehicle</source>
+      <translation type="unfinished">Failed to transmit SETUP_SIGNING to vehicle</translation>
     </message>
   </context>
   <context>
@@ -20271,12 +21732,12 @@ ROTATION_NONEは、コンポーネントが飛行方向を向いていること�
   <context>
     <name>VideoManager</name>
     <message>
-      <location filename="../src/VideoManager/VideoManager.cc" line="378"/>
+      <location filename="../src/VideoManager/VideoManager.cc" line="347"/>
       <source>Invalid video format defined.</source>
       <translation>無効な動画形式が定義されています。</translation>
     </message>
     <message>
-      <location filename="../src/VideoManager/VideoManager.cc" line="386"/>
+      <location filename="../src/VideoManager/VideoManager.cc" line="355"/>
       <source>Unabled to record video. Video save path must be specified in Settings.</source>
       <translation>録画できませんでした。動画の保存パスは設定で指定する必要があります。</translation>
     </message>
@@ -20284,62 +21745,62 @@ ROTATION_NONEは、コンポーネントが飛行方向を向いていること�
   <context>
     <name>VideoSettings</name>
     <message>
-      <location filename="../src/Settings/VideoSettings.h" line="49"/>
+      <location filename="../src/Settings/VideoSettings.h" line="53"/>
       <source>No Video Available</source>
       <translation>利用可能な動画はありません</translation>
     </message>
     <message>
-      <location filename="../src/Settings/VideoSettings.h" line="50"/>
+      <location filename="../src/Settings/VideoSettings.h" line="54"/>
       <source>Video Stream Disabled</source>
       <translation>ビデオストリーム 無効</translation>
     </message>
     <message>
-      <location filename="../src/Settings/VideoSettings.h" line="51"/>
+      <location filename="../src/Settings/VideoSettings.h" line="55"/>
       <source>RTSP Video Stream</source>
       <translation>RTSP Video Stream</translation>
     </message>
     <message>
-      <location filename="../src/Settings/VideoSettings.h" line="52"/>
+      <location filename="../src/Settings/VideoSettings.h" line="56"/>
       <source>UDP h.264 Video Stream</source>
       <translation>UDP h.264 Video Stream</translation>
     </message>
     <message>
-      <location filename="../src/Settings/VideoSettings.h" line="53"/>
+      <location filename="../src/Settings/VideoSettings.h" line="57"/>
       <source>UDP h.265 Video Stream</source>
       <translation>UDP h.265 Video Stream</translation>
     </message>
     <message>
-      <location filename="../src/Settings/VideoSettings.h" line="54"/>
+      <location filename="../src/Settings/VideoSettings.h" line="58"/>
       <source>TCP-MPEG2 Video Stream</source>
       <translation>TCP-MPEG2 Video Stream</translation>
     </message>
     <message>
-      <location filename="../src/Settings/VideoSettings.h" line="55"/>
+      <location filename="../src/Settings/VideoSettings.h" line="59"/>
       <source>MPEG-TS Video Stream</source>
       <translation>MPEG-TS Video Stream</translation>
     </message>
     <message>
-      <location filename="../src/Settings/VideoSettings.h" line="56"/>
+      <location filename="../src/Settings/VideoSettings.h" line="60"/>
       <source>3DR Solo (requires restart)</source>
       <translation>3DR Solo (要再起動)</translation>
     </message>
     <message>
-      <location filename="../src/Settings/VideoSettings.h" line="57"/>
+      <location filename="../src/Settings/VideoSettings.h" line="61"/>
       <source>Parrot Discovery</source>
       <translation>Parrot Discovery</translation>
     </message>
     <message>
-      <location filename="../src/Settings/VideoSettings.h" line="58"/>
+      <location filename="../src/Settings/VideoSettings.h" line="62"/>
       <source>Yuneec Mantis G</source>
       <translation>Yuneec Mantis G</translation>
     </message>
     <message>
-      <location filename="../src/Settings/VideoSettings.h" line="59"/>
+      <location filename="../src/Settings/VideoSettings.h" line="63"/>
       <source>Herelink AirUnit</source>
       <translation>Herelink AirUnit</translation>
     </message>
     <message>
-      <location filename="../src/Settings/VideoSettings.h" line="60"/>
+      <location filename="../src/Settings/VideoSettings.h" line="64"/>
       <source>Herelink Hotspot</source>
       <translation>Herelink Hotspot</translation>
     </message>
@@ -20416,154 +21877,471 @@ ROTATION_NONEは、コンポーネントが飛行方向を向いていること�
       <translation type="unfinished">A second instance of %1 is already running. Please close the other instance and try again.</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="124"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="133"/>
       <source>MAVLink GCS system id.</source>
       <translation type="unfinished">MAVLink GCS system id.</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="125"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="134"/>
       <source>id</source>
       <translation type="unfinished">id</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="130"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="139"/>
       <source>Clear stored application settings.</source>
       <translation type="unfinished">Clear stored application settings.</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="135"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="144"/>
       <source>Clear parameter and airframe caches.</source>
       <translation type="unfinished">Clear parameter and airframe caches.</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="140"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="149"/>
       <source>Enable logging with optional rules string.</source>
       <translation type="unfinished">Enable logging with optional rules string.</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="141"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="150"/>
       <source>rules</source>
       <translation type="unfinished">rules</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="146"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="155"/>
       <source>Log to console.</source>
       <translation type="unfinished">Log to console.</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="151"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="160"/>
       <source>Initialize subsystems and exit.</source>
       <translation type="unfinished">Initialize subsystems and exit.</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="158"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="167"/>
       <source>Run unit tests (optional filter value).</source>
       <translation type="unfinished">Run unit tests (optional filter value).</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="159"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="168"/>
       <source>filter</source>
       <translation type="unfinished">filter</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="164"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="173"/>
       <source>Stress unit tests.</source>
       <translation type="unfinished">Stress unit tests.</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="165"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="174"/>
       <source>count</source>
       <translation type="unfinished">count</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="170"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="179"/>
       <source>Output test results to file (JUnit XML format).</source>
       <translation type="unfinished">Output test results to file (JUnit XML format).</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="171"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="180"/>
       <source>file</source>
       <translation type="unfinished">file</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="176"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="185"/>
       <source>Filter tests by label (unit, integration, vehicle, missionmanager, etc.).</source>
       <translation type="unfinished">Filter tests by label (unit, integration, vehicle, missionmanager, etc.).</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="177"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="186"/>
       <source>labels</source>
       <translation type="unfinished">labels</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="182"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="191"/>
       <source>List available unit tests and exit.</source>
       <translation type="unfinished">List available unit tests and exit.</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="190"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="196"/>
+      <source>Show test windows on screen instead of running offscreen.</source>
+      <translation type="unfinished">Show test windows on screen instead of running offscreen.</translation>
+    </message>
+    <message>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="204"/>
       <source>Run with mobile-style UI.</source>
       <translation type="unfinished">Run with mobile-style UI.</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="195"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="209"/>
       <source>Bypass single-instance guard.</source>
       <translation type="unfinished">Bypass single-instance guard.</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="203"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="217"/>
       <source>Force software OpenGL.</source>
       <translation type="unfinished">Force software OpenGL.</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="211"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="225"/>
       <source>Force Desktop OpenGL.</source>
       <translation type="unfinished">Force Desktop OpenGL.</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="216"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="230"/>
       <source>Disable Windows assert dialog boxes.</source>
       <translation type="unfinished">Disable Windows assert dialog boxes.</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="236"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="250"/>
       <source>--unittest/--unittest-stress/--unittest-output/--list-tests options are only available in unittest builds.</source>
       <translation type="unfinished">--unittest/--unittest-stress/--unittest-output/--list-tests options are only available in unittest builds.</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="248"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="262"/>
       <source>--fake-mobile/--allow-multiple are not supported on mobile platforms.</source>
       <translation type="unfinished">--fake-mobile/--allow-multiple are not supported on mobile platforms.</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="260"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="274"/>
       <source>--desktop/--no-windows-assert-ui are only supported on Windows.</source>
       <translation type="unfinished">--desktop/--no-windows-assert-ui are only supported on Windows.</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="271"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="285"/>
       <source>--swrast is only supported on Windows and macOS.</source>
       <translation type="unfinished">--swrast is only supported on Windows and macOS.</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="280"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="294"/>
       <source>Unknown options: %1</source>
       <translation type="unfinished">Unknown options: %1</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="290"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="304"/>
       <source>Unexpected positional arguments: %1</source>
       <translation type="unfinished">Unexpected positional arguments: %1</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="316"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="330"/>
       <source>Invalid System ID (must be 1-255): %1</source>
       <translation type="unfinished">Invalid System ID (must be 1-255): %1</translation>
     </message>
     <message>
-      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="359"/>
+      <location filename="../src/Utilities/QGCCommandLineParser.cc" line="373"/>
       <source>Invalid stress test count (must be &gt; 0): %1</source>
       <translation type="unfinished">Invalid stress test count (must be &gt; 0): %1</translation>
+    </message>
+  </context>
+  <context>
+    <name>CorrectionDiagnostics</name>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="15"/>
+      <source>NTRIP UDP output</source>
+      <translation type="unfinished">NTRIP UDP output</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="17"/>
+      <source>Vehicles</source>
+      <translation type="unfinished">Vehicles</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="19"/>
+      <source>Vehicle link %1</source>
+      <translation type="unfinished">Vehicle link %1</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="20"/>
+      <source>Unselected</source>
+      <translation type="unfinished">Unselected</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="28"/>
+      <source>Inactive source</source>
+      <translation type="unfinished">Inactive source</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="30"/>
+      <source>Previous source session</source>
+      <translation type="unfinished">Previous source session</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="32"/>
+      <source>Invalid receipt time</source>
+      <translation type="unfinished">Invalid receipt time</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="34"/>
+      <source>Expired</source>
+      <translation type="unfinished">Expired</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="36"/>
+      <source>Filtered message</source>
+      <translation type="unfinished">Filtered message</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="38"/>
+      <source>Source not selected</source>
+      <translation type="unfinished">Source not selected</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="40"/>
+      <source>Destination unavailable</source>
+      <translation type="unfinished">Destination unavailable</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="42"/>
+      <source>Queue full</source>
+      <translation type="unfinished">Queue full</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="44"/>
+      <source>Invalid frame</source>
+      <translation type="unfinished">Invalid frame</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="46"/>
+      <source>Connection cancelled</source>
+      <translation type="unfinished">Connection cancelled</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="48"/>
+      <source>Source changed</source>
+      <translation type="unfinished">Source changed</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="50"/>
+      <source>Write failed</source>
+      <translation type="unfinished">Write failed</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="52"/>
+      <source>Incomplete write</source>
+      <translation type="unfinished">Incomplete write</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="54"/>
+      <source>Unmatched delivery report</source>
+      <translation type="unfinished">Unmatched delivery report</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="56"/>
+      <source>Connection ended before the write result was available</source>
+      <translation type="unfinished">Connection ended before the write result was available</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="58"/>
+      <source>Delivery tracking full</source>
+      <translation type="unfinished">Delivery tracking full</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="60"/>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="94"/>
+      <source>Unknown</source>
+      <translation type="unfinished">Unknown</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="67"/>
+      <source>Local base station</source>
+      <translation type="unfinished">Local base station</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="69"/>
+      <source>NTRIP</source>
+      <translation type="unfinished">NTRIP</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="71"/>
+      <source>UDP</source>
+      <translation type="unfinished">UDP</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="73"/>
+      <source>Unclassified</source>
+      <translation type="unfinished">Unclassified</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="80"/>
+      <source>Received</source>
+      <translation type="unfinished">Received</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="82"/>
+      <source>Validated</source>
+      <translation type="unfinished">Validated</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="84"/>
+      <source>Selected</source>
+      <translation type="unfinished">Selected</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="86"/>
+      <source>Queued</source>
+      <translation type="unfinished">Queued</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="88"/>
+      <source>Written</source>
+      <translation type="unfinished">Written</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="90"/>
+      <source>Unconfirmed</source>
+      <translation type="unfinished">Unconfirmed</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="92"/>
+      <source>Dropped</source>
+      <translation type="unfinished">Dropped</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="98"/>
+      <source>Correction Diagnostics</source>
+      <translation type="unfinished">Correction Diagnostics</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="104"/>
+      <source>Queued bytes have been submitted to an output. Written bytes reached an output transport; they do not confirm that a receiver applied the corrections or obtained a fix. Vehicle writes are unconfirmed.</source>
+      <translation type="unfinished">Queued bytes have been submitted to an output. Written bytes reached an output transport; they do not confirm that a receiver applied the corrections or obtained a fix. Vehicle writes are unconfirmed.</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="148"/>
+      <source>Received/dropped source bytes measure frame-candidate evidence, not raw transport traffic. Recovered frames can overlap rejected candidates. Drop events count separate selection, admission, and delivery losses; one frame may contribute more than once.</source>
+      <translation type="unfinished">Received/dropped source bytes measure frame-candidate evidence, not raw transport traffic. Recovered frames can overlap rejected candidates. Drop events count separate selection, admission, and delivery losses; one frame may contribute more than once.</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="116"/>
+      <source>%1 — frames: received %2, validated %3, selected %4, queued %5, written %6; drop events %7</source>
+      <translation type="unfinished">%1 — frames: received %2, validated %3, selected %4, queued %5, written %6; drop events %7</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="130"/>
+      <source>%1 — queued %2 B, written %3, dropped %4 B, pending %5 B, unconfirmed %6 B</source>
+      <translation type="unfinished">%1 — queued %2 B, written %3, dropped %4 B, pending %5 B, unconfirmed %6 B</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="130"/>
+      <source>%1 B</source>
+      <translation type="unfinished">%1 B</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="130"/>
+      <source>unconfirmed</source>
+      <translation type="unfinished">unconfirmed</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="139"/>
+      <source>Show recent correction events</source>
+      <translation type="unfinished">Show recent correction events</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="167"/>
+      <source>%1. %2 — %3, %4 B%5
+Source: %6 (session %7); destination: %8 (session %9)</source>
+      <translation type="unfinished">%1. %2 — %3, %4 B%5
+Source: %6 (session %7); destination: %8 (session %9)</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="167"/>
+      <source> — %1</source>
+      <translation type="unfinished"> — %1</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="107"/>
+      <source>Current correction streams:</source>
+      <translation type="unfinished">Current correction streams:</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="108"/>
+      <source>No fresh stream is selected for vehicles.</source>
+      <translation type="unfinished">No fresh stream is selected for vehicles.</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="124"/>
+      <source>Selected for vehicles; fresh</source>
+      <translation type="unfinished">Selected for vehicles; fresh</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="126"/>
+      <source>Fresh; not selected for vehicles</source>
+      <translation type="unfinished">Fresh; not selected for vehicles</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="128"/>
+      <source>Active; waiting for fresh corrections</source>
+      <translation type="unfinished">Active; waiting for fresh corrections</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="130"/>
+      <source>Unavailable</source>
+      <translation type="unfinished">Unavailable</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="131"/>
+      <source>%1 — %2: %3</source>
+      <translation type="unfinished">%1 — %2: %3</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionDiagnostics.qml" line="132"/>
+      <source>Default stream</source>
+      <translation type="unfinished">Default stream</translation>
+    </message>
+  </context>
+  <context>
+    <name>CorrectionRoutingSettings</name>
+    <message>
+      <location filename="../src/AppSettings/CorrectionRoutingSettings.qml" line="30"/>
+      <source>Correction Routing</source>
+      <translation type="unfinished">Correction Routing</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionRoutingSettings.qml" line="49"/>
+      <source>Uses one fresh stream, preferring the local base station, then NTRIP, then UDP.</source>
+      <translation type="unfinished">Uses one fresh stream, preferring the local base station, then NTRIP, then UDP.</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionRoutingSettings.qml" line="56"/>
+      <source>Stream</source>
+      <translation type="unfinished">Stream</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionRoutingSettings.qml" line="21"/>
+      <source>Automatic within source</source>
+      <translation type="unfinished">Automatic within source</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionRoutingSettings.qml" line="26"/>
+      <source>No fresh corrections: %1</source>
+      <translation type="unfinished">No fresh corrections: %1</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionRoutingSettings.qml" line="33"/>
+      <source>Unavailable: %1</source>
+      <translation type="unfinished">Unavailable: %1</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionRoutingSettings.qml" line="46"/>
+      <source>Selects streams for vehicle links only. NTRIP UDP forwarding uses the NTRIP stream independently.</source>
+      <translation type="unfinished">Selects streams for vehicle links only. NTRIP UDP forwarding uses the NTRIP stream independently.</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionRoutingSettings.qml" line="71"/>
+      <source>Forwards all fresh streams to vehicles. Corrections from different base stations may be mixed.</source>
+      <translation type="unfinished">Forwards all fresh streams to vehicles. Corrections from different base stations may be mixed.</translation>
+    </message>
+    <message>
+      <location filename="../src/AppSettings/CorrectionRoutingSettings.qml" line="72"/>
+      <source>Uses only the chosen source category, without fallback to other categories. Automatic within source chooses a fresh stream in that category; a pinned stream waits if unavailable.</source>
+      <translation type="unfinished">Uses only the chosen source category, without fallback to other categories. Automatic within source chooses a fresh stream in that category; a pinned stream waits if unavailable.</translation>
+    </message>
+  </context>
+  <context>
+    <name>NTRIPConnectionStatus</name>
+    <message>
+      <location filename="../src/GPS/NTRIP/NTRIPConnectionStatus.qml" line="124"/>
+      <source>Queued to vehicle links (all sources)</source>
+      <translation type="unfinished">Queued to vehicle links (all sources)</translation>
     </message>
   </context>
 </TS>

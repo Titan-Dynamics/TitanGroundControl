@@ -46,14 +46,14 @@ struct CommandLineParseResult
     std::optional<QString> unitTestOutput;  ///< Output file for test results (JUnit XML)
     std::optional<QString> labelFilter;     ///< Filter tests by label (comma-separated)
     bool listTests = false;                 ///< List available tests and exit
+    bool onscreen = false;                  ///< Show test windows on screen (skip offscreen override)
 
     // --- Desktop options (not on Android/iOS) ---
     bool fakeMobile = false;
     bool allowMultiple = false;
 
     // --- Graphics options ---
-    bool useDesktopGL = false;      ///< Windows only: Force Desktop OpenGL
-    bool useSwRast = false;         ///< Windows/macOS: Force software OpenGL
+    bool useSwRast = false;            ///< Windows/macOS: Force software rendering
     bool quietWindowsAsserts = false;  ///< Windows only: Disable assert dialogs
 };
 
@@ -90,6 +90,8 @@ enum class AppMode {
 AppMode determineAppMode(const CommandLineParseResult& args);
 
 #ifdef QGC_UNITTEST_BUILD
+QStringList normalizeArgs(const QStringList &args);
+
 /// @brief Developer helper: Override argc/argv for debugging specific tests.
 ///
 /// To use: set enabled=true in the implementation, modify the arguments,

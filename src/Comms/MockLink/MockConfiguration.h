@@ -1,7 +1,8 @@
 #pragma once
 
-#include "LinkConfiguration.h"
+#include <QtPositioning/QGeoCoordinate>
 
+#include "LinkConfiguration.h"
 #include "MAVLinkEnums.h"
 
 class MockConfiguration : public LinkConfiguration
@@ -10,8 +11,11 @@ class MockConfiguration : public LinkConfiguration
     Q_PROPERTY(int  firmware                             READ firmware                            WRITE setFirmware                            NOTIFY firmwareChanged)
     Q_PROPERTY(int  vehicle                              READ vehicle                             WRITE setVehicle                             NOTIFY vehicleChanged)
     Q_PROPERTY(bool sendStatus                           READ sendStatusText                      WRITE setSendStatusText                      NOTIFY sendStatusChanged)
+    Q_PROPERTY(bool apmStartFreshParams                  READ apmStartFreshParams                 WRITE setApmStartFreshParams                 NOTIFY apmStartFreshParamsChanged)
     Q_PROPERTY(bool enableCamera                         READ enableCamera                        WRITE setEnableCamera                        NOTIFY enableCameraChanged)
     Q_PROPERTY(bool enableGimbal                        READ enableGimbal                        WRITE setEnableGimbal                        NOTIFY enableGimbalChanged)
+    Q_PROPERTY(bool enableProximity                      READ enableProximity                     WRITE setEnableProximity                     NOTIFY enableProximityChanged)
+    Q_PROPERTY(bool enableADSB READ enableADSB WRITE setEnableADSB NOTIFY enableADSBChanged)
     Q_PROPERTY(bool gimbalHasRollAxis                   READ gimbalHasRollAxis                   WRITE setGimbalHasRollAxis                   NOTIFY gimbalHasRollAxisChanged)
     Q_PROPERTY(bool gimbalHasPitchAxis                  READ gimbalHasPitchAxis                  WRITE setGimbalHasPitchAxis                  NOTIFY gimbalHasPitchAxisChanged)
     Q_PROPERTY(bool gimbalHasYawAxis                    READ gimbalHasYawAxis                    WRITE setGimbalHasYawAxis                    NOTIFY gimbalHasYawAxisChanged)
@@ -19,6 +23,7 @@ class MockConfiguration : public LinkConfiguration
     Q_PROPERTY(bool gimbalHasYawLock                    READ gimbalHasYawLock                    WRITE setGimbalHasYawLock                    NOTIFY gimbalHasYawLockChanged)
     Q_PROPERTY(bool gimbalHasRetract                    READ gimbalHasRetract                    WRITE setGimbalHasRetract                    NOTIFY gimbalHasRetractChanged)
     Q_PROPERTY(bool gimbalHasNeutral                    READ gimbalHasNeutral                    WRITE setGimbalHasNeutral                    NOTIFY gimbalHasNeutralChanged)
+    Q_PROPERTY(int  gimbalDeviceId                      READ gimbalDeviceId                      WRITE setGimbalDeviceId                      NOTIFY gimbalDeviceIdChanged)
     Q_PROPERTY(bool incrementVehicleId                   READ incrementVehicleId                  WRITE setIncrementVehicleId                  NOTIFY incrementVehicleIdChanged)
     Q_PROPERTY(bool cameraCaptureVideo                   READ cameraCaptureVideo                  WRITE setCameraCaptureVideo                  NOTIFY cameraCaptureVideoChanged)
     Q_PROPERTY(bool cameraCaptureImage                   READ cameraCaptureImage                  WRITE setCameraCaptureImage                  NOTIFY cameraCaptureImageChanged)
@@ -29,11 +34,52 @@ class MockConfiguration : public LinkConfiguration
     Q_PROPERTY(bool cameraHasBasicZoom                   READ cameraHasBasicZoom                  WRITE setCameraHasBasicZoom                  NOTIFY cameraHasBasicZoomChanged)
     Q_PROPERTY(bool cameraHasTrackingPoint               READ cameraHasTrackingPoint              WRITE setCameraHasTrackingPoint              NOTIFY cameraHasTrackingPointChanged)
     Q_PROPERTY(bool cameraHasTrackingRectangle           READ cameraHasTrackingRectangle          WRITE setCameraHasTrackingRectangle          NOTIFY cameraHasTrackingRectangleChanged)
+    Q_PROPERTY(int  videoStreamType                      READ videoStreamType                     WRITE setVideoStreamType                     NOTIFY videoStreamTypeChanged)
+    Q_PROPERTY(int homeLocation READ homeLocation WRITE setHomeLocation NOTIFY homeLocationChanged)
 
 public:
     explicit MockConfiguration(const QString &name, QObject *parent = nullptr);
     explicit MockConfiguration(const MockConfiguration *copy, QObject *parent = nullptr);
     ~MockConfiguration();
+
+    /// Options for the MockLink::start*MockLink helpers
+    enum Option {
+        OptionNone                = 0,
+        OptionSendStatusText      = 1 << 0,
+        OptionEnableCamera        = 1 << 1,
+        OptionEnableGimbal        = 1 << 2,
+        OptionEnableProximity     = 1 << 3,
+        OptionPreloadMission      = 1 << 4,
+        OptionStayMavlinkV1       = 1 << 5,
+        OptionAPMStartFreshParams = 1 << 6,
+        OptionFtpCapability       = 1 << 7,
+        OptionNoRadioStatus       = 1 << 8,
+        OptionCompanionParams = 1 << 9,
+    };
+    Q_DECLARE_FLAGS(Options, Option)
+    Q_FLAG(Options)
+
+    /// Kind of live video stream MockLink serves (and advertises via VIDEO_STREAM_INFORMATION).
+    /// Order must match the combo box model in MockLinkSettings.qml / MockLink.qml.
+    enum VideoStreamType {
+        VideoStreamNone = 0,    ///< No stream served
+        VideoStreamRtpUdpH264,  ///< RTP/UDP H.264    -> udp://
+        VideoStreamRtpUdpH265,  ///< RTP/UDP H.265    -> udp265://
+        VideoStreamRtspH264,    ///< RTSP H.264       -> rtsp://
+        VideoStreamMpegTsUdp,   ///< MPEG-TS over UDP -> mpegts://
+        VideoStreamMpegTsTcp,   ///< MPEG-TS over TCP -> tcp://
+    };
+    Q_ENUM(VideoStreamType)
+
+    /// Simulated vehicle home position.
+    /// Order must match the combo box model in MockLinkSettings.qml / MockLink.qml.
+    enum HomeLocation
+    {
+        HomeLocationPX4SITL = 0,    ///< PX4 Gazebo SITL default (Zurich), allows mixing with a SITL vehicle
+        HomeLocationArduPilotSITL,  ///< ArduPilot SITL default (CMAC, Canberra)
+        HomeLocationTerrainTest,    ///< Location with good terrain elevation variation
+    };
+    Q_ENUM(HomeLocation)
 
     LinkType type() const final { return LinkConfiguration::TypeMock; }
     void copyFrom(const LinkConfiguration *source) final;
@@ -57,10 +103,22 @@ public:
     void setVehicleType(MAV_TYPE vehicleType) { _vehicleType = vehicleType; emit vehicleChanged(); }
     bool sendStatusText() const { return _sendStatusText; }
     void setSendStatusText(bool sendStatusText) { _sendStatusText = sendStatusText; emit sendStatusChanged(); }
+    bool apmStartFreshParams() const { return _apmStartFreshParams; }
+    void setApmStartFreshParams(bool apmStartFreshParams) { _apmStartFreshParams = apmStartFreshParams; emit apmStartFreshParamsChanged(); }
     bool enableCamera() const { return _enableCamera; }
     void setEnableCamera(bool enableCamera) { _enableCamera = enableCamera; emit enableCameraChanged(); }
     bool enableGimbal() const { return _enableGimbal; }
     void setEnableGimbal(bool enableGimbal) { _enableGimbal = enableGimbal; emit enableGimbalChanged(); }
+    bool enableProximity() const { return _enableProximity; }
+    void setEnableProximity(bool enableProximity) { _enableProximity = enableProximity; emit enableProximityChanged(); }
+
+    bool enableADSB() const { return _enableADSB; }
+
+    void setEnableADSB(bool enableADSB)
+    {
+        _enableADSB = enableADSB;
+        emit enableADSBChanged();
+    }
 
     bool gimbalHasRollAxis() const { return _gimbalHasRollAxis; }
     void setGimbalHasRollAxis(bool value) { _gimbalHasRollAxis = value; emit gimbalHasRollAxisChanged(); }
@@ -76,6 +134,9 @@ public:
     void setGimbalHasRetract(bool value) { _gimbalHasRetract = value; emit gimbalHasRetractChanged(); }
     bool gimbalHasNeutral() const { return _gimbalHasNeutral; }
     void setGimbalHasNeutral(bool value) { _gimbalHasNeutral = value; emit gimbalHasNeutralChanged(); }
+    /// Gimbal device id: 1-6 for an autopilot-attached gimbal (messages come from the manager compid), else the gimbal's own compid
+    int gimbalDeviceId() const { return _gimbalDeviceId; }
+    void setGimbalDeviceId(int value) { _gimbalDeviceId = value; emit gimbalDeviceIdChanged(); }
 
     bool cameraCaptureVideo() const { return _cameraCaptureVideo; }
     void setCameraCaptureVideo(bool value) { _cameraCaptureVideo = value; emit cameraCaptureVideoChanged(); }
@@ -96,11 +157,47 @@ public:
     bool cameraHasTrackingRectangle() const { return _cameraHasTrackingRectangle; }
     void setCameraHasTrackingRectangle(bool value) { _cameraHasTrackingRectangle = value; emit cameraHasTrackingRectangleChanged(); }
 
+    int videoStreamType() const { return static_cast<int>(_videoStreamType); }
+    void setVideoStreamType(int value) { _videoStreamType = videoStreamTypeFromInt(value); emit videoStreamTypeChanged(); }
+    VideoStreamType videoStreamTypeEnum() const { return _videoStreamType; }
+
+    /// Maps an int (QML combo index / persisted setting) to a valid VideoStreamType.
+    /// Out-of-range values (e.g. corrupted settings) map to VideoStreamNone.
+    static VideoStreamType videoStreamTypeFromInt(int value)
+    {
+        return ((value >= VideoStreamNone) && (value <= VideoStreamMpegTsTcp)) ? static_cast<VideoStreamType>(value) : VideoStreamNone;
+    }
+
+    int homeLocation() const { return static_cast<int>(_homeLocation); }
+
+    void setHomeLocation(int value)
+    {
+        _homeLocation = homeLocationFromInt(value);
+        emit homeLocationChanged();
+    }
+
+    HomeLocation homeLocationEnum() const { return _homeLocation; }
+
+    /// Maps an int (QML combo index / persisted setting) to a valid HomeLocation.
+    /// Out-of-range values (e.g. corrupted settings) map to HomeLocationPX4SITL.
+    static HomeLocation homeLocationFromInt(int value)
+    {
+        return ((value >= HomeLocationPX4SITL) && (value <= HomeLocationTerrainTest)) ? static_cast<HomeLocation>(value)
+                                                                                      : HomeLocationPX4SITL;
+    }
+
+    /// Home coordinate, altitude AMSL, for the given location
+    static QGeoCoordinate homeCoordinate(HomeLocation location);
+
     enum FailureMode_t {
         FailNone,                                                   ///< No failures
         FailParamNoResponseToRequestList,                           ///< Do not respond to PARAM_REQUEST_LIST
         FailMissingParamOnInitialRequest,                           ///< Not all params are sent on initial request, should still succeed since QGC will re-query missing params
         FailMissingParamOnAllRequests,                              ///< Not all params are sent on initial request, QGC retries will fail as well
+        FailMissingParamOnAllRequestsNonDefaultComponent,           ///< Adds a second (non-autopilot) param component which never sends one of its params
+        FailMissingParamSharedIndexAcrossComponents,                ///< Autopilot never sends its param at index 1; second component skips its index 1 on initial request only
+        FailNonDefaultComponentDead,                                ///< Second component streams only its first two params and never answers a read
+        FailNonDefaultComponentLossy,                               ///< Second component streams only its first two params and drops the first read of every param
         FailInitialConnectRequestMessageAutopilotVersionFailure,    ///< REQUEST_MESSAGE:AUTOPILOT_VERSION returns failure
         FailInitialConnectRequestMessageAutopilotVersionLost,       ///< REQUEST_MESSAGE:AUTOPILOT_VERSION success, AUTOPILOT_VERSION never sent
     };
@@ -111,12 +208,40 @@ public:
     bool startArmed() const { return _startArmed; }
     void setStartArmed(bool armed) { _startArmed = armed; }
 
+    // Test-only: when true, the simulated vehicle starts with a simple
+    // multirotor mission (takeoff, waypoint, RTL) already loaded. Not persisted.
+    bool preloadMission() const { return _preloadMission; }
+    void setPreloadMission(bool preloadMission) { _preloadMission = preloadMission; }
+
+    // Test-only: when true, outgoing traffic never upgrades from MAVLink v1 to v2,
+    // simulating a vehicle which only supports MAVLink v1. Not persisted.
+    bool stayMavlinkV1() const { return _stayMavlinkV1; }
+    void setStayMavlinkV1(bool stayV1) { _stayMavlinkV1 = stayV1; }
+
+    // Test-only: when true, the vehicle advertises MAV_PROTOCOL_CAPABILITY_FTP
+    // in AUTOPILOT_VERSION. Not persisted.
+    bool ftpCapability() const { return _ftpCapability; }
+    void setFtpCapability(bool ftpCapability) { _ftpCapability = ftpCapability; }
+
+    // Test-only: when false, RADIO_STATUS is not streamed, so the link is not detected as a radio link. Not persisted.
+    bool sendRadioStatus() const { return _sendRadioStatus; }
+    void setSendRadioStatus(bool sendRadioStatus) { _sendRadioStatus = sendRadioStatus; }
+
+    // Test-only: when true, an onboard computer component sends its own HEARTBEAT and serves its own params
+    // over the parameter protocol only, as companion software does. Not persisted.
+    bool companionParams() const { return _companionParams; }
+
+    void setCompanionParams(bool companionParams) { _companionParams = companionParams; }
+
 signals:
     void firmwareChanged();
     void vehicleChanged();
     void sendStatusChanged();
+    void apmStartFreshParamsChanged();
     void enableCameraChanged();
     void enableGimbalChanged();
+    void enableProximityChanged();
+    void enableADSBChanged();
     void gimbalHasRollAxisChanged();
     void gimbalHasPitchAxisChanged();
     void gimbalHasYawAxisChanged();
@@ -124,6 +249,7 @@ signals:
     void gimbalHasYawLockChanged();
     void gimbalHasRetractChanged();
     void gimbalHasNeutralChanged();
+    void gimbalDeviceIdChanged();
     void incrementVehicleIdChanged();
     void cameraCaptureVideoChanged();
     void cameraCaptureImageChanged();
@@ -134,18 +260,28 @@ signals:
     void cameraHasBasicZoomChanged();
     void cameraHasTrackingPointChanged();
     void cameraHasTrackingRectangleChanged();
+    void videoStreamTypeChanged();
+    void homeLocationChanged();
 
 private:
     MAV_AUTOPILOT _firmwareType = MAV_AUTOPILOT_PX4;
     MAV_TYPE _vehicleType = MAV_TYPE_QUADROTOR;
     bool _sendStatusText = false;
+    bool _apmStartFreshParams = false;
     bool _enableCamera = false;
     bool _enableGimbal = false;
+    bool _enableProximity = false;
+    bool _enableADSB = false;
     FailureMode_t _failureMode = FailNone;
     bool _incrementVehicleId = true;
     uint16_t _boardVendorId = 0;
     uint16_t _boardProductId = 0;
     bool _startArmed = false;
+    bool _preloadMission = false;
+    bool _stayMavlinkV1 = false;
+    bool _ftpCapability = false;
+    bool _sendRadioStatus = true;
+    bool _companionParams = false;
 
     // Camera capability flags (defaults match current Camera 1 configuration)
     bool _cameraCaptureVideo = true;
@@ -157,6 +293,8 @@ private:
     bool _cameraHasBasicZoom = true;
     bool _cameraHasTrackingPoint = true;
     bool _cameraHasTrackingRectangle = true;
+    VideoStreamType _videoStreamType = VideoStreamNone;
+    HomeLocation _homeLocation = HomeLocationPX4SITL;
 
     // Gimbal capability flags (defaults - all enabled)
     bool _gimbalHasRollAxis = true;
@@ -166,12 +304,16 @@ private:
     bool _gimbalHasYawLock = true;
     bool _gimbalHasRetract = true;
     bool _gimbalHasNeutral = true;
+    int _gimbalDeviceId = MAV_COMP_ID_GIMBAL;
 
     static constexpr const char *_firmwareTypeKey = "FirmwareType";
     static constexpr const char *_vehicleTypeKey = "VehicleType";
     static constexpr const char *_sendStatusTextKey = "SendStatusText";
+    static constexpr const char *_apmStartFreshParamsKey = "APMStartFreshParams";
     static constexpr const char *_enableCameraKey = "EnableCamera";
     static constexpr const char *_enableGimbalKey = "EnableGimbal";
+    static constexpr const char *_enableProximityKey = "EnableProximity";
+    static constexpr const char* _enableADSBKey = "EnableADSB";
     static constexpr const char *_gimbalHasRollAxisKey = "GimbalHasRollAxis";
     static constexpr const char *_gimbalHasPitchAxisKey = "GimbalHasPitchAxis";
     static constexpr const char *_gimbalHasYawAxisKey = "GimbalHasYawAxis";
@@ -179,6 +321,7 @@ private:
     static constexpr const char *_gimbalHasYawLockKey = "GimbalHasYawLock";
     static constexpr const char *_gimbalHasRetractKey = "GimbalHasRetract";
     static constexpr const char *_gimbalHasNeutralKey = "GimbalHasNeutral";
+    static constexpr const char *_gimbalDeviceIdKey = "GimbalDeviceId";
     static constexpr const char *_incrementVehicleIdKey = "IncrementVehicleId";
     static constexpr const char *_failureModeKey = "FailureMode";
     static constexpr const char *_cameraCaptureVideoKey = "CameraCaptureVideo";
@@ -190,4 +333,8 @@ private:
     static constexpr const char *_cameraHasBasicZoomKey = "CameraHasBasicZoom";
     static constexpr const char *_cameraHasTrackingPointKey = "CameraHasTrackingPoint";
     static constexpr const char *_cameraHasTrackingRectangleKey = "CameraHasTrackingRectangle";
+    static constexpr const char *_videoStreamTypeKey = "VideoStreamType";
+    static constexpr const char* _homeLocationKey = "HomeLocation";
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(MockConfiguration::Options)

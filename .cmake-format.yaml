@@ -1,6 +1,6 @@
 # QGroundControl CMake Format Configuration
 # Used by cmake-format for consistent CMake file formatting
-# Install: pip install cmakelang
+# Install: uv tool install cmakelang
 # Usage: cmake-format -i CMakeLists.txt
 
 # -----------------------------------------------------------------------------
@@ -67,6 +67,7 @@ parse:
         GIT_SHALLOW: 1
         EXCLUDE_FROM_ALL: 1
         SOURCE_SUBDIR: 1
+        CUSTOM_CACHE_KEY: 1
         URL: 1
         URL_HASH: 1
         URL_MD5: 1
@@ -252,7 +253,6 @@ markup:
   fence_pattern: '^\s*([`~]{3}[`~]*)(.*)$'
   ruler_pattern: '^\s*[^\w\s]{3}.*[^\w\s]{3}$'
   hashruler_min_length: 10
-  canonical_bullet: '*'
 
 # -----------------------------------------------------------------------------
 # Linting
@@ -263,7 +263,9 @@ lint:
   macro_pattern: '[0-9A-Z_]+'
   global_var_pattern: '[A-Z][0-9A-Z_]+'
   internal_var_pattern: '_[A-Z][0-9A-Z_]+'
-  local_var_pattern: '[a-z][a-z0-9_]+'
+  # Helpers use private snake_case locals and cmake_parse_arguments uses ARG_*.
+  local_var_pattern: '(_?[a-z][a-z0-9_]*|ARG_[A-Z][0-9A-Z_]*)'
+  argument_var_pattern: '_?[a-z][a-z0-9_]*'
   private_var_pattern: '_[0-9a-z_]+'
   public_var_pattern: '[A-Z][0-9A-Z_]+'
   keyword_pattern: '[A-Z][0-9A-Z_]+'

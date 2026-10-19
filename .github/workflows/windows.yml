@@ -3,6 +3,10 @@ name: Windows
 on:
   workflow_dispatch:
     inputs:
+      debug_runner:
+        description: 'Open an actor-only SSH session after a failure (up to 15 minutes, branches only)'
+        type: boolean
+        default: false
       build_type:
         description: 'Build type'
         required: false
@@ -18,17 +22,10 @@ concurrency:
 
 permissions:
   contents: read
-  id-token: write
-  attestations: write
   actions: read
-  security-events: write
-
-env:
-  IS_STABLE_BUILD: ${{ (github.ref_type == 'tag' || contains(github.ref, 'Stable')) && 'true' || 'false' }}
 
 jobs:
   changes:
-    if: github.event_name == 'pull_request'
     uses: ./.github/workflows/_detect-changes.yml
     with:
       platform: windows
@@ -36,37 +33,54 @@ jobs:
   build:
     name: Build ${{ matrix.arch }} ${{ matrix.build_type }}
     needs: changes
-    if: always() && !cancelled() && (needs.changes.outputs.should_build == 'true' || needs.changes.result == 'skipped')
-    runs-on: ${{ matrix.os }}
+    if: needs.changes.outputs.should_build == 'true'
+    runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 120
+
+    # id-token/attestations scoped here: only the attestation upload step needs them.
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+      attestations: write
 
     strategy:
       fail-fast: false
       matrix:
-        build_type: ${{ inputs.build_type && fromJSON(format('["{0}"]', inputs.build_type)) || fromJSON('["Release"]') }}
+        build_type: ['${{ inputs.build_type || ''Release'' }}']
         variant: [amd64, arm64, arm64-cross]
         include:
           - variant: amd64
-            os: windows-2022
+            runs_on: >-
+              ${{ github.repository_owner == 'mavlink' &&
+                  format('runs-on={0}/{1}', github.run_id,
+                    vars.RUNS_ON_WINDOWS_POOL != '' && format('pool={0}', vars.RUNS_ON_WINDOWS_POOL) ||
+                    'runner=windows-x64-builder') || 'windows-2022' }}
             host: windows
             arch: win64_msvc2022_64
+            preset: Windows
             package: TitanGroundControl-installer-AMD64
+            gstreamer: true
 
           - variant: arm64
-            os: windows-11-arm
+            runs_on: windows-11-arm
             host: windows_arm64
             arch: win64_msvc2022_arm64
+            preset: Windows-arm64
             package: TitanGroundControl-installer-ARM64
+            gstreamer: true
 
-          # TODO: Remove qt_version override once aqtinstall supports Qt 6.10.1+ for cross-compiled ARM64
-          # Workaround: Pin to Qt 6.10.0 until aqtinstall fix is released
-          # Tracking: https://github.com/miurahr/aqtinstall/pull/952
           - variant: arm64-cross
-            os: windows-2022
+            runs_on: >-
+              ${{ github.repository_owner == 'mavlink' &&
+                  format('runs-on={0}/{1}', github.run_id,
+                    vars.RUNS_ON_WINDOWS_POOL != '' && format('pool={0}', vars.RUNS_ON_WINDOWS_POOL) ||
+                    'runner=windows-x64-builder') || 'windows-2022' }}
             host: windows
             arch: win64_msvc2022_arm64_cross_compiled
+            preset: Windows-arm64
             package: TitanGroundControl-installer-AMD64-ARM64
-            qt_version: '6.10.0'
+            gstreamer: false
 
     defaults:
       run:
@@ -78,10 +92,34 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: Checkout repo
-        uses: actions/checkout@v6
+      - name: Record build timeline
+        uses: Kesin11/actions-timeline@v3
+        continue-on-error: true
         with:
-          fetch-depth: ${{ github.event_name == 'pull_request' && 1 || 0 }}
+          show-waiting-runner: true
+
+      - name: Enable RunsOn magic cache
+        if: github.repository_owner == 'mavlink' && matrix.variant != 'arm64'
+        uses: runs-on/action@v2
+        with:
+          metrics: cpu,network,memory,disk,io
+          show_costs: summary
+
+      - name: Checkout repo
+        uses: actions/checkout@v7
+        with:
+          # Native package versions come from git describe and require reachable tags.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Visual Studio Build Tools
+        if: github.repository_owner == 'mavlink' && matrix.variant != 'arm64'
+        uses: ./.github/actions/install-dependencies
+        with:
+          gstreamer: 'false'
+          msvc: 'true'
+          msvc-arm64: ${{ matrix.variant == 'arm64-cross' }}
+          nsis: 'true'
 
       - name: Build Setup
         id: build-setup
@@ -89,78 +127,50 @@ jobs:
         with:
           qt-host: ${{ matrix.host }}
           qt-arch: ${{ matrix.arch }}
-          qt-version: ${{ matrix.qt_version || '' }}
           build-type: ${{ matrix.build_type }}
-
-      - name: Set up MSVC environment
-        uses: TheMrMilchmann/setup-msvc-dev@v4
-        with:
-          arch: ${{ (matrix.arch == 'win64_msvc2022_64' && 'x64') || (matrix.arch == 'win64_msvc2022_arm64' && 'arm64') || 'amd64_arm64' }}
-
-      - name: Install host Qt for ARM64 cross-compilation
-        if: matrix.arch == 'win64_msvc2022_arm64_cross_compiled'
-        id: qt-host
-        uses: ./.github/actions/qt-install
-        with:
-          version: ${{ steps.build-setup.outputs.qt_version }}
-          host: windows
-          arch: win64_msvc2022_64
-          modules: ${{ steps.build-setup.outputs.qt_modules }}
-          export-env: 'false'
-
-      - name: Fix Rust linker resolution (ARM64 native)
-        if: matrix.variant == 'arm64'
-        shell: bash
-        run: |
-          # Git for Windows ships /usr/bin/link (GNU coreutils) which shadows
-          # MSVC's link.exe on PATH, causing Rust/cargo builds to fail.
-          # Rename the conflicting binary so MSVC's linker is found instead.
-          git_link="/c/Program Files/Git/usr/bin/link.exe"
-          if [ -f "$git_link" ]; then
-            mv "$git_link" "${git_link}.bak"
-            echo "Renamed Git link.exe to prevent Rust linker conflict"
-          fi
 
       - name: Configure
         uses: ./.github/actions/cmake-configure
         with:
           build-dir: ${{ runner.temp }}/build
           build-type: ${{ matrix.build_type }}
-          stable: ${{ env.IS_STABLE_BUILD }}
+          preset: ${{ matrix.build_type == 'Debug' && format('{0}-debug', matrix.preset) || matrix.preset }}
           extra-args: >-
-            -DQGC_ENABLE_GST_VIDEOSTREAMING=${{ matrix.arch != 'win64_msvc2022_arm64_cross_compiled' && 'ON' || 'OFF' }}
-            ${{ matrix.arch == 'win64_msvc2022_arm64_cross_compiled' && format('-DQT_HOST_PATH={0}', steps.qt-host.outputs.qt_root_dir) || '' }}
-
-      - name: Add GStreamer to PATH
-        if: matrix.arch != 'win64_msvc2022_arm64_cross_compiled'
-        shell: pwsh
-        run: |
-          $cacheFile = "${{ runner.temp }}\build\CMakeCache.txt"
-          $match = Select-String -Path $cacheFile -Pattern '^GStreamer_ROOT_DIR:.*=(.+)$'
-          if (-not $match) {
-            Write-Error "GStreamer_ROOT_DIR not found in CMakeCache.txt"
-            exit 1
-          }
-          $rootDir = $match.Matches[0].Groups[1].Value
-          "$rootDir\bin" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+            -DQGC_BUILD_PORTABLE_TESTS=${{ matrix.variant == 'amd64' && 'ON' || 'OFF' }}
+            -DQGC_ENABLE_GST_VIDEOSTREAMING=${{ matrix.gstreamer && 'ON' || 'OFF' }}
+            -DQGC_CPACK_GENERATOR=NSIS
+            ${{ matrix.variant == 'arm64-cross' && format('-DQT_HOST_PATH={0}', steps.build-setup.outputs.host_qt_root_dir) || '' }}
 
       - name: Build
+        id: build
         uses: ./.github/actions/cmake-build
         with:
           build-dir: ${{ runner.temp }}/build
           build-type: ${{ matrix.build_type }}
 
-      # TODO: Enable GStreamer integration tests once a Debug build is added to the matrix.
-      # Release builds strip test infrastructure; these tests require a Debug or RelWithDebInfo build.
-      # - name: Run GStreamer Integration Tests
-      #   if: matrix.arch != 'win64_msvc2022_arm64_cross_compiled'
-      #   uses: ./.github/actions/run-unit-tests
-      #   with:
-      #     build-dir: ${{ runner.temp }}/build
-      #     include-labels: 'Integration'
+      - name: Run portable tests
+        id: portable
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && matrix.variant == 'amd64' }}
+        uses: ./.github/actions/run-unit-tests
+        with:
+          build-dir: ${{ runner.temp }}/build
+          build-type: ${{ matrix.build_type }}
+          include-labels: Portable
+          junit-output: junit-portable.xml
+          ctest-output: portable-output.txt
+
+      - name: Report portable tests
+        if: ${{ !cancelled() && steps.portable.outcome != 'skipped' && steps.portable.outcome != '' }}
+        uses: ./.github/actions/test-report
+        with:
+          name: Portable tests (windows)
+          build-dir: ${{ runner.temp }}/build
+          junit-file: junit-portable.xml
+          output-file: portable-output.txt
+          artifact-name: test-results-portable-windows
 
       - name: Verify Executable
-        if: matrix.build_type == 'Release' && matrix.arch != 'win64_msvc2022_arm64_cross_compiled'
+        if: matrix.build_type == 'Release' && matrix.variant != 'arm64-cross'
         uses: ./.github/actions/verify-executable
         with:
           binary-path: ${{ runner.temp }}/build/${{ matrix.build_type }}/TitanGroundControl.exe
@@ -168,63 +178,76 @@ jobs:
           build-dir: ${{ runner.temp }}/build
 
       - name: Create Installer
-        working-directory: ${{ runner.temp }}\build
-        run: cmake --install . --config ${{ matrix.build_type }}
+        uses: ./.github/actions/cmake-build
+        with:
+          build-dir: ${{ runner.temp }}\build
+          build-type: ${{ matrix.build_type }}
+          target: qgc-package
+          parallel: 'false'
 
-      - name: Install and verify installer
-        if: matrix.build_type == 'Release' && matrix.arch != 'win64_msvc2022_arm64_cross_compiled'
+      - name: Verify installer checksum
+        id: installer
+        if: matrix.build_type == 'Release'
         shell: pwsh
+        env:
+          INSTALLER_PATH: ${{ runner.temp }}\build\${{ matrix.package }}.exe
         run: |
-          $buildDir = "${{ runner.temp }}\build"
-          $installerExe = Get-ChildItem -Path $buildDir -Filter "*installer*.exe" | Select-Object -First 1
-          if (-not $installerExe) {
-            Write-Error "Installer .exe not found in $buildDir"
+          $installerPath = $env:INSTALLER_PATH
+          $checksumPath = "$installerPath.sha256"
+          if (-not (Test-Path -LiteralPath $installerPath -PathType Leaf)) {
+            Write-Error "Installer not found: $installerPath"
             exit 1
           }
-          $installDir = "${{ runner.temp }}\qgc-install-test"
-          Write-Host "Installing $($installerExe.Name) to $installDir"
-          Start-Process -FilePath $installerExe.FullName -ArgumentList "/S", "/D=$installDir" -Wait -NoNewWindow
-          $binary = Join-Path $installDir "bin\TitanGroundControl.exe"
-          if (-not (Test-Path $binary)) {
-            Write-Error "TitanGroundControl.exe not found at $binary after install"
-            Get-ChildItem -Path $installDir -Recurse | Select-Object FullName
-            exit 1
-          }
-          $pluginDir = Join-Path $installDir "lib\gstreamer-1.0"
-          if (Test-Path $pluginDir) {
-            $pluginCount = (Get-ChildItem -Path $pluginDir -Filter "*.dll" | Measure-Object).Count
-            Write-Host "GStreamer plugins found: $pluginCount"
-            if ($pluginCount -eq 0) {
-              Write-Error "No GStreamer plugin DLLs found in $pluginDir"
-              exit 1
-            }
-          } else {
-            Write-Error "GStreamer plugin directory not found: $pluginDir"
+          if (-not (Test-Path -LiteralPath $checksumPath -PathType Leaf)) {
+            Write-Error "Installer checksum not found: $checksumPath"
             exit 1
           }
 
-      - name: Remove build SDK from PATH for installed verification
-        if: matrix.build_type == 'Release' && matrix.arch != 'win64_msvc2022_arm64_cross_compiled'
-        shell: pwsh
-        run: |
-          $cacheFile = "${{ runner.temp }}\build\CMakeCache.txt"
-          $match = Select-String -Path $cacheFile -Pattern '^GStreamer_ROOT_DIR:.*=(.+)$'
-          if (-not $match) {
-            Write-Error "GStreamer_ROOT_DIR not found in CMakeCache.txt"
+          $checksumLine = (Get-Content -LiteralPath $checksumPath -Raw).Trim()
+          $checksumFields = @($checksumLine -split '\s+', 2)
+          if ($checksumFields.Count -ne 2 -or $checksumFields[0] -notmatch '^[0-9A-Fa-f]{64}$') {
+            Write-Error "Invalid SHA-256 checksum file: $checksumPath"
             exit 1
           }
-          $sdkBin = Join-Path $match.Matches[0].Groups[1].Value "bin"
-          $sanitizedPath = (($env:PATH -split ';') | Where-Object { $_ -and ($_ -ne $sdkBin) }) -join ';'
-          "QGC_VERIFY_INSTALLED_PATH=$sanitizedPath" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+          $installerName = [System.IO.Path]::GetFileName($installerPath)
+          $checksumInstallerName = $checksumFields[1]
+          if ($checksumInstallerName -cne $installerName) {
+            Write-Error "Checksum filename mismatch: expected $installerName, got $checksumInstallerName"
+            exit 1
+          }
+
+          $expectedHash = $checksumFields[0]
+          $actualHash = (Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash
+          if ($actualHash -ne $expectedHash) {
+            Write-Error "Installer checksum mismatch: expected $expectedHash, got $actualHash"
+            exit 1
+          }
+
+          "path=$installerPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "checksum_path=$checksumPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Install, upgrade, and verify installer
+        if: matrix.build_type == 'Release' && matrix.variant != 'arm64-cross'
+        shell: pwsh
+        env:
+          INSTALLER_PATH: ${{ steps.installer.outputs.path }}
+          OLD_INSTALL_DIR: ${{ runner.temp }}\qgc-install-old
+          INSTALL_DIR: ${{ runner.temp }}\qgc-install-test
+          EXPECT_GSTREAMER: ${{ matrix.gstreamer }}
+        run: ./deploy/windows/verify-installer.ps1 -Phase Install
 
       - name: Verify installed executable
-        if: matrix.build_type == 'Release' && matrix.arch != 'win64_msvc2022_arm64_cross_compiled'
+        if: matrix.build_type == 'Release' && matrix.variant != 'arm64-cross'
         uses: ./.github/actions/verify-executable
-        env:
-          PATH: ${{ env.QGC_VERIFY_INSTALLED_PATH }}
         with:
-          binary-path: ${{ runner.temp }}\qgc-install-test\bin\TitanGroundControl.exe
+          binary-path: ${{ env.QGC_INSTALL_TEST_BINARY }}
           type: exe
+
+      - name: Uninstall and verify cleanup
+        if: matrix.build_type == 'Release' && matrix.variant != 'arm64-cross'
+        shell: pwsh
+        run: ./deploy/windows/verify-installer.ps1 -Phase Uninstall
 
       - name: Attest and Upload
         if: matrix.build_type == 'Release'
@@ -232,8 +255,15 @@ jobs:
         with:
           artifact-name: ${{ matrix.package }}.exe
           package-name: ${{ matrix.package }}
+          subject-name: ${{ matrix.package }}-windows
+          artifact-source-path: ${{ steps.installer.outputs.path }}
           aws-role-arn: ${{ secrets.AWS_ROLE_ARN }}
           aws-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-distribution-id: ${{ secrets.AWS_DISTRIBUTION_ID }}
-          upload-aws: ${{ matrix.arch == 'win64_msvc2022_arm64_cross_compiled' && 'false' || 'true' }}
+          upload-aws: ${{ matrix.variant == 'arm64-cross' && 'false' || 'true' }}
+
+      - name: Debug failed runner
+        if: ${{ failure() && !cancelled() && github.event_name == 'workflow_dispatch' && inputs.debug_runner && github.ref_type == 'branch' }}
+        timeout-minutes: 15
+        uses: ./.github/actions/debug-runner

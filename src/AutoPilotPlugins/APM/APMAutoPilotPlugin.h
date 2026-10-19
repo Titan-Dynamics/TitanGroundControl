@@ -20,13 +20,15 @@ class APMSubFrameComponent;
 class APMServoComponent;
 class ESP8266Component;
 class APMHeliComponent;
+class APMLoggingComponent;
 class APMRemoteSupportComponent;
 class APMFollowComponent;
 class JoystickComponent;
 class ScriptingComponent;
 class Vehicle;
 
-/// This is the AutoPilotPlugin implementation for the MAV_AUTOPILOT_ARDUPILOT type.
+/// \brief This is the AutoPilotPlugin implementation for the MAV_AUTOPILOT_ARDUPILOT type.
+///
 class APMAutoPilotPlugin : public AutoPilotPlugin
 {
     Q_OBJECT
@@ -58,6 +60,7 @@ protected:
     APMAdvancedTuningCopterComponent *_advancedTuningCopterComponent = nullptr;
     ESP8266Component *_esp8266Component = nullptr;
     APMHeliComponent *_heliComponent = nullptr;
+    APMLoggingComponent *_loggingComponent = nullptr;
     APMRemoteSupportComponent *_apmRemoteSupportComponent = nullptr;
     APMFollowComponent *_followComponent = nullptr;
     JoystickComponent *_joystickComponent = nullptr;

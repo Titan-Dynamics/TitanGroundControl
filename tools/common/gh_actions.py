@@ -1,149 +1,116 @@
-#!/usr/bin/env python3
 """Shared helpers for GitHub Actions API access via gh CLI."""
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
-import time
-from typing import Any
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
-def gh(*args: str, check: bool = True) -> subprocess.CompletedProcess:
-    """Run a gh CLI command and return the process result."""
-    return subprocess.run(
-        ["gh", *args],
+from .proc import run_captured, run_with_retry
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+
+_TRANSIENT_GH_ERRORS = (
+    "api rate limit exceeded",
+    "secondary rate limit",
+    "connection reset",
+    "connection refused",
+    "could not resolve host",
+    "error connecting",
+    "network is unreachable",
+    "temporary failure",
+    "timed out",
+    "timeout",
+    "tls handshake timeout",
+)
+
+
+def _is_transient_gh_output(stdout: object, stderr: object) -> bool:
+    output = f"{stdout or ''}\n{stderr or ''}".lower()
+    return bool(re.search(r"\b(?:http|status(?: code)?)[ :=]*(?:429|5\d\d)\b", output)) or any(
+        marker in output for marker in _TRANSIENT_GH_ERRORS
+    )
+
+
+def _is_transient_gh_error(error: Exception) -> bool:
+    if isinstance(error, subprocess.TimeoutExpired):
+        return True
+    return isinstance(error, subprocess.CalledProcessError) and _is_transient_gh_output(
+        error.stdout, error.stderr
+    )
+
+
+def _is_transient_gh_result(result: subprocess.CompletedProcess[Any]) -> bool:
+    return result.returncode != 0 and _is_transient_gh_output(result.stdout, result.stderr)
+
+
+def _gh_api_method(args: Sequence[str]) -> str | None:
+    if not args or args[0] != "api":
+        return None
+    for index, arg in enumerate(args):
+        if arg in {"-X", "--method"} and index + 1 < len(args):
+            return args[index + 1].upper()
+        if arg.startswith("--method="):
+            return arg.partition("=")[2].upper()
+    return "POST" if any(arg in {"-f", "-F", "--raw-field", "--field"} for arg in args) else "GET"
+
+
+def gh(
+    *args: str,
+    check: bool = True,
+    retry_transient: bool = False,
+    max_attempts: int = 3,
+    retry_backoff_seconds: float = 2.0,
+    timeout: float | None = None,
+) -> subprocess.CompletedProcess[str]:
+    """Run gh, optionally retrying transient failures for read-only operations."""
+    command = ["gh", *args]
+    if not retry_transient:
+        return run_captured(command, check=check, timeout=timeout)
+    method = _gh_api_method(args)
+    if method != "GET":
+        raise ValueError("retry_transient is only valid for read-only GitHub API GET calls")
+    return run_with_retry(
+        command,
+        max_attempts=max_attempts,
+        retry_backoff_seconds=retry_backoff_seconds,
+        retry_if=_is_transient_gh_error,
+        retry_result_if=_is_transient_gh_result,
+        timeout=timeout if timeout is not None else 60,
+        check=check,
         capture_output=True,
         text=True,
-        check=check,
+        encoding="utf-8",
+        errors="replace",
     )
 
 
-def _github_token() -> str:
-    return os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or ""
+def _paginate_items(path: str, item_key: str, params: dict[str, str]) -> list[dict[str, Any]]:
+    """Fetch all pages of a GitHub list endpoint and return the unpacked items.
 
-
-def _should_use_http_api() -> bool:
-    mode = os.environ.get("QGC_GH_API_MODE", "").strip().lower()
-    return mode == "http" and bool(_github_token())
-
-
-def _build_http_client():
-    import httpx
-    transport = httpx.HTTPTransport(retries=3)
-    base_url = os.environ.get("GITHUB_API_URL", "https://api.github.com").rstrip("/")
-    return httpx.Client(
-        base_url=base_url,
-        transport=transport,
-        timeout=30.0,
-        headers={
-            "Accept": "application/vnd.github+json",
-            "User-Agent": "qgc-ci-gh-actions/1.0",
-            "X-GitHub-Api-Version": "2022-11-28",
-            "Authorization": f"Bearer {_github_token()}",
-        },
-    )
-
-
-def _retry_after_seconds(value: str, fallback: float) -> float:
-    """Parse a Retry-After header value, falling back to a simple backoff."""
-    try:
-        retry_after = float(value)
-    except (TypeError, ValueError):
-        return fallback
-    return retry_after if retry_after > 0 else fallback
-
-
-def _http_get_with_retries(client, url: str, **kwargs) -> Any:
-    """GET a GitHub API endpoint with retries for transient status failures."""
-    import httpx
-
-    retryable_statuses = {429, 500, 502, 503, 504}
-
-    for attempt in range(1, 4):
-        try:
-            resp = client.get(url, **kwargs)
-            resp.raise_for_status()
-            return resp
-        except httpx.HTTPStatusError as exc:
-            status_code = exc.response.status_code
-            if attempt >= 3 or status_code not in retryable_statuses:
-                raise
-            delay = _retry_after_seconds(exc.response.headers.get("Retry-After", ""), float(attempt))
-        except httpx.RequestError:
-            if attempt >= 3:
-                raise
-            delay = float(attempt)
-
-        time.sleep(delay)
-
-
-def _http_paginated_docs(path: str, params: dict[str, str]) -> list[dict[str, Any]]:
-    docs: list[dict[str, Any]] = []
-    with _build_http_client() as client:
-        resp = _http_get_with_retries(client, f"/{path.lstrip('/')}", params=params)
-        docs.append(resp.json())
-
-        while "next" in resp.links:
-            resp = _http_get_with_retries(client, resp.links["next"]["url"])
-            docs.append(resp.json())
-    return docs
-
-
-def parse_json_documents(stdout: str) -> list[dict[str, Any]]:
-    """Parse one or more concatenated JSON documents."""
-    docs: list[dict[str, Any]] = []
-    decoder = json.JSONDecoder()
-    index = 0
-    length = len(stdout)
-
-    while index < length:
-        while index < length and stdout[index].isspace():
-            index += 1
-        if index >= length:
-            break
-        try:
-            value, next_index = decoder.raw_decode(stdout, index)
-        except json.JSONDecodeError as exc:
-            snippet = stdout[index:index + 120].replace("\n", "\\n")
-            raise ValueError(f"Failed to parse GitHub API JSON output near: {snippet}") from exc
-        if isinstance(value, dict):
-            docs.append(value)
-        index = next_index
-
-    return docs
+    ``gh --paginate --jq`` applies the filter per page and streams one JSON
+    value per line (NDJSON), so the list is unpacked server-side; ``[]?``
+    tolerates pages where the key is absent.
+    """
+    cmd = ["api", "--method", "GET", "--paginate", "--jq", f".{item_key}[]?", path]
+    for key, value in params.items():
+        cmd += ["-F", f"{key}={value}"]
+    result = gh(*cmd, retry_transient=True)
+    return [json.loads(line) for line in result.stdout.splitlines() if line.strip()]
 
 
 def list_workflow_runs_for_sha(repo: str, head_sha: str) -> list[dict[str, Any]]:
     """List workflow runs for a commit SHA across all paginated API results."""
-    if _should_use_http_api():
-        docs = _http_paginated_docs(
-            f"repos/{repo}/actions/runs",
-            {
-                "head_sha": head_sha,
-                "per_page": "100",
-            },
-        )
-    else:
-        result = gh(
-            "api",
-            "--method",
-            "GET",
-            "--paginate",
-            f"repos/{repo}/actions/runs",
-            "-F",
-            f"head_sha={head_sha}",
-            "-F",
-            "per_page=100",
-        )
-        docs = parse_json_documents(result.stdout)
-
-    runs: list[dict[str, Any]] = []
-    for doc in docs:
-        items = doc.get("workflow_runs", [])
-        if isinstance(items, list):
-            runs.extend(item for item in items if isinstance(item, dict))
-    return runs
+    return _paginate_items(
+        f"repos/{repo}/actions/runs",
+        "workflow_runs",
+        {"head_sha": head_sha, "per_page": "100"},
+    )
 
 
 def list_run_artifacts(repo: str, run_id: int | str) -> list[dict[str, Any]]:
@@ -155,36 +122,25 @@ def list_run_artifacts(repo: str, run_id: int | str) -> list[dict[str, Any]]:
     if run_id_int <= 0:
         raise ValueError(f"run_id must be positive, got {run_id_int}")
 
-    if _should_use_http_api():
-        docs = _http_paginated_docs(
-            f"repos/{repo}/actions/runs/{run_id_int}/artifacts",
-            {
-                "per_page": "100",
-            },
-        )
-    else:
-        result = gh(
-            "api",
-            "--method",
-            "GET",
-            "--paginate",
-            f"repos/{repo}/actions/runs/{run_id_int}/artifacts",
-            "-F",
-            "per_page=100",
-        )
-        docs = parse_json_documents(result.stdout)
-
-    artifacts: list[dict[str, Any]] = []
-    for doc in docs:
-        items = doc.get("artifacts", [])
-        if isinstance(items, list):
-            artifacts.extend(item for item in items if isinstance(item, dict))
-    return artifacts
+    return _paginate_items(
+        f"repos/{repo}/actions/runs/{run_id_int}/artifacts",
+        "artifacts",
+        {"per_page": "100"},
+    )
 
 
 def parse_csv_list(value: str) -> list[str]:
     """Parse comma-separated values into a trimmed non-empty list."""
     return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def require_repository() -> str:
+    """Return the configured owner/repo or terminate with a CI annotation."""
+    for variable in ("GH_REPO", "GITHUB_REPOSITORY"):
+        if repo := os.environ.get(variable, "").strip():
+            return repo
+    gh_error("GH_REPO or GITHUB_REPOSITORY must be set")
+    raise SystemExit(1)
 
 
 def is_fork_pr() -> bool:
@@ -200,17 +156,27 @@ def is_fork_pr() -> bool:
 def resolve_cache_policy(requested: str) -> str:
     """Resolve cache save policy.
 
-    "auto" only saves on non-PR events (push, schedule, workflow_dispatch).
-    PRs read from the shared cache but never write, so the 10 GB repo cap
-    isn't churned by per-PR entries. Long-lived cache state is owned by
-    push-to-default-branch builds.
+    Pull-request saves are isolated by GitHub to the PR merge ref, including
+    forks. pull_request_target uses the base ref and must remain read-only.
     """
     if requested != "auto":
         return requested
     event = os.environ.get("EVENT_NAME", os.environ.get("GITHUB_EVENT_NAME", ""))
-    if event in {"pull_request", "pull_request_target"}:
-        return "false"
-    return "false" if is_fork_pr() else "true"
+    return "false" if event == "pull_request_target" else "true"
+
+
+def github_cache_path(path: Path) -> str:
+    """Use a stable archive path inside the workspace, preserving external paths.
+
+    actions/cache hashes the literal path input into its cache version. Absolute
+    workspace paths prevent sharing between hosted and self-hosted runners.
+    """
+    workspace = Path(os.environ.get("GITHUB_WORKSPACE", ".")).resolve()
+    absolute = (workspace / path).resolve()
+    try:
+        return absolute.relative_to(workspace).as_posix()
+    except ValueError:
+        return absolute.as_posix()
 
 
 def write_github_output(outputs: dict[str, str]) -> None:
@@ -220,11 +186,11 @@ def write_github_output(outputs: dict[str, str]) -> None:
     """
     import hashlib
 
-    github_output = os.environ.get('GITHUB_OUTPUT')
+    github_output = os.environ.get("GITHUB_OUTPUT")
     if not github_output:
         return
 
-    with open(github_output, 'a', encoding="utf-8") as f:
+    with open(github_output, "a", encoding="utf-8") as f:
         for key, value in outputs.items():
             if "\n" in value:
                 value_hash = hashlib.sha256(value.encode("utf-8")).hexdigest()[:12]
@@ -253,3 +219,49 @@ def append_github_env(values: dict[str, str]) -> None:
     with open(path, "a", encoding="utf-8") as f:
         for key, value in values.items():
             f.write(f"{key}={value}\n")
+
+
+def append_github_path(path_entry: str) -> None:
+    """Append a path entry to $GITHUB_PATH for subsequent steps."""
+    path = os.environ.get("GITHUB_PATH")
+    if not path:
+        return
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(f"{path_entry}\n")
+
+
+def parse_bool(value: str | None) -> bool:
+    """Parse a CI-style boolean. Accepts 1/true/yes/on (case-insensitive)."""
+    if value is None:
+        return False
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _escape_annotation(message: str) -> str:
+    # Workflow commands are newline-delimited; literal CR/LF truncates the
+    # annotation, so percent-encode them (and bare % to keep decoding unambiguous).
+    return message.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+
+def annotate(level: str, message: str) -> None:
+    """Emit a GitHub Actions workflow annotation to stdout.
+
+    level is one of "error", "warning", "notice". The runner parses these from
+    the step log and renders them in the run UI; outside CI it is plain text.
+    """
+    print(f"::{level}::{_escape_annotation(message)}", flush=True)
+
+
+def gh_error(message: str) -> None:
+    """Emit a GitHub Actions error annotation."""
+    annotate("error", message)
+
+
+def gh_warning(message: str) -> None:
+    """Emit a GitHub Actions warning annotation."""
+    annotate("warning", message)
+
+
+def gh_notice(message: str) -> None:
+    """Emit a GitHub Actions notice annotation."""
+    annotate("notice", message)

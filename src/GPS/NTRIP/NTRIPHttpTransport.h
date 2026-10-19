@@ -1,87 +1,60 @@
 #pragma once
 
-#include <QtCore/QObject>
-#include <QtCore/QTimer>
-#include <QtNetwork/QSslSocket>
-#include <QtNetwork/QTcpSocket>
+#include <chrono>
 
-#include "RTCMParser.h"
+#include <QtCore/QPointer>
+#include <QtCore/QString>
 
-struct NTRIPTransportConfig {
-    QString host;
-    int port = 2101;
-    QString username;
-    QString password;
-    QString mountpoint;
-    QString whitelist;
-    bool useTls = false;
+#include "NTRIPConfiguration.h"
+#include "NTRIPTransport.h"
+#include "RTCMFramer.h"
+#include "ScheduledTask.h"
 
-    bool operator==(const NTRIPTransportConfig& other) const {
-        return host == other.host && port == other.port &&
-               username == other.username && password == other.password &&
-               mountpoint == other.mountpoint && whitelist == other.whitelist &&
-               useTls == other.useTls;
-    }
-    bool operator!=(const NTRIPTransportConfig& other) const { return !(*this == other); }
-};
+class NTRIPHttpSession;
+class RuntimeScheduler;
 
-class NTRIPHttpTransport : public QObject
+class NTRIPHttpTransport : public NTRIPTransport
 {
     Q_OBJECT
     friend class NTRIPHttpTransportTest;
 
 public:
-    static constexpr int kConnectTimeoutMs   = 10000;
-    static constexpr int kDataWatchdogMs     = 30000;
-    static constexpr int kMaxHttpHeaderSize  = 32768;
+    static constexpr std::chrono::milliseconds CONNECT_TIMEOUT{10000};
+    static constexpr std::chrono::milliseconds DATA_WATCHDOG{30000};
 
-    explicit NTRIPHttpTransport(const NTRIPTransportConfig& config, QObject* parent = nullptr);
+    NTRIPHttpTransport(const NTRIPConnectionConfig& config, const QVector<int>& rtcmWhitelist,
+                       QObject* parent = nullptr, RuntimeScheduler* scheduler = nullptr);
     ~NTRIPHttpTransport() override;
 
-    void start();
-    void stop();
-    void sendNMEA(const QByteArray& nmea);
+    void start() override;
+    void stop() override;
+    void sendNMEA(const QByteArray& nmea) override;
 
-signals:
-    void connected();
-    void error(const QString& errorMsg);
-    void RTCMDataUpdate(const QByteArray& message);
-    void finished();
-
-protected:
-    struct HttpStatus {
-        int code = 0;
-        QString reason;
-        bool valid = false;
-    };
-
-    static HttpStatus parseHttpStatusLine(const QString& line);
-    static QByteArray repairNmeaChecksum(const QByteArray& sentence);
-    static bool isHttpSuccess(int code) { return code >= 200 && code < 300; }
+    void setRtcmWhitelist(const QVector<int>& messageIds) override { _rtcmDecoder.setWhitelist(messageIds); }
 
 private:
-    void _connect();
-    void _sendHttpRequest();
-    void _readBytes();
-    void _parseRtcm(const QByteArray& buffer);
+    /// Makes @a session the live attempt and follows its response; also the test seam for socketless sessions.
+    NTRIPHttpSession* _attachSession(NTRIPHttpSession* session);
+    qint64 _nowMs() const;
+    void _startConnectTimeout();
+    void _startDataWatchdog(std::chrono::milliseconds delay);
+    void _fail(const NTRIPFailure& failure);
+    void _retireSession();
+    /// Not stopped, and @a session is still the live one: an observer did not stop or restart this transport.
+    bool _isCurrent(const NTRIPHttpSession* session) const;
+    void _stopTimers();
+    void _onResponseStarted();
+    void _parseRtcm(const QByteArray& buffer, qint64 receivedAtMs);
 
-    QTcpSocket* _socket = nullptr;
-    QTimer* _connectTimeoutTimer = nullptr;
-    QTimer* _dataWatchdogTimer = nullptr;
+    NTRIPConnectionConfig _config;
 
-    QString _hostAddress;
-    int _port;
-    QString _username;
-    QString _password;
-    QString _mountpoint;
-    QVector<int> _whitelist;
+    QPointer<NTRIPHttpSession> _session;
+    RuntimeScheduler* const _scheduler;
+    ScheduledTask _connectTimeoutTask;
+    ScheduledTask _dataWatchdogTask;
 
-    RTCMParser _rtcmParser;
-    bool _httpHandshakeDone = false;
-    bool _useTls = false;
+    RTCMFrameDecoder _rtcmDecoder;
+    qint64 _lastValidFrameMs = 0;
+    bool _dataSinceValidFrame = false;
     bool _stopped = false;
-
-    qint64 _postOkTimestampMs = 0;
-
-    QByteArray _httpResponseBuf;
 };

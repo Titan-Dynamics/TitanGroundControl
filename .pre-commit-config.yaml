@@ -4,6 +4,21 @@
 # Update: pre-commit autoupdate
 
 repos:
+  - repo: local
+    hooks:
+      - id: validate-configs
+        name: Validate configuration relationships
+        entry: uv run --frozen --project tools --group lint python tools/validate_configs.py
+        language: system
+        files: ^(\.github/build-config.*\.json|\.lychee\.toml|\.pre-commit-config\.yaml|tools/(validate_configs\.py|uv\.lock|pyproject\.toml))$
+        pass_filenames: false
+
+      - id: qt-translation-placeholders
+        name: Check changed Qt translation placeholders
+        entry: uv run --frozen --directory tools --group scripts python -m translations.check_placeholders
+        language: system
+        files: ^translations/.*\.ts$
+
   # Basic file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -11,52 +26,49 @@ repos:
       - id: check-yaml
         args: [--allow-multiple-documents, --unsafe]
       - id: check-json
+      - id: check-toml
       - id: pretty-format-json
-        args: ['--indent=2', '--no-ensure-ascii']
-        exclude: ^(translations/|package-lock\.json|src/|test/|resources/|deploy/|cmake/)
+        args: ['--indent=2', '--no-ensure-ascii', '--no-sort-keys']
+        files: ^(\.github/|tools/).*\.json$
       - id: check-xml
         exclude: ^test/
       - id: check-merge-conflict
       - id: check-added-large-files
-        args: ['--maxkb=1000']
+        args: ['--maxkb=2000']
+        exclude: ^(resources/icons/|resources/audio/)
+      - id: check-case-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-executables-have-shebangs
       - id: trailing-whitespace
         args: ['--markdown-linebreak-ext=md']
-        exclude: ^translations/
+        exclude: ^(translations/|src/MAVLink/mavlink-deterministic-mavgen\.patch$|test/GPS/Core/Protocols/(corpus|fixtures)/.*\.(bin|gps|nmea|sbf|ubx)$)
       - id: end-of-file-fixer
-        exclude: ^(translations/.*\.ts|.*\.(png|jpg|jpeg|gif|svg|ico|bin|dat))$
+        exclude: ^(translations/.*\.ts|src/MAVLink/mavlink-deterministic-mavgen\.patch|.*\.(png|jpg|jpeg|gif|svg|ico|bin|dat)|test/GPS/Core/Protocols/(corpus|fixtures)/.*\.(gps|nmea|sbf|ubx))$
       - id: mixed-line-ending
-        args: ['--fix=no']
-        exclude: \.(bat|ps1)$
+        args: ['--fix=lf']
+        exclude: (\.(bat|ps1)$|^test/GPS/Core/Protocols/(corpus|fixtures)/.*\.(bin|gps|nmea|sbf|ubx)$)
 
   # Secret detection
   - repo: https://github.com/trufflesecurity/trufflehog
-    rev: v3.92.4
+    rev: v3.97.1
     hooks:
       - id: trufflehog
         args: ['--only-verified', '--exclude-paths=tools/configs/trufflehog-exclude.txt']
 
-  # C++ formatting (check-only, use 'clang-format -i' to fix)
+  # Check changed C++ regions, matching CODING_STYLE.md; new files are checked in full.
   # Note: Install matching clang-format version locally to avoid formatting differences
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v21.1.7
+    rev: v23.1.0
     hooks:
       - id: clang-format
-        args: ['--dry-run', '--Werror']
+        entry: python tools/check_clang_format.py
+        args: []
         types_or: [c++, c]
         exclude: ^(build/|libs/)
 
-  # C++ static analysis (requires compile_commands.json - run 'make configure' first)
-  - repo: https://github.com/pocc/pre-commit-hooks
-    rev: v1.3.5
-    hooks:
-      - id: clang-tidy
-        args: ['-p=build', '--use-color']
-        types_or: [c++, c]
-        exclude: ^(build/|libs/|test/)
-
   # Python formatting (report-only)
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.8
+    rev: v0.16.5
     hooks:
       - id: ruff
       - id: ruff-format
@@ -64,30 +76,49 @@ repos:
 
   # Python type checking
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.407
+    rev: v1.1.411
     hooks:
       - id: pyright
         files: ^(tools|test|\.github/scripts)/.*\.py$
 
+  - repo: local
+    hooks:
+      - id: import-linter
+        name: import-linter (tools layering)
+        entry: bash -c 'cd tools && PYTHONPATH=. lint-imports --config pyproject.toml'
+        language: python
+        additional_dependencies: ['import-linter>=2.0']
+        files: ^tools/.*\.py$
+        pass_filenames: false
+
+  # uv lockfile sync (keeps tools/uv.lock current with tools/pyproject.toml)
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.12.8
+    hooks:
+      - id: uv-lock
+        files: ^tools/(pyproject\.toml|uv\.lock)$
+        args: ['--project', 'tools']
+
   # Shell scripts
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.11.0.1
+    rev: v0.11.0.1-1
     hooks:
       - id: shellcheck
         args: ['-e', 'SC1091']  # Don't warn about not following sourced files
 
-  # CMake formatting (report-only)
-  - repo: https://github.com/cheshirekow/cmake-format-precommit
-    rev: v0.6.13
+  # Dockerfile linting
+  - repo: https://github.com/AleksaC/hadolint-py
+    rev: v2.15.1
     hooks:
-      - id: cmake-format
-        args: [--check]
-      - id: cmake-lint
-        exclude: ^(build/|libs/)
+      - id: hadolint
+        args: ['--failure-threshold', 'warning']
+        files: (^|/)Dockerfile([.-].*)?$
+        types: [file]
 
   # GitHub Actions linting
-  - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.9
+  # Fork used by reviewdog/action-actionlint in CI; upstream lacks newer syntax such as cache-mode.
+  - repo: https://github.com/kjanat/actionlint
+    rev: v1.17.0
     hooks:
       - id: actionlint
 
@@ -98,55 +129,200 @@ repos:
         name: zizmor (GitHub Actions security)
         entry: zizmor
         language: python
-        additional_dependencies: ['zizmor>=1.19.0']
+        additional_dependencies: ['zizmor>=1.25.2']
         files: ^\.github/(workflows|actions)/.*\.ya?ml$
         types: [yaml]
 
   # YAML validation
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.37.1
+    rev: v1.38.0
     hooks:
       - id: yamllint
 
   # JSON Schema validation for build-config.json
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.33.3
+    rev: 0.38.0
     hooks:
       - id: check-jsonschema
         name: Validate .github/build-config.json
-        files: ^\.github/build-config\.json$
-        args: ['--schemafile', '.github/build-config.schema.json']
+        files: ^\.github/build-config(?:\.schema)?\.json$
+        args: ['--schemafile', '.github/build-config.schema.json', '.github/build-config.json']
+        pass_filenames: false
+
+      - id: check-jsonschema
+        alias: validate-dependabot-config
+        name: Validate Dependabot config
+        files: ^\.github/dependabot\.ya?ml$
+        args: ['--builtin-schema', 'vendor.dependabot']
+
+      - id: check-jsonschema
+        alias: validate-codecov-config
+        name: Validate Codecov config
+        files: ^\.github/codecov\.ya?ml$
+        args: ['--builtin-schema', 'vendor.codecov']
+
+      - id: check-jsonschema
+        alias: validate-issue-template-config
+        name: Validate GitHub issue template config
+        files: ^\.github/ISSUE_TEMPLATE/config\.ya?ml$
+        args: ['--builtin-schema', 'vendor.github-issue-config']
+
+      - id: check-jsonschema
+        alias: validate-issue-forms
+        name: Validate GitHub issue forms
+        files: ^\.github/ISSUE_TEMPLATE/(?!config\.ya?ml$).*\.ya?ml$
+        args: ['--builtin-schema', 'vendor.github-issue-forms']
+
+      - id: check-jsonschema
+        alias: validate-compose-config
+        name: Validate Docker Compose config
+        files: ^deploy/docker/(?:docker-)?compose\.ya?ml$
+        args: ['--builtin-schema', 'vendor.compose-spec']
+
+  # Renovate config validation (schema-checks the active renovate.json)
+  - repo: https://github.com/renovatebot/pre-commit-hooks
+    rev: 44.56.1
+    hooks:
+      - id: renovate-config-validator
+        files: ^\.github/renovate\.json$
 
   # Markdown linting (report-only, doesn't auto-fix)
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.47.0
+    rev: v0.49.1
     hooks:
       - id: markdownlint
-        exclude: ^(translations/|docs/(zh|ko|tr|ru|ja|de|es|fa|fr|he|uk)/|CHANGELOG\.md)
+        exclude: ^(translations/|tools/skills/|docs/(zh|ko|tr|ru|ja|de|es|fa|fr|he|uk)/|CHANGELOG\.md)
 
   # Prose linting (documentation quality)
+  # vale-sync downloads the Packages declared in .vale.ini into the gitignored
+  # .github/styles/ before vale runs; without it vale has no styles and no-ops.
+  - repo: local
+    hooks:
+      - id: vale-sync
+        name: vale sync (download styles)
+        language: golang
+        # The vale module root carries no Go package (the binary lives under cmd/vale), so a go
+        # install of the bare module fails and aborts the whole pre-commit run before any hook
+        # fires.
+        additional_dependencies:
+          - 'github.com/errata-ai/vale/v3/cmd/vale@v3.19.0'
+        entry: vale sync
+        files: ^(docs/en/|\.vale\.ini$)
+        pass_filenames: false
   - repo: https://github.com/errata-ai/vale
-    rev: v3.13.0
+    rev: v3.19.0
     hooks:
       - id: vale
-        files: ^docs/
+        files: ^docs/en/
         args: ['--no-exit']  # Don't fail on warnings, just report
 
   # Spell checking (report-only, doesn't auto-fix)
   - repo: https://github.com/crate-ci/typos
-    rev: v1.40.0
+    rev: v1.50.1
     hooks:
       - id: typos
-        args: []  # Empty args disables auto-fix mode
+        args: ['--force-exclude']  # Honor .typos.toml exclusions for explicit pre-commit paths
+        files: \.(md|markdown|txt|rst)$|^docs/
 
-  # QGC-specific checks (defined in .pre-commit-hooks.yaml)
-  - repo: .
-    rev: HEAD
+  - repo: local
     hooks:
       - id: qmllint
+        name: Lint QML files
+        entry: python3 ./tools/analyze.py --tool qmllint
+        language: system
+        files: \.qml$
+        exclude: ^build/
+        pass_filenames: true
+
+      - id: clang-tidy
+        name: Clang-Tidy static analysis
+        entry: python3 ./tools/analyze.py --tool clang-tidy
+        stages: [manual]
+        language: system
+        types_or: [c++, c]
+        exclude: ^(build/|libs/|test/)
+        pass_filenames: true
+
+      - id: cmake-format
+        name: cmake-format (check)
+        entry: cmake-format --check
+        language: python
+        additional_dependencies: ['cmakelang==0.6.13', 'pyyaml==6.0.3']
+        files: (CMakeLists\.txt|\.cmake)$
+        exclude: ^(build/|libs/|cmake/modules/CPM\.cmake$)
+
+      - id: cmake-lint
+        name: cmake-lint
+        entry: cmake-lint
+        language: python
+        additional_dependencies: ['cmakelang==0.6.13', 'pyyaml==6.0.3']
+        files: (CMakeLists\.txt|\.cmake)$
+        exclude: ^(build/|libs/|cmake/modules/CPM\.cmake$)
+
       - id: clazy
+        name: Qt static analysis (clazy)
+        entry: python3 ./tools/analyze.py --tool clazy
+        stages: [manual]
+        language: system
+        types: [c++]
+        exclude: ^(build/|libs/|test/)
+        pass_filenames: true
+
       - id: check-no-qassert
+        name: Check for Q_ASSERT in production code
+        entry: bash -c 'if grep -nH "Q_ASSERT" "$@" 2>/dev/null; then echo "::error::Q_ASSERT found in production code. Use defensive checks with early returns instead." >&2; exit 1; fi' --
+        language: system
+        types: [c++]
+        exclude: ^test/
+        pass_filenames: true
+
+      - id: check-categorized-logging
+        name: Check for category function passed to uncategorized logging macro
+        entry: >-
+          bash -c 'if grep -EnH "(^|[^A-Za-z0-9_])q(Debug|Info|Warning|Critical)\([[:space:]]*[A-Za-z_]+Log[[:space:]]*\)" "$@" 2>/dev/null;
+          then echo "::error::Category function passed to qDebug/qInfo/qWarning/qCritical.
+          Use the qCDebug/qCInfo/qCWarning/qCCritical macros instead." >&2; exit 1; fi' --
+        language: system
+        types: [c++]
+        pass_filenames: true
+
+      - id: check-no-qtest-ignore-message
+        name: Check for QTest::ignoreMessage in test code
+        entry: >-
+          bash -c 'if grep -nH "QTest::ignoreMessage" "$@" 2>/dev/null;
+          then echo "::error::QTest::ignoreMessage found.
+          Use expectLogMessage+verifyExpectedLogMessage or ignoreLogMessage instead." >&2; exit 1; fi' --
+        language: system
+        types: [c++]
+        files: ^test/
+        pass_filenames: true
+
+      - id: check-no-fixed-qwait
+        name: Check for fixed-delay QTest::qWait in test code
+        entry: >-
+          bash -c 'if grep -EnH "qWait\([1-9][0-9]*\)" "$@" 2>/dev/null;
+          then echo "::error::QTest::qWait(<non-zero>) found.
+          Use QTRY_VERIFY_WITH_TIMEOUT, QTRY_COMPARE_WITH_TIMEOUT,
+          or QSignalSpy::wait with a TestTimeout::* constant instead." >&2; exit 1; fi' --
+        language: system
+        types: [c++]
+        files: ^test/
+        pass_filenames: true
+
       - id: vehicle-null-check
+        name: Check vehicle null safety
+        entry: python3 tools/analyzers/vehicle_null_check.py
+        language: system
+        types: [c++]
+        exclude: ^(build/|libs/|test/)
+        pass_filenames: true
+
       - id: qt-translate-noop-check
+        name: Check QT_TRANSLATE_NOOP misuse
+        entry: python3 tools/analyzers/qt_translate_noop_check.py
+        language: system
+        types: [c++]
+        exclude: ^(build/|libs/|test/)
+        pass_filenames: true
 
 exclude: ^build/

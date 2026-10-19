@@ -1,0 +1,421 @@
+#include "AppCloseWarningUITest.h"
+
+#include <QtCore/QPointer>
+#include <QtCore/QRegularExpression>
+#include <QtCore/QScopeGuard>
+#include <QtCore/QTemporaryDir>
+#include <QtQuick/QQuickItem>
+#include <QtQuick/QQuickWindow>
+#include <QtTest/QTest>
+
+#include "MissionController.h"
+#include "MockLink.h"
+#include "MultiVehicleManager.h"
+#include "ParameterManager.h"
+#include "PlanMasterController.h"
+#include "Vehicle.h"
+
+UT_REGISTER_TEST(AppCloseWarningUITest, TestLabel::Integration, TestLabel::MissionManager)
+
+PlanMasterController *AppCloseWarningUITest::_planViewMasterController()
+{
+    QQuickItem *planView = _window ? _window->findChild<QQuickItem *>(QStringLiteral("mainView_plan")) : nullptr;
+    if (!planView) {
+        QTest::qFail("Could not find Plan view item (mainView_plan)", __FILE__, __LINE__);
+        return nullptr;
+    }
+
+    auto *masterController = qvariant_cast<PlanMasterController *>(planView->property("_planMasterController"));
+    if (!masterController) {
+        QTest::qFail("Plan view _planMasterController property is not a PlanMasterController", __FILE__, __LINE__);
+        return nullptr;
+    }
+
+    return masterController;
+}
+
+bool AppCloseWarningUITest::_forcePlanViewMissionDirty()
+{
+    PlanMasterController *masterController = _planViewMasterController();
+    if (!masterController) {
+        return false;
+    }
+
+    // Marking the mission controller dirty propagates to the master controller's
+    // dirtyForSave/dirtyForUpload, which is exactly what the unsaved-mission close
+    // check reads. The plan need not contain real items for the check to fire.
+    masterController->missionController()->setDirty(true);
+    return true;
+}
+
+void AppCloseWarningUITest::_testCloseWarningMatrix_data()
+{
+    // Each row sets up some combination of the three close-warning conditions and
+    // chooses where to reject. The three dialogs always appear in the fixed order
+    // Unsaved Mission -> Pending Parameter Updates -> Active Vehicle Connections.
+    //
+    //   mission       (M): force the Plan view mission dirty-for-save.
+    //   pendingWrites (P): force a vehicle parameter pending-write (requires a
+    //                      connection, since pending writes belong to a vehicle).
+    //   connection    (C): keep a MockLink connected.
+    //   rejectAtStep     : 1-based index into the *shown* dialog list at which to
+    //                      press No (cancel close). 0 means accept every dialog,
+    //                      which must close the app.
+    //
+    // Rows with P set but C clear are impossible (pending writes cannot outlive
+    // their vehicle) and are therefore omitted.
+    QTest::addColumn<bool>("mission");
+    QTest::addColumn<bool>("pendingWrites");
+    QTest::addColumn<bool>("connection");
+    QTest::addColumn<int>("rejectAtStep");
+
+    // No conditions: closing must proceed immediately with no warning dialog.
+    QTest::newRow("none-acceptAll")            << false << false << false << 0;
+
+    // Connection only.
+    QTest::newRow("C-acceptAll")               << false << false << true  << 0;
+    QTest::newRow("C-rejectConnection")        << false << false << true  << 1;
+
+    // Pending writes + connection.
+    QTest::newRow("PC-acceptAll")              << false << true  << true  << 0;
+    QTest::newRow("PC-rejectPending")          << false << true  << true  << 1;
+    QTest::newRow("PC-rejectConnection")       << false << true  << true  << 2;
+
+    // Mission only (offline, no connection).
+    QTest::newRow("M-acceptAll")               << true  << false << false << 0;
+    QTest::newRow("M-rejectMission")           << true  << false << false << 1;
+
+    // Mission + connection.
+    QTest::newRow("MC-acceptAll")              << true  << false << true  << 0;
+    QTest::newRow("MC-rejectMission")          << true  << false << true  << 1;
+    QTest::newRow("MC-rejectConnection")       << true  << false << true  << 2;
+
+    // Mission + pending writes + connection (all three dialogs).
+    QTest::newRow("MPC-acceptAll")             << true  << true  << true  << 0;
+    QTest::newRow("MPC-rejectMission")         << true  << true  << true  << 1;
+    QTest::newRow("MPC-rejectPending")         << true  << true  << true  << 2;
+    QTest::newRow("MPC-rejectConnection")      << true  << true  << true  << 3;
+}
+
+void AppCloseWarningUITest::_testCloseWarningMatrix()
+{
+    QFETCH(bool, mission);
+    QFETCH(bool, pendingWrites);
+    QFETCH(bool, connection);
+    QFETCH(int, rejectAtStep);
+
+    // Pending writes belong to a vehicle, so they can only exist alongside a
+    // connection. The data set never produces this combination.
+    QVERIFY2(!pendingWrites || connection, "Invalid matrix row: pending writes without a connection");
+
+    // Incidental one-time startup message when the map cache DB is upgraded.
+    ignoreLogMessage("API.QGCApplication.AppMessage", QtDebugMsg,
+                     QRegularExpression(QStringLiteral("Offline Map Cache database has been upgraded")));
+
+    startUI();
+    if (QTest::currentTestFailed()) {
+        return;
+    }
+
+    QPointer<MockLink> mockLink;
+    Vehicle *vehicle = nullptr;
+    bool appClosed = false;
+
+    // Teardown: on reject paths the window is still open and any MockLink is still
+    // connected, so disconnect before tearing down (matching runWithMockLink). On
+    // accept-all paths finishCloseProcess() has already shut the links down and
+    // closed the window, so only the engine needs destroying.
+    const auto guard = qScopeGuard([&] {
+        if (!appClosed) {
+            disconnectMockLink(mockLink);
+        }
+        closeUIWindow();
+        destroyUIEngine();
+    });
+
+    if (connection) {
+        mockLink = connectMockLinkAndWaitReady(
+            [] { return MockLink::startPX4MockLink(); },
+            vehicle);
+        if (!mockLink) {
+            return;
+        }
+    }
+
+    if (mission) {
+        if (!_forcePlanViewMissionDirty()) {
+            return;
+        }
+    }
+
+    if (pendingWrites) {
+        QVERIFY2(vehicle, "Pending writes requested but no vehicle is connected");
+        vehicle->parameterManager()->setPendingWritesForTest(true);
+    }
+
+    QVERIFY2(clickToolSelectDropdownButton(QStringLiteral("toolbar_viewClose")),
+             "Failed to click Close button in tool select dropdown");
+
+    // The dialogs that should appear, in their fixed presentation order.
+    QStringList expectedDialogs;
+    if (mission)       expectedDialogs << QStringLiteral("Unsaved Mission");
+    if (pendingWrites) expectedDialogs << QStringLiteral("Pending Parameter Updates");
+    if (connection)    expectedDialogs << QStringLiteral("Active Vehicle Connections");
+
+    for (int step = 0; step < expectedDialogs.size(); ++step) {
+        const QString &title = expectedDialogs.at(step);
+        QVERIFY2(waitForDialog(title),
+                 qPrintable(QStringLiteral("Expected close-warning dialog not shown: %1").arg(title)));
+
+        const bool rejectHere = (rejectAtStep != 0) && (step == rejectAtStep - 1);
+        if (rejectHere) {
+            QVERIFY2(rejectDialog(),
+                     qPrintable(QStringLiteral("Failed to reject dialog: %1").arg(title)));
+
+            // Rejecting cancels the close: the window must stay open and no later
+            // dialog in the sequence may appear.
+            QVERIFY2(_window && _window->isVisible(),
+                     qPrintable(QStringLiteral("Window closed after rejecting dialog: %1").arg(title)));
+            if (step + 1 < expectedDialogs.size()) {
+                QVERIFY2(!dialogVisible(expectedDialogs.at(step + 1)),
+                         qPrintable(QStringLiteral("Later dialog shown after a reject: %1").arg(expectedDialogs.at(step + 1))));
+            }
+            return;
+        }
+
+        QVERIFY2(acceptDialog(),
+                 qPrintable(QStringLiteral("Failed to accept dialog: %1").arg(title)));
+    }
+
+    // Every shown dialog (if any) was accepted, so the app must finish closing.
+    QVERIFY2(QTest::qWaitFor([this] { return _window && !_window->isVisible(); }, 3000),
+             "App did not close after accepting all close-warning dialogs");
+    appClosed = true;
+}
+
+void AppCloseWarningUITest::_testNoUnsavedMissionWarningForDownloadedMission()
+{
+    // Incidental one-time startup message when the map cache DB is upgraded.
+    ignoreLogMessage("API.QGCApplication.AppMessage", QtDebugMsg,
+                     QRegularExpression(QStringLiteral("Offline Map Cache database has been upgraded")));
+
+    // connectMockLinkAndWaitReady (used by runWithMockLink) waits for the
+    // vehicle's initialConnectComplete signal. The InitialConnectStateMachine
+    // requests the mission as one of its states, so by the time the body runs
+    // the mission has been downloaded from the vehicle and the Plan view's
+    // PlanMasterController has loaded it.
+    runWithMockLink(
+        [] { return MockLink::startPX4MockLinkWithMission(); },
+        [this](QPointer<MockLink> mockLink, Vehicle *vehicle) {
+            Q_UNUSED(mockLink);
+            Q_UNUSED(vehicle);
+
+            // runWithMockLink waits for initialConnectComplete. The
+            // InitialConnectStateMachine blocks on completion of the mission,
+            // geofence, and rally point loads before that signal fires, so the
+            // plan is fully downloaded by the time this body runs.
+            QVERIFY2(clickToolSelectDropdownButton(QStringLiteral("toolbar_viewClose")),
+                     "Failed to click Close button in tool select dropdown");
+
+            // The active-connection check runs only after the unsaved-mission check
+            // passes. Waiting for its dialog to appear proves the mission check did
+            // not block — i.e. the downloaded plan was not treated as dirty.
+            QVERIFY2(waitForDialog(QStringLiteral("Active Vehicle Connections")),
+                     "Active vehicle connection warning dialog was not shown on close");
+
+            // A plan that was just downloaded from the vehicle reflects exactly what is
+            // on the vehicle. The user has made no edits, so the unsaved-mission warning
+            // must NOT appear. Otherwise closing the app would wrongly warn about a
+            // "mission edit in progress" even though nothing was edited.
+            QVERIFY2(!dialogVisible(QStringLiteral("Unsaved Mission")),
+                     "Unsaved mission warning shown for a freshly downloaded, unedited plan");
+        });
+}
+
+void AppCloseWarningUITest::_testNoUnsavedMissionWarningAfterSuccessfulUpload()
+{
+    // Incidental one-time startup message when the map cache DB is upgraded.
+    ignoreLogMessage("API.QGCApplication.AppMessage", QtDebugMsg,
+                     QRegularExpression(QStringLiteral("Offline Map Cache database has been upgraded")));
+
+    runWithMockLink(
+        [] { return MockLink::startPX4MockLink(); },
+        [this](QPointer<MockLink> mockLink, Vehicle *vehicle) {
+            Q_UNUSED(mockLink);
+            Q_UNUSED(vehicle);
+
+            PlanMasterController *masterController = _planViewMasterController();
+            if (!masterController) {
+                return;
+            }
+
+            // Edit the plan, then upload it to the vehicle.
+            masterController->missionController()->setDirty(true);
+            QVERIFY2(masterController->dirtyForSave() && masterController->dirtyForUpload(),
+                     "Dirtying the mission controller did not propagate to the master controller");
+
+            masterController->sendToVehicle();
+            QTRY_VERIFY_WITH_TIMEOUT(!masterController->syncInProgress() && !masterController->dirtyForUpload(), TestTimeout::mediumMs());
+
+            // The plan was never saved to disk, only uploaded.
+            QVERIFY(masterController->dirtyForSave());
+
+            QVERIFY2(clickToolSelectDropdownButton(QStringLiteral("toolbar_viewClose")),
+                     "Failed to click Close button in tool select dropdown");
+
+            // The active-connection check runs only after the unsaved-mission check
+            // passes. Waiting for its dialog to appear proves the mission check did
+            // not block.
+            QVERIFY2(waitForDialog(QStringLiteral("Active Vehicle Connections")),
+                     "Active vehicle connection warning dialog was not shown on close");
+
+            // The edits are safely on the vehicle, so closing loses nothing and the
+            // unsaved-mission warning must NOT appear (issue #14537).
+            QVERIFY2(!dialogVisible(QStringLiteral("Unsaved Mission")),
+                     "Unsaved mission warning shown after a successful mission upload");
+        });
+}
+
+void AppCloseWarningUITest::_testNoUnsavedMissionWarningAfterSaveToFile()
+{
+    // Incidental one-time startup message when the map cache DB is upgraded.
+    ignoreLogMessage("API.QGCApplication.AppMessage", QtDebugMsg,
+                     QRegularExpression(QStringLiteral("Offline Map Cache database has been upgraded")));
+
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    runWithMockLink(
+        [] { return MockLink::startPX4MockLink(); },
+        [this, &tempDir](QPointer<MockLink> mockLink, Vehicle *vehicle) {
+            Q_UNUSED(mockLink);
+            Q_UNUSED(vehicle);
+
+            PlanMasterController *masterController = _planViewMasterController();
+            if (!masterController) {
+                return;
+            }
+
+            // Edit the plan, then save it to disk without uploading.
+            masterController->missionController()->setDirty(true);
+            QVERIFY2(masterController->dirtyForSave() && masterController->dirtyForUpload(),
+                     "Dirtying the mission controller did not propagate to the master controller");
+
+            QVERIFY(masterController->saveToFile(tempDir.filePath(QStringLiteral("close-warning-test"))));
+
+            // Saving clears dirty-for-save but the plan was never uploaded.
+            QVERIFY(!masterController->dirtyForSave());
+            QVERIFY(masterController->dirtyForUpload());
+
+            QVERIFY2(clickToolSelectDropdownButton(QStringLiteral("toolbar_viewClose")),
+                     "Failed to click Close button in tool select dropdown");
+
+            // The active-connection check runs only after the unsaved-mission check
+            // passes. Waiting for its dialog to appear proves the mission check did
+            // not block.
+            QVERIFY2(waitForDialog(QStringLiteral("Active Vehicle Connections")),
+                     "Active vehicle connection warning dialog was not shown on close");
+
+            // The edits are safely on disk, so closing loses nothing and the
+            // unsaved-mission warning must NOT appear.
+            QVERIFY2(!dialogVisible(QStringLiteral("Unsaved Mission")),
+                     "Unsaved mission warning shown after saving the plan to disk");
+        });
+}
+
+void AppCloseWarningUITest::_testCloseNeedsConfirmation_data()
+{
+    // Pending writes always come with a connection, which already needs
+    // confirmation, so they add no distinguishable row.
+    QTest::addColumn<bool>("mission");
+    QTest::addColumn<bool>("connection");
+
+    QTest::newRow("none") << false << false;
+    QTest::newRow("mission") << true << false;
+    QTest::newRow("connection") << false << true;
+}
+
+void AppCloseWarningUITest::_testCloseNeedsConfirmation()
+{
+    QFETCH(bool, mission);
+    QFETCH(bool, connection);
+
+    // Incidental one-time startup message when the map cache DB is upgraded.
+    ignoreLogMessage("API.QGCApplication.AppMessage", QtDebugMsg,
+                     QRegularExpression(QStringLiteral("Offline Map Cache database has been upgraded")));
+
+    startUI();
+    if (QTest::currentTestFailed()) {
+        return;
+    }
+
+    QPointer<MockLink> mockLink;
+    const auto guard = qScopeGuard([&] {
+        disconnectMockLink(mockLink);
+        closeUIWindow();
+        destroyUIEngine();
+    });
+
+    if (connection) {
+        Vehicle* vehicle = nullptr;
+        mockLink = connectMockLinkAndWaitReady([] { return MockLink::startPX4MockLink(); }, vehicle);
+        if (!mockLink) {
+            return;
+        }
+    }
+
+    if (mission && !_forcePlanViewMissionDirty()) {
+        return;
+    }
+
+    // The Android back shortcut is enabled exactly when this is true.
+    QVariant needsConfirmation;
+    QVERIFY(QMetaObject::invokeMethod(_window, "_closeNeedsConfirmation", Q_RETURN_ARG(QVariant, needsConfirmation)));
+    QCOMPARE(needsConfirmation.toBool(), mission || connection);
+}
+
+void AppCloseWarningUITest::_testBackKeyRaisesCloseWarning()
+{
+    // Incidental one-time startup message when the map cache DB is upgraded.
+    ignoreLogMessage("API.QGCApplication.AppMessage", QtDebugMsg,
+                     QRegularExpression(QStringLiteral("Offline Map Cache database has been upgraded")));
+
+    runWithMockLink(
+        [] { return MockLink::startPX4MockLink(); },
+        [this](QPointer<MockLink> mockLink, Vehicle* vehicle) {
+            Q_UNUSED(mockLink);
+            Q_UNUSED(vehicle);
+
+            // The shortcut is Android-only; enable it to drive the real key routing here.
+            QObject* const backShortcut = _window->findChild<QObject*>(QStringLiteral("androidBackShortcut"));
+            QVERIFY2(backShortcut, "androidBackShortcut not found");
+            QVERIFY(backShortcut->setProperty("enabled", true));
+
+            // Shortcuts only match in the active window.
+            _window->requestActivate();
+            QVERIFY2(QTest::qWaitForWindowActive(_window, TestTimeout::mediumMs()), "QML window never became active");
+
+            // An open popup takes back first. onClosing runs synchronously and sets the guard
+            // before any warning is shown, so an unset guard proves the checks never started.
+            QVERIFY2(clickButton(QStringLiteral("toolbar_qgcLogo")), "Failed to open the tool select drawer");
+            QVERIFY2(findVisibleItem(_rootItem, QStringLiteral("toolbar_viewClose"), TestTimeout::mediumMs()),
+                     "Tool select drawer did not open");
+            QTest::keyClick(_window, Qt::Key_Back);
+            QVERIFY2(!_window->property("_reentrantCloseGuard").toBool(),
+                     "Back with a popup open started the close checks");
+
+            QTest::keyClick(_window, Qt::Key_Escape);
+            QVERIFY2(
+                waitForCondition([this] { return !findVisibleItem(_rootItem, QStringLiteral("toolbar_viewClose"), 0); },
+                                 TestTimeout::mediumMs(), QStringLiteral("tool select drawer closed")),
+                "Tool select drawer did not close on Escape");
+
+            QTest::keyClick(_window, Qt::Key_Back);
+            QVERIFY2(waitForDialog(QStringLiteral("Active Vehicle Connections")),
+                     "Back did not raise the active vehicle connection warning");
+
+            // Declining keeps QGC open.
+            QVERIFY2(rejectDialog(), "Failed to reject the close warning");
+            QVERIFY2(_window->isVisible(), "Window closed after rejecting the close warning");
+        });
+}

@@ -7,16 +7,12 @@
 #include <QtCore/QStringView>
 #include <QtTest/QTest>
 
-class QGeoCoordinate;
 class QRegularExpression;
-class QTemporaryDir;
-class QTemporaryFile;
 
 #include <chrono>
 #include <functional>
 #include <initializer_list>
 #include <memory>
-#include <vector>
 
 // ============================================================================
 // Test Labels - Categories for filtering and organizing tests
@@ -82,6 +78,16 @@ QStringList availableLabelNames();
 #define UT_REGISTER_TEST_STANDALONE(className, ...) \
     static UnitTestWrapper<className> s_##className##_registration(#className, true, {__VA_ARGS__});
 
+/// Register a pure-logic test that needs no QGCApplication (no QML engine, no vehicle,
+/// no plugin scan). Such a test opts in to the lightweight harness: when the test binary
+/// is launched in lightweight mode it runs against a bare QCoreApplication, skipping the
+/// expensive full-app startup. In the default (full-app) run it behaves like any other
+/// non-standalone test, so this macro is always safe to use.
+/// Usage: UT_REGISTER_TEST_LIGHTWEIGHT(MyPureLogicTest, TestLabel::Unit, TestLabel::Utilities)
+#define UT_REGISTER_TEST_LIGHTWEIGHT(className, ...) \
+    static UnitTestWrapper<className> s_##className##_registration( \
+        UnitTestWrapper<className>::Lightweight, #className, false, {__VA_ARGS__});
+
 // ============================================================================
 // Test Assertion Macros
 // ============================================================================
@@ -123,14 +129,7 @@ QStringList availableLabelNames();
 /// Wrapper around QTRY_COMPARE_WITH_TIMEOUT for consistency with QVERIFY_TRUE_WAIT.
 #define QCOMPARE_TRUE_WAIT(actual, expected, timeoutMs) QTRY_COMPARE_WITH_TIMEOUT(actual, expected, timeoutMs)
 
-/// Compare floating point values with configurable epsilon
-#define QCOMPARE_FUZZY(actual, expected, epsilon)                                             \
-    QVERIFY2(qAbs((actual) - (expected)) <= (epsilon),                                        \
-             qPrintable(QString("Values differ: actual=%1, expected=%2, diff=%3, epsilon=%4") \
-                            .arg(actual)                                                      \
-                            .arg(expected)                                                    \
-                            .arg(qAbs((actual) - (expected)))                                 \
-                            .arg(epsilon)))
+#include "UnitTestMath.h"
 
 /// Declare a parameterized test function pair
 /// Creates both the test slot and its _data() companion
@@ -202,6 +201,8 @@ Q_DECLARE_LOGGING_CATEGORY(UnitTestLog)
 class Fact;
 class MissionItem;
 class QSignalSpy;
+class Vehicle;
+class VehicleComponent;
 
 // ============================================================================
 // Test Context - Improved failure diagnostics
@@ -291,6 +292,14 @@ public:
     /// Returns total number of registered tests
     static int testCount();
 
+    /// Returns names of registered tests that opted in to the lightweight harness
+    /// (UT_REGISTER_TEST_LIGHTWEIGHT), optionally filtered by label. Used by the
+    /// lightweight entry point to select the bare-QCoreApplication subset.
+    static QStringList registeredLightweightTests(TestLabels labelFilter = TestLabels());
+
+    /// True if @a testName was registered as lightweight.
+    static bool isLightweightTest(QStringView testName);
+
     /// Enable verbose output for debugging
     static void setVerbose(bool verbose);
 
@@ -298,50 +307,50 @@ public:
     static bool isVerbose();
 
     /// Wait for a signal with standardized timeout diagnostics.
-    static bool waitForSignal(QSignalSpy& spy, int timeoutMs, QStringView signalName = {});
+    static bool waitForSignal(QSignalSpy& spy, std::chrono::milliseconds timeout, QStringView signalName = {});
 
     /// Wait to ensure no additional signal emissions occur during timeout.
-    static bool waitForNoSignal(QSignalSpy& spy, int timeoutMs, QStringView signalName = {});
+    static bool waitForNoSignal(QSignalSpy& spy, std::chrono::milliseconds timeout, QStringView signalName = {});
 
     /// Wait until a signal spy reaches at least expectedCount emissions.
-    static bool waitForSignalCount(QSignalSpy& spy, int expectedCount, int timeoutMs, QStringView signalName = {});
+    static bool waitForSignalCount(QSignalSpy& spy, int expectedCount, std::chrono::milliseconds timeout,
+                                   QStringView signalName = {});
 
     /// Wait for a condition with standardized timeout diagnostics.
-    static bool waitForCondition(const std::function<bool()>& condition, int timeoutMs,
+    static bool waitForCondition(const std::function<bool()>& condition, std::chrono::milliseconds timeout,
                                  QStringView conditionName = {});
 
     /// Waits for a QObject to be deleted (QPointer becomes null) while draining deferred deletes.
-    static bool waitForDeleted(const QPointer<QObject>& objectPtr, int timeoutMs,
+    static bool waitForDeleted(const QPointer<QObject>& objectPtr, std::chrono::milliseconds timeout,
                                QStringView objectName = {});
 
-    /// @name std::chrono overloads — prefer these in new code
+    /// @name int millisecond overloads
     /// @{
-    static bool waitForSignal(QSignalSpy& spy, std::chrono::milliseconds timeout, QStringView signalName = {})
+    static bool waitForSignal(QSignalSpy& spy, int timeoutMs, QStringView signalName = {})
     {
-        return waitForSignal(spy, static_cast<int>(timeout.count()), signalName);
+        return waitForSignal(spy, std::chrono::milliseconds(timeoutMs), signalName);
     }
 
-    static bool waitForNoSignal(QSignalSpy& spy, std::chrono::milliseconds timeout, QStringView signalName = {})
+    static bool waitForNoSignal(QSignalSpy& spy, int timeoutMs, QStringView signalName = {})
     {
-        return waitForNoSignal(spy, static_cast<int>(timeout.count()), signalName);
+        return waitForNoSignal(spy, std::chrono::milliseconds(timeoutMs), signalName);
     }
 
-    static bool waitForSignalCount(QSignalSpy& spy, int expectedCount, std::chrono::milliseconds timeout,
-                                   QStringView signalName = {})
+    static bool waitForSignalCount(QSignalSpy& spy, int expectedCount, int timeoutMs, QStringView signalName = {})
     {
-        return waitForSignalCount(spy, expectedCount, static_cast<int>(timeout.count()), signalName);
+        return waitForSignalCount(spy, expectedCount, std::chrono::milliseconds(timeoutMs), signalName);
     }
 
-    static bool waitForCondition(const std::function<bool()>& condition, std::chrono::milliseconds timeout,
+    static bool waitForCondition(const std::function<bool()>& condition, int timeoutMs,
                                  QStringView conditionName = {})
     {
-        return waitForCondition(condition, static_cast<int>(timeout.count()), conditionName);
+        return waitForCondition(condition, std::chrono::milliseconds(timeoutMs), conditionName);
     }
 
-    static bool waitForDeleted(const QPointer<QObject>& objectPtr, std::chrono::milliseconds timeout,
+    static bool waitForDeleted(const QPointer<QObject>& objectPtr, int timeoutMs,
                                QStringView objectName = {})
     {
-        return waitForDeleted(objectPtr, static_cast<int>(timeout.count()), objectName);
+        return waitForDeleted(objectPtr, std::chrono::milliseconds(timeoutMs), objectName);
     }
     /// @}
 
@@ -349,6 +358,10 @@ public:
     /// If iterations <= 0, CI-aware defaults are used.
     /// If waitMs < 0, CI-aware defaults are used. If waitMs == 0, no sleep between iterations.
     static void settleEventLoopForCleanup(int iterations = 0, int waitMs = 0);
+
+    /// Find a vehicle setup component (e.g. "Frame", "Sensors", "Radio") by display name.
+    /// Returns nullptr if not found.
+    static VehicleComponent *findVehicleComponent(Vehicle *vehicle, const QString &name);
 
     // ========================================================================
     // Test Properties
@@ -362,6 +375,19 @@ public:
     void setStandalone(bool standalone)
     {
         _standalone = standalone;
+    }
+
+    /// True if this test opted in to the lightweight (bare QCoreApplication) harness.
+    /// Pure-logic tests set this via UT_REGISTER_TEST_LIGHTWEIGHT; it has no effect on
+    /// the default full-QGCApplication run, where lightweight tests run like any other.
+    bool lightweight() const
+    {
+        return _lightweight;
+    }
+
+    void setLightweight(bool lightweight)
+    {
+        _lightweight = lightweight;
     }
 
     TestLabels labels() const
@@ -403,34 +429,6 @@ public:
     /// @return true if file content matches expected bytes
     static bool fileContentsEqual(const QString& filePath, const QByteArray& expectedContent);
 
-    /// Compares two MissionItems for equality using QCOMPARE/QVERIFY
-    static void _missionItemsEqual(const MissionItem& actual, const MissionItem& expected);
-
-    // ========================================================================
-    // Fact/Value Manipulation
-    // ========================================================================
-
-    /// Changes a Fact's rawValue to trigger valueChanged signal
-    /// @param fact The fact to modify
-    /// @param increment For numeric facts, amount to add (0 = use default of 1)
-    void changeFactValue(Fact* fact, double increment = 0);
-
-    /// Returns a coordinate offset by 1 meter north
-    QGeoCoordinate changeCoordinateValue(const QGeoCoordinate& coordinate);
-
-    // ========================================================================
-    // Temporary File/Directory Helpers
-    // ========================================================================
-
-    /// Creates a temporary file that is automatically deleted when test ends
-    /// @param templateName Optional template (e.g., "test_XXXXXX.txt")
-    /// @return Pointer to temporary file, or nullptr on failure
-    QTemporaryFile* createTempFile(const QString& templateName = QString());
-
-    /// Creates a temporary directory that is automatically deleted when test ends
-    /// @return Pointer to temporary directory, or nullptr on failure
-    QTemporaryDir* createTempDir();
-
     /// Returns the path to test resource files
     /// @param relativePath Path relative to test/resources directory
     static QString testResourcePath(const QString& relativePath = QString());
@@ -449,26 +447,59 @@ protected slots:
     virtual void cleanup();
 
 protected:
+    /// True when an ArduPilot firmware plugin factory is registered. Single-firmware
+    /// builds (e.g. custom) don't register one; APM-specific tests should QSKIP.
+    static bool apmFirmwareSupported();
+
     /// Emits a one-time failure context dump for the currently running test function.
     void dumpFailureContextIfTestFailed(QStringView reason = {});
 
     /// Allows derived fixtures to append state to failure dumps.
     virtual QString failureContextSummary() const;
 
-    /// Declare that a captured log message matching @a pattern at level @a type
-    /// is expected and should not cause a test failure in cleanup().
-    /// Call this before the code that emits the message.
-    void expectLogMessage(QtMsgType type, const QRegularExpression &pattern);
+    /// Declare one required log message for the current test flow.
+    /// Call this before the code that emits the message, then call
+    /// verifyExpectedLogMessage() immediately after that code.
+    ///
+    /// @a category must be the exact Qt logging category string (e.g.
+    /// "Utilities.QGCFileHelper"). An empty string is a precondition
+    /// violation and will Q_ASSERT in debug builds.
+    ///
+    /// Contract:
+    /// - Multiple pending expectations are allowed (FIFO verification order).
+    /// - If verifyExpectedLogMessage() is never called, cleanup() fails.
+    /// - After verifyExpectedLogMessage(), that expectation is consumed.
+    void expectLogMessage(const char *category, QtMsgType type, const QRegularExpression &pattern);
+
+    /// Verify and consume the next pending expectLogMessage() expectation.
+    /// Fails the test if no matching message was captured after expectLogMessage().
+    void verifyExpectedLogMessage();
+
+    /// Declare that a showAppMessage() call matching @a messagePattern is required.
+    /// Call verifyExpectedLogMessage() after the code that should emit it.
+    /// Convenience wrapper over expectLogMessage for the QGCAppMessageLog category.
+    void expectAppMessage(const QRegularExpression &messagePattern);
+
+    /// Permanently suppress all log messages matching @a pattern at level @a type
+    /// in the given @a category for the duration of the test.
+    ///
+    /// @a category must be the exact Qt logging category string (e.g.
+    /// "Utilities.QGCFileHelper"). An empty string is a precondition
+    /// violation and will Q_ASSERT in debug builds.
+    ///
+    /// Use this sparingly and only as a last resort for non-deterministic or
+    /// environment-dependent noise that cannot be tied to a precise call site.
+    ///
+    /// Prefer expectLogMessage(...) + verifyExpectedLogMessage() at specific
+    /// points in the test whenever the log is part of the behavior under test.
+    /// That pairing provides a stronger assertion and avoids masking regressions.
+    void ignoreLogMessage(const char *category, QtMsgType type, const QRegularExpression &pattern);
 
 private:
-    void _cleanupTempFiles();
     void _resetTestState();
 
     static QList<UnitTest*>& _testList();
     static QString& _outputFile();
-
-    std::vector<std::unique_ptr<QTemporaryFile>> _tempFiles;
-    std::vector<std::unique_ptr<QTemporaryDir>> _tempDirs;
 
     // Defined in UnitTest.cc to keep LogEntry.h out of test TUs.
     struct ExpectedLogMessages;
@@ -480,6 +511,7 @@ private:
     bool _cleanupCalled = false;
     bool _failureContextDumped = false;
     bool _standalone = false;
+    bool _lightweight = false;
 };
 
 // ============================================================================
@@ -493,11 +525,29 @@ template <class T>
 class UnitTestWrapper
 {
 public:
+    /// Tag type selecting the lightweight (bare QCoreApplication) registration overload.
+    struct LightweightTag {};
+    static constexpr LightweightTag Lightweight{};
+
     UnitTestWrapper(const QString& name, bool standalone, std::initializer_list<TestLabel> labels = {})
+        : UnitTestWrapper(name, standalone, /*lightweight=*/false, labels)
+    {
+    }
+
+    UnitTestWrapper(LightweightTag, const QString& name, bool standalone,
+                    std::initializer_list<TestLabel> labels = {})
+        : UnitTestWrapper(name, standalone, /*lightweight=*/true, labels)
+    {
+    }
+
+private:
+    UnitTestWrapper(const QString& name, bool standalone, bool lightweight,
+                    std::initializer_list<TestLabel> labels)
     {
         _unitTest = std::make_unique<T>();
         _unitTest->setObjectName(name);
         _unitTest->setStandalone(standalone);
+        _unitTest->setLightweight(lightweight);
 
         TestLabels combinedLabels;
         for (TestLabel label : labels) {
@@ -508,6 +558,5 @@ public:
         UnitTest::_addTest(_unitTest.get());
     }
 
-private:
     std::unique_ptr<T> _unitTest;
 };

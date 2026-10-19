@@ -1,0 +1,200 @@
+#pragma once
+
+#include "LinkConfiguration.h"
+#include "LinkInterface.h"
+#include "SerialPortManager.h"
+
+#include <QtCore/QString>
+#ifdef Q_OS_ANDROID
+#include "qserialport.h"
+#else
+#include <QtSerialPort/QSerialPort>
+#endif
+
+#include <atomic>
+
+class QThread;
+
+/// Captured on the application thread; changes take effect on the next connection.
+struct SerialConnectionSettings
+{
+    QString portName;
+    qint32 baud = QSerialPort::Baud57600;
+    QSerialPort::DataBits dataBits = QSerialPort::Data8;
+    QSerialPort::FlowControl flowControl = QSerialPort::NoFlowControl;
+    QSerialPort::StopBits stopBits = QSerialPort::OneStop;
+    QSerialPort::Parity parity = QSerialPort::NoParity;
+    bool dtrForceLow = false;
+    bool autoConnect = false;
+    bool bootloader = false;
+};
+
+/*===========================================================================*/
+
+class SerialConfiguration : public LinkConfiguration
+{
+    Q_OBJECT
+    Q_PROPERTY(qint32                   baud            READ baud            WRITE setBaud        NOTIFY baudChanged)
+    Q_PROPERTY(QSerialPort::DataBits    dataBits        READ dataBits        WRITE setDataBits    NOTIFY dataBitsChanged)
+    Q_PROPERTY(QSerialPort::FlowControl flowControl     READ flowControl     WRITE setFlowControl NOTIFY flowControlChanged)
+    Q_PROPERTY(QSerialPort::StopBits    stopBits        READ stopBits        WRITE setStopBits    NOTIFY stopBitsChanged)
+    Q_PROPERTY(QSerialPort::Parity      parity          READ parity          WRITE setParity      NOTIFY parityChanged)
+    Q_PROPERTY(QString                  portName        READ portName        WRITE setPortName    NOTIFY portNameChanged)
+    Q_PROPERTY(QString                  portDisplayName READ portDisplayName                      NOTIFY portDisplayNameChanged)
+    Q_PROPERTY(bool                     usbDirect       READ usbDirect       WRITE setUsbDirect   NOTIFY usbDirectChanged)
+    Q_PROPERTY(bool                     dtrForceLow     READ dtrForceLow     WRITE setdtrForceLow NOTIFY dtrForceLowChanged)
+
+public:
+    explicit SerialConfiguration(const QString &name, QObject *parent = nullptr);
+    explicit SerialConfiguration(const SerialConfiguration *copy, QObject *parent = nullptr);
+    virtual ~SerialConfiguration();
+
+    LinkType type() const override { return LinkConfiguration::TypeSerial; }
+    void copyFrom(const LinkConfiguration *source) override;
+    void loadSettings(QSettings &settings, const QString &root) override;
+    void saveSettings(QSettings &settings, const QString &root) const override;
+    QString settingsURL() const override { return QStringLiteral("SerialSettings.qml"); }
+    QString settingsTitle() const override { return tr("Serial Link Settings"); }
+
+    qint32 baud() const { return _baud; }
+    void setBaud(qint32 baud) { if (baud != _baud) { _baud = baud; emit baudChanged(); } }
+
+    QSerialPort::DataBits dataBits() const { return _dataBits; }
+    void setDataBits(QSerialPort::DataBits databits) { if (databits != _dataBits) { _dataBits = databits; emit dataBitsChanged(); } }
+
+    QSerialPort::FlowControl flowControl() const { return _flowControl; }
+    void setFlowControl(QSerialPort::FlowControl flowControl) { if (flowControl != _flowControl) { _flowControl = flowControl; emit flowControlChanged(); } }
+
+    QSerialPort::StopBits stopBits() const { return _stopBits; }
+    void setStopBits(QSerialPort::StopBits stopBits) { if (stopBits != _stopBits) { _stopBits = stopBits; emit stopBitsChanged(); } }
+
+    QSerialPort::Parity parity() const { return _parity; }
+    void setParity(QSerialPort::Parity parity) { if (parity != _parity) { _parity = parity; emit parityChanged(); } }
+
+    QString portName() const { return _portName; }
+    void setPortName(const QString &name);
+
+    QString portDisplayName() const { return _portDisplayName; }
+    void setPortDisplayName(const QString &portDisplayName) { if (portDisplayName != _portDisplayName) { _portDisplayName = portDisplayName; emit portDisplayNameChanged(); } }
+
+    bool usbDirect() const { return _usbDirect; }
+    void setUsbDirect(bool usbDirect) { if (usbDirect != _usbDirect) { _usbDirect = usbDirect; emit usbDirectChanged(); } }
+
+    /// Port was identified as a SiK radio by USB VID/PID at auto-connect. Runtime only, not persisted.
+    bool sikRadio() const { return _sikRadio; }
+    void setSikRadio(bool sikRadio) { _sikRadio = sikRadio; }
+
+    bool dtrForceLow() const { return _dtrForceLow; }
+    void setdtrForceLow(bool dtrForceLow) { if (dtrForceLow != _dtrForceLow) { _dtrForceLow = dtrForceLow; emit dtrForceLowChanged(); } }
+
+    SerialConnectionSettings connectionSettings() const;
+
+    static QStringList supportedBaudRates();
+    static QString cleanPortDisplayName(const QString &name);
+
+signals:
+    void baudChanged();
+    void dataBitsChanged();
+    void flowControlChanged();
+    void stopBitsChanged();
+    void parityChanged();
+    void portNameChanged();
+    void portDisplayNameChanged();
+    void usbDirectChanged();
+    void dtrForceLowChanged();
+
+private:
+    qint32 _baud = QSerialPort::Baud57600;
+    QSerialPort::DataBits _dataBits = QSerialPort::Data8;
+    QSerialPort::FlowControl _flowControl = QSerialPort::NoFlowControl;
+    QSerialPort::StopBits _stopBits = QSerialPort::OneStop;
+    QSerialPort::Parity _parity = QSerialPort::NoParity;
+    QString _portName;
+    QString _portDisplayName;
+    bool _usbDirect = false;
+    bool _sikRadio = false;
+    bool _dtrForceLow = false;
+};
+
+/*===========================================================================*/
+
+class SerialWorker : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit SerialWorker(SerialConnectionSettings settings, SerialPortManager::ReservationPtr reservation = {},
+                          QObject* parent = nullptr);
+    ~SerialWorker();
+
+    bool isConnected() const;
+    const QSerialPort *port() const { return _port; }
+
+signals:
+    void connected();
+    void disconnected();
+    void dataReceived(const QByteArray &data);
+    void dataSent(const QByteArray &data);
+    void errorOccurred(const QString &errorString);
+
+public slots:
+    void setupPort();
+    void connectToPort();
+    void disconnectFromPort();
+    void writeData(const QByteArray &data);
+    void checkPortAvailability(const QStringList& availablePorts);
+
+private slots:
+    void _onPortConnected();
+    void _onPortDisconnected();
+    void _onPortReadyRead();
+    void _onPortBytesWritten(qint64 bytes) const;
+    void _onPortErrorOccurred(QSerialPort::SerialPortError portError);
+
+private:
+    bool _configurePort();
+
+    const SerialConnectionSettings _settings;
+    const SerialPortManager::ReservationPtr _reservation;
+    QSerialPort *_port = nullptr;
+    std::atomic<bool> _isConnected{false};
+    bool _errorEmitted = false;
+};
+
+/*===========================================================================*/
+
+class SerialLink : public LinkInterface
+{
+    Q_OBJECT
+
+public:
+    explicit SerialLink(SharedLinkConfigurationPtr& config, SerialPortManager::ReservationPtr reservation,
+                        QObject* parent = nullptr);
+    virtual ~SerialLink();
+
+    bool isConnected() const override;
+    bool isSecureConnection() const override { return _serialConfig->usbDirect(); }
+    bool isRadioLink() const override { return _serialConfig->sikRadio() || LinkInterface::isRadioLink(); }
+
+    const QSerialPort *port() const { return _worker->port(); }
+
+public slots:
+    void disconnect() override;
+
+private slots:
+    void _onConnected();
+    void _onDisconnected();
+    void _onDataReceived(const QByteArray &data);
+    void _onDataSent(const QByteArray &data);
+    void _onErrorOccurred(const QString &errorString);
+
+private:
+    bool _connect() override;
+    void _writeBytes(const QByteArray &data) override;
+
+    const SerialConfiguration *_serialConfig = nullptr;
+    const SerialPortManager::ReservationPtr _reservation;
+    SerialWorker *_worker = nullptr;
+    QThread *_workerThread = nullptr;
+    std::atomic<bool> _disconnectedEmitted{false};
+};

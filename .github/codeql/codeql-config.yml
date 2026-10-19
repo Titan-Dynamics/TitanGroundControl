@@ -1,7 +1,14 @@
 name: "QGroundControl CodeQL Config"
+# C++ extraction runs with the native build in workflows/linux.yml.
+# The standalone CodeQL workflow handles Actions, Java/Kotlin, and Python.
 
 paths:
   - src
+  - android/src
+  - tools
+  - deploy
+  - test
+  - .github
 
 paths-ignore:
   - '**/moc_*'
@@ -11,14 +18,18 @@ paths-ignore:
   - '**/libs/**'
   - '**/3rdparty/**'
   - '**/build/**'
+  # Vendored Android Java sources — upstream libsdl/freedesktop, not ours to fix.
+  - 'android/src/org/libsdl/**'
+  - 'android/src/org/freedesktop/**'
 
 queries:
   - uses: security-extended
 
 query-filters:
   - exclude:
+      # Stable release tags are accepted by actions/README.md; zizmor enforces ref-pin.
+      id: actions/unpinned-tag
+  - exclude:
       # Excluded due to frequent false positives with Qt/moc-heavy call patterns.
       # Re-evaluate before enabling if CodeQL signal quality improves.
       id: cpp/mistyped-function-arguments
-
-trap-caching: true

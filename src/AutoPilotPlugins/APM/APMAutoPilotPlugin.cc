@@ -10,6 +10,7 @@
 #include "APMESCComponent.h"
 #include "APMPowerComponent.h"
 #include "APMRadioComponent.h"
+#include "APMLoggingComponent.h"
 #include "APMRemoteSupportComponent.h"
 #include "APMFailsafesComponent.h"
 #include "APMFlightSafetyComponent.h"
@@ -92,11 +93,15 @@ const QVariantList &APMAutoPilotPlugin::vehicleComponents()
             _powerComponent->setupTriggerSignals();
             _components.append(QVariant::fromValue(qobject_cast<VehicleComponent*>(_powerComponent)));
 
-            _escComponent = new APMESCComponent(_vehicle, this);
-            _escComponent->setupTriggerSignals();
-            _components.append(QVariant::fromValue(qobject_cast<VehicleComponent*>(_escComponent)));
+            // ESC page is blank without the motor PWM params (e.g. fixed-wing Plane)
+            if (_vehicle->parameterManager()->parameterExists(-1, QStringLiteral("MOT_PWM_TYPE")) ||
+                _vehicle->parameterManager()->parameterExists(-1, QStringLiteral("Q_M_PWM_TYPE"))) {
+                _escComponent = new APMESCComponent(_vehicle, this);
+                _escComponent->setupTriggerSignals();
+                _components.append(QVariant::fromValue(qobject_cast<VehicleComponent*>(_escComponent)));
+            }
 
-            if (!_vehicle->sub() || (_vehicle->sub() && (_vehicle->versionCompare(3, 5, 3) >= 0))) {
+            if (!_vehicle->sub() || (_vehicle->versionCompare(3, 5, 3) >= 0)) {
                 _motorComponent = new APMMotorComponent(_vehicle, this);
                 _motorComponent->setupTriggerSignals();
                 _components.append(QVariant::fromValue(qobject_cast<VehicleComponent*>(_motorComponent)));
@@ -131,9 +136,11 @@ const QVariantList &APMAutoPilotPlugin::vehicleComponents()
                 _components.append(QVariant::fromValue(qobject_cast<VehicleComponent*>(_heliComponent)));
             }
 
-            _tuningComponent = new APMTuningComponent(_vehicle, this);
-            _tuningComponent->setupTriggerSignals();
-            _components.append(QVariant::fromValue(qobject_cast<VehicleComponent*>(_tuningComponent)));
+            if (!_vehicle->sub()) {
+                _tuningComponent = new APMTuningComponent(_vehicle, this);
+                _tuningComponent->setupTriggerSignals();
+                _components.append(QVariant::fromValue(qobject_cast<VehicleComponent*>(_tuningComponent)));
+            }
 
             if (_vehicle->multiRotor()) {
                 _advancedTuningCopterComponent = new APMAdvancedTuningCopterComponent(_vehicle, this);
@@ -163,6 +170,10 @@ const QVariantList &APMAutoPilotPlugin::vehicleComponents()
                 _esp8266Component->setupTriggerSignals();
                 _components.append(QVariant::fromValue(qobject_cast<VehicleComponent*>(_esp8266Component)));
             }
+
+            _loggingComponent = new APMLoggingComponent(_vehicle, this);
+            _loggingComponent->setupTriggerSignals();
+            _components.append(QVariant::fromValue(qobject_cast<VehicleComponent*>(_loggingComponent)));
 
             _apmRemoteSupportComponent = new APMRemoteSupportComponent(_vehicle, this);
             _apmRemoteSupportComponent->setupTriggerSignals();

@@ -61,6 +61,7 @@ Item {
         }
         QGCMenuSeparator { }
         QGCMenuItem {
+            objectName:     "parameterEditor_toolLoadFromFile"
             text:           qsTr("Load from file for review...")
             onTriggered: {
                 fileDialog.title =          qsTr("Load Parameters")
@@ -98,7 +99,7 @@ Item {
     QGCFileDialog {
         id:             fileDialog
         folder:         _appSettings.parameterSavePath
-        nameFilters:    [ qsTr("Parameter Files (*.%1)").arg(_appSettings.parameterFileExtension) , qsTr("All Files (*)") ]
+        nameFilters:    [ qsTr("Parameter Files (*.%1)").arg(_appSettings.parameterFileExtension), qsTr("Mission Planner Files (*.param)"), qsTr("All Files (*)") ]
 
         onAcceptedForSave: (file) => {
             controller.saveToFile(file)
@@ -177,6 +178,7 @@ Item {
 
         QGCButton {
             Layout.alignment:   Qt.AlignRight
+            objectName:         "parameterEditor_toolsButton"
             text:               qsTr("Tools")
             onClicked:          toolsMenu.popup()
         }

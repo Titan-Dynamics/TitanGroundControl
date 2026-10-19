@@ -2,37 +2,62 @@
 
 from __future__ import annotations
 
-import json
 import os
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
+
+from .io import read_json
 
 CONFIG_ENV_VAR = "CONFIG_FILE"
 CONFIG_RELATIVE_PATH = Path(".github") / "build-config.json"
 DEFAULT_EXPORT_KEYS = [
-    "qt_version",
-    "qt_minimum_version",
-    "qt_modules",
-    "gstreamer_minimum_version",
-    "gstreamer_default_version",
-    "gstreamer_macos_version",
-    "gstreamer_android_version",
-    "gstreamer_windows_version",
-    "xcode_version",
-    "xcode_ios_version",
-    "ndk_version",
-    "ndk_full_version",
-    "java_version",
-    "android_platform",
-    "android_min_sdk",
-    "android_build_tools",
-    "android_cmdline_tools",
-    "cmake_minimum_version",
-    "macos_deployment_target",
-    "ios_deployment_target",
-    "platform_workflows",
+    "qt.version",
+    "qt.minimum_version",
+    "qt.modules",
+    "gstreamer.version.minimum",
+    "gstreamer.version.default",
+    "gstreamer.version.macos",
+    "gstreamer.version.ios",
+    "gstreamer.version.android",
+    "gstreamer.version.windows",
+    "apple.xcode_version",
+    "apple.xcode_ios_version",
+    "apple.macos_deployment_target",
+    "apple.ios_deployment_target",
+    "android.ndk_version",
+    "android.ndk_full_version",
+    "android.java_version",
+    "android.platform",
+    "android.min_sdk",
+    "android.build_tools",
+    "android.cmdline_tools",
+    "build.cmake_minimum_version",
+    "build.platform_workflows",
 ]
 IOS_QT_MODULE_EXCLUDES = {"qtserialport"}
+_MISSING = object()
+
+
+def lookup_dotted(
+    mapping: Mapping[str, Any],
+    key: str,
+    default: Any = _MISSING,
+) -> Any:
+    """Return the value at dotted *key* or *default* when a segment is missing.
+
+    With no default, a missing path raises ``KeyError``. An explicit JSON null
+    is returned as ``None`` and is therefore distinct from a missing path.
+    """
+    value: Any = mapping
+    for part in key.split("."):
+        if isinstance(value, Mapping) and part in value:
+            value = value[part]
+            continue
+        if default is _MISSING:
+            raise KeyError(key)
+        return default
+    return value
 
 
 def find_build_config(
@@ -69,8 +94,7 @@ def load_build_config(
 ) -> dict[str, Any]:
     """Load and parse the build config JSON file."""
     path = config_file or find_build_config(start, extra_candidates=extra_candidates)
-    with path.open(encoding="utf-8") as f:
-        data = json.load(f)
+    data = read_json(path)
     if not isinstance(data, dict):
         raise ValueError(f"Expected JSON object in {path}")
     return data
@@ -86,6 +110,8 @@ def get_build_config_value(
 ) -> str:
     """Return a string value from the build config or *default*.
 
+    Dotted keys (e.g. "gstreamer.version.default") walk nested objects.
+
     File-missing / unreadable → silent default (callers may run outside the repo).
     Parse / schema errors → raise: an existing-but-corrupted config silently
     swapping defaults can produce wrong artifacts without warning.
@@ -94,8 +120,18 @@ def get_build_config_value(
         config = load_build_config(config_file, start=start, extra_candidates=extra_candidates)
     except (FileNotFoundError, OSError):
         return default
-    value = config.get(key, default)
+    value = lookup_dotted(config, key, default)
     return str(value) if value is not None else default
+
+
+def get_gstreamer_version(platform: str, **kwargs: Any) -> str:
+    """Return gstreamer.version.<platform>, else gstreamer.version.default (Linux has no entry).
+
+    Keyword arguments are passed to get_build_config_value.
+    """
+    return get_build_config_value(f"gstreamer.version.{platform}", **kwargs) or (
+        get_build_config_value("gstreamer.version.default", **kwargs)
+    )
 
 
 def derive_ios_qt_modules(qt_modules: str) -> str:
@@ -104,8 +140,15 @@ def derive_ios_qt_modules(qt_modules: str) -> str:
     return " ".join(modules)
 
 
-_EXPORT_KEY_ALIASES: dict[str, str] = {
-    "gstreamer_default_version": "GSTREAMER_VERSION",
+_EXPORT_KEY_ALIASES: dict[str, str] = {}
+
+_GSTREAMER_VERSION_ENV_NAMES: dict[str, str] = {
+    "gstreamer.version.default": "GSTREAMER_VERSION",
+    "gstreamer.version.minimum": "GSTREAMER_MINIMUM_VERSION",
+    "gstreamer.version.android": "GSTREAMER_ANDROID_VERSION",
+    "gstreamer.version.ios": "GSTREAMER_IOS_VERSION",
+    "gstreamer.version.macos": "GSTREAMER_MACOS_VERSION",
+    "gstreamer.version.windows": "GSTREAMER_WINDOWS_VERSION",
 }
 
 
@@ -117,16 +160,20 @@ def export_build_config_values(
     """Return uppercase env-style values exported from the config."""
     exported: dict[str, str] = {}
     for key in keys or DEFAULT_EXPORT_KEYS:
-        if key in config:
-            export_name = _EXPORT_KEY_ALIASES.get(key, key.upper())
-            exported[export_name] = str(config[key])
+        value = lookup_dotted(config, key, None)
+        if value is not None:
+            primary = _GSTREAMER_VERSION_ENV_NAMES.get(key, key.replace(".", "_").upper())
+            exported[primary] = str(value)
+            alias = _EXPORT_KEY_ALIASES.get(key)
+            if alias:
+                exported[alias] = str(value)
     return exported
 
 
-def format_github_output(values: dict[str, str]) -> str:
-    """Format values for writing to $GITHUB_OUTPUT."""
-    lines = [f"{key.lower()}={value}" for key, value in sorted(values.items())]
+def github_output_values(values: dict[str, str]) -> dict[str, str]:
+    """Lowercase-key outputs for $GITHUB_OUTPUT, plus derived qt_modules_ios."""
+    outputs = {key.lower(): value for key, value in sorted(values.items())}
     qt_modules = values.get("QT_MODULES", "")
     if qt_modules:
-        lines.append(f"qt_modules_ios={derive_ios_qt_modules(qt_modules)}")
-    return "\n".join(lines)
+        outputs["qt_modules_ios"] = derive_ios_qt_modules(qt_modules)
+    return outputs

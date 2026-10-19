@@ -45,6 +45,12 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Set Android SDK location
+        shell: bash
+        run: |
+          echo "ANDROID_SDK_ROOT=${RUNNER_TEMP}/android-sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=${RUNNER_TEMP}/android-sdk" >> "$GITHUB_ENV"
+
       - name: Build Setup (Android)
         id: setup
         uses: ./.github/actions/build-setup
@@ -54,7 +60,7 @@ jobs:
           qt-arch: win64_msvc2022_64
           abis: ${{ env.QT_ANDROID_ABIS }}
           build-type: Release
-          cpm-modules: ${{ runner.temp }}/build/cpm_modules
+          cpm-modules: .cache/CPM
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
@@ -148,15 +154,9 @@ jobs:
         id: setup
         uses: ./.github/actions/build-setup
         with:
-          restore-timestamps: 'true'
           qt-host: mac
           qt-arch: clang_64
           build-type: Release
-
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ steps.setup.outputs.xcode_version }}
 
       - name: Install Dependencies
         uses: ./.github/actions/install-dependencies
@@ -167,7 +167,9 @@ jobs:
           build-dir: ${{ runner.temp }}/build
           build-type: Release
           stable: 'false'
-          extra-args: -DQGC_MACOS_SIGN_WITH_IDENTITY=${{ env.HAS_SIGNING_SECRETS == 'true' && 'ON' || 'OFF' }}
+          extra-args: >-
+            -DQGC_MACOS_SIGN_WITH_IDENTITY=${{ env.HAS_SIGNING_SECRETS == 'true' && 'ON' || 'OFF' }}
+            -DQGC_MACOS_UNIVERSAL_BUILD=ON
 
       - name: Build
         uses: ./.github/actions/cmake-build
@@ -282,7 +284,9 @@ jobs:
           build-dir: ${{ runner.temp }}/build
           build-type: Release
           stable: 'false'
-          extra-args: -DQGC_ENABLE_GST_VIDEOSTREAMING=${{ matrix.gstreamer && 'ON' || 'OFF' }}
+          extra-args: >-
+            -DQGC_ENABLE_GST_VIDEOSTREAMING=${{ matrix.gstreamer && 'ON' || 'OFF' }}
+            -DQGC_CPACK_GENERATOR=NSIS
 
       - name: Build
         uses: ./.github/actions/cmake-build
@@ -291,8 +295,12 @@ jobs:
           build-type: Release
 
       - name: Create Installer
-        working-directory: ${{ runner.temp }}\build
-        run: cmake --install . --config Release
+        uses: ./.github/actions/cmake-build
+        with:
+          build-dir: ${{ runner.temp }}\build
+          build-type: Release
+          target: qgc-package
+          parallel: false
 
       - name: Upload Installer
         uses: actions/upload-artifact@v7

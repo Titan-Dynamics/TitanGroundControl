@@ -1,7 +1,10 @@
 #include "QGCNetworkHelperTest.h"
 
+#include <chrono>
+
 #include <QtCore/QCoreApplication>
 #include <QtCore/QMap>
+#include <QtNetwork/QNetworkAccessManager>
 #include <QtNetwork/QNetworkReply>
 #include <QtNetwork/QNetworkRequest>
 
@@ -126,6 +129,9 @@ void QGCNetworkHelperTest::_testHttpStatusText()
     QCOMPARE(QGCNetworkHelper::httpStatusText(503), QStringLiteral("Service Unavailable"));
     // Unknown status should return formatted message
     QVERIFY(QGCNetworkHelper::httpStatusText(999).contains("999"));
+    // In-range but unnamed codes must still surface the numeric value
+    QVERIFY(QGCNetworkHelper::httpStatusText(218).contains("218"));
+    QVERIFY(QGCNetworkHelper::httpStatusText(450).contains("450"));
 }
 
 void QGCNetworkHelperTest::_testHttpStatusTextFromEnum()
@@ -327,14 +333,6 @@ void QGCNetworkHelperTest::_testBuildUrlFromList()
     QVERIFY(query.contains("key1=value2"));
 }
 
-void QGCNetworkHelperTest::_testUrlFileName()
-{
-    QCOMPARE(QGCNetworkHelper::urlFileName(QUrl("http://example.com/path/to/file.txt")), QStringLiteral("file.txt"));
-    QCOMPARE(QGCNetworkHelper::urlFileName(QUrl("http://example.com/file.zip")), QStringLiteral("file.zip"));
-    QCOMPARE(QGCNetworkHelper::urlFileName(QUrl("http://example.com/")), QStringLiteral("/"));
-    QCOMPARE(QGCNetworkHelper::urlFileName(QUrl("http://example.com/path/")), QStringLiteral("/path/"));
-}
-
 void QGCNetworkHelperTest::_testUrlWithoutQuery()
 {
     QUrl original("http://example.com/path?key=value#fragment");
@@ -387,6 +385,26 @@ void QGCNetworkHelperTest::_testRequestConfigAttributes()
     QCOMPARE(attribute.toInt(), static_cast<int>(QNetworkRequest::AlwaysNetwork));
 }
 
+void QGCNetworkHelperTest::_testRequestConfigKeepAlive()
+{
+    const QNetworkRequest defaultRequest = QGCNetworkHelper::createRequest(QUrl(QStringLiteral("https://example.com")));
+    QVERIFY(!defaultRequest.attribute(QNetworkRequest::ConnectionCacheExpiryTimeoutSecondsAttribute).isValid());
+    QCOMPARE(defaultRequest.tcpKeepAliveProbeCount(), 0);
+
+    QGCNetworkHelper::RequestConfig config;
+    config.connectionCacheExpirySecs = 300;
+    config.tcpKeepAliveIdleSecs = 60;
+    config.tcpKeepAliveIntervalSecs = 30;
+    config.tcpKeepAliveProbeCount = 3;
+
+    const QNetworkRequest request =
+        QGCNetworkHelper::createRequest(QUrl(QStringLiteral("https://example.com")), config);
+    QCOMPARE(request.attribute(QNetworkRequest::ConnectionCacheExpiryTimeoutSecondsAttribute).toInt(), 300);
+    QCOMPARE(request.tcpKeepAliveIdleTimeBeforeProbes().count(), std::chrono::seconds::rep(60));
+    QCOMPARE(request.tcpKeepAliveIntervalBetweenProbes().count(), std::chrono::seconds::rep(30));
+    QCOMPARE(request.tcpKeepAliveProbeCount(), 3);
+}
+
 void QGCNetworkHelperTest::_testSetJsonHeaders()
 {
     QNetworkRequest request(QUrl(QStringLiteral("https://example.com")));
@@ -408,14 +426,26 @@ void QGCNetworkHelperTest::_testSetBasicAuthHeader()
     QGCNetworkHelper::setBasicAuth(request, QStringLiteral("user"), QStringLiteral("pass"));
 
     QCOMPARE(request.rawHeader("Authorization"), QByteArray("Basic dXNlcjpwYXNz"));
+    QGCNetworkHelper::setBasicAuth(request, QStringLiteral("User"), QStringLiteral("PaSs"));
+    QCOMPARE(request.rawHeader("Authorization"), QByteArray("Basic VXNlcjpQYVNz"));
 }
 
 void QGCNetworkHelperTest::_testSetBearerTokenHeader()
 {
     QNetworkRequest request(QUrl(QStringLiteral("https://example.com")));
+    QGCNetworkHelper::setBearerToken(request, QStringLiteral("CaseSensitive"));
+    QCOMPARE(request.rawHeader("Authorization"), QByteArray("Bearer ") + QByteArray("CaseSensitive"));
     QGCNetworkHelper::setBearerToken(request, QStringLiteral("abc123"));
 
     QCOMPARE(request.rawHeader("Authorization"), QByteArray("Bearer abc123"));
+}
+
+void QGCNetworkHelperTest::_testCreateNetworkManager()
+{
+    QObject owner;
+    auto* manager = QGCNetworkHelper::createNetworkManager(&owner);
+    QVERIFY(manager);
+    QCOMPARE(manager->parent(), &owner);
 }
 
 void QGCNetworkHelperTest::_testLooksLikeJson()
@@ -464,7 +494,9 @@ void QGCNetworkHelperTest::_testParseJsonValid()
 void QGCNetworkHelperTest::_testParseJsonInvalid()
 {
     QJsonParseError error{};
+    expectLogMessage("Utilities.QGCNetworkHelper", QtWarningMsg, QRegularExpression("JSON parse error"));
     const QJsonDocument doc = QGCNetworkHelper::parseJson("{ invalid json", &error);
+    verifyExpectedLogMessage();
 
     QVERIFY(doc.isNull());
     QVERIFY(error.error != QJsonParseError::NoError);

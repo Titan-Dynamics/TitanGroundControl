@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <QtCore/QByteArray>
 #include <QtCore/QFile>
 #include <QtCore/QHash>
@@ -10,7 +12,8 @@
 
 class MockLink;
 
-/// Mock implementation of Mavlink FTP server.
+/// \brief Mock implementation of Mavlink FTP server.
+///
 class MockLinkFTP : public QObject
 {
     Q_OBJECT
@@ -22,6 +25,63 @@ public:
     /// Sets the list of files returned by the List command. Prepend names with F or D
     /// to indicate (F)ile or (D)irectory.
     void setFileList(const QStringList &fileList) { _fileList = fileList; }
+
+    /// Describes a simulated onboard log file served from the @MAV_LOG virtual directory.
+    struct LogFile {
+        QString name;       ///< File name, e.g. "log_1.ulg", or "<subdir>/log_1.ulg" to serve it from a subdirectory
+        int size = 0;       ///< File size in bytes
+        uint32_t mtime = 0; ///< Modification time (seconds since UNIX epoch UTC)
+    };
+
+    /// Sets the log files listed in and downloadable from the @MAV_LOG virtual directory.
+    /// Removes any temp files cached for the previous log set.
+    void setLogFiles(const QList<LogFile> &logFiles);
+
+    /// Returns the log files served from the @MAV_LOG virtual directory.
+    QList<LogFile> logFiles() const { return _logFiles; }
+
+    /// Returns the deterministic contents served for the named @MAV_LOG log file.
+    /// Empty if the name is unknown.
+    QByteArray logFileContents(const QString &name) const;
+
+    /// Delays each burst read by delayMs to simulate a slow link. Runs on the
+    /// MockLink worker thread so it paces transfers without blocking the main thread.
+    void setBurstReadDelayMs(int delayMs) { _burstReadDelayMs = delayMs; }
+
+    /// When false, OpenFileRO of @PARAM/param.pck NAKs errno ENOENT, as PX4 without the virtual file does.
+    void setParamPckEnabled(bool enabled) { _paramPckEnabled = enabled; }
+
+    /// When true, OpenFileRO NAKs kErrNoSessionsAvailable while a read session is already open, as PX4 (single session) does.
+    void setSingleSessionEnforced(bool enforced) { _singleSessionEnforced = enforced; }
+
+    /// Opens a read session server-side without any client request, simulating a session left behind by a crashed GCS.
+    void openStaleSessionForTest();
+
+    /// When true, ResetSessions requests get no reply.
+    void setIgnoreResetSessions(bool ignore) { _ignoreResetSessions = ignore; }
+
+    /// Closes the read session server-side once burstCount burst responses have been served, as PX4's idle
+    /// timer does mid-transfer. Subsequent reads NAK kErrInvalidSession until the client re-opens. One-shot; 0 disables.
+    void setExpireSessionAfterBursts(int burstCount) { _expireSessionAfterBursts = burstCount; _burstsServed = 0; }
+
+    /// Drops the burst data packet at the given file offset, once, to force a hole the client must fill.
+    void setDropBurstPacketOnce(uint32_t offset) { _dropBurstPacketOffset = offset; _dropBurstPacketPending = true; }
+
+    /// Sends the burst data packet at the given file offset after the rest of its burst, once, keeping its
+    /// original sequence number, as a late packet from an earlier burst arrives on a real link.
+    void setReorderBurstPacketOnce(uint32_t offset) { _reorderBurstPacketOffset = offset; _reorderBurstPacketPending = true; }
+
+    /// Number of OpenFileRO requests acked since construction.
+    int openFileROCount() const { return _openFileROCount; }
+
+    /// Number of ReadFile (non-burst) requests received since construction.
+    int readFileCount() const { return _readFileCount; }
+
+    /// hdr.size of the most recent BurstReadFile request, -1 if none received yet.
+    int lastBurstReadRequestSize() const { return _lastBurstReadRequestSize; }
+
+    /// hdr.size of the most recent ReadFile request, -1 if none received yet.
+    int lastReadFileRequestSize() const { return _lastReadFileRequestSize; }
 
     /// Called to handle an FTP message
     void mavlinkMessageReceived(const mavlink_message_t &message);
@@ -51,6 +111,20 @@ public:
     /// Sets the error mode for command responses. This allows you to simulate various server errors.
     void setErrorMode(ErrorMode_t errMode) { _errMode = errMode; };
 
+    /// Controls whether the server implements the kCmdListDirectoryWithTime command. When false the
+    /// server Naks it (see setListDirectoryWithTimeNakError) so the client fallback to kCmdListDirectory can be tested.
+    void setListDirectoryWithTimeSupported(bool supported) { _listDirectoryWithTimeSupported = supported; }
+
+    /// Error code used to Nak kCmdListDirectoryWithTime when unsupported. PX4 replies kErrUnknownCommand,
+    /// ArduPilot replies kErrFail.
+    void setListDirectoryWithTimeNakError(MavlinkFTP::ErrorCode_t error) { _listDirectoryWithTimeNakError = error; }
+
+    /// When true, kCmdListDirectoryWithTime directory entries under @MAV_LOG carry "\t0\t<mtime>", as MAVSDK sends.
+    void setLogDirEntriesWithTime(bool enabled) { _logDirEntriesWithTime = enabled; }
+
+    /// When true, @MAV_LOG listings start with "D." and "D.." entries, as ArduPilot sends.
+    void setLogDirDotEntries(bool enabled) { _logDirDotEntries = enabled; }
+
     /// Array of failure modes you can cycle through for testing. By looping through this array you can avoid
     /// hardcoding the specific error modes in your unit test. This way when new error modes are added your unit test
     /// code may not need to be modified.
@@ -67,6 +141,10 @@ public:
 
     static constexpr const char *sizeFilenamePrefix = "mocklink-size-";
 
+    /// Base modification time (seconds since UNIX epoch UTC) reported by the kCmdListDirectoryWithTime
+    /// mock listing. Entry N reports kMockModificationTime + N.
+    static constexpr uint32_t kMockModificationTime = 1700000000;
+
 signals:
     /// You can connect to this signal to be notified when the server receives a Terminate command.
     void terminateCommandReceived();
@@ -81,14 +159,14 @@ private:
     void _sendNakErrno(uint8_t targetSystemId, uint8_t targetComponentId, uint8_t nakErrno, uint16_t seqNumber, MavlinkFTP::OpCode_t reqOpCode);
     /// Emits a Request through the messageReceived signal.
     void _sendResponse(uint8_t targetSystemId, uint8_t targetComponentId, MavlinkFTP::Request *request, uint16_t seqNumber);
-    /// Handles List command requests. Only supports root folder paths.
-    /// File list returned is set using the setFileList method.
-    void _listCommand(uint8_t senderSystemId, uint8_t senderComponentId, MavlinkFTP::Request *request, uint16_t seqNumber);
+    /// Handles List command requests for the root path and the @MAV_LOG virtual log directory tree.
+    void _listCommand(uint8_t senderSystemId, uint8_t senderComponentId, MavlinkFTP::Request *request, uint16_t seqNumber, bool withTime);
     void _openCommand(uint8_t senderSystemId, uint8_t senderComponentId, MavlinkFTP::Request *request, uint16_t seqNumber);
     void _createFileCommand(uint8_t senderSystemId, uint8_t senderComponentId, MavlinkFTP::Request *request, uint16_t seqNumber);
     void _openFileWOCommand(uint8_t senderSystemId, uint8_t senderComponentId, MavlinkFTP::Request *request, uint16_t seqNumber);
     void _readCommand(uint8_t senderSystemId, uint8_t senderComponentId, MavlinkFTP::Request *request, uint16_t seqNumber);
     void _burstReadCommand(uint8_t senderSystemId, uint8_t senderComponentId, MavlinkFTP::Request *request, uint16_t seqNumber);
+    void _removeFileCommand(uint8_t senderSystemId, uint8_t senderComponentId, MavlinkFTP::Request *request, uint16_t seqNumber);
     void _terminateCommand(uint8_t senderSystemId, uint8_t senderComponentId, MavlinkFTP::Request *request, uint16_t seqNumber);
     void _resetCommand(uint8_t senderSystemId, uint8_t senderComponentId, uint16_t seqNumber);
     void _writeCommand(uint8_t senderSystemId, uint8_t senderComponentId, MavlinkFTP::Request *request, uint16_t seqNumber);
@@ -98,6 +176,10 @@ private:
     uint16_t _nextSeqNumber(uint16_t seqNumber) const;
     static QString _createTestTempFile(int size);
     QString _generateParamPck(bool withDefaults);
+    QString _logFileTempPath(const QString &name);
+    /// Entries for a directory under @MAV_LOG (empty subdir = @MAV_LOG itself), nullopt if it doesn't exist.
+    std::optional<QStringList> _logDirectoryEntries(const QString& subdir, bool withTime) const;
+    static QByteArray _generateLogFileContents(const QString &name, int size);
 
     /// if request is a string, this ensures it's null-terminated
     static void ensureNullTemination(MavlinkFTP::Request *request);
@@ -108,7 +190,25 @@ private:
 
     bool _lastReplyValid = false;
     bool _randomDropsEnabled = false;
+    int _burstReadDelayMs = 0;                  ///< Per-burst delay to simulate a slow link
     ErrorMode_t _errMode = errModeNone;         ///< Currently set error mode, as specified by setErrorMode
+    bool _listDirectoryWithTimeSupported = true; ///< Whether the server implements kCmdListDirectoryWithTime
+    MavlinkFTP::ErrorCode_t _listDirectoryWithTimeNakError = MavlinkFTP::kErrUnknownCommand;
+    bool _logDirEntriesWithTime = false;  ///< @MAV_LOG directory entries carry "\t0\t<mtime>" when listed with time
+    bool _logDirDotEntries = false;       ///< @MAV_LOG listings include "D." and "D.." entries
+    bool _paramPckEnabled = true;               ///< Serve @PARAM/param.pck; false NAKs errno ENOENT
+    bool _singleSessionEnforced = false;
+    bool _ignoreResetSessions = false;
+    int _expireSessionAfterBursts = 0;
+    int _burstsServed = 0;
+    uint32_t _dropBurstPacketOffset = 0;
+    bool _dropBurstPacketPending = false;
+    uint32_t _reorderBurstPacketOffset = 0;
+    bool _reorderBurstPacketPending = false;
+    int _openFileROCount = 0;
+    int _readFileCount = 0;
+    int _lastBurstReadRequestSize = -1;
+    int _lastReadFileRequestSize = -1;
     mavlink_message_t _lastReply{};
     QFile _currentFile;
     QString _paramPckTempFile;
@@ -126,6 +226,8 @@ private:
     UploadSession _uploadSession;
     QHash<QString, QByteArray> _uploadedFiles;
     QStringList _fileList;                      ///< List of files returned by List command
+    QList<LogFile> _logFiles;                   ///< Log files served from the @MAV_LOG virtual directory
+    QHash<QString, QString> _logFileTempPaths;  ///< Temp files backing @MAV_LOG downloads
     uint16_t _lastReplySequence = 0;
 
     static constexpr uint8_t _sessionId = 1;    ///< We only support a single fixed session

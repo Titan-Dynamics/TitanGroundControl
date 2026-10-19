@@ -1,0 +1,284 @@
+#include "GraphicsSetup.h"
+
+#include <memory>
+#include <rhi/qrhi.h>
+
+#include <QtCore/QCoreApplication>
+#include <QtCore/QDir>
+#include <QtCore/QFileInfo>
+#include <QtCore/QRunnable>
+#include <QtCore/QStandardPaths>
+#include <QtCore/QString>
+#include <QtCore/QStringList>
+#include <QtGui/QPlatformSurfaceEvent>
+#include <QtQuick/QQuickGraphicsConfiguration>
+#include <QtQuick/QQuickGraphicsDevice>
+#include <QtQuick/QQuickWindow>
+
+#include "QGCLoggingCategory.h"
+
+QGC_LOGGING_CATEGORY(GraphicsSetupLog, "API.GraphicsSetup")
+
+namespace GraphicsSetup {
+
+namespace {
+
+constexpr const char* kEnvRhiDebug = "QGC_RHI_DEBUG";
+constexpr const char* kEnvRhiPipelineCache = "QGC_RHI_PIPELINE_CACHE";
+constexpr const char* kEnvHdrOutput = "QGC_HDR_OUTPUT";
+constexpr const char* kEnvForceVideoGpu = "QGC_FORCE_VIDEO_GPU";
+
+bool envFlag(const char* name)
+{
+    return qEnvironmentVariableIsSet(name) && (qEnvironmentVariable(name) != QLatin1String("0"));
+}
+
+bool envEnabledByDefault(const char* name)
+{
+    return !qEnvironmentVariableIsSet(name) || (qEnvironmentVariable(name) != QLatin1String("0"));
+}
+
+void configurePipelineCache(QQuickGraphicsConfiguration& config)
+{
+    if (!envEnabledByDefault(kEnvRhiPipelineCache)) {
+        return;
+    }
+
+    const QString cacheDir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    if (cacheDir.isEmpty()) {
+        qCWarning(GraphicsSetupLog) << "RHI pipeline cache disabled: no writable cache location";
+        return;
+    }
+
+    QDir dir;
+    if (!dir.mkpath(cacheDir)) {
+        qCWarning(GraphicsSetupLog) << "RHI pipeline cache disabled: failed to create" << cacheDir;
+        return;
+    }
+
+    const QString cacheFile = cacheDir + QStringLiteral("/qgc_rhi_pipeline.cache");
+    // Only load when the cache already exists: Qt 6.11 warns if the load file
+    // can't be opened, which is expected on first run. Always set the save file
+    // so the cache is written at shutdown and picked up on the next launch.
+    if (QFileInfo::exists(cacheFile)) {
+        config.setPipelineCacheLoadFile(cacheFile);
+    }
+    config.setPipelineCacheSaveFile(cacheFile);
+    qCDebug(GraphicsSetupLog) << "RHI pipeline cache:" << cacheFile;
+}
+
+#if defined(Q_OS_WIN)
+bool parseHex32(const QString& spec, quint32& value)
+{
+    QString token = spec.trimmed();
+    if (token.startsWith(QLatin1String("0x"), Qt::CaseInsensitive)) {
+        token.remove(0, 2);
+    }
+
+    if (token.isEmpty()) {
+        return false;
+    }
+
+    bool ok = false;
+    value = token.toUInt(&ok, 16);
+    return ok;
+}
+
+qint32 signExtend32(quint32 value)
+{
+    const qint64 signedValue =
+        (value <= 0x7FFFFFFFU) ? static_cast<qint64>(value) : (static_cast<qint64>(value) - 0x100000000LL);
+    return static_cast<qint32>(signedValue);
+}
+
+bool parseLuid(const QString& spec, quint32& low, qint32& high)
+{
+    const QStringList parts = spec.split(QLatin1Char(':'));
+    if (parts.size() != 2) {
+        return false;
+    }
+
+    quint32 highRaw = 0;
+    if (!parseHex32(parts.at(0), low) || !parseHex32(parts.at(1), highRaw)) {
+        return false;
+    }
+
+    high = signExtend32(highRaw);
+    return true;
+}
+
+void configureForcedD3DAdapter(QQuickWindow* window)
+{
+    if (!qEnvironmentVariableIsSet(kEnvForceVideoGpu)) {
+        return;
+    }
+
+    const QString spec = qEnvironmentVariable(kEnvForceVideoGpu);
+    quint32 luidLow = 0;
+    qint32 luidHigh = 0;
+    if (!parseLuid(spec, luidLow, luidHigh)) {
+        qCWarning(GraphicsSetupLog) << "QGC_FORCE_VIDEO_GPU malformed (expected hex 'low:high'):" << spec;
+        return;
+    }
+
+    // Must run before QRhi creation; Qt Quick owns the adapter after scene graph init.
+    window->setGraphicsDevice(QQuickGraphicsDevice::fromAdapter(luidLow, luidHigh));
+    qCWarning(GraphicsSetupLog).nospace()
+        << "QGC_FORCE_VIDEO_GPU: forcing adapter LUID low=0x" << QString::number(luidLow, 16) << " high=0x"
+        << QString::number(static_cast<quint32>(luidHigh), 16);
+}
+#else
+void warnForcedGpuUnsupported()
+{
+    if (qEnvironmentVariableIsSet(kEnvForceVideoGpu)) {
+        qCWarning(GraphicsSetupLog)
+            << "QGC_FORCE_VIDEO_GPU is Windows/D3D-only; ignoring LUID" << qEnvironmentVariable(kEnvForceVideoGpu);
+    }
+}
+#endif
+
+const char* hdrFormatName(QRhiSwapChain::Format f)
+{
+    switch (f) {
+        case QRhiSwapChain::SDR:
+            return "SDR";
+        case QRhiSwapChain::HDRExtendedSrgbLinear:
+            return "HDRExtendedSrgbLinear";
+        case QRhiSwapChain::HDR10:
+            return "HDR10";
+        case QRhiSwapChain::HDRExtendedDisplayP3Linear:
+            return "HDRExtendedDisplayP3Linear";
+    }
+    return "Unknown";
+}
+
+void probeHdr(QQuickWindow* window)
+{
+    QRhi* rhi = window->rhi();
+    if (!rhi) {
+        qCWarning(GraphicsSetupLog) << "HDR probe: no QRhi on render thread";
+        return;
+    }
+
+    std::unique_ptr<QRhiSwapChain> sc(rhi->newSwapChain());
+    if (!sc) {
+        qCWarning(GraphicsSetupLog) << "HDR probe: backend has no swapchain support";
+        return;
+    }
+    sc->setWindow(window);
+
+    const QRhiSwapChainHdrInfo info = sc->hdrInfo();
+    qCDebug(GraphicsSetupLog).nospace()
+        << "HDR display info: limitsType=" << static_cast<int>(info.limitsType)
+        << " luminanceBehavior=" << static_cast<int>(info.luminanceBehavior) << " sdrWhiteLevel=" << info.sdrWhiteLevel;
+
+    for (const QRhiSwapChain::Format f :
+         {QRhiSwapChain::HDRExtendedSrgbLinear, QRhiSwapChain::HDR10, QRhiSwapChain::HDRExtendedDisplayP3Linear}) {
+        qCDebug(GraphicsSetupLog) << "HDR format" << hdrFormatName(f) << "supported:" << sc->isFormatSupported(f);
+    }
+
+    if (envFlag(kEnvHdrOutput)) {
+        qCWarning(GraphicsSetupLog)
+            << "QGC_HDR_OUTPUT set but Qt Quick exposes no public swapchain-format setter in this"
+            << "Qt version; staying on SDR. (Diagnostic only.)";
+    }
+}
+
+void checkSoftwareDevice(QQuickWindow* window)
+{
+    const QRhi* const rhi = window->rhi();
+    if (!rhi) {
+        return;
+    }
+
+    const QRhiDriverInfo info = rhi->driverInfo();
+    if (info.deviceType != QRhiDriverInfo::CpuDevice) {
+        qCWarning(GraphicsSetupLog) << "Software rendering requested but not achieved; using" << rhi->backendName()
+                                    << info.deviceName;
+    }
+}
+
+/// Configures the first QQuickWindow whose native surface is created, then removes itself.
+class FirstWindowConfigurator final : public QObject
+{
+public:
+    using QObject::QObject;
+
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override
+    {
+        if ((event->type() == QEvent::PlatformSurface) &&
+            (static_cast<QPlatformSurfaceEvent*>(event)->surfaceEventType() == QPlatformSurfaceEvent::SurfaceCreated)) {
+            if (auto* const window = qobject_cast<QQuickWindow*>(watched)) {
+                QCoreApplication::instance()->removeEventFilter(this);
+                configureMainWindow(window);
+                deleteLater();
+            }
+        }
+        return false;
+    }
+};
+
+}  // namespace
+
+void configureMainWindow(QQuickWindow* window)
+{
+    if (!window) {
+        qCWarning(GraphicsSetupLog) << "configureMainWindow: null window";
+        return;
+    }
+
+    // The window's own QRhi, not isSceneGraphInitialized(): the basic render loop shares one render context, so a new
+    // window reports an initialized scene graph once any other window has rendered.
+    if (window->rhi()) {
+        qCWarning(GraphicsSetupLog)
+            << "Scene graph already initialized before configureMainWindow; skipping RHI config";
+    } else {
+        QQuickGraphicsConfiguration config = window->graphicsConfiguration();
+
+        if (envFlag(kEnvRhiDebug)) {
+            config.setDebugLayer(true);
+            config.setDebugMarkers(true);
+            config.setTimestamps(true);
+            qCDebug(GraphicsSetupLog) << "RHI debug layer/markers/timestamps enabled";
+        }
+
+        configurePipelineCache(config);
+        window->setGraphicsConfiguration(config);
+
+#if defined(Q_OS_WIN)
+        configureForcedD3DAdapter(window);
+#else
+        warnForcedGpuUnsupported();
+#endif
+
+        if (config.prefersSoftwareDevice()) {
+            QObject::connect(
+                window, &QQuickWindow::sceneGraphInitialized, window, [window]() { checkSoftwareDevice(window); },
+                Qt::DirectConnection);
+        }
+    }
+
+    if (!envFlag(kEnvRhiDebug) && !envFlag(kEnvHdrOutput)) {
+        return;
+    }
+    QQuickWindow* win = window;
+    if (win->rhi()) {
+        win->scheduleRenderJob(QRunnable::create([win]() { probeHdr(win); }), QQuickWindow::BeforeSynchronizingStage);
+        win->update();
+    } else {
+        QObject::connect(
+            win, &QQuickWindow::sceneGraphInitialized, win, [win]() { probeHdr(win); }, Qt::DirectConnection);
+    }
+}
+
+void configureMainWindowOnCreation()
+{
+    QCoreApplication* const app = QCoreApplication::instance();
+    if (!app) {
+        return;
+    }
+    app->installEventFilter(new FirstWindowConfigurator(app));
+}
+
+}  // namespace GraphicsSetup

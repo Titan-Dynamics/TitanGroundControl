@@ -2,11 +2,14 @@
 """Verify coverage.xml meets line and branch coverage thresholds."""
 
 import argparse
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from xml_utils import xml_parse
+from ci_bootstrap import ensure_tools_dir
+
+ensure_tools_dir(__file__)
+
+from common.cobertura import CoberturaError, read_cobertura
+from common.gh_actions import gh_error, gh_warning
 
 
 def main() -> int:
@@ -18,22 +21,22 @@ def main() -> int:
 
     path = Path(args.coverage_xml)
     if not path.exists():
-        print("::warning::coverage.xml not found, skipping threshold check")
+        gh_warning("coverage.xml not found, skipping threshold check")
         return 0
 
-    root = xml_parse(str(path)).getroot()
-    if root is None:
-        print("::error::coverage.xml has no root element")
+    try:
+        metrics = read_cobertura(path)
+    except CoberturaError as error:
+        gh_error(str(error))
         return 1
-    cov = root
-    lines_valid = int(cov.get("lines-valid", 0))
-    lines_covered = int(cov.get("lines-covered", 0))
-    line_rate = float(cov.get("line-rate", 0)) * 100
-    branch_rate = float(cov.get("branch-rate", 0)) * 100
+    lines_valid = metrics.lines_valid
+    lines_covered = metrics.lines_covered
+    line_rate = metrics.line_percent
+    branch_rate = metrics.branch_percent or 0.0
 
     if lines_valid == 0:
-        print(
-            f"::error::Coverage report contains 0 lines — "
+        gh_error(
+            f"Coverage report contains 0 lines — "
             f"lines-covered={lines_covered}, line-rate={line_rate:.2f}%, branch-rate={branch_rate:.2f}%"
         )
         output = path.parent / "coverage-output.txt"
@@ -49,10 +52,10 @@ def main() -> int:
 
     failed = False
     if line_rate < args.line_threshold:
-        print(f"::error::Line coverage {line_rate:.1f}% is below {args.line_threshold}% threshold")
+        gh_error(f"Line coverage {line_rate:.1f}% is below {args.line_threshold}% threshold")
         failed = True
     if branch_rate < args.branch_threshold:
-        print(f"::error::Branch coverage {branch_rate:.1f}% is below {args.branch_threshold}% threshold")
+        gh_error(f"Branch coverage {branch_rate:.1f}% is below {args.branch_threshold}% threshold")
         failed = True
 
     return 1 if failed else 0

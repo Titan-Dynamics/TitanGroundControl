@@ -1,0 +1,49 @@
+{
+    "version": 1,
+    "fileType": "SettingsUI",
+    "groups": [
+        {
+            "heading": "General",
+            "headingDescription": "qsTr(\"The 3D View is deprecated and will be removed in a future release in favor of the GeoMap engine.\")",
+            "keywords": ["3d view", "3d map", "enable 3d", "map provider", "deprecated"],
+            "controls": [
+                {
+                    "setting": "viewer3DSettings.enabled"
+                },
+                {
+                    "setting": "viewer3DSettings.mapProvider"
+                },
+                {
+                    "setting": "viewer3DSettings.keepSceneAlive"
+                }
+            ]
+        },
+        {
+            "heading": "Data",
+            "keywords": ["osm", "openstreetmap", "3d data", "building height", "altitude bias"],
+            "enableWhen": "QGroundControl.settingsManager.viewer3DSettings.enabled.rawValue",
+            "controls": [
+                {
+                    "setting": "viewer3DSettings.osmFilePath",
+                    "control": "browse",
+                    "showWhen": "!ScreenTools.isMobile",
+                    "properties": {
+                        "selectFolder": false,
+                        "nameFilters": "[ qsTr(\"OpenStreetMap files (*.osm)\"), qsTr(\"All Files (*)\") ]"
+                    }
+                },
+                {
+                    "setting": "viewer3DSettings.osmFilePath",
+                    "control": "textfield",
+                    "showWhen": "ScreenTools.isMobile"
+                },
+                {
+                    "setting": "viewer3DSettings.buildingLevelHeight"
+                },
+                {
+                    "setting": "viewer3DSettings.altitudeBias"
+                }
+            ]
+        }
+    ]
+}

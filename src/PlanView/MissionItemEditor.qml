@@ -24,7 +24,7 @@ Rectangle {
     radius:         _radius
     opacity:        _currentItem ? 1.0 : 0.7
     border.width:   _readyForSave ? 0 : 2
-    border.color:   qgcPal.warningText
+    border.color:   qgcPal.errorText
 
     property var    _masterController:          missionItem.masterController
     property var    _missionController:         _masterController.missionController
@@ -113,9 +113,7 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             width:                  _hamburgerSize
             height:                 width
-            border.width:           1
-            border.color:           qgcPal.warningText
-            color:                  "white"
+            color:                  qgcPal.errorIndicator
             radius:                 width / 2
             visible:                !_readyForSave
 
@@ -124,7 +122,7 @@ Rectangle {
                 anchors.centerIn:   parent
                 //: Indicator in Plan view to show mission item is not ready for save/send
                 text:               qsTr("?")
-                color:              qgcPal.warningText
+                color:              qgcPal.indicatorText
                 font.pointSize:     ScreenTools.smallFontPointSize
             }
         }
@@ -225,7 +223,7 @@ Rectangle {
                     QGCButton {
                         Layout.fillWidth:   true
                         text:               qsTr("Move to vehicle position")
-                        enabled:            _activeVehicle && missionItem.specifiesCoordinate
+                        enabled:            _activeVehicle && missionItem.specifiesCoordinate && _activeVehicle.coordinate.isValid
 
                         onClicked: {
                             missionItem.coordinate = _activeVehicle.coordinate
@@ -339,7 +337,7 @@ Rectangle {
                                     qsTr("Incomplete: Item not fully specified.")
         wrapMode:               Text.WordWrap
         horizontalAlignment:    Text.AlignHCenter
-        color:                  qgcPal.warningText
+        color:                  qgcPal.errorText
     }
 
 */
@@ -349,8 +347,13 @@ Rectangle {
         anchors.margins:    _innerMargin
         anchors.left:       parent.left
         anchors.top:        topRowLayout.bottom
-        asynchronous:       true
 
+        // Deliberately not asynchronous. With asynchronous: true the editor is built
+        // incrementally over later event-loop ticks. If the user switches layers before
+        // that finishes, the TreeView collapses the mission group and destroys this
+        // delegate, and the still-running load then warns "Cannot create a component in
+        // an invalid context". Synchronous loading closes that window: the editor is
+        // fully built before control returns to the event loop.
         Component.onCompleted: _root._loadEditor()
     }
 

@@ -8,9 +8,11 @@
 
 class SettingsManager;
 
-/// Holds the meta data associated with a Fact. This is kept in a separate object from the Fact itself
-/// since you may have multiple instances of the same Fact. But there is only ever one FactMetaData
-/// instance or each Fact.
+/// \brief Holds the meta data associated with a Fact.
+///
+/// This is kept in a separate object from the Fact itself since you may have multiple instances
+/// of the same Fact. But there is only ever one FactMetaData instance for each Fact.
+
 class FactMetaData : public QObject
 {
     Q_OBJECT
@@ -113,6 +115,12 @@ public:
     static QStringList splitTranslatedList(const QString &translatedList);
 
     int decimalPlaces() const;
+
+    /// Maximum string length for valueTypeString facts. 0 means no limit.
+    int maxStringLength() const { return _maxStringLength; }
+    /// Negative values are invalid (they would silently disable length validation): warns and clamps to 0.
+    void setMaxStringLength(int maxStringLength);
+
     QVariant rawDefaultValue() const;
     QVariant cookedDefaultValue() const { return _rawTranslator(rawDefaultValue()); }
     bool defaultValueAvailable() const { return _defaultValueAvailable; }
@@ -165,6 +173,14 @@ public:
 
     void setDecimalPlaces(int decimalPlaces) { _decimalPlaces = decimalPlaces; }
     void setRawDefaultValue(const QVariant &rawDefaultValue);
+
+    /// Use when the default value comes from authoritative firmware data
+    /// (e.g. ArduPilot FTP parameter file). Sets the default unconditionally
+    /// without range validation — firmware may legitimately use values outside
+    /// the metadata operating range (e.g. 0 as a "disabled" sentinel).
+    /// Do NOT use for user-supplied or QGC-settings defaults.
+    void setRawDefaultValueFirmwareForce(const QVariant &rawDefaultValue);
+
     void setBitmaskInfo(const QStringList &strings, const QVariantList &values);
     void setEnumInfo(const QStringList &strings, const QVariantList &values);
     void setCategory(const QString &category) { _category = category; }
@@ -225,6 +241,13 @@ public:
     static constexpr const char *kDefaultCategory = QT_TRANSLATE_NOOP("FactMetaData", "Other");
     static constexpr const char *kDefaultGroup = QT_TRANSLATE_NOOP("FactMetaData", "Misc");
     static constexpr const char *qgcFileType = "FactMetaData";
+
+signals:
+    /// Translators and cooked units were updated to a new app units setting
+    void appSettingsUnitsChanged();
+
+private slots:
+    void _appSettingsUnitsChanged();
 
 private:
     QVariant _minForType() const { return minForType(_type); };
@@ -324,6 +347,7 @@ private:
 
     ValueType_t _type = valueTypeInt32; // must be first for correct constructor init
     int _decimalPlaces = kUnknownDecimalPlaces;
+    int _maxStringLength = 0;
     QVariant _rawDefaultValue = 0;
     bool _defaultValueAvailable = false;
     QStringList _bitmaskStrings;
@@ -344,6 +368,7 @@ private:
     QString _cookedUnits;
     Translator _rawTranslator = _defaultTranslator;
     Translator _cookedTranslator = _defaultTranslator;
+    QMetaObject::Connection _appSettingsUnitsConnection;
     bool _vehicleRebootRequired = false;
     bool _qgcRebootRequired = false;
     double _rawIncrement = std::numeric_limits<double>::quiet_NaN();
@@ -428,6 +453,9 @@ private:
     };
 
     static constexpr const char *_decimalPlacesJsonKey = "decimalPlaces";
+    static constexpr const char *_maxStringLengthJsonKey = "maxStringLength";
+    static constexpr const char *_commentJsonKey = "comment";
+    static constexpr const char *_keywordsJsonKey = "keywords";
     static constexpr const char *_nameJsonKey = "name";
     static constexpr const char *_labelJsonKey = "label";
     static constexpr const char *_typeJsonKey = "type";

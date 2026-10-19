@@ -7,7 +7,7 @@
     "name":             "Altitude",
     "shortDesc": "Altitude for the bottom layer of the structure scan.",
     "type":             "double",
-    "units":            "m",
+    "units":            "vertical m",
     "decimalPlaces":    1,
     "default":     50
 },
@@ -22,7 +22,7 @@
 },
 {
     "name":             "Trigger distance",
-    "shortDesc": "Distance between each triggering of the camera. 0 specifies not camera trigger.",
+    "shortDesc": "Distance between each triggering of the camera. 0 specifies no camera trigger.",
     "type":             "double",
     "decimalPlaces":    2,
     "min":              0,

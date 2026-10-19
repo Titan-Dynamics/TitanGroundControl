@@ -136,20 +136,41 @@
         {
             "name": "disableWhenDisarmed",
             "shortDesc": "Disables the video stream when the vehicle is disarmed to save bandwidth.",
-            "longDesc": "Disable Video Stream when disarmed.",
+            "longDesc": "Disables the video stream when the vehicle is disarmed. Any active recording is also stopped.",
             "type": "bool",
             "default": false,
-            "label": "Stop recording when disarmed",
+            "label": "Disable Video Stream When Disarmed",
             "keywords": "disable when disarmed"
         },
         {
             "name": "lowLatencyMode",
-            "shortDesc": "Reduce video latency by approximately 200ms using optimized streaming settings.",
-            "longDesc": "If this option is enabled, the rtpjitterbuffer is removed and the video sink is set to assynchronous mode, reducing the latency by about 200 ms.",
+            "shortDesc": "Minimize video latency by disabling RTP playout buffering and retransmission recovery.",
+            "longDesc": "Sets RTP playout latency to zero and disables retransmission recovery. This reduces delay but may increase dropped or corrupted frames on lossy or reordered networks.",
             "type": "bool",
             "default": false,
             "label": "Low Latency Mode",
             "keywords": "low latency"
+        },
+        {
+            "name": "rtpJitterLatencyMs",
+            "shortDesc": "RTP jitter-buffer playout latency (ms).",
+            "longDesc": "Latency budget for the RTP jitter buffer (rtspsrc.latency / rtpjitterbuffer.latency). Lower = less glass-to-glass delay; higher = more headroom for packet reordering and retransmission. The default of 80 ms allows RFC 4588 retransmission to recover lost packets before the playout deadline; values <40 ms effectively disable retransmission. Ignored when Low Latency Mode is enabled.",
+            "type": "uint32",
+            "min": 0,
+            "max": 2000,
+            "units": "ms",
+            "default": 80,
+            "label": "RTP jitter latency",
+            "keywords": "rtp,jitter,latency,rtsp,rtx,retransmission,advanced"
+        },
+        {
+            "name": "rtspAutoReconnect",
+            "shortDesc": "Automatically restart the pipeline on watchdog timeout or pipeline error.",
+            "longDesc": "When enabled, the receiver reconnects with exponential backoff (1s → 30s) after a stream timeout or a fatal pipeline error. Disable to fall back to the legacy behaviour of giving up after one failure.",
+            "type": "bool",
+            "default": true,
+            "label": "Auto-reconnect on stream loss",
+            "keywords": "rtsp,reconnect,watchdog,recovery,advanced"
         },
         {
             "name": "forceVideoDecoder",
@@ -162,6 +183,34 @@
             "qgcRebootRequired": true,
             "label": "Force video decoder priority",
             "keywords": "decoder,hardware decode"
+        },
+        {
+            "name": "forceCpuVideoPath",
+            "shortDesc": "Force the video pipeline to copy frames through CPU instead of importing GPU memory directly.",
+            "longDesc": "By default, when a hardware decoder produces GPU-backed frames (DMABuf, GLMemory, D3D11, IOSurface, AHardwareBuffer), the pipeline imports them directly into Qt's render thread to avoid a per-frame CPU copy. The pipeline already falls back to the CPU path automatically when a GPU import fails, so this option is only needed for debugging or to work around a broken driver.",
+            "type": "bool",
+            "default": false,
+            "qgcRebootRequired": true,
+            "label": "Force CPU video path",
+            "keywords": "gpu,zero-copy,dmabuf,cpu,performance,force"
+        },
+        {
+            "name": "videoConversionElement",
+            "shortDesc": "Override the GStreamer color-conversion element used in the CPU video sink path.",
+            "longDesc": "Leave blank to auto-probe (SoC-native imxvideoconvert_g2d / nvvidconv when present, otherwise videoconvert). Set to a specific GStreamer factory name to force that element. Used as a workaround when an SoC's preferred element has a defect; takes effect on next stream restart.",
+            "type": "string",
+            "default": "",
+            "label": "Video conversion element override",
+            "keywords": "videoconvert,nvvidconv,imxvideoconvert,gstreamer,advanced"
+        },
+        {
+            "name": "disablePixelAspectRatio",
+            "shortDesc": "Skip the PAR=1/1 capsfilter in the CPU video sink path.",
+            "longDesc": "QGC normally inserts a pixel-aspect-ratio=1/1 capsfilter so non-square-pixel sources (some RTSP cams, DVB) don't render geometrically distorted. A few v4l2 drivers without VIDIOC_CROPCAP deadlock negotiation when PAR is forced; enable this option as a workaround. Takes effect on next stream restart.",
+            "type": "bool",
+            "default": false,
+            "label": "Disable pixel-aspect-ratio normalization",
+            "keywords": "pixel aspect ratio,capsfilter,v4l2,workaround,advanced"
         }
     ]
 }

@@ -34,9 +34,13 @@ LogReplayConfiguration::~LogReplayConfiguration()
 
 void LogReplayConfiguration::copyFrom(const LinkConfiguration *source)
 {
-    LinkConfiguration::copyFrom(source);
-
     const LogReplayConfiguration *logReplaySource = qobject_cast<const LogReplayConfiguration*>(source);
+    if (!logReplaySource) {
+        qCWarning(LogReplayLinkLog) << "Invalid source configuration type";
+        return;
+    }
+
+    LinkConfiguration::copyFrom(source);
 
     setLogFilename(logReplaySource->logFilename());
 }
@@ -308,8 +312,15 @@ bool LogReplayWorker::_loadLogFile()
 
 quint64 LogReplayWorker::_parseTimestamp(const QByteArray &bytes)
 {
+    // Truncated log files can produce a short read; never read past the buffer.
+    if (bytes.size() < static_cast<qsizetype>(sizeof(quint64))) {
+        return 0;
+    }
+
     const quint64 currentTimestamp = static_cast<quint64>(QDateTime::currentMSecsSinceEpoch()) * 1000;
-    quint64 timestamp = qFromBigEndian(*reinterpret_cast<const quint64*>(bytes.constData()));
+    // qFromBigEndian(const void *src) handles unaligned reads; dereferencing a
+    // cast pointer here would be a misaligned load (UB).
+    quint64 timestamp = qFromBigEndian<quint64>(bytes.constData());
     if (timestamp > currentTimestamp) {
         timestamp = qbswap(timestamp);
     }
@@ -379,8 +390,8 @@ quint64 LogReplayWorker::_findLastTimestamp()
 
     quint64 lastTimestamp = 0;
 
-    while (_logFile.bytesAvailable() > static_cast<qint64>(kTimestamp)) {
-        lastTimestamp = _parseTimestamp(_logFile.read(kTimestamp));
+    while (_logFile.bytesAvailable() >= static_cast<qint64>(kTimestamp)) {
+        const quint64 candidateTimestamp = _parseTimestamp(_logFile.read(kTimestamp));
 
         bool endOfMessage = false;
         char nextByte;
@@ -389,6 +400,21 @@ quint64 LogReplayWorker::_findLastTimestamp()
             mavlink_status_t status{};
             endOfMessage = mavlink_parse_char(_mavlinkChannel, nextByte, &msg, &status);
         }
+
+        if (!endOfMessage) {
+            if (lastTimestamp != 0) {
+                // Trailing bytes which don't form a complete MAVLink message (e.g. the log was not
+                // closed cleanly due to a crash or power loss). Ignore them and keep the timestamp
+                // of the last complete message.
+                qCWarning(LogReplayLinkLog)
+                    << "Ignoring trailing bytes at end of log file which do not form a complete MAVLink message";
+            } else {
+                qCWarning(LogReplayLinkLog) << "No complete MAVLink message found in log file";
+            }
+            break;
+        }
+
+        lastTimestamp = candidateTimestamp;
     }
 
     return lastTimestamp;
@@ -429,14 +455,14 @@ LogReplayLink::LogReplayLink(SharedLinkConfigurationPtr &config, QObject *parent
 LogReplayLink::~LogReplayLink()
 {
     if (isConnected()) {
-        (void) QMetaObject::invokeMethod(_worker, "disconnectFromLog", Qt::BlockingQueuedConnection);
+        // Queued, not blocking: keeps a wedged worker from hanging the destructor before
+        // _shutdownWorkerThread can bound the wait. If quit() beats the queued call,
+        // ~LogReplayWorker still disconnects on thread finish.
+        (void) QMetaObject::invokeMethod(_worker, "disconnectFromLog", Qt::QueuedConnection);
         _onDisconnected();
     }
 
-    _workerThread->quit();
-    if (!_workerThread->wait()) {
-        qCWarning(LogReplayLinkLog) << "Failed to wait for LogReplay Thread to close";
-    }
+    _shutdownWorkerThread(_workerThread, LogReplayLinkLog());
 
     qCDebug(LogReplayLinkLog) << this;
 }

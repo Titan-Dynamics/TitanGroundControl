@@ -30,9 +30,9 @@
         },
         {
             "name": "buildingLevelHeight",
-            "shortDesc": "Average floor-to-floor height in meters used for 3D building visualization.",
+            "shortDesc": "Average floor-to-floor height used for 3D building visualization.",
             "type": "double",
-            "units": "m",
+            "units": "vertical m",
             "min": 0.5,
             "max": 20,
             "default": 3,
@@ -41,14 +41,22 @@
         },
         {
             "name": "altitudeBias",
-            "shortDesc": "Vertical offset in meters for vehicle rendering in the 3D viewer.",
+            "shortDesc": "Vertical offset for vehicle rendering in the 3D viewer.",
             "type": "double",
-            "units": "m",
+            "units": "vertical m",
             "min": -1000,
             "max": 1000,
             "default": 0,
             "label": "Altitude bias for vehicles in the 3D View",
             "keywords": "altitude bias,3d data"
+        },
+        {
+            "name": "keepSceneAlive",
+            "shortDesc": "Keep the 3D scene loaded in memory when switching back to fly view. Disable on memory-constrained devices.",
+            "type": "bool",
+            "default": true,
+            "label": "Keep 3D scene alive when exiting 3D view",
+            "keywords": "3d view,memory,scene,alive"
         }
     ]
 }

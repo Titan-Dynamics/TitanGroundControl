@@ -804,7 +804,7 @@ QString AIChatController::_getVehicleStateContext() const
 
     // Basic state
     state += QString("- Armed: %1\n").arg(_vehicle->armed() ? "Yes" : "No");
-    state += QString("- Flying: %1\n").arg(_vehicle->flying() ? "Yes" : "No");
+    state += QString("- Flying: %1\n").arg(_vehicle->underway() ? "Yes" : "No");
     state += QString("- Flight Mode: %1\n").arg(_vehicle->flightMode());
 
     if (_vehicle->altitudeRelative()) {
@@ -1111,7 +1111,7 @@ bool AIChatController::_executeVehicleCommand(const QString& action, const QVari
         return true;
     }
     else if (action == "disarm") {
-        if (_vehicle->flying()) {
+        if (_vehicle->underway()) {
             qCWarning(AIChatControllerLog) << "Cannot disarm while flying";
             return false;
         }
@@ -1353,7 +1353,7 @@ bool AIChatController::_executeVehicleCommand(const QString& action, const QVari
 
         // In Guided mode, changing WP_LOITER_RAD param alone doesn't affect the active loiter radius.
         // Re-send guidedModeGotoLocation to the existing goto target (or current position as fallback).
-        if (paramName == "WP_LOITER_RAD" && _vehicle->guidedMode() && _vehicle->flying()) {
+        if (paramName == "WP_LOITER_RAD" && _vehicle->guidedMode() && _vehicle->underway()) {
             double newRadius = param->rawValue().toDouble();
             QGeoCoordinate target = _vehicle->lastGotoCoordinate();
             if (!target.isValid()) {

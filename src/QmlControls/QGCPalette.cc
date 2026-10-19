@@ -33,6 +33,7 @@ QGCPalette::~QGCPalette()
 
 void QGCPalette::_buildMap()
 {
+    // clang-format off
     //                                      Light                 Dark
     //                                      Disabled   Enabled    Disabled   Enabled
     DECLARE_QGC_COLOR(window,               "#ffffff", "#ffffff", "#222222", "#222222")
@@ -41,7 +42,9 @@ void QGCPalette::_buildMap()
     DECLARE_QGC_COLOR(windowShade,          "#d9d9d9", "#d9d9d9", "#333333", "#333333")
     DECLARE_QGC_COLOR(windowShadeDark,      "#bdbdbd", "#bdbdbd", "#282828", "#282828")
     DECLARE_QGC_COLOR(text,                 "#9d9d9d", "#333333", "#707070", "#ffffff")
-    DECLARE_QGC_COLOR(warningText,          "#cc0808", "#cc0808", "#f85761", "#f85761")
+    DECLARE_QGC_COLOR(errorText,            "#bd0707", "#bd0707", "#ff7070", "#ff7070")
+    DECLARE_QGC_COLOR(warningText,          "#9a4d00", "#9a4d00", "#e18700", "#e18700")
+    DECLARE_QGC_COLOR(successText,          "#006b22", "#006b22", "#00e04b", "#00e04b")
     DECLARE_QGC_COLOR(button,               "#ffffff", "#ffffff", "#707070", "#626270")
     DECLARE_QGC_COLOR(buttonBorder,         "#9d9d9d", "#E47516", "#707070", "#adadb8")
     DECLARE_QGC_COLOR(buttonText,           "#9d9d9d", "#333333", "#A6A6A6", "#ffffff")
@@ -51,6 +54,7 @@ void QGCPalette::_buildMap()
     DECLARE_QGC_COLOR(primaryButtonText,    "#2c2c2c", "#522507", "#2c2c2c", "#ffffff")
     DECLARE_QGC_COLOR(textField,            "#ffffff", "#ffffff", "#707070", "#ffffff")
     DECLARE_QGC_COLOR(textFieldText,        "#808080", "#333333", "#000000", "#000000")
+    DECLARE_QGC_COLOR(textFieldErrorText,   "#bd0707", "#bd0707", "#bd0707", "#bd0707")
     DECLARE_QGC_COLOR(mapButton,            "#585858", "#333333", "#585858", "#000000")
     DECLARE_QGC_COLOR(mapButtonHighlight,   "#585858", "#be781c", "#585858", "#be781c")
     DECLARE_QGC_COLOR(mapIndicator,         "#585858", "#be781c", "#585858", "#be781c")
@@ -67,17 +71,14 @@ void QGCPalette::_buildMap()
     DECLARE_QGC_COLOR(alertText,            "#000000", "#000000", "#000000", "#000000")
     DECLARE_QGC_COLOR(missionItemEditor,    "#585858", "#dbfef8", "#585858", "#585d83")
     DECLARE_QGC_COLOR(toolStripHoverColor,  "#585858", "#9D9D9D", "#585858", "#585d83")
-    DECLARE_QGC_COLOR(statusFailedText,     "#9d9d9d", "#000000", "#707070", "#ffffff")
-    DECLARE_QGC_COLOR(statusPassedText,     "#9d9d9d", "#000000", "#707070", "#ffffff")
-    DECLARE_QGC_COLOR(statusPendingText,    "#9d9d9d", "#000000", "#707070", "#ffffff")
     DECLARE_QGC_COLOR(toolbarBackground,    "#00ffffff", "#00ffffff", "#00222222", "#00222222")
     DECLARE_QGC_COLOR(groupBorder,          "#bbbbbb", "#FF911B", "#707070", "#707070")
     DECLARE_QGC_COLOR(modifiedParamValue,   "#bf7539", "#bf7539", "#de8500", "#de8500")
 
     // Colors not affecting by theming
     //                                                      Disabled     Enabled
-    DECLARE_QGC_NONTHEMED_COLOR(brandingPurple,             "#834514", "#834514")
-    DECLARE_QGC_NONTHEMED_COLOR(brandingBlue,               "#FFB868", "#E47516")
+    DECLARE_QGC_NONTHEMED_COLOR(brandPrimary,               "#834514", "#834514")
+    DECLARE_QGC_NONTHEMED_COLOR(brandAccent,                "#FFB868", "#E47516")
     DECLARE_QGC_NONTHEMED_COLOR(toolStripFGColor,           "#707070", "#ffffff")
     DECLARE_QGC_NONTHEMED_COLOR(photoCaptureButtonColor,    "#707070", "#ffffff")
     DECLARE_QGC_NONTHEMED_COLOR(videoCaptureButtonColor,    "#f89a9e", "#f32836")
@@ -85,10 +86,15 @@ void QGCPalette::_buildMap()
     // Colors not affecting by theming or enable/disable
     DECLARE_QGC_SINGLE_COLOR(mapWidgetBorderLight,          "#ffffff")
     DECLARE_QGC_SINGLE_COLOR(mapWidgetBorderDark,           "#000000")
-    DECLARE_QGC_SINGLE_COLOR(mapMissionTrajectory,          "#be781c")
+    DECLARE_QGC_SINGLE_COLOR(mapMissionTrajectory,          "#ffa000")
     DECLARE_QGC_SINGLE_COLOR(surveyPolygonInterior,         "green")
     DECLARE_QGC_SINGLE_COLOR(surveyPolygonTerrainCollision, "red")
-
+    // Badge fills sized for indicatorText (white) at >= 4.5:1 contrast in either theme
+    DECLARE_QGC_SINGLE_COLOR(errorIndicator,                "#c62828")
+    DECLARE_QGC_SINGLE_COLOR(warningIndicator,              "#b45309")
+    DECLARE_QGC_SINGLE_COLOR(successIndicator,              "#2e7d32")
+    DECLARE_QGC_SINGLE_COLOR(indicatorText,                 "#ffffff")
+    // clang-format on
 }
 
 void QGCPalette::setColorGroupEnabled(bool enabled)

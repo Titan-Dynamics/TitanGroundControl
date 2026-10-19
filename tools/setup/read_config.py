@@ -7,7 +7,7 @@ It can be used directly or called by shell wrappers for environment export.
 
 Usage:
     read_config.py                      # Print all config as KEY=VALUE
-    read_config.py --get qt_version     # Get single value
+    read_config.py --get qt.version     # Get single value
     read_config.py --json               # Output as JSON
     read_config.py --export bash        # Output as bash export statements
     read_config.py --export powershell  # Output as PowerShell $env: statements
@@ -26,72 +26,28 @@ import sys
 from pathlib import Path
 from typing import Any
 
+_tools_dir = Path(__file__).resolve().parents[1]
+if str(_tools_dir) not in sys.path:
+    sys.path.insert(0, str(_tools_dir))
+
+from _bootstrap import ensure_tools_dir  # noqa: E402
+
+ensure_tools_dir(__file__)
+
+from common.build_config import (  # noqa: E402
+    export_build_config_values,
+    find_build_config,
+    github_output_values,
+    load_build_config,
+    lookup_dotted,
+)
+from common.gh_actions import append_github_env, write_github_output  # noqa: E402
+
 
 def find_config_file() -> Path:
-    """Find build-config.json by searching up from script location."""
-    # Check for override
-    if env_path := os.environ.get("CONFIG_FILE"):
-        return Path(env_path)
-
-    # Check script directory first (for Docker builds where config is copied)
+    """Find build-config.json: env override, script-dir (Docker layout), then repo walk."""
     script_dir = Path(__file__).parent
-    local_config = script_dir / "build-config.json"
-    if local_config.exists():
-        return local_config
-
-    # Search up for .github/build-config.json
-    current = script_dir.resolve()
-    while current != current.parent:
-        config_path = current / ".github" / "build-config.json"
-        if config_path.exists():
-            return config_path
-        current = current.parent
-
-    raise FileNotFoundError("Could not find build-config.json")
-
-
-def load_config(config_file: Path) -> dict[str, Any]:
-    """Load and parse the JSON config file."""
-    with open(config_file) as f:
-        return json.load(f)
-
-
-# Keys to export as environment variables (top-level simple values)
-EXPORT_KEYS = [
-    "qt_version",
-    "qt_minimum_version",
-    "qt_modules",
-    "gstreamer_minimum_version",
-    "gstreamer_default_version",
-    "gstreamer_macos_version",
-    "gstreamer_ios_version",
-    "gstreamer_android_version",
-    "gstreamer_windows_version",
-    "xcode_version",
-    "xcode_ios_version",
-    "ndk_version",
-    "ndk_full_version",
-    "java_version",
-    "android_platform",
-    "android_min_sdk",
-    "android_build_tools",
-    "android_cmdline_tools",
-    "cmake_minimum_version",
-    "macos_deployment_target",
-    "ios_deployment_target",
-]
-
-
-def get_export_values(config: dict[str, Any]) -> dict[str, str]:
-    """Extract values to export, converting to uppercase env var names."""
-    result = {}
-    for key in EXPORT_KEYS:
-        if key in config:
-            env_name = key.upper()
-            result[env_name] = str(config[key])
-            if key == "gstreamer_default_version":
-                result["GSTREAMER_VERSION"] = str(config[key])
-    return result
+    return find_build_config(start=script_dir, extra_candidates=[script_dir / "build-config.json"])
 
 
 def _escape_bash_value(value: str) -> str:
@@ -103,54 +59,31 @@ def _escape_bash_value(value: str) -> str:
 
 def _escape_powershell_value(value: str) -> str:
     """Escape characters that are special inside double-quoted PowerShell strings."""
-    for ch, esc in (('`', '``'), ('"', '`"'), ("$", "`$")):
+    for ch, esc in (("`", "``"), ('"', '`"'), ("$", "`$")):
         value = value.replace(ch, esc)
     return value
 
 
 def format_bash_export(values: dict[str, str]) -> str:
     """Format as bash export statements."""
-    lines = []
-    for key, value in sorted(values.items()):
-        lines.append(f'export {key}="{_escape_bash_value(value)}"')
-    return "\n".join(lines)
+    return "\n".join(
+        f'export {key}="{_escape_bash_value(value)}"' for key, value in sorted(values.items())
+    )
 
 
 def format_powershell_export(values: dict[str, str]) -> str:
     """Format as PowerShell environment variable assignments."""
-    lines = []
-    for key, value in sorted(values.items()):
-        lines.append(f'$env:{key} = "{_escape_powershell_value(value)}"')
-    return "\n".join(lines)
-
-
-def format_github_output(values: dict[str, str]) -> str:
-    """Format for GITHUB_OUTPUT file."""
-    lines = []
-    for key, value in sorted(values.items()):
-        # GitHub output uses lowercase keys
-        lines.append(f"{key.lower()}={value}")
-
-    # Add derived values
-    if "QT_MODULES" in values:
-        ios_excluded = {"qtserialport"}
-        modules = values["QT_MODULES"].split()
-        ios_modules = " ".join(m for m in modules if m not in ios_excluded)
-        lines.append(f"qt_modules_ios={ios_modules}")
-
-    return "\n".join(lines)
+    return "\n".join(
+        f'$env:{key} = "{_escape_powershell_value(value)}"' for key, value in sorted(values.items())
+    )
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Read build configuration from .github/build-config.json"
     )
-    parser.add_argument(
-        "--get", metavar="KEY", help="Get a single value by key (e.g., qt_version)"
-    )
-    parser.add_argument(
-        "--json", action="store_true", help="Output full config as JSON"
-    )
+    parser.add_argument("--get", metavar="KEY", help="Get a single value by key (e.g., qt.version)")
+    parser.add_argument("--json", action="store_true", help="Output full config as JSON")
     parser.add_argument(
         "--export",
         choices=["bash", "powershell", "sh"],
@@ -168,42 +101,33 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
-        if args.config:
-            config_file = Path(args.config)
-        else:
-            config_file = find_config_file()
-
-        config = load_config(config_file)
+        config_file = Path(args.config) if args.config else find_config_file()
+        config = load_build_config(config_file)
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
-    except json.JSONDecodeError as e:
+    except (json.JSONDecodeError, ValueError) as e:
         print(f"Error: Invalid JSON in config file: {e}", file=sys.stderr)
         return 1
 
-    # Handle --get for single value
     if args.get:
         key = args.get.lower()  # Normalize to lowercase
-        if key == "gstreamer_version" and "gstreamer_default_version" in config:
-            print(config["gstreamer_default_version"])
+        if key == "gstreamer_version":
+            key = "gstreamer.version.default"
+        value: Any = lookup_dotted(config, key, None)
+        if value is not None:
+            print(value if isinstance(value, (str, int, float, bool)) else json.dumps(value))
             return 0
-        if key in config:
-            print(config[key])
-            return 0
-        else:
-            print(f"Error: Key '{key}' not found in config", file=sys.stderr)
-            print(f"Available keys: {', '.join(sorted(config.keys()))}", file=sys.stderr)
-            return 1
+        print(f"Error: Key '{key}' not found in config", file=sys.stderr)
+        print(f"Available keys: {', '.join(sorted(config.keys()))}", file=sys.stderr)
+        return 1
 
-    # Handle --json for full config
     if args.json:
         print(json.dumps(config, indent=2))
         return 0
 
-    # Get export values
-    values = get_export_values(config)
+    values = export_build_config_values(config)
 
-    # Handle --export for shell statements
     if args.export:
         if args.export in ("bash", "sh"):
             print(format_bash_export(values))
@@ -211,31 +135,18 @@ def main() -> int:
             print(format_powershell_export(values))
         return 0
 
-    # Handle --github-output
     if args.github_output:
-        github_output = os.environ.get("GITHUB_OUTPUT")
-        github_env = os.environ.get("GITHUB_ENV")
-
-        if not github_output:
+        if not os.environ.get("GITHUB_OUTPUT"):
             print(
                 "Error: GITHUB_OUTPUT not set (not running in GitHub Actions?)",
                 file=sys.stderr,
             )
             return 1
-
-        output = format_github_output(values)
-
-        with open(github_output, "a") as f:
-            f.write(output + "\n")
-
-        # Also write QT_VERSION to GITHUB_ENV
-        if github_env and "QT_VERSION" in values:
-            with open(github_env, "a") as f:
-                f.write(f"QT_VERSION={values['QT_VERSION']}\n")
-
+        write_github_output(github_output_values(values))
+        if "QT_VERSION" in values:
+            append_github_env({"QT_VERSION": values["QT_VERSION"]})
         return 0
 
-    # Default: print all values as KEY=VALUE
     print(f"Build Configuration (from {config_file}):")
     for key, value in sorted(values.items()):
         print(f"  {key}={value}")

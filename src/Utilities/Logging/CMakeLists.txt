@@ -1,9 +1,9 @@
 # Leaf lib so Compression/FileSystem/Network can PRIVATE-link without cycles.
 # The heavier log UI / store / remote sink lives in ../LogManager.
 
+add_subdirectory(Category)
+
 qt_add_library(QGCLogging STATIC
-    QGCLoggingCategory.cc
-    QGCLoggingCategory.h
     QGCLoggingCategoryManager.cc
     QGCLoggingCategoryManager.h
     LoggingCategoryModel.cc
@@ -18,15 +18,13 @@ qt_add_qml_module(QGCLogging
 
 target_link_libraries(QGCLogging
     PUBLIC
+        QGCLoggingCategory
         Qt6::Core
         Qt6::Qml
         Qt6::QmlIntegration
 )
 
-target_include_directories(QGCLogging
-    PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
-)
+target_include_directories(QGCLogging PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_precompile_headers(QGCLogging PRIVATE
     <QtCore/QObject>

@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
-import json
 import sys
 from pathlib import Path
 from typing import Any
@@ -14,9 +13,15 @@ from ci_bootstrap import ensure_tools_dir
 
 ensure_tools_dir(__file__)
 
+from common.artifact_metadata import ArtifactMetadataError, read_run_artifact_metadata
+from common.format import format_bytes
 from common.gh_actions import list_run_artifacts, list_workflow_runs_for_sha, parse_csv_list
-from common.github_runs import select_latest_runs_by_name
-
+from common.io import write_json
+from qgc_tools.workflow_runs import (
+    add_workflow_run_query_args,
+    resolve_workflow_runs,
+    select_latest_runs_by_name,
+)
 
 _DISTRIBUTABLE_PREFIXES = (
     "QGroundControl",
@@ -42,27 +47,6 @@ def _is_distributable_artifact(name: str) -> bool:
     if any(name.startswith(prefix) for prefix in _EXCLUDED_PREFIXES):
         return False
     return any(name.startswith(prefix) for prefix in _DISTRIBUTABLE_PREFIXES)
-
-def latest_successful_runs(
-    runs: list[dict[str, Any]],
-    platforms: list[str],
-    *,
-    event: str = "",
-) -> dict[str, dict[str, Any]]:
-    return select_latest_runs_by_name(
-        runs,
-        set(platforms),
-        event=event,
-        status="completed",
-        conclusion="success",
-    )
-
-
-def format_size_human(size_bytes: int) -> str:
-    size_mb = size_bytes / 1024 / 1024
-    if size_mb >= 1024:
-        return f"{(size_mb / 1024):.2f} GB"
-    return f"{size_mb:.2f} MB"
 
 
 def collect_artifacts(
@@ -92,7 +76,7 @@ def collect_artifacts(
                     {
                         "name": name,
                         "size_bytes": size_bytes,
-                        "size_human": format_size_human(size_bytes),
+                        "size_human": format_bytes(size_bytes),
                     }
                 )
         else:
@@ -102,15 +86,17 @@ def collect_artifacts(
         max_workers = min(len(run_ids), 4)
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as pool:
             future_to_run = {
-                pool.submit(list_run_artifacts, repo, run_id): run_id
-                for run_id in run_ids
+                pool.submit(list_run_artifacts, repo, run_id): run_id for run_id in run_ids
             }
             for future in concurrent.futures.as_completed(future_to_run):
                 run_id = future_to_run[future]
                 try:
                     run_artifacts = future.result()
                 except Exception as exc:
-                    print(f"Warning: failed to list artifacts for run {run_id}: {exc}", file=sys.stderr)
+                    print(
+                        f"Warning: failed to list artifacts for run {run_id}: {exc}",
+                        file=sys.stderr,
+                    )
                     continue
                 for artifact in run_artifacts:
                     name = str(artifact.get("name", ""))
@@ -122,7 +108,7 @@ def collect_artifacts(
                         {
                             "name": name,
                             "size_bytes": size_bytes,
-                            "size_human": format_size_human(size_bytes),
+                            "size_human": format_bytes(size_bytes),
                         }
                     )
 
@@ -139,18 +125,11 @@ def collect_artifacts(
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Collect artifact sizes for build-results.")
-    parser.add_argument("--repo", required=True, help="Repository in owner/repo format")
-    parser.add_argument("--head-sha", required=True, help="Commit SHA to inspect")
-    parser.add_argument(
-        "--platform-workflows",
-        default="Linux,Windows,MacOS,Android",
-        help="Comma-separated platform workflow names",
-    )
-    parser.add_argument(
-        "--event",
-        default="",
-        choices=["", "push", "pull_request", "workflow_dispatch", "schedule"],
-        help="Optional workflow event name to filter runs by",
+    add_workflow_run_query_args(
+        parser,
+        default_event="",
+        runs_option="--runs-file",
+        restrict_event=True,
     )
     parser.add_argument(
         "--output-file",
@@ -158,14 +137,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Output JSON file path",
     )
     parser.add_argument(
-        "--runs-file",
-        default="",
-        help="Path to cached workflow runs JSON (skips API call if provided)",
-    )
-    parser.add_argument(
         "--artifacts-file",
         default="",
         help="Path to run artifact metadata JSON (name + size_in_bytes) to avoid per-run API calls",
+    )
+    parser.add_argument(
+        "--require-artifacts",
+        action="store_true",
+        help="Fail when no distributable artifacts are available for a baseline",
     )
     return parser.parse_args(argv)
 
@@ -175,43 +154,23 @@ def main(argv: list[str] | None = None) -> int:
     platforms = parse_csv_list(args.platform_workflows)
     event = str(args.event).strip()
 
-    if args.runs_file:
-        try:
-            with open(args.runs_file, encoding="utf-8") as f:
-                loaded_runs = json.load(f)
-        except (json.JSONDecodeError, OSError) as e:
-            print(f"Error: failed to read runs file {args.runs_file}: {e}", file=sys.stderr)
-            return 1
-        if not isinstance(loaded_runs, list):
-            print(
-                f"Error: runs file {args.runs_file} must contain a JSON list of workflow runs",
-                file=sys.stderr,
-            )
-            return 1
-        runs = loaded_runs
-    else:
-        runs = list_workflow_runs_for_sha(args.repo, args.head_sha)
+    runs = resolve_workflow_runs(
+        args.repo, args.head_sha, args.runs_file, list_workflow_runs_for_sha
+    )
+    if runs is None:
+        return 1
     artifacts_by_run_id: dict[int, list[dict[str, Any]]] = {}
     if args.artifacts_file:
         artifacts_path = Path(args.artifacts_file)
         if artifacts_path.exists():
             try:
-                data = json.loads(artifacts_path.read_text(encoding="utf-8"))
-            except (json.JSONDecodeError, OSError):
-                data = {}
-            runs_data = data.get("runs", {})
-            if isinstance(runs_data, dict):
-                for run_id_str, run_artifacts in runs_data.items():
-                    try:
-                        run_id = int(run_id_str)
-                    except (TypeError, ValueError):
-                        continue
-                    if isinstance(run_artifacts, list):
-                        artifacts_by_run_id[run_id] = [
-                            artifact for artifact in run_artifacts if isinstance(artifact, dict)
-                        ]
+                artifacts_by_run_id = read_run_artifact_metadata(artifacts_path)
+            except ArtifactMetadataError as exc:
+                print(f"Warning: ignoring invalid artifact metadata: {exc}", file=sys.stderr)
 
-    latest = latest_successful_runs(runs, platforms, event=event)
+    latest = select_latest_runs_by_name(
+        runs, set(platforms), event=event, status="completed", conclusion="success"
+    )
     artifacts = collect_artifacts(
         args.repo,
         latest,
@@ -220,11 +179,14 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     output_path = Path(args.output_file)
+    write_json(output_path, {"head_sha": args.head_sha, "artifacts": artifacts})
     if artifacts:
-        output_path.write_text(json.dumps({"artifacts": artifacts}, indent=2), encoding="utf-8")
         print(f"Wrote {len(artifacts)} artifacts to {output_path}")
     else:
         print("No artifacts found")
+        if args.require_artifacts:
+            print("Error: cannot publish an empty artifact-size baseline", file=sys.stderr)
+            return 1
 
     return 0
 

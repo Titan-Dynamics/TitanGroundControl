@@ -1,69 +1,178 @@
 name: Docker Build
 description: Build QGC using Docker
 
+outputs:
+  image-digest:
+    description: Immutable digest of the built image
+    value: ${{ steps.build.outputs.digest }}
+
 inputs:
-  dockerfile:
-    description: Dockerfile to use
+  target:
+    description: Dockerfile build stage to target (linux, linux-cross, android)
     required: false
-    default: 'Dockerfile-build-ubuntu'
+    default: 'linux'
+  variant:
+    description: Variant key for cache namespace + image tag suffix (e.g. linux, linux-2204)
+    required: false
+    default: 'linux'
+  build-args:
+    description: Newline-separated KEY=VALUE docker build args (e.g. BASE_REF=...)
+    required: false
+    default: ''
   build-type:
     description: CMake build type (Release or Debug)
     required: false
     default: 'Release'
   fuse:
-    description: Enable FUSE support (required for AppImage builds)
+    description: Enable FUSE support for AppImageLint target mounting
     required: false
     default: 'false'
   docker-username:
     description: Docker Hub username
     required: false
-    default: 'mavlink'
+    default: ''
   docker-token:
     description: Docker Hub token
+    required: false
+    default: ''
+  push-image:
+    description: "Image reference (e.g. dronecode/qgroundcontrol) to push the builder to. Empty = don't push."
     required: false
     default: ''
 
 runs:
   using: composite
   steps:
-    # - name: Set up QEMU
-    #   uses: docker/setup-qemu-action@v3
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v4
+      with:
+        cache-image: false
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      uses: docker/setup-buildx-action@v4
 
     - name: Login to Docker Hub
-      if: inputs.docker-token != ''
-      uses: docker/login-action@v3
+      if: inputs.docker-token != '' && inputs.docker-username != ''
+      uses: docker/login-action@v4
       with:
         username: ${{ inputs.docker-username }}
         password: ${{ inputs.docker-token }}
 
+    - name: Login to GHCR
+      if: startsWith(inputs.push-image, 'ghcr.io/')
+      uses: docker/login-action@v4
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+
     - name: Validate inputs
       shell: bash
+      env:
+        TARGET: ${{ inputs.target }}
+        BUILD_TYPE: ${{ inputs.build-type }}
       run: |
         python3 "${GITHUB_WORKSPACE}/.github/scripts/docker_helper.py" validate \
-          --dockerfile "${{ inputs.dockerfile }}" \
-          --build-type "${{ inputs.build-type }}"
+          --target "${TARGET}" \
+          --build-type "${BUILD_TYPE}"
+
+    - name: Docker metadata (tags + OCI labels)
+      id: meta
+      uses: docker/metadata-action@v6
+      with:
+        images: ${{ inputs.push-image || 'dronecode/qgroundcontrol' }}
+        flavor: latest=false
+        tags: |
+          type=raw,value=${{ inputs.variant }}
+          type=sha,prefix=${{ inputs.variant }}-,format=short,enable=${{ inputs.push-image != '' }}
 
     - name: Build Docker image
-      if: contains(fromJSON('["Dockerfile-build-ubuntu", "Dockerfile-build-android"]'), inputs.dockerfile)
-      uses: docker/build-push-action@v6
+      id: build
+      if: contains(fromJSON('["linux", "linux-cross", "android"]'), inputs.target)
+      uses: docker/build-push-action@v7
       with:
         context: .
-        file: ./deploy/docker/${{ inputs.dockerfile }}
-        tags: qgc-builder:latest
+        file: ./deploy/docker/Dockerfile
+        target: ${{ inputs.target }}
+        build-args: ${{ inputs.build-args }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        # load must stay unconditional: the Run step docker-runs the image locally
+        # whether or not we push. Targets are single-arch, so load+push coexist.
         load: true
-        cache-from: type=gha,scope=${{ inputs.dockerfile }}
-        cache-to: ${{ github.event_name != 'pull_request' && format('type=gha,mode=max,scope={0}', inputs.dockerfile) || '' }}
+        push: ${{ inputs.push-image != '' }}
+        # Avoid the OCI attestation manifest that renders as unknown/unknown on Docker Hub.
+        provenance: false
+        sbom: false
+        # RunsOn redirects the GHA backend to S3; hosted fork jobs use GitHub's cache.
+        cache-from: type=gha,version=2,scope=qgc-docker-${{ inputs.variant }}-${{ inputs.target }}
+        cache-to: ${{ github.event_name != 'pull_request' && format('type=gha,version=2,scope=qgc-docker-{0}-{1},mode=max', inputs.variant, inputs.target) || '' }}
+
+    - name: Re-tag pushed image for local run
+      if: inputs.push-image != ''
+      shell: bash
+      env:
+        PUSH_IMAGE: ${{ inputs.push-image }}
+        VARIANT: ${{ inputs.variant }}
+      run: docker tag "${PUSH_IMAGE}:${VARIANT}" "dronecode/qgroundcontrol:${VARIANT}"
+
+    - name: Set up cache tooling
+      uses: ./.github/actions/setup-python
+      with:
+        groups: scripts
+
+    - name: Identify container compilers
+      id: compilers
+      shell: bash
+      env:
+        IMAGE: dronecode/qgroundcontrol:${{ inputs.variant }}
+      run: python3 .github/scripts/docker_helper.py cache-key --image "$IMAGE"
+
+    - name: Restore application build caches
+      uses: ./.github/actions/cache
+      with:
+        host: linux
+        target: docker-${{ inputs.variant }}
+        build-type: ${{ inputs.build-type }}
+        key-suffix: ${{ steps.compilers.outputs.fingerprint }}
+        cpm-modules: .cache/CPM
+        install-tools: 'false'
 
     - name: Run Docker build
+      id: application-build
       if: contains(fromJSON('["Release", "Debug"]'), inputs.build-type)
       shell: bash
       env:
         ENABLE_FUSE: ${{ inputs.fuse }}
+        IMAGE: dronecode/qgroundcontrol:${{ inputs.variant }}
+        BUILD_TYPE: ${{ inputs.build-type }}
       run: |
-        chmod +x ./deploy/docker/docker-run.sh
-        ARGS=(run --build-type "${{ inputs.build-type }}")
+        ARGS=(run --image "$IMAGE" --build-type "$BUILD_TYPE")
         [[ "$ENABLE_FUSE" == "true" ]] && ARGS+=(--fuse)
         python3 "${GITHUB_WORKSPACE}/.github/scripts/docker_helper.py" "${ARGS[@]}"
+
+    - name: Report application build performance
+      id: performance
+      if: ${{ !cancelled() && steps.application-build.outcome != '' && steps.application-build.outcome != 'skipped' }}
+      shell: bash
+      run: python3 .github/scripts/docker_helper.py summary --build-dir build
+
+    - name: Save successful compilation caches
+      if: ${{ !cancelled() && steps.performance.outputs.build_success == 'true' }}
+      uses: ./.github/actions/save-build-cache
+
+    - name: Report Ninja build timings
+      if: ${{ !cancelled() && steps.application-build.outcome != '' && steps.application-build.outcome != 'skipped' }}
+      shell: bash
+      run: python3 tools/build_profile.py --build-dir build --output-dir build/build-profile >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload application build performance
+      if: ${{ !cancelled() && steps.application-build.outcome != '' && steps.application-build.outcome != 'skipped' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: docker-performance-${{ inputs.variant }}-${{ inputs.build-type }}
+        path: |
+          build/docker-build-report.json
+          build/build-profile/
+        if-no-files-found: warn
+        retention-days: 14

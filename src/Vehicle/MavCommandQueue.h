@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <optional>
 
 #include <QtCore/QElapsedTimer>
 #include <QtCore/QList>
@@ -11,12 +12,13 @@
 
 class Vehicle;
 
-/// Owns the COMMAND_LONG / COMMAND_INT send/retry/ack pipeline for a single Vehicle.
+/// \brief Owns the COMMAND_LONG / COMMAND_INT send/retry/ack pipeline for a single Vehicle.
 ///
 /// Each outbound command is appended to a per-vehicle queue with its retry policy
 /// and ack timeout. A periodic timer resends entries whose ack window has expired;
 /// incoming COMMAND_ACK messages are matched by (compId, command) and either complete
 /// the entry or refresh its timer on MAV_RESULT_IN_PROGRESS.
+///
 class MavCommandQueue : public QObject, public VehicleTypes
 {
     Q_OBJECT
@@ -34,6 +36,7 @@ public:
     void sendCommandIntWithHandler (const MavCmdAckHandlerInfo_t* ackHandlerInfo, int compId, MAV_CMD command, MAV_FRAME frame, float param1 = 0.0f, float param2 = 0.0f, float param3 = 0.0f, float param4 = 0.0f, double param5 = 0.0, double param6 = 0.0, float param7 = 0.0f);
 
     void sendCommandWithLambdaFallback(std::function<void()> lambda, int compId, MAV_CMD command, bool showError, float param1 = 0.0f, float param2 = 0.0f, float param3 = 0.0f, float param4 = 0.0f, float param5 = 0.0f, float param6 = 0.0f, float param7 = 0.0f);
+    void sendCommandIntWithLambdaFallback(std::function<void()> lambda, int compId, MAV_CMD command, MAV_FRAME frame, bool showError, float param1 = 0.0f, float param2 = 0.0f, float param3 = 0.0f, float param4 = 0.0f, double param5 = 0.0, double param6 = 0.0, float param7 = 0.0f);
 
     /// Full-control entry point used by higher-level coordinators (e.g. RequestMessageCoordinator)
     /// that need to set commandInt/frame/handlers explicitly. Consumers should prefer the
@@ -58,10 +61,13 @@ public:
     static QString failureCodeToString(MavCmdResultFailureCode_t failureCode);
     static void showCommandAckError(const mavlink_command_ack_t& ack);
 
-    // Test tuning knobs.
-    static constexpr int kTestAckTimeoutMs = 500;
     static constexpr int kMaxRetryCount = 3;
-    static constexpr int kTestMaxWaitMs = kTestAckTimeoutMs * kMaxRetryCount * 2;
+
+    /// Test-only: shorten the ack timeout for tests whose outcome depends on at least one ack window
+    /// expiring (no ack, or ack only after a retry). Tests where every command is acked on first send
+    /// must leave this unset so they run against the production timeout.
+    static void setTestAckTimeoutOverride(std::optional<int> msecs);
+    static std::optional<int> testAckTimeoutOverride();
 
 signals:
     /// Emitted for every terminal ack that has no user-provided resultHandler.
@@ -91,6 +97,8 @@ private:
         int                     ackTimeoutMSecs     = 0;
     } MavCommandListEntry_t;
 
+    void sendCommandWithLambdaFallbackWorker(std::function<void()> lambda, bool commandInt, int compId, MAV_CMD command, MAV_FRAME frame, bool showError, float param1, float param2, float param3, float param4, double param5, double param6, float param7);
+
     void _sendFromList(int index);
     static bool _shouldRetry(MAV_CMD command);
     static bool _canBeDuplicated(MAV_CMD command);
@@ -103,5 +111,7 @@ private:
     QTimer                           _responseCheckTimer;
     bool                             _stopped = false;  // set by stop(), gates all send paths
 
+    static constexpr int _ackTimeoutMSecsDefault     = 1200;
     static constexpr int _ackTimeoutMSecsHighLatency = 120000;
+    static std::optional<int>        _testAckTimeoutOverride;
 };

@@ -1,13 +1,19 @@
 #include "PlatformTest.h"
 
+#include <optional>
+
 #include <QtCore/QByteArray>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QScopeGuard>
+#include <QtQuick/QQuickGraphicsConfiguration>
+#include <QtQuick/QQuickWindow>
 
 #include "Fixtures/RAIIFixtures.h"
+#include "GraphicsSetup.h"
 #include "Platform.h"
 #include "QGCCommandLineParser.h"
 #include "UnitTest.h"
 #include "qgc_version.h"
-
 
 #if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
 void PlatformTest::_testCheckSingleInstanceAllowMultiple()
@@ -66,5 +72,51 @@ void PlatformTest::_testInitializeSetsUnitTestEnvironment()
     QCOMPARE(qgetenv("QT_QPA_PLATFORM"), QByteArray("offscreen"));
 }
 #endif
+
+#if defined(QGC_UNITTEST_BUILD) && defined(Q_OS_WIN)
+void PlatformTest::_testInitializeSwRastRequestsSoftwareDevice()
+{
+    TestFixtures::EnvVarFixture restoreSoftware("QSG_RHI_PREFER_SOFTWARE_RENDERER");
+    (void) qunsetenv("QSG_RHI_PREFER_SOFTWARE_RENDERER");
+    const bool hadSoftwareGl = QCoreApplication::testAttribute(Qt::AA_UseSoftwareOpenGL);
+    // Qt warns when GL attributes change after app creation, so only restore on a real change.
+    const auto restoreSoftwareGl = qScopeGuard([hadSoftwareGl]() {
+        if (QCoreApplication::testAttribute(Qt::AA_UseSoftwareOpenGL) != hadSoftwareGl) {
+            QCoreApplication::setAttribute(Qt::AA_UseSoftwareOpenGL, hadSoftwareGl);
+        }
+    });
+
+    QGCCommandLineParser::CommandLineParseResult args;
+    args.allowMultiple = true;
+    args.useSwRast = true;
+
+    char appName[] = "qgc-unit-test";
+    char* argv[] = {appName};
+    const std::optional<int> initResult = Platform::initialize(1, argv, args);
+
+    QVERIFY(!initResult.has_value());
+    QCOMPARE(qgetenv("QSG_RHI_PREFER_SOFTWARE_RENDERER"), QByteArray("1"));
+    // Qt 6 ships no opengl32sw.dll, so forcing software GL would silently land on the hardware GL driver.
+    QVERIFY(!QCoreApplication::testAttribute(Qt::AA_UseSoftwareOpenGL));
+}
+#endif
+
+void PlatformTest::_testGraphicsSetupConfiguresFirstWindowOnCreation()
+{
+    TestFixtures::EnvVarFixture restoreCache("QGC_RHI_PIPELINE_CACHE");
+    qunsetenv("QGC_RHI_PIPELINE_CACHE");
+
+    // Android shows the root window, initializing its scene graph, while the QML loads; the configuration must land
+    // when the window's surface is created, and only on that first window.
+    GraphicsSetup::configureMainWindowOnCreation();
+    QQuickWindow first;
+    QVERIFY(first.graphicsConfiguration().pipelineCacheSaveFile().isEmpty());
+    first.create();
+    QVERIFY(first.graphicsConfiguration().pipelineCacheSaveFile().endsWith(QStringLiteral("qgc_rhi_pipeline.cache")));
+
+    QQuickWindow second;
+    second.create();
+    QVERIFY(second.graphicsConfiguration().pipelineCacheSaveFile().isEmpty());
+}
 
 UT_REGISTER_TEST(PlatformTest, TestLabel::Unit, TestLabel::Utilities)

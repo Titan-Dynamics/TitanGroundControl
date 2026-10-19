@@ -2,19 +2,20 @@
 
 from __future__ import annotations
 
-import os
 import subprocess
+import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from size_analysis import BinaryAnalyzer, write_github_output
+import size_analysis
+from size_analysis import BinaryAnalyzer
 
 
 def test_binary_analyzer_requires_existing_file(tmp_path: Path) -> None:
     missing = tmp_path / "missing.bin"
     try:
         BinaryAnalyzer(missing)
-        assert False, "Expected FileNotFoundError"
+        raise AssertionError("Expected FileNotFoundError")
     except FileNotFoundError:
         pass
 
@@ -33,7 +34,9 @@ def test_get_symbol_count_success(tmp_path: Path) -> None:
 
     with patch(
         "size_analysis.subprocess.run",
-        return_value=subprocess.CompletedProcess(args=["nm"], returncode=0, stdout="a\nb\n", stderr=""),
+        return_value=subprocess.CompletedProcess(
+            args=["nm"], returncode=0, stdout="a\nb\n", stderr=""
+        ),
     ):
         assert analyzer.get_symbol_count() == 2
 
@@ -45,7 +48,9 @@ def test_get_symbol_count_failure_returns_zero(tmp_path: Path) -> None:
 
     with patch(
         "size_analysis.subprocess.run",
-        return_value=subprocess.CompletedProcess(args=["nm"], returncode=1, stdout="", stderr="err"),
+        return_value=subprocess.CompletedProcess(
+            args=["nm"], returncode=1, stdout="", stderr="err"
+        ),
     ):
         assert analyzer.get_symbol_count() == 0
 
@@ -57,6 +62,28 @@ def test_get_section_sizes_unavailable(tmp_path: Path) -> None:
 
     with patch("size_analysis.subprocess.run", side_effect=FileNotFoundError):
         assert analyzer.get_section_sizes() == "Section sizes unavailable"
+
+
+def test_source_build_cleans_temporary_directory(tmp_path: Path, monkeypatch) -> None:
+    build_directory = None
+    real_temporary_directory = tempfile.TemporaryDirectory
+
+    def temporary_directory(**kwargs):
+        nonlocal build_directory
+        directory = real_temporary_directory(dir=tmp_path, **kwargs)
+        build_directory = Path(directory.name)
+        return directory
+
+    monkeypatch.setattr(size_analysis.tempfile, "TemporaryDirectory", temporary_directory)
+    monkeypatch.setattr(
+        size_analysis,
+        "run_captured",
+        lambda command, **kwargs: subprocess.CompletedProcess(command, 0, "", ""),
+    )
+
+    assert size_analysis._install_bloaty_from_source(10)
+    assert build_directory is not None
+    assert not build_directory.exists()
 
 
 def test_generate_metrics_json_with_explicit_values(tmp_path: Path) -> None:
@@ -71,14 +98,3 @@ def test_generate_metrics_json_with_explicit_values(tmp_path: Path) -> None:
     assert metrics[0]["value"] == 4
     assert metrics[1]["value"] == 3
     assert metrics[2]["value"] == 42
-
-
-def test_write_github_output(tmp_path: Path) -> None:
-    output_file = tmp_path / "github_output.txt"
-    with patch.dict(os.environ, {"GITHUB_OUTPUT": str(output_file)}):
-        write_github_output(10, 8, 100)
-
-    content = output_file.read_text(encoding="utf-8")
-    assert "binary_size=10" in content
-    assert "stripped_size=8" in content
-    assert "symbol_count=100" in content

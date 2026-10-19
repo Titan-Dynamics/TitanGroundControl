@@ -5,8 +5,6 @@ Tuning only needs to be done once, and is recommended unless you're using vehicl
 [자동 튜닝](#autotune)은 일반적으로 프레임 유형 및 이를 지원하는 콘트롤러(멀티콥터, 고정익 및 하이브리드 VTOL 고정익)에 적용하여야 합니다.
 튜닝 UI는 모든 콘트롤러의 수동 튜닝도 지원합니다.
 
-![튜닝 설정 > 자동 튜닝](../../../assets/setup/tuning/px4_autotune_hero.png)
-
 :::info
 During [Airframe Setup](airframe.md) you should have selected the frame that most closely matches your vehicle.
 이것은 일반적으로 비행하기에 충분히 잘 조정되며 자동 튜닝을 실행하기에 충분히 잘 _조정될 수_ 있습니다.
@@ -56,7 +54,7 @@ RC 컨트롤러로 자동 튜닝 프로세스를 중단할 준비를 하십시�
 
 테스트 단계는 다음과 같습니다:
 
-1. 위의 [사전 튜닝 테스트](#pre-tuning-test)를 수행합니다.
+1. Perform the [pre-autotuning test](#pre-autotuning-test) above.
 
 2. RC를 사용하여 이륙하고 테스트 준비:
    - **멀티콥터:** **고도 모드**에서 조종기를 사용하여 이륙합니다.
@@ -65,8 +63,6 @@ RC 컨트롤러로 자동 튜닝 프로세스를 중단할 준비를 하십시�
      이렇게 하면 비행기가 일정한 고도와 속도로 원을 그리며 비행합니다.
 
 3. QGroundControl에서 메뉴(**기체 PID 튜닝**)를 클릭합니다.
-
-   ![튜닝 설정 > 자동 튜닝 활성화됨](../../../assets/setup/tuning/px4_autotune.png)
 
 4. _Rate Controller_ 또는 _Attitude Controller_ 탭을 선택합니다.
    **자동 튜닝 활성화** 버튼이 활성화되어 있는 지 확인합니다(이렇게 하면 **자동 튜닝** 버튼이 표시되고 수동 튜닝 선택기가 제거됨).
@@ -116,9 +112,7 @@ It is designed to be read/used in conjustion with the [PX4 Manual PID Tuning Gui
 3. _Rate Controller_ 탭을 선택하십시오.
    **자동 튜닝 사용** 버튼이 꺼져 있는 지 확인합니다.
 
-   ![PX4 튜닝 - 수동 - 속도 컨트롤러](../../../assets/setup/tuning/px4_copter_manual_rate.png)
-
-4. 조정할 _조정 축_을 선택합니다: **롤**, **피치** 또는 **요**(각 축은 개별적으로 조정됨).
+4. 조정할 _조정 &#xCD95;_&#xC744; 선택합니다: **롤**, **피치** 또는 **요**(각 축은 개별적으로 조정됨).
 
 5. 차트의 추적을 관찰하면서 비행합니다.
    - 슬라이더를 사용하여 그래프에 표시되는 추적을 개선하려면 _조정 값_(매개변수)을 조정합니다.
@@ -129,5 +123,3 @@ It is designed to be read/used in conjustion with the [PX4 Manual PID Tuning Gui
 
 7. 다른 컨트롤러로 전환하고 프로세스를 반복합니다.
    튜닝 페이지의 캡쳐 화면은 아래와 같습니다.
-
-   ![PX4 튜닝 - 수동 - 자세 컨트롤러](../../../assets/setup/tuning/px4_copter_manual_attitude.png) ![PX4 튜닝 - 수동 - 속도 컨트롤러](../../../assets/setup/tuning/px4_copter_manual_velocity.png) ![PX4 튜닝 - 수동 - 위치 컨트롤러](../../../assets/setup/tuning/px4_copter_manual_velocity.png)

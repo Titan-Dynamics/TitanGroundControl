@@ -56,6 +56,13 @@ constexpr char CHAR_XOFF = 19;
 
 constexpr const char* kJniUsbSerialManagerClassName = "org/mavlink/qgroundcontrol/QGCUsbSerialManager";
 
+// POSIX serial backend (devices which expose accessible /dev/tty* nodes, e.g. rooted devices).
+// The backend is selected once at startup from the androidUsePosixSerial app setting.
+void setUsePosixSerial(bool use);
+bool usePosixSerial();
+bool hasPosixSerialPorts();
+QList<QSerialPortInfo> availablePosixPorts();
+
 void setNativeMethods();
 QList<QSerialPortInfo> availableDevices();
 int getDeviceId(const QString& portName);
@@ -65,15 +72,21 @@ bool close(int deviceId);
 bool isOpen(const QString& portName);
 QByteArray read(int deviceId, int length, int timeout);
 int write(int deviceId, const char* data, int length, int timeout, bool async);
+/// Returns bytes written, fewer than length on timeout, or -1 on error. A zero timeout waits without limit.
+int writeWithProgress(int deviceId, const char* data, int length, int timeout);
 bool setParameters(int deviceId, int baudRate, int dataBits, int stopBits, int parity);
 bool getCarrierDetect(int deviceId);
 bool getClearToSend(int deviceId);
 bool getDataSetReady(int deviceId);
 bool getDataTerminalReady(int deviceId);
 bool setDataTerminalReady(int deviceId, bool set);
+// 1: supported, 0: unsupported, -1: capability query failed.
+int dataTerminalReadySupport(int deviceId);
 bool getRingIndicator(int deviceId);
 bool getRequestToSend(int deviceId);
 bool setRequestToSend(int deviceId, bool set);
+// 1: supported, 0: unsupported, -1: capability query failed.
+int requestToSendSupport(int deviceId);
 QSerialPort::PinoutSignals getControlLines(int deviceId);
 int getFlowControl(int deviceId);
 bool setFlowControl(int deviceId, int flowControl);

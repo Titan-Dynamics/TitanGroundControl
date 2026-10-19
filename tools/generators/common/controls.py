@@ -16,21 +16,58 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from .validation import clamped_repr
+
+
+def _require_object(data: object, key: str) -> dict:
+    """Nested control fields must be JSON objects; a clear schema error beats an
+    AttributeError from .get() on a string."""
+    if not isinstance(data, dict):
+        raise ValueError(
+            f"'{key}' must be a JSON object, got {type(data).__name__}: {clamped_repr(data)}"
+        )
+
+    return data
+
+
+def _string(data: dict, key: str) -> str:
+    value = data.get(key, "")
+    if not isinstance(value, str):
+        raise ValueError(f"'{key}' must be a string, got {clamped_repr(value)}")
+    return value
+
+
+def _string_map(data: object, key: str) -> dict[str, str]:
+    values = _require_object(data, key)
+    if not all(isinstance(k, str) and isinstance(v, str) for k, v in values.items()):
+        raise ValueError(f"'{key}' must map names to string expressions")
+    return values
+
+
+def _boolean(data: dict, key: str, default: bool) -> bool:
+    value = data.get(key, default)
+    if not isinstance(value, bool):
+        raise ValueError(f"'{key}' must be a boolean, got {clamped_repr(value)}")
+    return value
+
 
 # --------------------------------------------------------------------------- #
 # Shared data fragments — callers compose these into their own ControlDef
 # --------------------------------------------------------------------------- #
 
+
 @dataclass
 class EnableCheckboxDef:
     """Optional enable/disable checkbox on a slider control."""
-    checked: str = ""      # QML expression for checkbox state
-    onClicked: str = ""    # QML expression executed when toggled
+
+    checked: str = ""  # QML expression for checkbox state
+    onClicked: str = ""  # QML expression executed when toggled
 
 
 @dataclass
 class ButtonDef:
     """Optional button adjacent to a control."""
+
     text: str = ""
     onClicked: str = ""
     enabled: str = ""
@@ -39,23 +76,26 @@ class ButtonDef:
 @dataclass
 class RadioOptionDef:
     """A single option in a radio button group."""
+
     label: str = ""
-    value: str = ""      # QML value to set when clicked
-    checked: str = ""    # QML expression for checked state
+    value: str = ""  # QML value to set when clicked
+    checked: str = ""  # QML expression for checked state
 
 
 @dataclass
 class DialogButtonDef:
     """A button that opens a QGCPopupDialog from a hand-written QML component."""
+
     text: str = ""
-    dialogComponent: str = ""      # QML type name, e.g. "CalcVoltageDividerDialog"
+    dialogComponent: str = ""  # QML type name, e.g. "CalcVoltageDividerDialog"
     dialogParams: dict[str, str] = field(default_factory=dict)  # key -> QML expression
-    buttonAfter: bool = True        # when False and paired with a param, button appears before textfield
+    buttonAfter: bool = True  # when False and paired with a param, button appears before textfield
 
 
 @dataclass
 class ActionButtonDef:
     """A standalone button that calls a controller method."""
+
     text: str = ""
     onClicked: str = ""
 
@@ -63,21 +103,38 @@ class ActionButtonDef:
 @dataclass
 class LinkedParamDef:
     """A parameter whose value is updated when a FactSlider changes."""
-    param: str = ""          # vehicle parameter name
-    expression: str = ""     # JS expression using ``value`` (e.g. "value", "value * 2")
+
+    param: str = ""  # vehicle parameter name
+    expression: str = ""  # JS expression using ``value`` (e.g. "value", "value * 2")
 
 
 @dataclass
 class ToggleCheckboxDef:
     """A non-Fact checkbox with custom checked/onClicked logic."""
-    checked: str = ""        # QML expression for checkbox state
-    onChecked: str = ""      # QML statement when checked
-    onUnchecked: str = ""    # QML statement when unchecked
+
+    checked: str = ""  # QML expression for checkbox state
+    onChecked: str = ""  # QML statement when checked
+    onUnchecked: str = ""  # QML statement when unchecked
+
+
+@dataclass
+class BaseControlDef:
+    """Fields common to the config and settings control definitions."""
+
+    setting: str = ""  # settings path, e.g. "flyViewSettings.showObstacleDistanceOverlay"
+    label: str = ""
+    control: str = ""  # combobox | textfield | checkbox | slider | ... (auto-detected if empty)
+    showWhen: str = ""
+    enableWhen: str = ""
+    component: str = ""  # escape hatch: inline hand-written QML component
+    enableCheckbox: EnableCheckboxDef | None = None
+    button: ButtonDef | None = None
 
 
 # --------------------------------------------------------------------------- #
 # Rendering helpers
 # --------------------------------------------------------------------------- #
+
 
 def qml_tr(text: str, context: str = "") -> str:
     """Return a QML translation call for *text*.
@@ -102,7 +159,7 @@ def render_label(
 ) -> str:
     """Render a static ``QGCLabel`` (no fact binding)."""
     lines = [f"{indent}QGCLabel {{"]
-    lines.append(f'{indent}    text: {qml_tr(text, tr_context)}')
+    lines.append(f"{indent}    text: {qml_tr(text, tr_context)}")
     lines.append(f"{indent}    wrapMode: Text.WordWrap")
     lines.append(f"{indent}    Layout.fillWidth: true")
     lines.append(f"{indent}    Layout.preferredWidth: 0")
@@ -128,7 +185,7 @@ def render_slider(
     tr_context: str = "",
 ) -> str:
     """Render a ``FactTextFieldSlider``, optionally with enable checkbox and button."""
-    label_line = f'    label: {qml_tr(label, tr_context)}' if label else "    label: fact.label"
+    label_line = f"    label: {qml_tr(label, tr_context)}" if label else "    label: fact.label"
     inner_indent = indent
     has_button = button is not None and button.text
     if has_button:
@@ -167,12 +224,12 @@ def render_slider(
 
     if has_button:
         assert button is not None
-        lines.append(f'{inner_indent}QGCButton {{')
-        lines.append(f'{inner_indent}    text: {qml_tr(button.text, tr_context)}')
-        lines.append(f'{inner_indent}    onClicked: {button.onClicked}')
+        lines.append(f"{inner_indent}QGCButton {{")
+        lines.append(f"{inner_indent}    text: {qml_tr(button.text, tr_context)}")
+        lines.append(f"{inner_indent}    onClicked: {button.onClicked}")
         if button.enabled:
-            lines.append(f'{inner_indent}    enabled: {button.enabled}')
-        lines.append(f'{inner_indent}}}')
+            lines.append(f"{inner_indent}    enabled: {button.enabled}")
+        lines.append(f"{inner_indent}}}")
         lines.append(f"{indent}}}")
 
     return "\n".join(lines)
@@ -188,15 +245,24 @@ def render_checkbox(
     label_source: str = "fact.label",
     qml_type: str = "FactCheckBox",
     tr_context: str = "",
+    object_name: str = "",
 ) -> str:
     """Render a ``FactCheckBox`` (or variant like ``FactCheckBoxSlider``)."""
-    label_line = f'    {label_property}: {qml_tr(label, tr_context)}' if label else f"    {label_property}: {label_source}"
-    lines = [
-        f"{indent}{qml_type} {{",
-        f"{indent}    Layout.fillWidth: true",
-        f"{indent}{label_line}",
-        f"{indent}    fact: {fact_ref}",
-    ]
+    label_line = (
+        f"    {label_property}: {qml_tr(label, tr_context)}"
+        if label
+        else f"    {label_property}: {label_source}"
+    )
+    lines = [f"{indent}{qml_type} {{"]
+    if object_name:
+        lines.append(f'{indent}    objectName: "{object_name}"')
+    lines.extend(
+        [
+            f"{indent}    Layout.fillWidth: true",
+            f"{indent}{label_line}",
+            f"{indent}    fact: {fact_ref}",
+        ]
+    )
     if enable_when:
         lines.append(f"{indent}    enabled: {enable_when}")
     lines.append(f"{indent}}}")
@@ -216,7 +282,9 @@ def render_combobox(
 ) -> str:
     """Render a ``FactComboBox`` (or ``LabelledFactComboBox``)."""
     if qml_type == "LabelledFactComboBox":
-        label_line = f'    label: {qml_tr(label, tr_context)}' if label else f"    label: {label_source}"
+        label_line = (
+            f"    label: {qml_tr(label, tr_context)}" if label else f"    label: {label_source}"
+        )
     else:
         label_line = None
 
@@ -244,62 +312,104 @@ def render_textfield(
     label_source: str = "fact.label",
     qml_type: str = "FactTextField",
     extra_lines: list[str] | None = None,
+    description: str = "",
     tr_context: str = "",
 ) -> str:
-    """Render a ``FactTextField`` (or ``LabelledFactTextField``)."""
+    """Render a ``FactTextField`` (or ``LabelledFactTextField``).
+
+    When *description* is set the control is wrapped in a ``ColumnLayout``
+    with a small ``QGCLabel`` below it, matching the app-settings style.
+    """
     if qml_type == "LabelledFactTextField":
-        label_line = f'    label: {qml_tr(label, tr_context)}' if label else f"    label: {label_source}"
+        label_line = (
+            f"    label: {qml_tr(label, tr_context)}" if label else f"    label: {label_source}"
+        )
     else:
         label_line = None
 
-    lines = [f"{indent}{qml_type} {{"]
+    ii = indent + "    " if description else indent
+
+    lines = [f"{ii}{qml_type} {{"]
     if label_line:
-        lines.append(f"{indent}{label_line}")
-    lines.append(f"{indent}    Layout.fillWidth: true")
-    lines.append(f"{indent}    fact: {fact_ref}")
+        lines.append(f"{ii}{label_line}")
+    lines.append(f"{ii}    Layout.fillWidth: true")
+    lines.append(f"{ii}    fact: {fact_ref}")
     if enable_when:
-        lines.append(f"{indent}    enabled: {enable_when}")
+        lines.append(f"{ii}    enabled: {enable_when}")
     if placeholder:
-        lines.append(f'{indent}    textField.placeholderText: {qml_tr(placeholder, tr_context)}')
+        lines.append(f"{ii}    textField.placeholderText: {qml_tr(placeholder, tr_context)}")
     if extra_lines:
         for el in extra_lines:
-            lines.append(f"{indent}    {el}")
-    lines.append(f"{indent}}}")
+            lines.append(f"{ii}    {el}")
+    lines.append(f"{ii}}}")
+
+    if description:
+        desc_lines = [
+            f"{ii}QGCLabel {{",
+            f"{ii}    Layout.fillWidth: true",
+            f"{ii}    Layout.preferredWidth: 0",
+            f"{ii}    text: {qml_tr(description, tr_context)}",
+            f"{ii}    font.pointSize: ScreenTools.smallFontPointSize",
+            f"{ii}    wrapMode: Text.WordWrap",
+            f"{ii}}}",
+        ]
+        wrapped = [
+            f"{indent}ColumnLayout {{",
+            f"{indent}    Layout.fillWidth: true",
+            f"{indent}    Layout.preferredWidth: 0",
+            f"{indent}    spacing: ScreenTools.defaultFontPixelHeight / 4",
+            "\n".join(lines),
+            "\n".join(desc_lines),
+            f"{indent}}}",
+        ]
+        return "\n".join(wrapped)
+
     return "\n".join(lines)
 
 
-def parse_enable_checkbox(data: dict) -> EnableCheckboxDef | None:
+def parse_enable_checkbox(data: object) -> EnableCheckboxDef | None:
     """Parse an enableCheckbox dict from JSON into an EnableCheckboxDef."""
+    if data is None:
+        return None
+    data = _require_object(data, "enableCheckbox")
     if not data:
         return None
     return EnableCheckboxDef(
-        checked=data.get("checked", ""),
-        onClicked=data.get("onClicked", ""),
+        checked=_string(data, "checked"),
+        onClicked=_string(data, "onClicked"),
     )
 
 
-def parse_button(data: dict) -> ButtonDef | None:
+def parse_button(data: object) -> ButtonDef | None:
     """Parse a button dict from JSON into a ButtonDef."""
+    if data is None:
+        return None
+    data = _require_object(data, "button")
     if not data:
         return None
     return ButtonDef(
-        text=data.get("text", ""),
-        onClicked=data.get("onClicked", ""),
-        enabled=data.get("enabled", ""),
+        text=_string(data, "text"),
+        onClicked=_string(data, "onClicked"),
+        enabled=_string(data, "enabled"),
     )
 
 
-def parse_radio_options(data: list | None) -> list[RadioOptionDef]:
+def parse_radio_options(data: object) -> list[RadioOptionDef]:
     """Parse a list of radio option dicts from JSON."""
-    if not data:
+    if data is None:
         return []
+    if not isinstance(data, list):
+        raise ValueError(
+            f"'options' must be a JSON array, got {type(data).__name__}: {clamped_repr(data)}"
+        )
+    options = [_require_object(opt, "options entry") for opt in data]
     return [
         RadioOptionDef(
-            label=opt.get("label", ""),
+            label=_string(opt, "label"),
             value=str(opt.get("value", "")),
-            checked=opt.get("checked", ""),
+            checked=_string(opt, "checked"),
         )
-        for opt in data
+        for opt in options
     ]
 
 
@@ -318,50 +428,58 @@ def render_radiogroup(
     value_prop = "rawValue" if raw else "value"
     lines: list[str] = []
     if label:
-        lines.append(f'{indent}QGCLabel {{')
-        lines.append(f'{indent}    text: {qml_tr(label, tr_context)}')
-        lines.append(f'{indent}}}')
+        lines.append(f"{indent}QGCLabel {{")
+        lines.append(f"{indent}    text: {qml_tr(label, tr_context)}")
+        lines.append(f"{indent}}}")
     inner = indent + "    "
-    lines.append(f'{indent}ColumnLayout {{')
-    lines.append(f'{indent}    spacing: 0')
+    lines.append(f"{indent}ColumnLayout {{")
+    lines.append(f"{indent}    spacing: 0")
     for opt in options:
-        lines.append(f'{inner}QGCRadioButton {{')
-        lines.append(f'{inner}    text: {qml_tr(opt.label, tr_context)}')
+        lines.append(f"{inner}QGCRadioButton {{")
+        lines.append(f"{inner}    text: {qml_tr(opt.label, tr_context)}")
         if opt.checked:
             if optional:
-                lines.append(f'{inner}    checked: {fact_ref} ? {opt.checked} : false')
+                lines.append(f"{inner}    checked: {fact_ref} ? {opt.checked} : false")
             else:
-                lines.append(f'{inner}    checked: {opt.checked}')
+                lines.append(f"{inner}    checked: {opt.checked}")
         if optional:
-            lines.append(f'{inner}    onClicked: if ({fact_ref}) {{ {fact_ref}.{value_prop} = {opt.value} }}')
+            lines.append(
+                f"{inner}    onClicked: if ({fact_ref}) {{ {fact_ref}.{value_prop} = {opt.value} }}"
+            )
         else:
-            lines.append(f'{inner}    onClicked: {fact_ref}.{value_prop} = {opt.value}')
+            lines.append(f"{inner}    onClicked: {fact_ref}.{value_prop} = {opt.value}")
         if enable_when:
-            lines.append(f'{inner}    enabled: {enable_when}')
-        lines.append(f'{inner}}}')
-    lines.append(f'{indent}}}')
+            lines.append(f"{inner}    enabled: {enable_when}")
+        lines.append(f"{inner}}}")
+    lines.append(f"{indent}}}")
     return "\n".join(lines)
 
 
-def parse_dialog_button(data: dict | None) -> DialogButtonDef | None:
+def parse_dialog_button(data: object) -> DialogButtonDef | None:
     """Parse a dialogButton dict from JSON into a DialogButtonDef."""
+    if data is None:
+        return None
+    data = _require_object(data, "dialogButton")
     if not data:
         return None
     return DialogButtonDef(
-        text=data.get("text", ""),
-        dialogComponent=data.get("dialogComponent", ""),
-        dialogParams=data.get("dialogParams", {}),
-        buttonAfter=data.get("buttonAfter", True),
+        text=_string(data, "text"),
+        dialogComponent=_string(data, "dialogComponent"),
+        dialogParams=_string_map(data.get("dialogParams", {}), "dialogParams"),
+        buttonAfter=_boolean(data, "buttonAfter", True),
     )
 
 
-def parse_action_button(data: dict | None) -> ActionButtonDef | None:
+def parse_action_button(data: object) -> ActionButtonDef | None:
     """Parse an actionButton dict from JSON into an ActionButtonDef."""
+    if data is None:
+        return None
+    data = _require_object(data, "actionButton")
     if not data:
         return None
     return ActionButtonDef(
-        text=data.get("text", ""),
-        onClicked=data.get("onClicked", ""),
+        text=_string(data, "text"),
+        onClicked=_string(data, "onClicked"),
     )
 
 
@@ -390,13 +508,11 @@ def render_dialog_button(
     lines.append(f"{indent}}}")
 
     # Button
-    params_js = ", ".join(
-        f'"{k}": {v}' for k, v in dialog_button.dialogParams.items()
-    )
+    params_js = ", ".join(f'"{k}": {v}' for k, v in dialog_button.dialogParams.items())
     open_arg = f"{{ {params_js} }}" if params_js else ""
 
     lines.append(f"{indent}QGCButton {{")
-    lines.append(f'{indent}    text: {qml_tr(dialog_button.text, tr_context)}')
+    lines.append(f"{indent}    text: {qml_tr(dialog_button.text, tr_context)}")
     lines.append(f"{indent}    onClicked: {factory_id}.open({open_arg})")
     if enable_when:
         lines.append(f"{indent}    enabled: {enable_when}")
@@ -415,7 +531,7 @@ def render_action_button(
     """Render a standalone ``QGCButton`` that calls a controller method."""
     lines: list[str] = []
     lines.append(f"{indent}QGCButton {{")
-    lines.append(f'{indent}    text: {qml_tr(action_button.text, tr_context)}')
+    lines.append(f"{indent}    text: {qml_tr(action_button.text, tr_context)}")
     lines.append(f"{indent}    onClicked: {action_button.onClicked}")
     if enable_when:
         lines.append(f"{indent}    enabled: {enable_when}")
@@ -436,7 +552,7 @@ def render_bitmask_checkbox(
     lines = [f"{indent}FactBitMaskCheckBoxSlider {{"]
     lines.append(f"{indent}    Layout.fillWidth: true")
     if label:
-        lines.append(f'{indent}    text: {qml_tr(label, tr_context)}')
+        lines.append(f"{indent}    text: {qml_tr(label, tr_context)}")
     lines.append(f"{indent}    fact: {fact_ref}")
     lines.append(f"{indent}    bitMask: {bit_mask}")
     if enable_when:
@@ -479,7 +595,7 @@ def render_toggle_checkbox(
     lines = [f"{indent}QGCCheckBoxSlider {{"]
     lines.append(f"{indent}    Layout.fillWidth: true")
     if label:
-        lines.append(f'{indent}    text: {qml_tr(label, tr_context)}')
+        lines.append(f"{indent}    text: {qml_tr(label, tr_context)}")
     if toggle.checked:
         if optional and fact_ref:
             lines.append(f"{indent}    checked: {fact_ref} ? {toggle.checked} : false")
@@ -503,28 +619,29 @@ def render_toggle_checkbox(
     return "\n".join(lines)
 
 
-def parse_toggle_checkbox(data: dict | None) -> ToggleCheckboxDef | None:
+def parse_toggle_checkbox(data: object) -> ToggleCheckboxDef | None:
     """Parse a toggleCheckbox dict from JSON."""
+    if data is None:
+        return None
+    data = _require_object(data, "toggleCheckbox")
     if not data:
         return None
     return ToggleCheckboxDef(
-        checked=data.get("checked", ""),
-        onChecked=data.get("onChecked", ""),
-        onUnchecked=data.get("onUnchecked", ""),
+        checked=_string(data, "checked"),
+        onChecked=_string(data, "onChecked"),
+        onUnchecked=_string(data, "onUnchecked"),
     )
 
 
-def parse_linked_params(data: dict | None) -> list[LinkedParamDef]:
+def parse_linked_params(data: object) -> list[LinkedParamDef]:
     """Parse a linkedParams dict from JSON.
 
     Input is ``{"PARAM_NAME": "expression", ...}``.
     """
-    if not data:
+    if data is None:
         return []
-    return [
-        LinkedParamDef(param=name, expression=expr)
-        for name, expr in data.items()
-    ]
+    data = _string_map(data, "linkedParams")
+    return [LinkedParamDef(param=name, expression=expr) for name, expr in data.items()]
 
 
 def render_factslider(
@@ -557,7 +674,7 @@ def render_factslider(
     if show_when:
         lines.append(f"{indent}    visible: {show_when}")
 
-    lines.append(f"")
+    lines.append("")
     lines.append(f"{inner}FactSlider {{")
     lines.append(f"{inner}    Layout.fillWidth: true")
     lines.append(f"{inner}    fact: {fact_ref}")
@@ -569,14 +686,16 @@ def render_factslider(
     if major_tick_step_size:
         lines.append(f"{inner}    majorTickStepSize: {major_tick_step_size}")
     else:
-        lines.append(f"{inner}    majorTickStepSize: {fact_ref}.increment")
+        lines.append(f"{inner}    majorTickStepSize: fact ? fact.increment : 1")
     if decimal_places:
         lines.append(f"{inner}    decimalPlaces: {decimal_places}")
 
     if linked_params:
         lines.append(f"{inner}    onValueChanged: {{")
         for lp in linked_params:
-            lines.append(f'{inner}        controller.getParameterFact(-1, "{lp.param}").rawValue = {lp.expression}')
+            lines.append(
+                f'{inner}        controller.getParameterFact(-1, "{lp.param}").rawValue = {lp.expression}'
+            )
         lines.append(f"{inner}    }}")
 
     if enable_when:

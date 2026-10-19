@@ -1,15 +1,31 @@
-#include "QmlObjectListModel.h"
 #include "MissionControllerTest.h"
 
+#include <QtCore/QRegularExpression>
+#include <QtCore/QScopeGuard>
+#include <QtCore/QTemporaryDir>
+
 #include "AppSettings.h"
-#include "UnitTestCoords.h"
+#include "CameraCalc.h"
+#include "CorridorScanComplexItem.h"
+#include "FlightPathSegment.h"
+#include "LandingComplexItem.h"
 #include "MissionController.h"
 #include "MissionSettingsItem.h"
+#include "MultiSignalSpy.h"
 #include "PlanMasterController.h"
 #include "PlanViewSettings.h"
+#include "QmlObjectListModel.h"
 #include "SettingsManager.h"
 #include "SimpleMissionItem.h"
+#include "StructureScanComplexItem.h"
+#include "SurveyComplexItem.h"
+#include "TakeoffMissionItem.h"
 #include "TestFixtures.h"
+#include "UnitTestCoords.h"
+#include "UnitsSettings.h"
+#include "Vehicle.h"
+#include "VehicleSupports.h"
+
 using namespace TestFixtures;
 
 MissionControllerTest::~MissionControllerTest() = default;
@@ -35,14 +51,24 @@ void MissionControllerTest::_initForFirmwareType(MAV_AUTOPILOT firmwareType)
     SettingsManager::instance()->appSettings()->offlineEditingFirmwareClass()->setRawValue(
         QGCMAVLink::firmwareClass(firmwareType));
     _masterController = std::make_unique<PlanMasterController>();
+    _startMasterController();
+}
+
+void MissionControllerTest::_initForVehicleType(MAV_AUTOPILOT firmwareType, MAV_TYPE vehicleType)
+{
+    _masterController = std::make_unique<PlanMasterController>(firmwareType, vehicleType);
+    _startMasterController();
+}
+
+void MissionControllerTest::_startMasterController()
+{
     _masterController->setFlyView(false);
     _missionController = _masterController->missionController();
-    SignalSpyFixture missionControllerSpy(_missionController);
-    QVERIFY(missionControllerSpy.spy());
-    missionControllerSpy.expect("visualItemsReset");
+    MultiSignalSpy missionControllerSpy;
+    QVERIFY(missionControllerSpy.init(_missionController));
     _masterController->start();
     // visualItemsReset should be emitted during start (along with many other signals)
-    QVERIFY(missionControllerSpy.waitAndVerify(TestTimeout::mediumMs()));
+    QVERIFY(missionControllerSpy.waitForSignal("visualItemsReset", TestTimeout::mediumMs()));
     QmlObjectListModel* visualItems = _missionController->visualItems();
     QVERIFY(visualItems);
     // Empty vehicle only has home position
@@ -60,6 +86,195 @@ void MissionControllerTest::_initForFirmwareType(MAV_AUTOPILOT firmwareType)
     QCOMPARE(simpleFlightPathSegments->count(), 0);
 }
 
+void MissionControllerTest::_testVTOLTakeoffModes_data()
+{
+    QTest::addColumn<int>("firmwareType");
+    QTest::addColumn<int>("vehicleType");
+    QTest::addColumn<bool>("useMulticopterTakeoff");
+    QTest::addColumn<bool>("supportsMulticopterTakeoff");
+    QTest::addColumn<int>("expectedCommand");
+    QTest::addColumn<bool>("expectedSameLocation");
+    QTest::addColumn<int>("expectedWaypointVTOLMode");
+
+    QTest::newRow("PX4 VTOL default")
+        << int(MAV_AUTOPILOT_PX4) << int(MAV_TYPE_VTOL_TAILSITTER_QUADROTOR)
+        << false << true << int(MAV_CMD_NAV_VTOL_TAKEOFF) << false << int(QGCMAVLink::VehicleClassFixedWing);
+    QTest::newRow("PX4 VTOL multicopter")
+        << int(MAV_AUTOPILOT_PX4) << int(MAV_TYPE_VTOL_TAILSITTER_QUADROTOR)
+        << true << true << int(MAV_CMD_NAV_TAKEOFF) << true << int(QGCMAVLink::VehicleClassMultiRotor);
+    QTest::newRow("PX4 multicopter unchanged")
+        << int(MAV_AUTOPILOT_PX4) << int(MAV_TYPE_QUADROTOR)
+        << false << false << int(MAV_CMD_NAV_TAKEOFF) << true << int(QGCMAVLink::VehicleClassGeneric);
+    QTest::newRow("PX4 fixed wing unchanged")
+        << int(MAV_AUTOPILOT_PX4) << int(MAV_TYPE_FIXED_WING)
+        << false << false << int(MAV_CMD_NAV_TAKEOFF) << false << int(QGCMAVLink::VehicleClassGeneric);
+}
+
+void MissionControllerTest::_testVTOLTakeoffModes()
+{
+    QFETCH(int, firmwareType);
+    QFETCH(int, vehicleType);
+    QFETCH(bool, useMulticopterTakeoff);
+    QFETCH(bool, supportsMulticopterTakeoff);
+    QFETCH(int, expectedCommand);
+    QFETCH(bool, expectedSameLocation);
+    QFETCH(int, expectedWaypointVTOLMode);
+
+    _initForVehicleType(static_cast<MAV_AUTOPILOT>(firmwareType), static_cast<MAV_TYPE>(vehicleType));
+
+    Vehicle* controllerVehicle = _masterController->controllerVehicle();
+    QVERIFY(controllerVehicle);
+    QCOMPARE(controllerVehicle->supports()->vtolMulticopterTakeoff(), supportsMulticopterTakeoff);
+
+    const QGeoCoordinate home = Coord::zurich();
+    _missionController->setHomePosition(home);
+    VisualMissionItem* visualTakeoff = useMulticopterTakeoff
+        ? _missionController->insertVTOLMulticopterTakeoffItem(home, 1)
+        : _missionController->insertTakeoffItem(home, 1);
+    QVERIFY(visualTakeoff);
+
+    TakeoffMissionItem* takeoffItem = qobject_cast<TakeoffMissionItem*>(visualTakeoff);
+    QVERIFY(takeoffItem);
+    QCOMPARE(takeoffItem->mavCommand(), static_cast<MAV_CMD>(expectedCommand));
+    QCOMPARE(takeoffItem->launchTakeoffAtSameLocation(), expectedSameLocation);
+    if (useMulticopterTakeoff) {
+        QCOMPARE(takeoffItem->commandName(), QStringLiteral("Multicopter takeoff"));
+        QCOMPARE(takeoffItem->commandDescription(),
+                 QStringLiteral("Take off vertically and continue the mission in multicopter mode."));
+    }
+
+    SimpleMissionItem* waypoint = qobject_cast<SimpleMissionItem*>(
+        _missionController->insertSimpleMissionItem(home.atDistanceAndAzimuth(100.0, 0.0), 2));
+    QVERIFY(waypoint);
+
+    if (controllerVehicle->vtol()) {
+        QCOMPARE_TRUE_WAIT(waypoint->property("previousVTOLMode").toInt(), expectedWaypointVTOLMode, TestTimeout::mediumMs());
+    }
+}
+
+void MissionControllerTest::_testArduPilotVTOLOrdinaryTakeoffCompatibility()
+{
+    if (!apmFirmwareSupported()) {
+        QSKIP("ArduPilot support not registered in this build");
+    }
+
+    _initForVehicleType(MAV_AUTOPILOT_ARDUPILOTMEGA, MAV_TYPE_VTOL_TAILSITTER_QUADROTOR);
+
+    Vehicle* controllerVehicle = _masterController->controllerVehicle();
+    QVERIFY(controllerVehicle);
+    QCOMPARE(controllerVehicle->supports()->vtolMulticopterTakeoff(), false);
+
+    const QGeoCoordinate home = Coord::zurich();
+    _missionController->setHomePosition(home);
+    MissionSettingsItem* settingsItem = _missionController->visualItems()->value<MissionSettingsItem*>(0);
+    QVERIFY(settingsItem);
+
+    TakeoffMissionItem* defaultTakeoffItem = qobject_cast<TakeoffMissionItem*>(
+        _missionController->insertTakeoffItem(home, 1));
+    QVERIFY(defaultTakeoffItem);
+    QCOMPARE(defaultTakeoffItem->mavCommand(), MAV_CMD_NAV_VTOL_TAKEOFF);
+
+    SimpleMissionItem* waypoint = qobject_cast<SimpleMissionItem*>(
+        _missionController->insertSimpleMissionItem(home.atDistanceAndAzimuth(100.0, 0.0), 2));
+    QVERIFY(waypoint);
+    QCOMPARE_TRUE_WAIT(
+        waypoint->property("previousVTOLMode").toInt(),
+        int(QGCMAVLink::VehicleClassFixedWing),
+        TestTimeout::mediumMs());
+
+    TakeoffMissionItem ordinaryTakeoffItem(
+        MAV_CMD_NAV_TAKEOFF, _masterController.get(), false /* flyView */, settingsItem, false /* forLoad */);
+    // ArduPilot NAV_TAKEOFF is altitude-only, so launch and takeoff stay co-located regardless of the PX4 capability
+    QCOMPARE(ordinaryTakeoffItem.launchTakeoffAtSameLocation(), true);
+}
+
+void MissionControllerTest::_testUnsupportedVTOLMulticopterTakeoff()
+{
+    _initForVehicleType(MAV_AUTOPILOT_PX4, MAV_TYPE_QUADROTOR);
+    _missionController->setHomePosition(Coord::zurich());
+    const int initialCount = _missionController->visualItems()->count();
+
+    expectLogMessage("PlanManager.MissionController", QtWarningMsg,
+                     QRegularExpression(QStringLiteral("Multicopter takeoff requested for an unsupported vehicle")));
+    QVERIFY(!_missionController->insertVTOLMulticopterTakeoffItem(Coord::zurich(), 1));
+    verifyExpectedLogMessage();
+    QCOMPARE(_missionController->visualItems()->count(), initialCount);
+}
+
+void MissionControllerTest::_testVTOLMulticopterTakeoffAfterFixedWingTransition()
+{
+    _initForVehicleType(MAV_AUTOPILOT_PX4, MAV_TYPE_VTOL_TAILSITTER_QUADROTOR);
+
+    const QGeoCoordinate home = Coord::zurich();
+    _missionController->setHomePosition(home);
+
+    QVERIFY(_missionController->insertVTOLMulticopterTakeoffItem(home, 1));
+
+    SimpleMissionItem* transitionItem = qobject_cast<SimpleMissionItem*>(
+        _missionController->insertSimpleMissionItem(QGeoCoordinate(), 2));
+    QVERIFY(transitionItem);
+    transitionItem->setCommand(MAV_CMD_DO_VTOL_TRANSITION);
+    transitionItem->missionItem().setParam1(MAV_VTOL_STATE_FW);
+
+    TakeoffMissionItem* takeoffItem = qobject_cast<TakeoffMissionItem*>(
+        _missionController->insertVTOLMulticopterTakeoffItem(home, 3));
+    QVERIFY(takeoffItem);
+
+    SimpleMissionItem* waypoint = qobject_cast<SimpleMissionItem*>(
+        _missionController->insertSimpleMissionItem(home.atDistanceAndAzimuth(100.0, 0.0), 4));
+    QVERIFY(waypoint);
+
+    QCOMPARE_TRUE_WAIT(
+        takeoffItem->property("previousVTOLMode").toInt(),
+        int(QGCMAVLink::VehicleClassFixedWing),
+        TestTimeout::mediumMs());
+    QCOMPARE_TRUE_WAIT(
+        waypoint->property("previousVTOLMode").toInt(),
+        int(QGCMAVLink::VehicleClassMultiRotor),
+        TestTimeout::mediumMs());
+}
+
+void MissionControllerTest::_testVTOLTakeoffJsonRoundTrip_data()
+{
+    QTest::addColumn<bool>("useMulticopterTakeoff");
+    QTest::addColumn<int>("expectedCommand");
+
+    QTest::newRow("VTOL takeoff") << false << int(MAV_CMD_NAV_VTOL_TAKEOFF);
+    QTest::newRow("multicopter takeoff") << true << int(MAV_CMD_NAV_TAKEOFF);
+}
+
+void MissionControllerTest::_testVTOLTakeoffJsonRoundTrip()
+{
+    QFETCH(bool, useMulticopterTakeoff);
+    QFETCH(int, expectedCommand);
+
+    _initForVehicleType(MAV_AUTOPILOT_PX4, MAV_TYPE_VTOL_TAILSITTER_QUADROTOR);
+
+    const QGeoCoordinate home = Coord::zurich();
+    _missionController->setHomePosition(home);
+    VisualMissionItem* visualTakeoff = useMulticopterTakeoff
+        ? _missionController->insertVTOLMulticopterTakeoffItem(home, 1)
+        : _missionController->insertTakeoffItem(home, 1);
+    TakeoffMissionItem* takeoffItem = qobject_cast<TakeoffMissionItem*>(visualTakeoff);
+    QVERIFY(takeoffItem);
+    takeoffItem->setCoordinate(home.atDistanceAndAzimuth(50.0, 0.0));
+    QVERIFY(_missionController->insertSimpleMissionItem(home.atDistanceAndAzimuth(100.0, 0.0), 2));
+
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    const QString filename = tempDir.filePath(QStringLiteral("VTOLTakeoff.plan"));
+    QVERIFY(_masterController->saveToFile(filename));
+
+    _masterController->removeAll();
+    _masterController->loadFromFile(filename);
+
+    QmlObjectListModel* visualItems = _missionController->visualItems();
+    QCOMPARE(visualItems->count(), 3);
+    TakeoffMissionItem* loadedTakeoff = visualItems->value<TakeoffMissionItem*>(1);
+    QVERIFY(loadedTakeoff);
+    QCOMPARE(loadedTakeoff->mavCommand(), static_cast<MAV_CMD>(expectedCommand));
+}
+
 void MissionControllerTest::_testEmptyVehicle_data()
 {
     TestData::addAutopilotRows();
@@ -69,6 +284,9 @@ void MissionControllerTest::_testEmptyVehicle()
 {
     UT_FETCH_AUTOPILOT();
     Q_UNUSED(autopilotName);
+    // ArduPilot metadata includes an invalid enum value; skip warning is expected for that autopilot.
+    ignoreLogMessage("FirmwarePlugin.ParameterMetaData", QtWarningMsg,
+                     QRegularExpression("Skipping invalid enum value"));
     _initForFirmwareType(autopilot);
     // FYI: A significant amount of empty vehicle testing is in _initForFirmwareType since that
     // sets up an empty vehicle
@@ -81,8 +299,94 @@ void MissionControllerTest::_testEmptyVehicle()
 
 void MissionControllerTest::_setupVisualItemSignals(VisualMissionItem* visualItem)
 {
-    SignalSpyFixture visualItemSpy(visualItem);
-    QVERIFY(visualItemSpy.spy());
+    MultiSignalSpy visualItemSpy;
+    QVERIFY(visualItemSpy.init(visualItem));
+}
+
+void MissionControllerTest::_testInsertValidityHomePositionGating()
+{
+    _initForFirmwareType(MAV_AUTOPILOT_PX4);
+
+    auto boolProperty = [this](const char* name) {
+        const QVariant value = _missionController->property(name);
+        return value.isValid() && value.toBool();
+    };
+
+    // All insert validity properties must exist
+    QVERIFY(_missionController->property("isInsertTakeoffValid").isValid());
+    QVERIFY(_missionController->property("isInsertLandValid").isValid());
+    QVERIFY(_missionController->property("isInsertROIValid").isValid());
+    QVERIFY(_missionController->property("flyThroughCommandsAllowed").isValid());
+
+    // No home position set: no inserts are valid
+    QCOMPARE(_missionController->homePositionSet(), false);
+    QCOMPARE(boolProperty("isInsertTakeoffValid"), false);
+    QCOMPARE(boolProperty("isInsertLandValid"), false);
+    QCOMPARE(boolProperty("isInsertROIValid"), false);
+    QCOMPARE(boolProperty("flyThroughCommandsAllowed"), false);
+
+    // Home position set, empty plan: only takeoff insert is valid
+    _missionController->setHomePosition(Coord::zurich());
+    QCOMPARE(_missionController->homePositionSet(), true);
+    QCOMPARE(boolProperty("isInsertTakeoffValid"), true);
+    QCOMPARE(boolProperty("isInsertLandValid"), false);
+    QCOMPARE(boolProperty("isInsertROIValid"), false);
+    QCOMPARE(boolProperty("flyThroughCommandsAllowed"), false);
+
+    // Takeoff added: takeoff no longer valid, everything else is
+    QVERIFY(_missionController->insertTakeoffItem(Coord::zurich(), 1, true /* makeCurrentItem */));
+    QCOMPARE(boolProperty("isInsertTakeoffValid"), false);
+    QCOMPARE(boolProperty("isInsertLandValid"), true);
+    QCOMPARE(boolProperty("isInsertROIValid"), true);
+    QCOMPARE(boolProperty("flyThroughCommandsAllowed"), true);
+}
+
+void MissionControllerTest::_testLandToolInsertsSingleRtl_data()
+{
+    QTest::addColumn<int>("vehicleClass");
+
+    QTest::newRow("RoverBoat") << static_cast<int>(QGCMAVLink::VehicleClassRoverBoat);
+    QTest::newRow("MultiRotor") << static_cast<int>(QGCMAVLink::VehicleClassMultiRotor);
+}
+
+void MissionControllerTest::_testLandToolInsertsSingleRtl()
+{
+    // Multiple landing patterns are a fixed-wing/VTOL concept. For other vehicle types the
+    // Land tool inserts RTL and must not offer a second insert once the plan has one.
+    // Offline planning (no connected vehicle) matches the report in issue #14957.
+    QFETCH(int, vehicleClass);
+
+    AppSettings* appSettings = SettingsManager::instance()->appSettings();
+    appSettings->offlineEditingFirmwareClass()->setRawValue(QGCMAVLink::firmwareClass(MAV_AUTOPILOT_ARDUPILOTMEGA));
+    appSettings->offlineEditingVehicleClass()->setRawValue(vehicleClass);
+    Fact* const allowMultipleLandingPatterns = SettingsManager::instance()->planViewSettings()->allowMultipleLandingPatterns();
+    const QVariant savedAllowMultiple = allowMultipleLandingPatterns->rawValue();
+    const auto restoreGuard = qScopeGuard([allowMultipleLandingPatterns, savedAllowMultiple] { allowMultipleLandingPatterns->setRawValue(savedAllowMultiple); });
+    allowMultipleLandingPatterns->setRawValue(true);
+
+    _masterController = std::make_unique<PlanMasterController>();
+    _masterController->setFlyView(false);
+    _missionController = _masterController->missionController();
+    MultiSignalSpy missionControllerSpy;
+    QVERIFY(missionControllerSpy.init(_missionController));
+    _masterController->start();
+    QVERIFY(missionControllerSpy.waitForSignal("visualItemsReset", TestTimeout::mediumMs()));
+
+    _missionController->setHomePosition(Coord::zurich());
+
+    // Vehicles which support a takeoff command only allow takeoff insert on an empty plan
+    if (!_missionController->property("isInsertLandValid").toBool()) {
+        QVERIFY(_missionController->insertTakeoffItem(Coord::zurich(), 1, true /* makeCurrentItem */));
+    }
+    QCOMPARE(_missionController->property("isInsertLandValid").toBool(), true);
+
+    VisualMissionItem* landItem = _missionController->insertLandItem(Coord::zurich(), -1, true /* makeCurrentItem */);
+    SimpleMissionItem* simpleItem = qobject_cast<SimpleMissionItem*>(landItem);
+    QVERIFY(simpleItem);
+    QCOMPARE(simpleItem->mavCommand(), MAV_CMD_NAV_RETURN_TO_LAUNCH);
+
+    QCOMPARE(_missionController->property("hasLandItem").toBool(), true);
+    QCOMPARE(_missionController->property("isInsertLandValid").toBool(), false);
 }
 
 void MissionControllerTest::_testGimbalRecalc()
@@ -236,9 +540,24 @@ void MissionControllerTest::_testMissionReposition()
     QCOMPARE_FUZZY(item2->editableAlt(), oldAlt2, kAltToleranceMeters);
 }
 
+void MissionControllerTest::_testMissionOffset_data()
+{
+    QTest::addColumn<int>("planFrame");
+    QTest::addColumn<bool>("withTakeoff");
+
+    QTest::newRow("relative plan") << int(QGroundControlQmlGlobal::AltitudeFrameRelative) << false;
+    QTest::newRow("mixed plan") << int(QGroundControlQmlGlobal::AltitudeFrameMixed) << false;
+    // Takeoff is always relative, so it differs from the plan frame here
+    QTest::newRow("absolute plan, relative takeoff") << int(QGroundControlQmlGlobal::AltitudeFrameAbsolute) << true;
+}
+
 void MissionControllerTest::_testMissionOffset()
 {
+    QFETCH(int, planFrame);
+    QFETCH(bool, withTakeoff);
+
     _initForFirmwareType(MAV_AUTOPILOT_PX4);
+    _missionController->setGlobalAltitudeFrame(static_cast<QGroundControlQmlGlobal::AltitudeFrame>(planFrame));
 
     MissionSettingsItem* settingsItem = _missionController->visualItems()->value<MissionSettingsItem*>(0);
     QVERIFY(settingsItem);
@@ -246,29 +565,30 @@ void MissionControllerTest::_testMissionOffset()
     const QGeoCoordinate home = Coord::zurich();
     settingsItem->setCoordinate(home);
 
-    const QGeoCoordinate wp1 = home.atDistanceAndAzimuth(150.0, 15.0);
-    const QGeoCoordinate wp2 = home.atDistanceAndAzimuth(320.0, 120.0);
-    _missionController->insertSimpleMissionItem(wp1, 1);
-    _missionController->insertSimpleMissionItem(wp2, 2);
+    if (withTakeoff) {
+        QVERIFY(_missionController->insertTakeoffItem(home, -1));
+    }
+    _missionController->insertSimpleMissionItem(home.atDistanceAndAzimuth(150.0, 15.0), -1);
+    _missionController->insertSimpleMissionItem(home.atDistanceAndAzimuth(320.0, 120.0), -1);
 
-    SimpleMissionItem* item1 = _missionController->visualItems()->value<SimpleMissionItem*>(1);
-    SimpleMissionItem* item2 = _missionController->visualItems()->value<SimpleMissionItem*>(2);
-    QVERIFY(item1);
-    QVERIFY(item2);
+    QList<VisualMissionItem*> items;
+    QList<double> oldAlts;
+    for (int i = 1; i < _missionController->visualItems()->count(); i++) {
+        VisualMissionItem* item = _missionController->visualItems()->value<VisualMissionItem*>(i);
+        QVERIFY(item);
+        items.append(item);
+        oldAlts.append(item->editableAlt());
+    }
+    QCOMPARE(items.count(), withTakeoff ? 3 : 2);
 
     const double oldHomeAlt = settingsItem->editableAlt();
-    const double oldAlt1 = item1->editableAlt();
-    const double oldAlt2 = item2->editableAlt();
 
     _missionController->offsetMission(0.0, 0.0, 12.0, true, true);
-    QVERIFY_TRUE_WAIT(qAbs(settingsItem->editableAlt() - oldHomeAlt) <= kAltToleranceMeters &&
-                          qAbs(item1->editableAlt() - (oldAlt1 + 12.0)) <= kAltToleranceMeters &&
-                          qAbs(item2->editableAlt() - (oldAlt2 + 12.0)) <= kAltToleranceMeters,
-                      TestTimeout::shortMs());
 
     QCOMPARE_FUZZY(settingsItem->editableAlt(), oldHomeAlt, kAltToleranceMeters);
-    QCOMPARE_FUZZY(item1->editableAlt(), oldAlt1 + 12.0, kAltToleranceMeters);
-    QCOMPARE_FUZZY(item2->editableAlt(), oldAlt2 + 12.0, kAltToleranceMeters);
+    for (qsizetype i = 0; i < items.count(); i++) {
+        QCOMPARE_FUZZY(items[i]->editableAlt(), oldAlts[i] + 12.0, kAltToleranceMeters);
+    }
 }
 
 void MissionControllerTest::_testMissionRotate()
@@ -338,8 +658,12 @@ void MissionControllerTest::_testMissionTransformsInvalidHome()
     QVERIFY_TRUE_WAIT(!settingsItem->coordinate().isValid(), TestTimeout::shortMs());
 
     // repositionMission and rotateMission require a valid home — they should be no-ops
+    expectLogMessage("PlanManager.MissionController", QtWarningMsg, QRegularExpression("Cannot reposition mission while home is invalid"));
     _missionController->repositionMission(home.atDistanceAndAzimuth(100.0, 0.0), true, true);
+    verifyExpectedLogMessage();
+    expectLogMessage("PlanManager.MissionController", QtWarningMsg, QRegularExpression("Cannot rotate mission while home is invalid"));
     _missionController->rotateMission(45.0, true, true);
+    verifyExpectedLogMessage();
     QCOMPARE_COORDS(item1->coordinate(), oldItemCoord, kCoordToleranceMeters);
     QCOMPARE_FUZZY(item1->editableAlt(), oldItemAlt, kAltToleranceMeters);
 
@@ -406,6 +730,592 @@ void MissionControllerTest::_testGlobalAltFrame()
             QCOMPARE(siLoop->missionItem().frame(), testCase.expectedMavFrame);
         }
     }
+}
+
+void MissionControllerTest::_testFlightPathSegmentCacheReuse()
+{
+    _initForFirmwareType(MAV_AUTOPILOT_PX4);
+
+    MissionSettingsItem* settingsItem = _missionController->visualItems()->value<MissionSettingsItem*>(0);
+    QVERIFY(settingsItem);
+    const QGeoCoordinate home = Coord::zurich();
+    settingsItem->setCoordinate(home);
+
+    // home(0) takeoff(1) spacer(2) wp3(3) wp4(4) landWp(5)
+    VisualMissionItem* takeoffItem = _missionController->insertTakeoffItem(home, 1);
+    VisualMissionItem* spacerItem = _missionController->insertSimpleMissionItem(home.atDistanceAndAzimuth(50, 0), 2);
+    SimpleMissionItem* wp3 =
+        qobject_cast<SimpleMissionItem*>(_missionController->insertSimpleMissionItem(home.atDistanceAndAzimuth(100, 0), 3));
+    SimpleMissionItem* wp4 =
+        qobject_cast<SimpleMissionItem*>(_missionController->insertSimpleMissionItem(home.atDistanceAndAzimuth(200, 0), 4));
+    SimpleMissionItem* landWp =
+        qobject_cast<SimpleMissionItem*>(_missionController->insertSimpleMissionItem(home.atDistanceAndAzimuth(300, 0), 5));
+    QVERIFY(takeoffItem);
+    QVERIFY(spacerItem);
+    QVERIFY(wp3);
+    QVERIFY(wp4);
+    QVERIFY(landWp);
+
+    QmlObjectListModel* segments = _missionController->simpleFlightPathSegments();
+    QCOMPARE_TRUE_WAIT(segments->count(), 5, TestTimeout::mediumMs());
+    QVERIFY(settingsItem->simpleFlightPathSegment());
+    QVERIFY(spacerItem->simpleFlightPathSegment());
+    QCOMPARE(settingsItem->simpleFlightPathSegment()->segmentType(), FlightPathSegment::SegmentTypeTakeoff);
+    QCOMPARE(spacerItem->simpleFlightPathSegment()->segmentType(), FlightPathSegment::SegmentTypeGeneric);
+
+    // Change frames/command underneath the cached segments. Segment type is CONSTANT, so these
+    // changes schedule a recalc that must recreate the affected segments rather than reuse the
+    // stale-typed ones, without needing any structural edit.
+    FlightPathSegment* staleWp3Wp4 = wp3->simpleFlightPathSegment();
+    FlightPathSegment* staleWp4Land = wp4->simpleFlightPathSegment();
+    QVERIFY(staleWp3Wp4);
+    QVERIFY(staleWp4Land);
+    QCOMPARE(staleWp3Wp4->segmentType(), FlightPathSegment::SegmentTypeGeneric);
+    QCOMPARE(staleWp4Land->segmentType(), FlightPathSegment::SegmentTypeGeneric);
+    // Identity is compared as quintptr: on regression the stale segments are dangling and
+    // QCOMPARE on QObject* dereferences them when formatting the failure message.
+    const quintptr preRecalcHomeTakeoffPtr = quintptr(settingsItem->simpleFlightPathSegment());
+    const quintptr staleWp3Wp4Ptr = quintptr(staleWp3Wp4);
+    const quintptr staleWp4LandPtr = quintptr(staleWp4Land);
+
+    wp3->setAltitudeFrame(QGroundControlQmlGlobal::AltitudeFrameTerrain);
+    wp4->setAltitudeFrame(QGroundControlQmlGlobal::AltitudeFrameTerrain);
+    landWp->setCommand(MAV_CMD_NAV_LAND);
+
+    QTRY_VERIFY_WITH_TIMEOUT(quintptr(wp3->simpleFlightPathSegment()) != staleWp3Wp4Ptr, TestTimeout::mediumMs());
+    QVERIFY(wp3->simpleFlightPathSegment());
+    QVERIFY(wp4->simpleFlightPathSegment());
+    QCOMPARE(wp3->simpleFlightPathSegment()->segmentType(), FlightPathSegment::SegmentTypeTerrainFrame);
+    // Land item as pair.second overrides the terrain frame of wp4
+    QVERIFY(quintptr(wp4->simpleFlightPathSegment()) != staleWp4LandPtr);
+    QCOMPARE(wp4->simpleFlightPathSegment()->segmentType(), FlightPathSegment::SegmentTypeLand);
+    // Terrain frame comes from the pair's destination item: wp3 is Terrain, so the spacer->wp3 leg is TerrainFrame
+    QVERIFY(spacerItem->simpleFlightPathSegment());
+    QCOMPARE(spacerItem->simpleFlightPathSegment()->segmentType(), FlightPathSegment::SegmentTypeTerrainFrame);
+    // Untouched pairs are reused as-is
+    QCOMPARE(quintptr(settingsItem->simpleFlightPathSegment()), preRecalcHomeTakeoffPtr);
+    QCOMPARE(settingsItem->simpleFlightPathSegment()->segmentType(), FlightPathSegment::SegmentTypeTakeoff);
+
+    const quintptr postFrameChangeWp3Ptr = quintptr(wp3->simpleFlightPathSegment());
+    const quintptr postFrameChangeWp4Ptr = quintptr(wp4->simpleFlightPathSegment());
+
+    // Removing the spacer triggers a structural recalc: pairs whose computed type changed must be
+    // recreated with the new type, pairs whose type is unchanged must be reused.
+    _missionController->removeVisualItem(2);
+    QCOMPARE_TRUE_WAIT(segments->count(), 4, TestTimeout::mediumMs());
+
+    QVERIFY(settingsItem->simpleFlightPathSegment());
+    QVERIFY(takeoffItem->simpleFlightPathSegment());
+    QVERIFY(wp3->simpleFlightPathSegment());
+    QVERIFY(wp4->simpleFlightPathSegment());
+    QCOMPARE(quintptr(settingsItem->simpleFlightPathSegment()), preRecalcHomeTakeoffPtr);
+    QCOMPARE(settingsItem->simpleFlightPathSegment()->segmentType(), FlightPathSegment::SegmentTypeTakeoff);
+    // The new takeoff->wp3 leg arrives at a terrain-frame item
+    QCOMPARE(takeoffItem->simpleFlightPathSegment()->segmentType(), FlightPathSegment::SegmentTypeTerrainFrame);
+    QCOMPARE(quintptr(wp3->simpleFlightPathSegment()), postFrameChangeWp3Ptr);
+    QCOMPARE(wp3->simpleFlightPathSegment()->segmentType(), FlightPathSegment::SegmentTypeTerrainFrame);
+    QCOMPARE(quintptr(wp4->simpleFlightPathSegment()), postFrameChangeWp4Ptr);
+    QCOMPARE(wp4->simpleFlightPathSegment()->segmentType(), FlightPathSegment::SegmentTypeLand);
+
+    const quintptr segHomeTakeoffPtr = quintptr(settingsItem->simpleFlightPathSegment());
+    const quintptr segWp3Wp4Ptr = quintptr(wp3->simpleFlightPathSegment());
+    const quintptr segWp4LandPtr = quintptr(wp4->simpleFlightPathSegment());
+
+    // Recalc again without touching these pairs: every segment must be reused as-is,
+    // including takeoff/land segments whose type never equals SegmentTypeTerrainFrame.
+    _missionController->insertSimpleMissionItem(home.atDistanceAndAzimuth(75, 0), 2);
+    QCOMPARE_TRUE_WAIT(segments->count(), 5, TestTimeout::mediumMs());
+
+    QVERIFY(wp3->simpleFlightPathSegment());
+    QVERIFY(wp4->simpleFlightPathSegment());
+    QCOMPARE(quintptr(settingsItem->simpleFlightPathSegment()), segHomeTakeoffPtr);
+    QCOMPARE(quintptr(wp3->simpleFlightPathSegment()), segWp3Wp4Ptr);
+    QCOMPARE(quintptr(wp4->simpleFlightPathSegment()), segWp4LandPtr);
+    QCOMPARE(wp3->simpleFlightPathSegment()->segmentType(), FlightPathSegment::SegmentTypeTerrainFrame);
+    QCOMPARE(wp4->simpleFlightPathSegment()->segmentType(), FlightPathSegment::SegmentTypeLand);
+}
+
+void MissionControllerTest::_testSplitSegmentTracksSegmentRebuild_data()
+{
+    QTest::addColumn<QGroundControlQmlGlobal::AltitudeFrame>("initialFrame");
+    QTest::addColumn<bool>("editPreviousItem");
+    QTest::addColumn<QGroundControlQmlGlobal::AltitudeFrame>("newFrame");
+    QTest::addColumn<int>("newCommand");
+    QTest::addColumn<bool>("segmentRecreated");
+    QTest::addColumn<FlightPathSegment::SegmentType>("recreatedSegmentType");
+
+    const auto relative = QGroundControlQmlGlobal::AltitudeFrameRelative;
+    const auto terrain = QGroundControlQmlGlobal::AltitudeFrameTerrain;
+    const int keepCommand = MAV_CMD_NAV_WAYPOINT;
+
+    // Segment type changes: the segment is deleted and a new one created for the same item pair
+    QTest::newRow("current item to terrain frame")
+        << relative << false << terrain << keepCommand << true << FlightPathSegment::SegmentTypeTerrainFrame;
+    QTest::newRow("current item from terrain frame")
+        << terrain << false << relative << keepCommand << true << FlightPathSegment::SegmentTypeGeneric;
+    QTest::newRow("current item to land command")
+        << relative << false << relative << int(MAV_CMD_NAV_LAND) << true << FlightPathSegment::SegmentTypeLand;
+
+    // Item pair is no longer linked: the segment is deleted with no replacement
+    QTest::newRow("current item to non-coordinate command")
+        << relative << false << relative << int(MAV_CMD_DO_CHANGE_SPEED) << false
+        << FlightPathSegment::SegmentTypeGeneric;
+    QTest::newRow("current item to return to launch")
+        << relative << false << relative << int(MAV_CMD_NAV_RETURN_TO_LAUNCH) << false
+        << FlightPathSegment::SegmentTypeGeneric;
+    QTest::newRow("previous item to land command")
+        << relative << true << relative << int(MAV_CMD_NAV_LAND) << false << FlightPathSegment::SegmentTypeGeneric;
+    QTest::newRow("previous item to non-coordinate command")
+        << relative << true << relative << int(MAV_CMD_DO_CHANGE_SPEED) << false
+        << FlightPathSegment::SegmentTypeGeneric;
+}
+
+void MissionControllerTest::_testSplitSegmentTracksSegmentRebuild()
+{
+    QFETCH(QGroundControlQmlGlobal::AltitudeFrame, initialFrame);
+    QFETCH(bool, editPreviousItem);
+    QFETCH(QGroundControlQmlGlobal::AltitudeFrame, newFrame);
+    QFETCH(int, newCommand);
+    QFETCH(bool, segmentRecreated);
+    QFETCH(FlightPathSegment::SegmentType, recreatedSegmentType);
+
+    // Terrain frame is only selectable in the Plan view on ArduPilot
+    _initForFirmwareType(MAV_AUTOPILOT_ARDUPILOTMEGA);
+
+    MissionSettingsItem* settingsItem = _missionController->visualItems()->value<MissionSettingsItem*>(0);
+    QVERIFY(settingsItem);
+    const QGeoCoordinate home = Coord::zurich();
+    settingsItem->setCoordinate(home);
+    _missionController->setGlobalAltitudeFrame(QGroundControlQmlGlobal::AltitudeFrameMixed);
+
+    // home(0) wp1(1) wp2(2), wp2 is the current item so wp1->wp2 is the split segment
+    SimpleMissionItem* wp1 = qobject_cast<SimpleMissionItem*>(
+        _missionController->insertSimpleMissionItem(home.atDistanceAndAzimuth(100, 0), 1, true /* makeCurrentItem */));
+    SimpleMissionItem* wp2 = qobject_cast<SimpleMissionItem*>(
+        _missionController->insertSimpleMissionItem(home.atDistanceAndAzimuth(200, 0), 2, true /* makeCurrentItem */));
+    QVERIFY(wp1);
+    QVERIFY(wp2);
+    wp2->setAltitudeFrame(initialFrame);
+
+    const auto splitSegment = [this]() {
+        return _missionController->property("splitSegment").value<FlightPathSegment*>();
+    };
+    QVERIFY_TRUE_WAIT(splitSegment() != nullptr, TestTimeout::mediumMs());
+    QCOMPARE(splitSegment(), wp1->simpleFlightPathSegment());
+
+    QSignalSpy staleSplitSegmentDestroyedSpy(splitSegment(), &QObject::destroyed);
+    QSignalSpy splitSegmentChangedSpy(_missionController, &MissionController::splitSegmentChanged);
+
+    // None of these edits reselect the current item, so only the segment recalc can update splitSegment
+    SimpleMissionItem* editedItem = editPreviousItem ? wp1 : wp2;
+    editedItem->setAltitudeFrame(newFrame);
+    editedItem->setCommand(newCommand);
+    QCOMPARE_TRUE_WAIT(staleSplitSegmentDestroyedSpy.count(), 1, TestTimeout::mediumMs());
+
+    // Identity is compared as quintptr: on regression splitSegment is dangling and
+    // QCOMPARE on QObject* dereferences it when formatting the failure message.
+    if (segmentRecreated) {
+        QVERIFY(wp1->simpleFlightPathSegment());
+        QCOMPARE(quintptr(splitSegment()), quintptr(wp1->simpleFlightPathSegment()));
+        QCOMPARE(wp1->simpleFlightPathSegment()->segmentType(), recreatedSegmentType);
+    } else {
+        QCOMPARE(quintptr(splitSegment()), quintptr(0));
+    }
+    QCOMPARE(splitSegmentChangedSpy.count(), 1);
+}
+
+void MissionControllerTest::_testSplitSegmentWhenCurrentItemGainsCoordinate()
+{
+    _initForFirmwareType(MAV_AUTOPILOT_PX4);
+
+    MissionSettingsItem* settingsItem = _missionController->visualItems()->value<MissionSettingsItem*>(0);
+    QVERIFY(settingsItem);
+    const QGeoCoordinate home = Coord::zurich();
+    settingsItem->setCoordinate(home);
+
+    SimpleMissionItem* wp1 = qobject_cast<SimpleMissionItem*>(
+        _missionController->insertSimpleMissionItem(home.atDistanceAndAzimuth(100, 0), 1, true /* makeCurrentItem */));
+    SimpleMissionItem* wp2 = qobject_cast<SimpleMissionItem*>(
+        _missionController->insertSimpleMissionItem(home.atDistanceAndAzimuth(200, 0), 2, true /* makeCurrentItem */));
+    QVERIFY(wp1);
+    QVERIFY(wp2);
+
+    const auto splitSegment = [this]() {
+        return _missionController->property("splitSegment").value<FlightPathSegment*>();
+    };
+    QVERIFY_TRUE_WAIT(splitSegment() != nullptr, TestTimeout::mediumMs());
+
+    // Current item loses its coordinate: no split segment
+    wp2->setCommand(MAV_CMD_DO_CHANGE_SPEED);
+    QVERIFY_TRUE_WAIT(splitSegment() == nullptr, TestTimeout::mediumMs());
+
+    // Current item regains a coordinate without being reselected: wp1->wp2 must become the split segment
+    QSignalSpy splitSegmentChangedSpy(_missionController, &MissionController::splitSegmentChanged);
+    wp2->setMapCenterHintForCommandChange(home.atDistanceAndAzimuth(200, 0));
+    wp2->setCommand(MAV_CMD_NAV_WAYPOINT);
+    QVERIFY_TRUE_WAIT(wp1->simpleFlightPathSegment() != nullptr, TestTimeout::mediumMs());
+
+    QCOMPARE(quintptr(splitSegment()), quintptr(wp1->simpleFlightPathSegment()));
+    QCOMPARE(splitSegmentChangedSpy.count(), 1);
+}
+
+void MissionControllerTest::_testSplitSegmentNotOnLegFromHome()
+{
+    _initForFirmwareType(MAV_AUTOPILOT_PX4);
+
+    MissionSettingsItem* settingsItem = _missionController->visualItems()->value<MissionSettingsItem*>(0);
+    QVERIFY(settingsItem);
+    const QGeoCoordinate home = Coord::zurich();
+    settingsItem->setCoordinate(home);
+
+    QVERIFY(_missionController->insertTakeoffItem(home, 1, true /* makeCurrentItem */));
+
+    // A takeoff links home to the first item, but that leg must never offer the split UI
+    QVERIFY_TRUE_WAIT(settingsItem->simpleFlightPathSegment() != nullptr, TestTimeout::mediumMs());
+    QCOMPARE(quintptr(_missionController->property("splitSegment").value<FlightPathSegment*>()), quintptr(0));
+}
+
+void MissionControllerTest::_testInsertComplexItemFromKML()
+{
+    _initForFirmwareType(MAV_AUTOPILOT_PX4);
+
+    // PolygonAreaTest.kml contains a 4-vertex polygon (5th coordinate is ring closure).
+    // polyline.kml contains a LineString; CorridorScan expects a polyline, not a polygon.
+    constexpr int kExpectedPolygonVertexCount = 4;
+    const QString polygonKml = QStringLiteral(":/unittest/PolygonAreaTest.kml");
+    const QString polylineKml = QStringLiteral(":/unittest/polyline.kml");
+
+    // Survey — polygon KML defines the survey area
+    VisualMissionItem* surveyVisual = _missionController->insertComplexMissionItemFromKMLOrSHP(
+        SurveyComplexItem::canonicalName, polygonKml, 1, false);
+    QVERIFY(surveyVisual);
+    SurveyComplexItem* surveyItem = qobject_cast<SurveyComplexItem*>(surveyVisual);
+    QVERIFY(surveyItem);
+    QCOMPARE(surveyItem->surveyAreaPolygon()->count(), kExpectedPolygonVertexCount);
+
+    // CorridorScan — polyline KML defines the corridor path; corridor polygon is computed from it
+    VisualMissionItem* corridorVisual = _missionController->insertComplexMissionItemFromKMLOrSHP(
+        CorridorScanComplexItem::canonicalName, polylineKml, 2, false);
+    QVERIFY(corridorVisual);
+    CorridorScanComplexItem* corridorItem = qobject_cast<CorridorScanComplexItem*>(corridorVisual);
+    QVERIFY(corridorItem);
+    QVERIFY(corridorItem->surveyAreaPolygon()->count() > 0);
+
+    // StructureScan — polygon KML defines the structure perimeter
+    VisualMissionItem* structureVisual = _missionController->insertComplexMissionItemFromKMLOrSHP(
+        StructureScanComplexItem::canonicalName, polygonKml, 3, false);
+    QVERIFY(structureVisual);
+    StructureScanComplexItem* structureItem = qobject_cast<StructureScanComplexItem*>(structureVisual);
+    QVERIFY(structureItem);
+    QCOMPARE(structureItem->structurePolygon()->count(), kExpectedPolygonVertexCount);
+
+    // home + Survey + CorridorScan + StructureScan
+    QCOMPARE(_missionController->visualItems()->count(), 4);
+}
+
+void MissionControllerTest::_testLoadPlanRoundTripComplexItems()
+{
+    _initForFirmwareType(MAV_AUTOPILOT_PX4);
+
+    const QGeoCoordinate center = Coord::zurich();
+
+    // Insert a Survey and a CorridorScan
+    VisualMissionItem* surveyVisual = _missionController->insertComplexMissionItem(
+        SurveyComplexItem::canonicalName, center, 1, false);
+    QVERIFY(surveyVisual);
+    QVERIFY(qobject_cast<SurveyComplexItem*>(surveyVisual));
+
+    VisualMissionItem* corridorVisual = _missionController->insertComplexMissionItem(
+        CorridorScanComplexItem::canonicalName, center, 2, false);
+    QVERIFY(corridorVisual);
+    QVERIFY(qobject_cast<CorridorScanComplexItem*>(corridorVisual));
+
+    // home + Survey + CorridorScan
+    QCOMPARE(_missionController->visualItems()->count(), 3);
+
+    // Save to a temporary file, reload, and verify the types survive the round-trip
+    QTemporaryDir tmpDir;
+    QVERIFY(tmpDir.isValid());
+    const QString planPath = QStringLiteral("%1/test.%2").arg(tmpDir.path(), _masterController->fileExtension());
+    QVERIFY(_masterController->saveToFile(planPath));
+
+    _missionController->removeAll();
+    QCOMPARE(_missionController->visualItems()->count(), 1); // home only
+
+    _masterController->loadFromFile(planPath);
+    QCOMPARE(_missionController->visualItems()->count(), 3);
+
+    QVERIFY(qobject_cast<SurveyComplexItem*>(_missionController->visualItems()->value<VisualMissionItem*>(1)));
+    QVERIFY(qobject_cast<CorridorScanComplexItem*>(_missionController->visualItems()->value<VisualMissionItem*>(2)));
+}
+
+void MissionControllerTest::_testInsertSurveyAppliesAltFrameInMixedMode()
+{
+    _initForFirmwareType(MAV_AUTOPILOT_PX4);
+    _missionController->setGlobalAltitudeFrame(QGroundControlQmlGlobal::AltitudeFrameMixed);
+
+    const QGeoCoordinate coord = Coord::zurich();
+
+    // Insert a simple waypoint and force its altitude frame to Absolute
+    VisualMissionItem* simpleVisual = _missionController->insertSimpleMissionItem(coord, 1, false);
+    QVERIFY(simpleVisual);
+    SimpleMissionItem* simpleItem = qobject_cast<SimpleMissionItem*>(simpleVisual);
+    QVERIFY(simpleItem);
+    simpleItem->setAltitudeFrame(QGroundControlQmlGlobal::AltitudeFrameAbsolute);
+    simpleItem->altitude()->setRawValue(150.0);
+
+    // Survey default distanceMode is Relative; inserting after an Absolute item should change it
+    QCOMPARE(_missionController->visualItems()->count(), 2); // home + simple
+    VisualMissionItem* surveyVisual = _missionController->insertComplexMissionItem(
+        SurveyComplexItem::canonicalName, coord, 2, false);
+    QVERIFY(surveyVisual);
+    SurveyComplexItem* surveyItem = qobject_cast<SurveyComplexItem*>(surveyVisual);
+    QVERIFY(surveyItem);
+
+    QCOMPARE(surveyItem->cameraCalc()->distanceMode(), QGroundControlQmlGlobal::AltitudeFrameAbsolute);
+}
+
+void MissionControllerTest::_testInsertNonSurveyComplexItemMixedModeNoCrash()
+{
+    _initForFirmwareType(MAV_AUTOPILOT_PX4);
+    _missionController->setGlobalAltitudeFrame(QGroundControlQmlGlobal::AltitudeFrameMixed);
+
+    const QGeoCoordinate coord = Coord::zurich();
+
+    // Insert a simple waypoint with Absolute frame to provide altitude context
+    VisualMissionItem* simpleVisual = _missionController->insertSimpleMissionItem(coord, 1, false);
+    QVERIFY(simpleVisual);
+    SimpleMissionItem* simpleItem = qobject_cast<SimpleMissionItem*>(simpleVisual);
+    QVERIFY(simpleItem);
+    simpleItem->setAltitudeFrame(QGroundControlQmlGlobal::AltitudeFrameAbsolute);
+
+    // CorridorScan inherits the base-class no-op — distanceMode stays at its default (Relative)
+    VisualMissionItem* corridorVisual = _missionController->insertComplexMissionItem(
+        CorridorScanComplexItem::canonicalName, coord, 2, false);
+    QVERIFY(corridorVisual);
+    CorridorScanComplexItem* corridorItem = qobject_cast<CorridorScanComplexItem*>(corridorVisual);
+    QVERIFY(corridorItem);
+
+    QCOMPARE(corridorItem->cameraCalc()->distanceMode(), QGroundControlQmlGlobal::AltitudeFrameRelative);
+    QCOMPARE(_missionController->visualItems()->count(), 3);
+}
+
+void MissionControllerTest::_testUnitsChangeDoesNotDirtyPlan_data()
+{
+    QTest::addColumn<int>("vehicleType");
+    QTest::addColumn<bool>("landingPattern");
+
+    QTest::newRow("PX4 multirotor") << int(MAV_TYPE_QUADROTOR) << false;
+    QTest::newRow("PX4 fixed wing") << int(MAV_TYPE_FIXED_WING) << true;
+    QTest::newRow("PX4 VTOL") << int(MAV_TYPE_VTOL_TAILSITTER_QUADROTOR) << true;
+}
+
+void MissionControllerTest::_testUnitsChangeDoesNotDirtyPlan()
+{
+    QFETCH(int, vehicleType);
+    QFETCH(bool, landingPattern);
+
+    _initForVehicleType(MAV_AUTOPILOT_PX4, static_cast<MAV_TYPE>(vehicleType));
+
+    const QGeoCoordinate home = Coord::zurich();
+    _missionController->setHomePosition(home);
+
+    QVERIFY(_missionController->insertTakeoffItem(home, 1));
+    SimpleMissionItem* simpleItem = qobject_cast<SimpleMissionItem*>(
+        _missionController->insertSimpleMissionItem(home.atDistanceAndAzimuth(200, 0), -1, false));
+    QVERIFY(simpleItem);
+    QVERIFY(_missionController->insertComplexMissionItem(SurveyComplexItem::canonicalName,
+                                                         home.atDistanceAndAzimuth(400, 0), -1, false));
+    QVERIFY(_missionController->insertComplexMissionItem(CorridorScanComplexItem::canonicalName,
+                                                         home.atDistanceAndAzimuth(600, 0), -1, false));
+    QVERIFY(_missionController->insertComplexMissionItem(StructureScanComplexItem::canonicalName,
+                                                         home.atDistanceAndAzimuth(800, 0), -1, false));
+    VisualMissionItem* const landItem =
+        _missionController->insertLandItem(home.atDistanceAndAzimuth(300, 90), -1, false);
+    QVERIFY(landItem);
+    QCOMPARE(qobject_cast<LandingComplexItem*>(landItem) != nullptr, landingPattern);
+    simpleItem->altitude()->setRawValue(50.0);
+
+    GeoFenceController* const geoFenceController = _masterController->geoFenceController();
+    geoFenceController->addInclusionCircle(home.atDistanceAndAzimuth(500, 315), home.atDistanceAndAzimuth(500, 135));
+    geoFenceController->addInclusionPolygon(home.atDistanceAndAzimuth(800, 315), home.atDistanceAndAzimuth(800, 135));
+    RallyPointController* const rallyPointController = _masterController->rallyPointController();
+    rallyPointController->addPoint(home.atDistanceAndAzimuth(100, 180));
+    QCoreApplication::processEvents();
+
+    _missionController->setDirty(false);
+    geoFenceController->setDirty(false);
+    rallyPointController->setDirty(false);
+    QCoreApplication::processEvents();
+    QVERIFY(!_missionController->dirty());
+    QVERIFY(!geoFenceController->dirty());
+    QVERIFY(!rallyPointController->dirty());
+
+    UnitsSettings* const unitsSettings = SettingsManager::instance()->unitsSettings();
+    const QList<Fact*> unitsFacts = {
+        unitsSettings->horizontalDistanceUnits(),
+        unitsSettings->verticalDistanceUnits(),
+        unitsSettings->areaUnits(),
+        unitsSettings->speedUnits(),
+    };
+    QVariantList savedUnits;
+    for (const Fact* fact : unitsFacts) {
+        savedUnits.append(fact->rawValue());
+    }
+    const auto restoreUnits = qScopeGuard([&unitsFacts, &savedUnits] {
+        for (qsizetype i = 0; i < unitsFacts.count(); i++) {
+            unitsFacts[i]->setRawValue(savedUnits[i]);
+        }
+    });
+
+    const bool toFeet =
+        unitsSettings->horizontalDistanceUnits()->rawValue().toUInt() != UnitsSettings::HorizontalDistanceUnitsFeet;
+    unitsSettings->horizontalDistanceUnits()->setRawValue(toFeet ? UnitsSettings::HorizontalDistanceUnitsFeet
+                                                                 : UnitsSettings::HorizontalDistanceUnitsMeters);
+    unitsSettings->verticalDistanceUnits()->setRawValue(toFeet ? UnitsSettings::VerticalDistanceUnitsFeet
+                                                               : UnitsSettings::VerticalDistanceUnitsMeters);
+    unitsSettings->areaUnits()->setRawValue(toFeet ? UnitsSettings::AreaUnitsSquareFeet
+                                                   : UnitsSettings::AreaUnitsSquareMeters);
+    unitsSettings->speedUnits()->setRawValue(toFeet ? UnitsSettings::SpeedUnitsFeetPerSecond
+                                                    : UnitsSettings::SpeedUnitsMetersPerSecond);
+    QCoreApplication::processEvents();
+
+    QCOMPARE_FUZZY(simpleItem->altitude()->cookedValue().toDouble(), toFeet ? 164.042 : 50.0, 1e-3);
+    QVERIFY(!_missionController->dirty());
+    QVERIFY(!geoFenceController->dirty());
+    QVERIFY(!rallyPointController->dirty());
+}
+
+void MissionControllerTest::_testApplyDefaultMissionAltitudeOfferedOnlyForExistingItems_data()
+{
+    QTest::addColumn<bool>("mixedFrame");
+    QTest::addColumn<bool>("itemBeforeChange");
+    QTest::addColumn<QString>("followUp");
+    QTest::addColumn<bool>("expectedAvailable");
+
+    QTest::newRow("empty plan") << false << false << "none" << false;
+    QTest::newRow("empty plan, item added after change") << false << false << "addItem" << false;
+    QTest::newRow("existing items") << false << true << "none" << true;
+    QTest::newRow("existing items, item added after change") << false << true << "addItem" << true;
+    QTest::newRow("applied") << false << true << "apply" << false;
+    QTest::newRow("last item removed") << false << true << "removeItem" << false;
+    QTest::newRow("plan cleared") << false << true << "removeAll" << false;
+    QTest::newRow("mixed altitude frame") << true << true << "none" << false;
+    QTest::newRow("switched to mixed altitude frame") << false << true << "switchToMixed" << false;
+}
+
+void MissionControllerTest::_testApplyDefaultMissionAltitudeOfferedOnlyForExistingItems()
+{
+    QFETCH(bool, mixedFrame);
+    QFETCH(bool, itemBeforeChange);
+    QFETCH(QString, followUp);
+    QFETCH(bool, expectedAvailable);
+
+    _initForFirmwareType(MAV_AUTOPILOT_PX4);
+    if (mixedFrame) {
+        _missionController->setGlobalAltitudeFrame(QGroundControlQmlGlobal::AltitudeFrameMixed);
+    }
+
+    const QGeoCoordinate coord = Coord::zurich();
+    if (itemBeforeChange) {
+        QVERIFY(_missionController->insertSimpleMissionItem(coord, 1, false));
+    }
+    QVERIFY(!_missionController->applyDefaultMissionAltitudeAvailable());
+
+    Fact* const defaultAltFact = SettingsManager::instance()->appSettings()->defaultMissionItemAltitude();
+    const QVariant savedDefaultAlt = defaultAltFact->rawValue();
+    const auto restoreDefaultAlt =
+        qScopeGuard([defaultAltFact, savedDefaultAlt] { defaultAltFact->setRawValue(savedDefaultAlt); });
+    defaultAltFact->setRawValue(savedDefaultAlt.toDouble() + 10.0);
+
+    if (followUp == QStringLiteral("addItem")) {
+        QVERIFY(_missionController->insertSimpleMissionItem(coord.atDistanceAndAzimuth(100, 0), -1, false));
+    } else if (followUp == QStringLiteral("apply")) {
+        _missionController->applyDefaultMissionAltitude();
+    } else if (followUp == QStringLiteral("removeItem")) {
+        _missionController->removeVisualItem(1);
+    } else if (followUp == QStringLiteral("removeAll")) {
+        _missionController->removeAll();
+    } else if (followUp == QStringLiteral("switchToMixed")) {
+        _missionController->setGlobalAltitudeFrame(QGroundControlQmlGlobal::AltitudeFrameMixed);
+    }
+
+    QCOMPARE(_missionController->applyDefaultMissionAltitudeAvailable(), expectedAvailable);
+}
+
+void MissionControllerTest::_testApplyDefaultMissionAltitudeSkipsItemsInOtherFrames_data()
+{
+    QTest::addColumn<QString>("itemType");
+    QTest::addColumn<int>("planFrame");
+    QTest::addColumn<bool>("itemAbsolute");
+    QTest::addColumn<bool>("expectUpdated");
+
+    const int relative = QGroundControlQmlGlobal::AltitudeFrameRelative;
+    const int absolute = QGroundControlQmlGlobal::AltitudeFrameAbsolute;
+
+    // Takeoff and structure scan altitudes are always relative
+    QTest::newRow("takeoff, relative plan") << "takeoff" << relative << false << true;
+    QTest::newRow("takeoff, absolute plan") << "takeoff" << absolute << false << false;
+    QTest::newRow("structure scan, relative plan") << "structureScan" << relative << false << true;
+    QTest::newRow("structure scan, absolute plan") << "structureScan" << absolute << false << false;
+    QTest::newRow("landing pattern, relative plan") << "landing" << relative << false << true;
+    QTest::newRow("landing pattern absolute, relative plan") << "landing" << relative << true << false;
+    QTest::newRow("survey, relative plan") << "survey" << relative << false << true;
+    QTest::newRow("survey absolute, relative plan") << "survey" << relative << true << false;
+}
+
+void MissionControllerTest::_testApplyDefaultMissionAltitudeSkipsItemsInOtherFrames()
+{
+    QFETCH(QString, itemType);
+    QFETCH(int, planFrame);
+    QFETCH(bool, itemAbsolute);
+    QFETCH(bool, expectUpdated);
+
+    _initForVehicleType(MAV_AUTOPILOT_PX4, MAV_TYPE_FIXED_WING);
+    _missionController->setGlobalAltitudeFrame(static_cast<QGroundControlQmlGlobal::AltitudeFrame>(planFrame));
+
+    const QGeoCoordinate home = Coord::zurich();
+    _missionController->setHomePosition(home);
+    const QGeoCoordinate itemCoord = home.atDistanceAndAzimuth(300, 0);
+
+    Fact* altFact = nullptr;
+    if (itemType == QStringLiteral("takeoff")) {
+        auto* takeoffItem = qobject_cast<TakeoffMissionItem*>(_missionController->insertTakeoffItem(home, 1, false));
+        QVERIFY(takeoffItem);
+        QCOMPARE(takeoffItem->altitudeFrame(), QGroundControlQmlGlobal::AltitudeFrameRelative);
+        altFact = takeoffItem->altitude();
+    } else if (itemType == QStringLiteral("structureScan")) {
+        auto* structureItem = qobject_cast<StructureScanComplexItem*>(_missionController->insertComplexMissionItem(
+            StructureScanComplexItem::canonicalName, itemCoord, -1, false));
+        QVERIFY(structureItem);
+        altFact = structureItem->entranceAlt();
+    } else if (itemType == QStringLiteral("landing")) {
+        auto* landingItem = qobject_cast<LandingComplexItem*>(_missionController->insertLandItem(itemCoord, -1, false));
+        QVERIFY(landingItem);
+        landingItem->setAltitudesAreRelative(!itemAbsolute);
+        altFact = landingItem->finalApproachAltitude();
+    } else if (itemType == QStringLiteral("survey")) {
+        auto* surveyItem = qobject_cast<SurveyComplexItem*>(
+            _missionController->insertComplexMissionItem(SurveyComplexItem::canonicalName, itemCoord, -1, false));
+        QVERIFY(surveyItem);
+        if (itemAbsolute) {
+            surveyItem->cameraCalc()->setDistanceMode(QGroundControlQmlGlobal::AltitudeFrameAbsolute);
+        }
+        altFact = surveyItem->cameraCalc()->distanceToSurface();
+    }
+    QVERIFY(altFact);
+
+    Fact* const defaultAltFact = SettingsManager::instance()->appSettings()->defaultMissionItemAltitude();
+    const QVariant savedDefaultAlt = defaultAltFact->rawValue();
+    const auto restoreDefaultAlt =
+        qScopeGuard([defaultAltFact, savedDefaultAlt] { defaultAltFact->setRawValue(savedDefaultAlt); });
+
+    const double originalAlt = altFact->rawValue().toDouble();
+    const double newDefaultAlt = originalAlt + 37.0;
+    defaultAltFact->setRawValue(newDefaultAlt);
+    _missionController->applyDefaultMissionAltitude();
+
+    QCOMPARE(altFact->rawValue().toDouble(), expectUpdated ? newDefaultAlt : originalAlt);
 }
 
 #include "UnitTest.h"

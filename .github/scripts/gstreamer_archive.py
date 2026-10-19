@@ -3,7 +3,7 @@
 Create GStreamer archive and optionally upload to S3.
 
 Usage:
-    gstreamer_archive.py --platform linux --arch x86_64 --version 1.24.0 [--simulator] [--upload-s3]
+    gstreamer_archive.py --platform linux --arch x86_64 [--version 1.24.0] [--simulator] [--upload-s3]
 
 Environment variables for S3 upload:
     AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEFAULT_REGION
@@ -19,15 +19,18 @@ import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import ClassVar
 
 from ci_bootstrap import ensure_tools_dir
 
 ensure_tools_dir(__file__)
 
-from common.gh_actions import (  # noqa: E402
-    write_github_output as _write_github_output,
-    write_step_summary as _write_step_summary,
-)
+from common.aws import upload_public_file, validate_public_bucket
+from common.build_config import get_gstreamer_version
+from common.gh_actions import write_github_output, write_step_summary
+from common.markdown import md_table
+from common.platform import host_arch
+from common.proc import run_captured
 
 
 @dataclass
@@ -37,9 +40,30 @@ class ArchiveResult:
     extension: str
 
 
+def _curl_cmd(url: str, dest: Path) -> list[str]:
+    return [
+        "curl",
+        "-fsSL",
+        "--retry",
+        "5",
+        "--retry-delay",
+        "2",
+        "--retry-all-errors",
+        "--max-time",
+        "300",
+        "-o",
+        str(dest),
+        url,
+    ]
+
+
 def run_command(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
-    """Run command with improved error output."""
-    result = subprocess.run(cmd, capture_output=True, text=True, **kwargs)
+    """Run *cmd* via common.proc.run_captured, printing stdout/stderr on failure.
+
+    The verbose error logging exists because tar/curl/aws-cli failures here are
+    debugged from CI logs — a plain CalledProcessError traceback isn't enough.
+    """
+    result = run_captured(cmd, **kwargs)
     if result.returncode != 0:
         print(f"Command failed: {' '.join(cmd)}", file=sys.stderr)
         if result.stdout:
@@ -51,8 +75,7 @@ def run_command(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
 
 
 class GStreamerArchiver:
-    VALID_PLATFORMS = {"linux", "macos", "windows", "android", "ios"}
-    ALLOWED_BUCKETS = {"qgroundcontrol"}
+    VALID_PLATFORMS: ClassVar[set[str]] = {"linux", "macos", "windows", "android", "ios"}
 
     def __init__(
         self,
@@ -157,8 +180,7 @@ class GStreamerArchiver:
         secret: str | None = None,
         region: str | None = None,
     ) -> bool:
-        if bucket not in self.ALLOWED_BUCKETS:
-            raise ValueError(f"Bucket '{bucket}' not in allowlist: {self.ALLOWED_BUCKETS}")
+        validate_public_bucket(bucket)
         key_id = key_id or os.environ.get("AWS_ACCESS_KEY_ID")
         secret = secret or os.environ.get("AWS_SECRET_ACCESS_KEY")
         region = region or os.environ.get("AWS_DEFAULT_REGION")
@@ -183,21 +205,12 @@ class GStreamerArchiver:
         if region:
             env["AWS_DEFAULT_REGION"] = region
 
-        # Intentional: public-read ACL for distributing pre-built GStreamer
-        # dependencies that downstream CI jobs and contributors download.
-        cmd = [
-            "aws",
-            "s3",
-            "cp",
-            str(self._archive_result.path),
-            f"{s3_path}/{full_name}",
-            "--acl",
-            "public-read",
-        ]
-        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
-        if result.returncode != 0:
-            print(f"S3 upload failed: {result.stderr}", file=sys.stderr)
-            raise subprocess.CalledProcessError(result.returncode, cmd)
+        upload_public_file(
+            self._archive_result.path,
+            bucket,
+            f"dependencies/gstreamer/{self.platform}/{self.version}/{full_name}",
+            env=env,
+        )
         print(f"Uploaded to: {s3_path}/{full_name}")
         return True
 
@@ -223,7 +236,7 @@ class GStreamerArchiver:
     def _install_aws_cli_windows(self) -> None:
         """Install AWS CLI on Windows via MSI."""
         installer_path = self.output_dir / "AWSCLIV2.msi"
-        run_command(["curl", "-o", str(installer_path), "https://awscli.amazonaws.com/AWSCLIV2.msi"])
+        run_command(_curl_cmd("https://awscli.amazonaws.com/AWSCLIV2.msi", installer_path))
         run_command(["msiexec.exe", "/i", str(installer_path), "/quiet"])
         aws_path = "/c/Program Files/Amazon/AWSCLIV2"
         os.environ["PATH"] = f"{aws_path};{os.environ.get('PATH', '')}"
@@ -234,12 +247,7 @@ class GStreamerArchiver:
         installer_zip = self.output_dir / "awscliv2.zip"
         installer_dir = self.output_dir / "aws"
         run_command(
-            [
-                "curl",
-                "-o",
-                str(installer_zip),
-                f"https://awscli.amazonaws.com/awscli-exe-linux-{arch}.zip",
-            ]
+            _curl_cmd(f"https://awscli.amazonaws.com/awscli-exe-linux-{arch}.zip", installer_zip)
         )
         run_command(["unzip", "-q", str(installer_zip), "-d", str(self.output_dir)])
         run_command(["sudo", str(installer_dir / "install")])
@@ -247,33 +255,29 @@ class GStreamerArchiver:
     @staticmethod
     def _detect_linux_aws_cli_arch() -> str:
         """Return AWS CLI Linux installer architecture slug."""
-        runner_arch = os.environ.get("RUNNER_ARCH", "").strip().upper()
-        if runner_arch == "X64":
-            return "x86_64"
-        if runner_arch == "ARM64":
-            return "aarch64"
-
-        machine = os.uname().machine.lower()
-        if machine in {"x86_64", "amd64"}:
-            return "x86_64"
-        if machine in {"aarch64", "arm64"}:
-            return "aarch64"
-        raise RuntimeError(f"Unsupported Linux architecture for AWS CLI install: {machine}")
+        try:
+            return host_arch()
+        except ValueError as exc:
+            raise RuntimeError(
+                f"Unsupported Linux architecture for AWS CLI install: {exc}"
+            ) from exc
 
     def _install_aws_cli_macos(self) -> None:
         """Install AWS CLI on macOS via pkg installer."""
         installer_pkg = self.output_dir / "AWSCLIV2.pkg"
-        run_command(["curl", "-o", str(installer_pkg), "https://awscli.amazonaws.com/AWSCLIV2.pkg"])
+        run_command(_curl_cmd("https://awscli.amazonaws.com/AWSCLIV2.pkg", installer_pkg))
         run_command(["sudo", "installer", "-pkg", str(installer_pkg), "-target", "/"])
 
     def write_github_output(self) -> None:
         if not self._archive_result:
             return
-        _write_github_output({
-            "name": self._archive_result.name,
-            "path": str(self._archive_result.path),
-            "ext": self._archive_result.extension,
-        })
+        write_github_output(
+            {
+                "name": self._archive_result.name,
+                "path": str(self._archive_result.path),
+                "ext": self._archive_result.extension,
+            }
+        )
 
     def write_github_summary(self, uploaded: bool = False) -> None:
         if not self._archive_result:
@@ -286,22 +290,16 @@ class GStreamerArchiver:
         platform_title = self.platform.capitalize()
         full_name = f"{self._archive_result.name}.{self._archive_result.extension}"
 
-        lines = [
-            f"## GStreamer {platform_title} Build Complete",
-            "",
-            "| Property | Value |",
-            "|----------|-------|",
-            f"| Version | {self.version} |",
-            f"| Architecture | {arch_display} |",
-            f"| Archive | {full_name} |",
+        rows = [
+            ["Version", self.version],
+            ["Architecture", arch_display],
+            ["Archive", full_name],
         ]
-
         if uploaded:
-            lines.append(
-                f"| S3 Path | dependencies/gstreamer/{self.platform}/{self.version}/ |"
-            )
+            rows.append(["S3 Path", f"dependencies/gstreamer/{self.platform}/{self.version}/"])
 
-        _write_step_summary("\n".join(lines) + "\n")
+        table = md_table(["Property", "Value"], rows)
+        write_step_summary(f"## GStreamer {platform_title} Build Complete\n\n{table}\n")
 
 
 def parse_args() -> argparse.Namespace:
@@ -326,8 +324,8 @@ Environment variables for S3 upload:
     )
     parser.add_argument(
         "--version",
-        required=True,
-        help="GStreamer version",
+        default="",
+        help="GStreamer version (default: the platform's in build-config.json)",
     )
     parser.add_argument(
         "--prefix",
@@ -366,7 +364,7 @@ def main() -> int:
         archiver = GStreamerArchiver(
             platform=args.platform,
             arch=args.arch,
-            version=args.version,
+            version=args.version or get_gstreamer_version(args.platform),
             prefix=args.prefix,
             simulator=args.simulator,
             output_dir=args.output_dir,

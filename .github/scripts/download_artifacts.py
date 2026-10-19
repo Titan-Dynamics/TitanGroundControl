@@ -26,9 +26,14 @@ from ci_bootstrap import ensure_tools_dir
 
 ensure_tools_dir(__file__)
 
-from common.gh_actions import gh, list_workflow_runs_for_sha, list_run_artifacts
-from common.github_runs import group_runs_by_name, select_latest_runs_by_name
-
+from common.artifact_metadata import write_run_artifact_metadata
+from common.gh_actions import gh, list_run_artifacts, list_workflow_runs_for_sha
+from qgc_tools.workflow_runs import (
+    add_workflow_run_query_args,
+    group_runs_by_name,
+    resolve_workflow_runs,
+    select_latest_runs_by_name,
+)
 
 ARTIFACT_EXTENSIONS = (
     ".apk",
@@ -64,23 +69,9 @@ def select_latest_successful_runs(
     )
 
 
-def group_successful_runs_by_workflow(
-    runs: list[dict[str, Any]],
-    workflows: list[str],
-    *,
-    event: str = "",
-) -> dict[str, list[dict[str, Any]]]:
-    """Group successful runs by workflow name, newest first."""
-    return group_runs_by_name(
-        runs,
-        workflows,
-        event=event,
-        status="completed",
-        conclusion="success",
-    )
-
-
-def get_workflow_runs(repo: str, head_sha: str, workflows: list[str], *, event: str = "") -> list[dict]:
+def get_workflow_runs(
+    repo: str, head_sha: str, workflows: list[str], *, event: str = ""
+) -> list[dict]:
     """Return completed successful runs for the given workflows and commit."""
     all_runs = list_workflow_runs_for_sha(repo, head_sha)
     return select_latest_successful_runs(all_runs, workflows, event=event)
@@ -130,7 +121,8 @@ def download_run_artifacts(
 def list_downloaded_artifacts(output_dir: Path) -> list[Path]:
     """Return all artifact files under output_dir matching known extensions."""
     files = [
-        path for path in output_dir.rglob("*")
+        path
+        for path in output_dir.rglob("*")
         if path.is_file() and path.suffix in ARTIFACT_EXTENSION_SET
     ]
     return sorted(files)
@@ -147,37 +139,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
-    parser.add_argument(
-        "--repo",
-        required=True,
-        help="GitHub repository in owner/repo format",
-    )
-    parser.add_argument(
-        "--head-sha",
-        required=True,
-        help="Commit SHA to find workflow runs for",
+    add_workflow_run_query_args(
+        parser,
+        default_event="",
+        workflows_option="--workflows",
+        workflows_dest="workflows",
+        runs_option="--runs-file",
+        restrict_event=True,
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
         default=Path("artifacts"),
         help="Directory to download artifacts into (default: artifacts)",
-    )
-    parser.add_argument(
-        "--workflows",
-        default="Linux,Windows,MacOS,Android",
-        help="Comma-separated workflow names to download from (default: Linux,Windows,MacOS,Android)",
-    )
-    parser.add_argument(
-        "--event",
-        default="",
-        choices=["", "push", "pull_request", "workflow_dispatch", "schedule"],
-        help="Optional workflow event name to filter runs by",
-    )
-    parser.add_argument(
-        "--runs-file",
-        default="",
-        help="Path to cached workflow runs JSON (skips API call if provided)",
     )
     parser.add_argument(
         "--artifact-prefixes",
@@ -191,6 +165,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--artifact-metadata-out",
         default="",
         help="Optional output JSON path to write run artifact metadata (name + size_in_bytes)",
+    )
+    parser.add_argument(
+        "--include-failed",
+        action="store_true",
+        help="Download diagnostics from failed completed builds too",
+    )
+    parser.add_argument(
+        "--strict-runs", action="store_true", help="Require exact successful snapshot identities"
+    )
+    parser.add_argument(
+        "--allow-missing",
+        action="store_true",
+        help="Allow absent diagnostic artifacts selected by prefix (not valid for strict runs)",
     )
     return parser.parse_args(argv)
 
@@ -209,30 +196,60 @@ def main(argv: list[str] | None = None) -> int:
     if not head_sha:
         print("Error: --head-sha is required", file=sys.stderr)
         return 1
+    if args.allow_missing and (args.strict_runs or not artifact_prefixes):
+        print(
+            "Error: --allow-missing requires artifact prefixes and cannot be used with --strict-runs",
+            file=sys.stderr,
+        )
+        return 1
 
     print(f"Finding completed workflow runs for commit {head_sha}...")
 
-    if args.runs_file:
-        try:
-            with open(args.runs_file, encoding="utf-8") as f:
-                loaded_runs = json.load(f)
-        except (json.JSONDecodeError, OSError) as e:
-            print(f"Error: failed to read runs file {args.runs_file}: {e}", file=sys.stderr)
+    all_runs = resolve_workflow_runs(repo, head_sha, args.runs_file, list_workflow_runs_for_sha)
+    if all_runs is None:
+        return 1
+    if args.strict_runs:
+        if not args.runs_file:
+            print("Error: strict downloads require a run snapshot", file=sys.stderr)
             return 1
-        if not isinstance(loaded_runs, list):
-            print(
-                f"Error: runs file {args.runs_file} must contain a JSON list of workflow runs",
-                file=sys.stderr,
+        for workflow in workflows:
+            selected = [run for run in all_runs if run.get("name") == workflow]
+            if (
+                len(selected) != 1
+                or selected[0].get("head_sha") != head_sha
+                or selected[0].get("status") != "completed"
+                or selected[0].get("conclusion") != "success"
+                or (event and selected[0].get("event") != event)
+            ):
+                print(f"Error: invalid release snapshot for {workflow}", file=sys.stderr)
+                return 1
+            saved = selected[0]
+            current = json.loads(
+                gh(
+                    "api",
+                    f"repos/{repo}/actions/runs/{saved['id']}",
+                    retry_transient=True,
+                ).stdout
             )
-            return 1
-        all_runs = loaded_runs
-    else:
-        all_runs = list_workflow_runs_for_sha(repo, head_sha)
+            if any(
+                current.get(key) != saved.get(key)
+                for key in ("head_sha", "run_attempt", "status", "conclusion")
+            ):
+                print(
+                    f"Error: release run was rerun after selection: {saved['id']}", file=sys.stderr
+                )
+                return 1
     preloaded_artifacts: dict[int, list[dict[str, Any]]] = {}
     had_successful_runs = bool(select_latest_successful_runs(all_runs, workflows, event=event))
     if artifact_prefixes:
         runs = []
-        grouped_runs = group_successful_runs_by_workflow(all_runs, workflows, event=event)
+        grouped_runs = group_runs_by_name(
+            all_runs,
+            workflows,
+            event=event,
+            status="completed",
+            conclusion="" if args.include_failed else "success",
+        )
         for workflow_name in workflows:
             candidates = grouped_runs.get(workflow_name, [])
             selected_run: dict[str, Any] | None = None
@@ -248,7 +265,19 @@ def main(argv: list[str] | None = None) -> int:
     else:
         runs = select_latest_successful_runs(all_runs, workflows, event=event)
 
+    if args.strict_runs and len(runs) != len(workflows):
+        print("Error: selected release run is missing required artifacts", file=sys.stderr)
+        return 1
+
     if not runs:
+        if args.allow_missing:
+            print(
+                f"No diagnostic artifacts match prefixes {artifact_prefixes!r} for SHA {head_sha}; "
+                "continuing with build status only"
+            )
+            if artifact_metadata_out is not None:
+                write_run_artifact_metadata(artifact_metadata_out, preloaded_artifacts)
+            return 0
         if artifact_prefixes and had_successful_runs:
             print(
                 f"No successful workflow runs with artifacts matching prefixes {artifact_prefixes!r} "
@@ -273,7 +302,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Pre-resolve artifact names and/or metadata (requires API calls) before parallel downloads.
     run_artifact_map: dict[int, list[str] | None] = {}
-    run_artifact_metadata: dict[str, list[dict[str, Any]]] = {}
+    run_artifact_metadata: dict[int, list[dict[str, Any]]] = {}
     for run in runs:
         run_id = int(run["id"])
         if artifact_prefixes or artifact_metadata_out is not None:
@@ -287,23 +316,15 @@ def main(argv: list[str] | None = None) -> int:
                 run_artifact_map[run_id] = None
 
             if artifact_metadata_out is not None:
-                run_artifact_metadata[str(run_id)] = [
-                    {
-                        "name": str(artifact.get("name", "")),
-                        "size_in_bytes": int(artifact.get("size_in_bytes", 0)),
-                    }
-                    for artifact in artifacts
-                ]
+                run_artifact_metadata[run_id] = artifacts
         else:
             run_artifact_map[run_id] = None
 
     if artifact_metadata_out is not None:
-        artifact_metadata_out.parent.mkdir(parents=True, exist_ok=True)
-        artifact_metadata_out.write_text(
-            json.dumps({"runs": run_artifact_metadata}, indent=2) + "\n",
-            encoding="utf-8",
+        write_run_artifact_metadata(artifact_metadata_out, run_artifact_metadata)
+        print(
+            f"Wrote artifact metadata for {len(run_artifact_metadata)} run(s) to {artifact_metadata_out}"
         )
-        print(f"Wrote artifact metadata for {len(run_artifact_metadata)} run(s) to {artifact_metadata_out}")
 
     def _download(run: dict) -> tuple[str, bool]:
         name = run["name"]
@@ -315,10 +336,14 @@ def main(argv: list[str] | None = None) -> int:
         return name, ok
 
     # Filter out runs with no matching artifacts before spawning threads
-    downloadable = [r for r in runs if not artifact_prefixes or run_artifact_map.get(int(r["id"])) is not None]
+    downloadable = [
+        r for r in runs if not artifact_prefixes or run_artifact_map.get(int(r["id"])) is not None
+    ]
     for run in runs:
         if artifact_prefixes and run_artifact_map.get(int(run["id"])) is None:
-            print(f"Skipping {run['name']} (run {run['id']}): no artifacts match requested prefixes")
+            print(
+                f"Skipping {run['name']} (run {run['id']}): no artifacts match requested prefixes"
+            )
 
     if artifact_prefixes and not downloadable:
         print(
@@ -331,7 +356,9 @@ def main(argv: list[str] | None = None) -> int:
         run_id = int(run["id"])
         artifact_names = run_artifact_map.get(run_id)
         if artifact_names:
-            print(f"Downloading {len(artifact_names)} filtered artifact(s) from {run['name']} (run {run_id})...")
+            print(
+                f"Downloading {len(artifact_names)} filtered artifact(s) from {run['name']} (run {run_id})..."
+            )
         else:
             print(f"Downloading artifacts from {run['name']} (run {run_id})...")
 
@@ -345,7 +372,11 @@ def main(argv: list[str] | None = None) -> int:
                     print(f"  Failed: {name}")
                     failed += 1
 
-    files = list_downloaded_files(output_dir) if artifact_prefixes else list_downloaded_artifacts(output_dir)
+    files = (
+        list_downloaded_files(output_dir)
+        if artifact_prefixes
+        else list_downloaded_artifacts(output_dir)
+    )
     if not files:
         print("No artifact files found after download")
     else:
@@ -354,7 +385,7 @@ def main(argv: list[str] | None = None) -> int:
             size_mb = path.stat().st_size / 1024 / 1024
             print(f"  - {path.name}: {size_mb:.1f} MB")
 
-    if failed and not files:
+    if failed:
         return 1
     if artifact_prefixes and not files:
         return 2

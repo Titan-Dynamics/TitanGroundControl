@@ -1,0 +1,58 @@
+{
+    "version": 1,
+    "fileType": "FactMetaData",
+    "QGC.MetaData.Facts": [
+        {
+            "name": "correctionSource",
+            "shortDesc": "Highest priority sends one fresh stream to vehicles, preferring the local base station, then NTRIP, then UDP. Choosing a source never falls back to another. UDP forwarding sends the same stream.",
+            "type": "uint8",
+            "enumStrings": "Highest priority,Local base station,NTRIP,UDP",
+            "enumValues": "0,1,2,3",
+            "default": 0,
+            "label": "Vehicle correction source"
+        },
+        {
+            "name": "rtcmUdpInputEnabled",
+            "shortDesc": "Receive RTCM corrections from another application over UDP.",
+            "longDesc": "Listen on a UDP port for incoming RTCM3 correction data and forward it to connected vehicles via MAVLink GPS_RTCM_DATA.",
+            "type": "bool",
+            "default": false,
+            "label": "Enable UDP RTCM input"
+        },
+        {
+            "name": "rtcmUdpInputPort",
+            "shortDesc": "Local port that receives the corrections.",
+            "longDesc": "UDP port to listen on for incoming RTCM3 correction data.",
+            "type": "uint32",
+            "default": 13320,
+            "min": 1024,
+            "max": 65535,
+            "decimalPlaces": 0,
+            "label": "UDP RTCM input port"
+        },
+        {
+            "name": "rtcmUdpOutputEnabled",
+            "shortDesc": "Forward the correction stream selected for vehicles to another application over UDP.",
+            "type": "bool",
+            "default": false,
+            "label": "Forward corrections over UDP",
+            "keywords": "udp forward,relay,corrections forward"
+        },
+        {
+            "name": "rtcmUdpOutputAddress",
+            "shortDesc": "IP address that receives the forwarded corrections.",
+            "type": "string",
+            "default": "",
+            "label": "UDP output address",
+            "keywords": "udp forward,relay"
+        },
+        {
+            "name": "rtcmUdpOutputPort",
+            "shortDesc": "Port that receives the forwarded corrections.",
+            "type": "uint16",
+            "default": 0,
+            "label": "UDP output port",
+            "keywords": "udp forward,relay"
+        }
+    ]
+}

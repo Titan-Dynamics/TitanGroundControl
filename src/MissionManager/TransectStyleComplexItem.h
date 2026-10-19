@@ -73,6 +73,7 @@ public:
     bool                specifiesCoordinate         (void) const override = 0;
     void                appendMissionItems          (QList<MissionItem*>& items, QObject* missionItemParent) final;
     void                applyNewAltitude            (double newAltitude) final;
+    bool usesAltitudeFrame(QGroundControlQmlGlobal::AltitudeFrame altitudeFrame) const final;
     bool                dirty                       (void) const final { return _dirty; }
     bool                isSimpleItem                (void) const final { return false; }
     bool                isStandaloneCoordinate      (void) const final { return false; }
@@ -107,6 +108,8 @@ public:
     static constexpr const char* terrainAdjustToleranceName            = "TerrainAdjustTolerance";
     static constexpr const char* terrainAdjustMaxClimbRateName         = "TerrainAdjustMaxClimbRate";
     static constexpr const char* terrainAdjustMaxDescentRateName       = "TerrainAdjustMaxDescentRate";
+
+    static constexpr int maxTransectCount = 1000; ///< Maximum number of transects allowed; spacing is raised to enforce this limit
 
 signals:
     void cameraShotsChanged             (void);
@@ -200,8 +203,6 @@ protected:
 
     static constexpr int _terrainQueryTimeoutMsecs=     1000;
     static constexpr int _hoverAndCaptureDelaySeconds = 4;
-    static constexpr double _minimumTransectSpacingMeters = 0.3;
-    static constexpr double _forceLargeTransectSpacingMeters = 100000;
 
 private slots:
     void _reallyQueryTransectsPathHeightInfo        (void);

@@ -1,42 +1,46 @@
 #include "SettingsManager.h"
-#include "AppMessages.h"
-#include "QGCLoggingCategory.h"
+
+#include <QtCore/QApplicationStatic>
+#include <QtCore/QRegularExpression>
+
 #include "ADSBVehicleManagerSettings.h"
 #include "AISettings.h"
-#ifndef QGC_NO_ARDUPILOT_DIALECT
 #include "APMMavlinkStreamRateSettings.h"
-#endif
+#include "AppMessages.h"
 #include "AppSettings.h"
 #include "AutoConnectSettings.h"
 #include "BatteryIndicatorSettings.h"
-#include "MavlinkActionsSettings.h"
 #include "FirmwareUpgradeSettings.h"
 #include "FlightMapSettings.h"
 #include "FlightModeSettings.h"
 #include "FlyViewSettings.h"
+#include "GPSCorrectionSettings.h"
 #include "GimbalControllerSettings.h"
+#include "JoystickManagerSettings.h"
+#include "JsonParsing.h"
+#include "LogManagerSettings.h"
+#include "LogViewerSettings.h"
 #include "MapsSettings.h"
+#include "MavlinkActionsSettings.h"
+#include "MavlinkSettings.h"
+#include "NTRIPSettings.h"
 #include "OfflineMapsSettings.h"
 #include "PlanViewSettings.h"
-#include "RemoteIDSettings.h"
-#include "RTKSettings.h"
-#include "UnitsSettings.h"
-#include "NTRIPSettings.h"
-#include "VideoSettings.h"
-#include "MavlinkSettings.h"
-#include "JoystickManagerSettings.h"
-#include "Viewer3DSettings.h"
-#include "JsonParsing.h"
 #include "QGCCorePlugin.h"
-
-#include <QtCore/QApplicationStatic>
+#include "QGCLoggingCategory.h"
+#include "RTKSettings.h"
+#include "RemoteIDSettings.h"
+#include "SettingsGroup.h"
+#include "UnitsSettings.h"
+#include "VideoSettings.h"
+#include "Viewer3DSettings.h"
 
 QGC_LOGGING_CATEGORY(SettingsManagerLog, "Utilities.SettingsManager")
 
 Q_APPLICATION_STATIC(SettingsManager, _settingsManagerInstance);
 
 SettingsManager::SettingsManager(QObject *parent)
-    : QObject(parent)
+    : QQmlPropertyMap(this, parent)
 {
     qCDebug(SettingsManagerLog) << this;
 }
@@ -71,23 +75,52 @@ void SettingsManager::init()
     _planViewSettings = new PlanViewSettings(this);
     _remoteIDSettings = new RemoteIDSettings(this);
     _rtkSettings = new RTKSettings(this);
+    _gpsCorrectionSettings = new GPSCorrectionSettings(this);
     _ntripSettings = new NTRIPSettings(this);
     _videoSettings = new VideoSettings(this);
     _mavlinkSettings = new MavlinkSettings(this);
     _joystickManagerSettings = new JoystickManagerSettings(this);
+    _logManagerSettings = new LogManagerSettings(this);
+    _logViewerSettings = new LogViewerSettings(this);
     _viewer3DSettings = new Viewer3DSettings(this);
     _adsbVehicleManagerSettings = new ADSBVehicleManagerSettings(this);
     _aiSettings = new AISettings(this);
-#ifndef QGC_NO_ARDUPILOT_DIALECT
     _apmMavlinkStreamRateSettings = new APMMavlinkStreamRateSettings(this);
-#endif
+
+    QGCCorePlugin::instance()->registerCustomSettings(this);
+}
+
+void SettingsManager::registerCustomSettingsGroup(const QString &accessorName, SettingsGroup *group)
+{
+    // Must be a valid QML identifier or generated pages can't resolve the group via dot notation
+    static const QRegularExpression validAccessorRe(QStringLiteral("^[a-z_][A-Za-z0-9_]*$"));
+    if (!validAccessorRe.match(accessorName).hasMatch() || !group) {
+        qCWarning(SettingsManagerLog) << "registerCustomSettingsGroup: invalid accessor name or null group" << accessorName;
+        delete group;
+        return;
+    }
+    if (contains(accessorName)) {
+        qCWarning(SettingsManagerLog) << "registerCustomSettingsGroup: accessor already registered" << accessorName;
+        // Re-registering the stored group itself must not destroy it
+        if (group != value(accessorName).value<QObject*>()) {
+            delete group;
+        }
+        return;
+    }
+    if (staticMetaObject.indexOfProperty(accessorName.toUtf8().constData()) != -1) {
+        qCWarning(SettingsManagerLog) << "registerCustomSettingsGroup: accessor collides with a built-in settings group" << accessorName;
+        delete group;
+        return;
+    }
+
+    group->setParent(this);
+    insert(accessorName, QVariant::fromValue<QObject*>(group));
+    qCDebug(SettingsManagerLog) << "Registered custom settings group" << accessorName;
 }
 
 ADSBVehicleManagerSettings *SettingsManager::adsbVehicleManagerSettings() const { return _adsbVehicleManagerSettings; }
 AISettings *SettingsManager::aiSettings() const { return _aiSettings; }
-#ifndef QGC_NO_ARDUPILOT_DIALECT
 APMMavlinkStreamRateSettings *SettingsManager::apmMavlinkStreamRateSettings() const { return _apmMavlinkStreamRateSettings; }
-#endif
 AppSettings *SettingsManager::appSettings() const { return _appSettings; }
 AutoConnectSettings *SettingsManager::autoConnectSettings() const { return _autoConnectSettings; }
 BatteryIndicatorSettings *SettingsManager::batteryIndicatorSettings() const { return _batteryIndicatorSettings; }
@@ -104,9 +137,17 @@ RemoteIDSettings *SettingsManager::remoteIDSettings() const { return _remoteIDSe
 RTKSettings *SettingsManager::rtkSettings() const { return _rtkSettings; }
 UnitsSettings *SettingsManager::unitsSettings() const { return _unitsSettings; }
 NTRIPSettings *SettingsManager::ntripSettings() const { return _ntripSettings; }
+
+GPSCorrectionSettings* SettingsManager::gpsCorrectionSettings() const
+{
+    return _gpsCorrectionSettings;
+}
+
 VideoSettings *SettingsManager::videoSettings() const { return _videoSettings; }
 MavlinkSettings *SettingsManager::mavlinkSettings() const { return _mavlinkSettings; }
 JoystickManagerSettings *SettingsManager::joystickManagerSettings() const { return _joystickManagerSettings; }
+LogManagerSettings *SettingsManager::logManagerSettings() const { return _logManagerSettings; }
+LogViewerSettings *SettingsManager::logViewerSettings() const { return _logViewerSettings; }
 Viewer3DSettings *SettingsManager::viewer3DSettings() const { return _viewer3DSettings; }
 
 void SettingsManager::_loadSettingsFiles()
@@ -222,41 +263,60 @@ void SettingsManager::adjustSettingMetaData(const QString &settingsGroup, FactMe
 
             qCDebug(SettingsManagerLog) << "Applying settings file override for" << settingsGroup << metaData.name();
 
-            QScopedPointer<FactMetaData> overrideMetaData(FactMetaData::createFromJsonObject(settingOverrideJsonObject, {}, nullptr));
+            // Strip SettingsManager-level keys which are not valid Fact metadata keys. Otherwise strict key
+            // validation in createFromJsonObject fails and returns default metadata, corrupting the overrides below.
+            QJsonObject factMetaDataJsonObject = settingOverrideJsonObject;
+            factMetaDataJsonObject.remove(kJsonVisibleKey);
+            factMetaDataJsonObject.remove(kJsonForceRawValueKey);
 
-            // Apply overrides
-            for (const QString &metaDataName : settingOverrideJsonObject.keys()) {
-                if (metaDataName == kJsonVisibleKey) {
-                    qCDebug(SettingsManagerLog) << "  Setting visibility to" << settingOverrideJsonObject[kJsonVisibleKey].toBool();
-                    userVisible = settingOverrideJsonObject[kJsonVisibleKey].toBool();
-                } else if (metaDataName == kJsonForceRawValueKey) {
+            QScopedPointer<FactMetaData> overrideMetaData(FactMetaData::createFromJsonObject(factMetaDataJsonObject, {}, nullptr));
+
+            if (settingOverrideJsonObject.contains(kJsonForceRawValueKey) && settingOverrideJsonObject.contains(kJsonVisibleKey)) {
+                // A visible setting reads its value from QSettings which defeats forceRawValue
+                qCWarning(SettingsManagerLog) << "Ignoring settings file override which combines 'forceRawValue' and 'visible' keys:" << settingsGroup << metaData.name();
+            } else if (overrideMetaData->name() != metaData.name()) {
+                // createFromJsonObject failed validation (it already logged why) and returned default metadata.
+                // Don't apply any part of a bad override.
+                qCWarning(SettingsManagerLog) << "Ignoring settings file override which failed validation:" << settingsGroup << metaData.name();
+            } else {
+                // Apply Fact metadata overrides
+                for (const QString &metaDataName : factMetaDataJsonObject.keys()) {
+                    if (metaDataName == FactMetaData::_defaultValueJsonKey) {
+                        qCDebug(SettingsManagerLog) << "  Setting default to" << overrideMetaData->rawDefaultValue();
+                        metaData.setRawDefaultValue(overrideMetaData->rawDefaultValue());
+                    } else if (metaDataName == FactMetaData::_minJsonKey) {
+                        qCDebug(SettingsManagerLog) << "  Setting min to" << overrideMetaData->rawMin();
+                        metaData.setRawMin(overrideMetaData->rawMin());
+                    } else if (metaDataName == FactMetaData::_maxJsonKey) {
+                        qCDebug(SettingsManagerLog) << "  Setting max to" << overrideMetaData->rawMax();
+                        metaData.setRawMax(overrideMetaData->rawMax());
+                    } else if (metaDataName == FactMetaData::_decimalPlacesJsonKey) {
+                        qCDebug(SettingsManagerLog) << "  Setting decimalPlaces to" << overrideMetaData->decimalPlaces();
+                        metaData.setDecimalPlaces(overrideMetaData->decimalPlaces());
+                    } else if (metaDataName == FactMetaData::_enumValuesJsonKey) {
+                        qCDebug(SettingsManagerLog) << "  Setting enumInfo to" << overrideMetaData->enumValues() << overrideMetaData->enumStrings();
+                        metaData.setEnumInfo(overrideMetaData->enumStrings(), overrideMetaData->enumValues());
+                    } else if (metaDataName == FactMetaData::_enumBitmaskArrayJsonKey) {
+                        qCDebug(SettingsManagerLog) << "  Setting bitmaskInfo to" << overrideMetaData->bitmaskValues() << overrideMetaData->bitmaskStrings();
+                        metaData.setBitmaskInfo(overrideMetaData->bitmaskStrings(), overrideMetaData->bitmaskValues());
+                    } else if (metaDataName == FactMetaData::_longDescriptionJsonKey) {
+                        qCDebug(SettingsManagerLog) << "  Setting longDesc to" << overrideMetaData->longDescription();
+                        metaData.setLongDescription(overrideMetaData->longDescription());
+                    } else if (metaDataName == FactMetaData::_shortDescriptionJsonKey) {
+                        qCDebug(SettingsManagerLog) << "  Setting shortDesc to" << overrideMetaData->shortDescription();
+                        metaData.setShortDescription(overrideMetaData->shortDescription());
+                    }
+                }
+
+                // Apply SettingsManager-level overrides last so forceRawValue wins over a default override
+                if (settingOverrideJsonObject.contains(kJsonForceRawValueKey)) {
                     qCDebug(SettingsManagerLog) << "  Setting forceRawValue to" << settingOverrideJsonObject[kJsonForceRawValueKey];
                     metaData.setRawDefaultValue(settingOverrideJsonObject[kJsonForceRawValueKey].toVariant());
                     userVisible = false;
-                } else if (metaDataName == FactMetaData::_defaultValueJsonKey) {
-                    qCDebug(SettingsManagerLog) << "  Setting default to" << overrideMetaData->rawDefaultValue();
-                    metaData.setRawDefaultValue(overrideMetaData->rawDefaultValue());
-                } else if (metaDataName == FactMetaData::_minJsonKey) {
-                    qCDebug(SettingsManagerLog) << "  Setting min to" << overrideMetaData->rawMin();
-                    metaData.setRawMin(overrideMetaData->rawMin());
-                } else if (metaDataName == FactMetaData::_maxJsonKey) {
-                    qCDebug(SettingsManagerLog) << "  Setting max to" << overrideMetaData->rawMax();
-                    metaData.setRawMax(overrideMetaData->rawMax());
-                } else if (metaDataName == FactMetaData::_decimalPlacesJsonKey) {
-                    qCDebug(SettingsManagerLog) << "  Setting decimalPlaces to" << overrideMetaData->decimalPlaces();
-                    metaData.setDecimalPlaces(overrideMetaData->decimalPlaces());
-                } else if (metaDataName == FactMetaData::_enumValuesJsonKey) {
-                    qCDebug(SettingsManagerLog) << "  Setting enumInfo to" << overrideMetaData->enumValues() << overrideMetaData->enumStrings();
-                    metaData.setEnumInfo(overrideMetaData->enumStrings(), overrideMetaData->enumValues());
-                } else if (metaDataName == FactMetaData::_enumBitmaskArrayJsonKey) {
-                    qCDebug(SettingsManagerLog) << "  Setting bitmaskInfo to" << overrideMetaData->bitmaskValues() << overrideMetaData->bitmaskStrings();
-                    metaData.setBitmaskInfo(overrideMetaData->bitmaskStrings(), overrideMetaData->bitmaskValues());
-                } else if (metaDataName == FactMetaData::_longDescriptionJsonKey) {
-                    qCDebug(SettingsManagerLog) << "  Setting longDesc to" << overrideMetaData->longDescription();
-                    metaData.setLongDescription(overrideMetaData->longDescription());
-                } else if (metaDataName == FactMetaData::_shortDescriptionJsonKey) {
-                    qCDebug(SettingsManagerLog) << "  Setting shortDesc to" << overrideMetaData->shortDescription();
-                    metaData.setShortDescription(overrideMetaData->shortDescription());
+                }
+                if (settingOverrideJsonObject.contains(kJsonVisibleKey)) {
+                    qCDebug(SettingsManagerLog) << "  Setting visibility to" << settingOverrideJsonObject[kJsonVisibleKey].toBool();
+                    userVisible = settingOverrideJsonObject[kJsonVisibleKey].toBool();
                 }
             }
         }

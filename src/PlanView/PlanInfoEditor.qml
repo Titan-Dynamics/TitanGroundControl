@@ -17,8 +17,8 @@ Rectangle {
     property var _visualItems: missionController.visualItems
     property bool _noMissionItemsAdded: _visualItems ? _visualItems.count <= 1 : true
     property var _settingsItem: _visualItems && _visualItems.count > 0 ? _visualItems.get(0) : null
-    property bool _multipleFirmware: !QGroundControl.singleFirmwareSupport && QGroundControl.settingsManager.appSettings.preferredFirmwareClass.rawValue === 0
-    property bool _multipleVehicleTypes: !QGroundControl.singleVehicleSupport && QGroundControl.settingsManager.appSettings.preferredVehicleClass.rawValue === 0
+    property bool _multipleFirmware: !QGroundControl.singleFirmwareSupport
+    property bool _multipleVehicleTypes: !QGroundControl.singleVehicleSupport
     property bool _allowFWVehicleTypeSelection: _noMissionItemsAdded && !globals.activeVehicle
     property bool _waypointsOnlyMode: QGroundControl.corePlugin.options.missionWaypointsOnly
     property real _fieldWidth: ScreenTools.defaultFontPixelWidth * 16
@@ -45,23 +45,12 @@ Rectangle {
                 text: qsTr("Plan File")
             }
 
-            QGCTextField {
-                id: planNameField
-                placeholderText: qsTr("Untitled")
+            QGCLabel {
                 Layout.fillWidth: true
-
-                Component.onCompleted: text = _root.planMasterController.currentPlanFileName
-
-                Connections {
-                    target: _root.planMasterController
-                    function onCurrentPlanFileNameChanged() {
-                        if (!planNameField.activeFocus) {
-                            planNameField.text = _root.planMasterController.currentPlanFileName
-                        }
-                    }
-                }
-
-                onEditingFinished: _root.planMasterController.currentPlanFileName = text
+                elide: Text.ElideMiddle
+                textFormat: Text.PlainText
+                enabled: _root.planMasterController.currentPlanFileName !== ""
+                text: _root.planMasterController.currentPlanFileName === "" ? qsTr("<Untitled>") : _root.planMasterController.currentPlanFileName
             }
         }
 
@@ -79,24 +68,28 @@ Rectangle {
             visible: vehicleInfoSectionHeader.visible && vehicleInfoSectionHeader.checked
 
             FactComboBox {
+                objectName: "planInfo_firmwareCombo"
                 fact: QGroundControl.settingsManager.appSettings.offlineEditingFirmwareClass
                 indexModel: false
                 Layout.fillWidth: true
                 visible: _root._multipleFirmware && _root._allowFWVehicleTypeSelection
             }
             QGCLabel {
+                objectName: "planInfo_firmwareLabel"
                 text: _root._controllerVehicle ? _root._controllerVehicle.firmwareTypeString : ""
                 Layout.fillWidth: true
                 visible: _root._multipleFirmware && !_root._allowFWVehicleTypeSelection
             }
 
             FactComboBox {
+                objectName: "planInfo_vehicleTypeCombo"
                 fact: QGroundControl.settingsManager.appSettings.offlineEditingVehicleClass
                 indexModel: false
                 Layout.fillWidth: true
                 visible: _root._multipleVehicleTypes && _root._allowFWVehicleTypeSelection
             }
             QGCLabel {
+                objectName: "planInfo_vehicleTypeLabel"
                 text: _root._controllerVehicle ? _root._controllerVehicle.vehicleTypeString : ""
                 Layout.fillWidth: true
                 visible: _root._multipleVehicleTypes && !_root._allowFWVehicleTypeSelection
@@ -179,12 +172,14 @@ Rectangle {
         // ── Plan Templates ──
         SectionHeader {
             id: planTemplateSectionHeader
+            objectName: "planInfo_templatesSection"
             Layout.fillWidth: true
             text: qsTr("Plan Templates")
             visible: _root.planMasterController.showCreateFromTemplate
         }
 
         ColumnLayout {
+            objectName: "planInfo_templatesColumn"
             Layout.fillWidth: true
             spacing: ScreenTools.defaultFontPixelHeight / 2
             visible: planTemplateSectionHeader.visible && planTemplateSectionHeader.checked
@@ -195,6 +190,7 @@ Rectangle {
                 model: _root.planMasterController.planCreators
 
                 QGCButton {
+                    objectName: "planCreator_" + object.name
                     Layout.fillWidth: true
                     text: object.name
                     onClicked: {

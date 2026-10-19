@@ -11,7 +11,8 @@
 class APMSensorsComponent;
 class LinkInterface;
 
-/// Sensors Component MVC Controller for SensorsComponent.qml.
+/// \brief Sensors Component MVC Controller for SensorsComponent.qml.
+///
 class APMSensorsComponentController : public FactPanelController
 {
     Q_OBJECT
@@ -58,6 +59,8 @@ class APMSensorsComponentController : public FactPanelController
 
     Q_PROPERTY(bool waitingForCancel                        MEMBER _waitingForCancel                        NOTIFY waitingForCancelChanged)
 
+    Q_PROPERTY(bool calibrationActive                       READ calibrationActive                          NOTIFY calibrationActiveChanged)
+
     Q_PROPERTY(bool compass1CalSucceeded                    READ compass1CalSucceeded                       NOTIFY compass1CalSucceededChanged)
     Q_PROPERTY(bool compass2CalSucceeded                    READ compass2CalSucceeded                       NOTIFY compass2CalSucceededChanged)
     Q_PROPERTY(bool compass3CalSucceeded                    READ compass3CalSucceeded                       NOTIFY compass3CalSucceededChanged)
@@ -88,6 +91,8 @@ public:
     bool compass2CalSucceeded() const { return _rgCompassCalSucceeded[1]; }
     bool compass3CalSucceeded() const { return _rgCompassCalSucceeded[2]; }
 
+    bool calibrationActive() const { return _calTypeInProgress != QGCMAVLink::CalibrationNone; }
+
     double compass1CalFitness() const { return _rgCompassCalFitness[0]; }
     double compass2CalFitness() const { return _rgCompassCalFitness[1]; }
     double compass3CalFitness() const { return _rgCompassCalFitness[2]; }
@@ -101,6 +106,7 @@ signals:
     void orientationCalSidesRotateChanged();
     void resetStatusTextArea();
     void waitingForCancelChanged();
+    void calibrationActiveChanged();
     void setupNeededChanged();
     void calibrationComplete(QGCMAVLink::CalibrationType calType);
     void compass1CalSucceededChanged(bool compass1CalSucceeded);
@@ -139,6 +145,10 @@ private:
     };
     void _stopCalibration(StopCalibrationCode code);
 
+    /// Sends MAV_CMD_DO_START_MAG_CAL using _magCalCompassBits. Called from the
+    /// pre-start MAV_CMD_DO_CANCEL_MAG_CAL ack handler.
+    void _sendStartMagCal();
+
     void _updateAndEmitShowOrientationCalArea(bool show);
 
     APMSensorsComponent *_sensorsComponent = nullptr;
@@ -152,6 +162,15 @@ private:
     bool _showOrientationCalArea = false;
 
     QGCMAVLink::CalibrationType _calTypeInProgress = QGCMAVLink::CalibrationNone;
+
+    /// ArduPilot keeps streaming MAG_CAL_PROGRESS/MAG_CAL_REPORT from a previous cal (a failed
+    /// cal streams until cancelled). Ignore those messages until our start command is accepted.
+    bool _magCalStartAccepted = false;
+
+    /// True while waiting for the pre-start MAV_CMD_DO_CANCEL_MAG_CAL ack; START is sent from
+    /// the ack handler so stale messages can't race into the new calibration session.
+    bool _magCalCancelBeforeStartPending = false;
+    uint8_t _magCalCompassBits = 0; ///< Compasses to calibrate, sent with the deferred START
 
     uint8_t _rgCompassCalProgress[3];
     bool _rgCompassCalComplete[3];

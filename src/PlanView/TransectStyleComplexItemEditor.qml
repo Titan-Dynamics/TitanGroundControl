@@ -24,7 +24,7 @@ Rectangle {
     property var    transectValuesComponent:        undefined
     property var    presetsTransectValuesComponent: undefined
 
-    readonly property string _internalError: "Internal Error"
+    readonly property string _internalError: qsTr("Internal Error")
 
     property var    _missionItem:               missionItem
     property real   _margin:                    ScreenTools.defaultFontPixelWidth / 2
@@ -305,7 +305,7 @@ Rectangle {
                         id:                 nameError
                         Layout.fillWidth:   true
                         wrapMode:           Text.WordWrap
-                        color:              QGroundControl.globalPalette.warningText
+                        color:              QGroundControl.globalPalette.errorText
                         visible:            text !== ""
                     }
                 }

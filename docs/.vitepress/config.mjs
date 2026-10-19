@@ -1,12 +1,31 @@
 const getSidebar = require("./get_sidebar.js");
 import { defineConfig } from "vitepress";
+import navbarData from "./navbar.json";
+
+const checkEnglish = process.env.QGC_DOCS_CHECK_ENGLISH === "1";
+
+// Existing translated links are maintained separately. English CI disables all exceptions.
+const translationLinkExceptions = [
+  "./../../../../cmake/CustomOptions.cmake",
+  "./../../../../src/AppSettings/pages",
+  "./../../../../src/QmlControls/AppSettings.qml",
+  "./../../../../tools/generators/config_qml/README",
+  "./../../../../tools/generators/settings_qml/README",
+  "./../../../../tools/generators/settings_qml/generate_pages.py",
+  "./../../../../tools/generators/settings_qml/page_generator.py",
+  "./getting_started/ui_overview",
+  "./qgc-user-guide/getting_started/ui_overview"
+];
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  title: "QGC Guide",
+  title: process.env.BRANCH_NAME
+    ? `QGC Guide (${process.env.BRANCH_NAME})`
+    : "QGC Guide",
   description:
     "How to use and develop QGroundControl for PX4 or ArduPilot powered vehicles.",
-  ignoreDeadLinks: true, // Do this for stable, where we don't yet have all translations
+  ignoreDeadLinks: checkEnglish ? false : translationLinkExceptions,
+  srcExclude: checkEnglish ? ["ko/**", "tr/**", "zh/**"] : [],
   base: process.env.BRANCH_NAME ? "/" + process.env.BRANCH_NAME + "/" : "",
 
   head: [
@@ -77,98 +96,9 @@ export default defineConfig({
       provider: "local",
     },
 
-    nav: [
-      {
-        text: "QGroundControl",
-        items: [
-          {
-            text: "Website",
-            link: "http://qgroundcontrol.com/",
-            ariaLabel: "QGC website link",
-          },
-          {
-            text: "Download QGC (stable)",
-            link: "https://docs.qgroundcontrol.com/master/en/qgc-user-guide/getting_started/download_and_install.html",
-            ariaLabel: "Download stable QGC",
-          },
-          {
-            text: "Download QGC (daily build)",
-            link: "https://docs.qgroundcontrol.com/master/en/qgc-user-guide/releases/daily_builds.html",
-            ariaLabel: "Download stable QGC",
-          },
-          {
-            text: "Source Code",
-            link: "https://github.com/mavlink/qgroundcontrol",
-          },
-          {
-            text: "Docs Source Code",
-            link: "https://github.com/mavlink/qgroundcontrol/tree/master/docs",
-          },
-        ],
-      },
-      {
-        text: "Flight Stacks",
-        items: [
-          {
-            text: "PX4",
-            link: "https://docs.px4.io/en/",
-            ariaLabel: "PX4 docs link",
-          },
-          {
-            text: "ArduPilot",
-            link: "http://ardupilot.org",
-            ariaLabel: "ArduPilot site link",
-          },
-        ],
-      },
-      {
-        text: "Dronecode",
-        items: [
-          {
-            text: "PX4",
-            link: "https://px4.io/",
-            ariaLabel: "PX4 website link",
-          },
-          {
-            text: "QGroundControl",
-            link: "http://qgroundcontrol.com/",
-          },
-          {
-            text: "MAVSDK",
-            link: "https://mavsdk.mavlink.io/",
-          },
-          {
-            text: "MAVLINK",
-            link: "https://mavlink.io/en/",
-          },
-          {
-            text: "Dronecode Camera Manager",
-            link: "https://camera-manager.dronecode.org/en/",
-          },
-        ],
-      },
-      {
-        text: "Support",
-        link: "https://docs.qgroundcontrol.com/master/en/qgc-user-guide/support/support.html",
-      },
-      {
-        text: "Version",
-        items: [
-          {
-            text: "master",
-            link: "https://docs.qgroundcontrol.com/master/en/",
-          },
-          {
-            text: "v5.0",
-            link: "https://docs.qgroundcontrol.com/Stable_V5.0/en/",
-          },
-          {
-            text: "v4.4",
-            link: "https://docs.qgroundcontrol.com/Stable_V4.4/en/",
-          },
-        ],
-      },
-    ],
+    dynamicNavUrl:
+      "https://raw.githubusercontent.com/mavlink/qgroundcontrol/master/docs/.vitepress/navbar.json",
+    nav: navbarData.nav,
 
     socialLinks: [
       { icon: "github", link: "https://github.com/mavlink/qgroundcontrol" },

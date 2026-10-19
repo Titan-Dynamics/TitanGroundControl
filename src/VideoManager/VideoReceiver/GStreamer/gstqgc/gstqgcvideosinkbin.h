@@ -5,18 +5,9 @@
 G_BEGIN_DECLS
 
 #define GST_TYPE_QGC_VIDEO_SINK_BIN (gst_qgc_video_sink_bin_get_type())
-G_DECLARE_FINAL_TYPE (GstQgcVideoSinkBin, gst_qgc_video_sink_bin, GST, QGC_VIDEO_SINK_BIN, GstBin)
+G_DECLARE_FINAL_TYPE(GstQgcVideoSinkBin, gst_qgc_video_sink_bin, GST, QGC_VIDEO_SINK_BIN, GstBin)
 
-struct _GstQgcVideoSinkBin
-{
-    GstBin parent;
-    GstElement *glsinkbin;
-    GstElement *qmlglsink;
-    GstElement *d3d11sink;
-    GstElement *appsink;
-    GstElement *videoconvert;
-    gboolean using_d3d11;
-    gboolean using_appsink;
-};
+/// Returns the internal qgcqvideosink element, transfer-full (caller unrefs); NULL if not yet constructed.
+GstElement* gst_qgc_video_sink_bin_get_qvideosink(GstQgcVideoSinkBin* self);
 
 G_END_DECLS

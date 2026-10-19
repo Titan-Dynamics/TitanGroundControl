@@ -1,31 +1,37 @@
-#include "GStreamer.h"
 #include "GStreamerLogging.h"
-#include "QGCLoggingCategory.h"
 
+#include <algorithm>
+#include <atomic>
+
+#include <QtCore/QByteArray>
+#include <QtCore/QList>
+#include <QtCore/QSettings>
 #include <QtCore/QString>
 
-#include <atomic>
-#include <memory>
+#include "AppSettings.h"
+#include "GStreamer.h"
+#include "GStreamerHelpers.h"
+#include "QGCLoggingCategory.h"
 
-QGC_LOGGING_CATEGORY(GStreamerLoggingLog, "VideoManager.GStreamer.GStreamerLogging")
-QGC_LOGGING_CATEGORY_ON(GStreamerAPILog, "Video.GStreamerAPI")
+QGC_LOGGING_CATEGORY(GStreamerLoggingLog, "Video.GStreamer.GStreamerLogging")
+QGC_LOGGING_CATEGORY_ON(GStreamerAPILog, "Video.GStreamer.GStreamerAPI")
+QGC_LOGGING_CATEGORY(GStreamerDecoderRanksLog, "Video.GStreamer.DecoderRanks")
 
 namespace {
 
-std::atomic_bool g_externalPluginLoaderFailed {false};
+std::atomic_bool g_externalPluginLoaderFailed = false;
 
-void glib_print_handler(const gchar *string)
+void glib_print_handler(const gchar* string)
 {
     qCInfo(GStreamerLoggingLog) << string;
 }
 
-void glib_printerr_handler(const gchar *string)
+void glib_printerr_handler(const gchar* string)
 {
     qCWarning(GStreamerLoggingLog) << string;
 }
 
-void glib_log_handler(const gchar *log_domain, GLogLevelFlags log_level,
-                      const gchar *message, gpointer user_data)
+void glib_log_handler(const gchar* log_domain, GLogLevelFlags log_level, const gchar* message, gpointer user_data)
 {
     Q_UNUSED(user_data);
     const QString domain = log_domain ? QString::fromUtf8(log_domain) : QStringLiteral("GLib");
@@ -41,28 +47,27 @@ void glib_log_handler(const gchar *log_domain, GLogLevelFlags log_level,
     }
 
     switch (log_level & G_LOG_LEVEL_MASK) {
-    case G_LOG_LEVEL_ERROR:
-    case G_LOG_LEVEL_CRITICAL:
-        qCCritical(GStreamerLoggingLog) << domain << msg;
-        break;
-    case G_LOG_LEVEL_WARNING:
-        qCWarning(GStreamerLoggingLog) << domain << msg;
-        break;
-    case G_LOG_LEVEL_MESSAGE:
-    case G_LOG_LEVEL_INFO:
-        qCInfo(GStreamerLoggingLog) << domain << msg;
-        break;
-    case G_LOG_LEVEL_DEBUG:
-    default:
-        qCDebug(GStreamerLoggingLog) << domain << msg;
-        break;
+        case G_LOG_LEVEL_ERROR:
+        case G_LOG_LEVEL_CRITICAL:
+            qCCritical(GStreamerLoggingLog) << domain << msg;
+            break;
+        case G_LOG_LEVEL_WARNING:
+            qCWarning(GStreamerLoggingLog) << domain << msg;
+            break;
+        case G_LOG_LEVEL_MESSAGE:
+        case G_LOG_LEVEL_INFO:
+            qCInfo(GStreamerLoggingLog) << domain << msg;
+            break;
+        case G_LOG_LEVEL_DEBUG:
+        default:
+            qCDebug(GStreamerLoggingLog) << domain << msg;
+            break;
     }
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
-namespace GStreamer
-{
+namespace GStreamer {
 
 void resetExternalPluginLoaderFailure()
 {
@@ -81,14 +86,8 @@ void redirectGLibLogging()
     g_log_set_default_handler(glib_log_handler, nullptr);
 }
 
-void qtGstLog(GstDebugCategory *category,
-              GstDebugLevel level,
-              const gchar *file,
-              const gchar *function,
-              gint line,
-              GObject *object,
-              GstDebugMessage *message,
-              gpointer data)
+void qtGstLog(GstDebugCategory* category, GstDebugLevel level, const gchar* file, const gchar* function, gint line,
+              GObject* object, GstDebugMessage* message, gpointer data)
 {
     Q_UNUSED(data);
 
@@ -98,34 +97,91 @@ void qtGstLog(GstDebugCategory *category,
 
     QMessageLogger log(file, line, function);
 
-    struct GFree { void operator()(gchar *p) const { g_free(p); } };
-    const std::unique_ptr<gchar, GFree> object_info(
-        gst_info_strdup_printf("%" GST_PTR_FORMAT, object));
+    const GStreamer::GCharPtr object_info = GStreamer::adoptGChar(gst_info_strdup_printf("%" GST_PTR_FORMAT, object));
 
     switch (level) {
-    case GST_LEVEL_ERROR:
-        log.critical(GStreamerAPILog, "%s %s", object_info.get(), gst_debug_message_get(message));
-        break;
-    case GST_LEVEL_WARNING:
-        log.warning(GStreamerAPILog, "%s %s", object_info.get(), gst_debug_message_get(message));
-        break;
-    case GST_LEVEL_FIXME:
-    case GST_LEVEL_INFO:
-        log.info(GStreamerAPILog, "%s %s", object_info.get(), gst_debug_message_get(message));
-        break;
-    case GST_LEVEL_DEBUG:
+        case GST_LEVEL_ERROR:
+            log.critical(GStreamerAPILog, "%s %s", object_info.get(), gst_debug_message_get(message));
+            break;
+        case GST_LEVEL_WARNING:
+            log.warning(GStreamerAPILog, "%s %s", object_info.get(), gst_debug_message_get(message));
+            break;
+        case GST_LEVEL_FIXME:
+        case GST_LEVEL_INFO:
+            log.info(GStreamerAPILog, "%s %s", object_info.get(), gst_debug_message_get(message));
+            break;
+        case GST_LEVEL_DEBUG:
 #ifdef QT_DEBUG
-    // In release builds LOG/TRACE/MEMDUMP are intentionally dropped to reduce
-    // noise. Only debug builds route these verbose levels through Qt logging.
-    case GST_LEVEL_LOG:
-    case GST_LEVEL_TRACE:
-    case GST_LEVEL_MEMDUMP:
+        // In release builds LOG/TRACE/MEMDUMP are intentionally dropped to reduce
+        // noise. Only debug builds route these verbose levels through Qt logging.
+        case GST_LEVEL_LOG:
+        case GST_LEVEL_TRACE:
+        case GST_LEVEL_MEMDUMP:
 #endif
-        log.debug(GStreamerAPILog, "%s %s", object_info.get(), gst_debug_message_get(message));
-        break;
-    default:
-        break;
+            log.debug(GStreamerAPILog, "%s %s", object_info.get(), gst_debug_message_get(message));
+            break;
+        default:
+            break;
     }
 }
 
-} // namespace GStreamer
+void configureDebugLogging()
+{
+    gst_debug_remove_log_function(gst_debug_log_default);
+    gst_debug_remove_log_function(GStreamer::qtGstLog);
+    gst_debug_add_log_function(GStreamer::qtGstLog, nullptr, nullptr);
+
+    if (!qEnvironmentVariableIsEmpty("GST_DEBUG")) {
+        return;
+    }
+
+    QSettings settings;
+    if (settings.contains(AppSettings::gstDebugLevelName)) {
+        const int level =
+            std::clamp(settings.value(AppSettings::gstDebugLevelName).toInt(), 0, static_cast<int>(GST_LEVEL_MEMDUMP));
+        gst_debug_set_default_threshold(static_cast<GstDebugLevel>(level));
+    }
+}
+
+void setDebugLevel(int level)
+{
+    if (!gst_is_initialized()) {
+        return;
+    }
+    const int clamped = std::clamp(level, 0, static_cast<int>(GST_LEVEL_MEMDUMP));
+    gst_debug_set_default_threshold(static_cast<GstDebugLevel>(clamped));
+    qCDebug(GStreamerLoggingLog) << "GStreamer debug threshold set to" << clamped;
+}
+
+void logDecoderRanks()
+{
+    struct Decoder
+    {
+        guint rank;
+        QByteArray name;
+        QString description;
+    };
+
+    QList<Decoder> decoders;
+    GStreamer::forEachVideoDecoderFactory(GST_RANK_NONE, [&decoders](GstElementFactory* factory) {
+        GstPluginFeature* const feature = GST_PLUGIN_FEATURE(factory);
+        decoders.append({gst_plugin_feature_get_rank(feature), QByteArray(gst_plugin_feature_get_name(feature)),
+                         GStreamer::describeDecoderFactory(factory)});
+    });
+
+    if (decoders.isEmpty()) {
+        qCDebug(GStreamerDecoderRanksLog) << "No video decoder factories found";
+        return;
+    }
+
+    std::ranges::sort(decoders, [](const Decoder& lhs, const Decoder& rhs) {
+        return (lhs.rank != rhs.rank) ? (lhs.rank > rhs.rank) : (lhs.name < rhs.name);
+    });
+
+    qCDebug(GStreamerDecoderRanksLog) << "Video decoder ranks:";
+    for (const Decoder& decoder : std::as_const(decoders)) {
+        qCDebug(GStreamerDecoderRanksLog).noquote() << "  " + decoder.description;
+    }
+}
+
+}  // namespace GStreamer

@@ -1,21 +1,24 @@
 #include "TestFixturesTest.h"
-#include "SignalEmitter.h"
+
+#include <cmath>
 
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
+#include <QtCore/QRegularExpression>
+#include <QtCore/QScopeGuard>
 #include <QtCore/QTimer>
 #include <QtCore/QUuid>
 #include <QtNetwork/QNetworkRequest>
 #include <QtTest/QSignalSpy>
 #include <QtTest/QTest>
 
-#include <cmath>
-
 #include "AppSettings.h"
 #include "Fact.h"
 #include "Fixtures/TestFixtures.h"
+#include "QGCLoggingCategoryManager.h"
 #include "SettingsManager.h"
+#include "SignalEmitter.h"
 #include "UnitTest.h"
 using namespace TestFixtures;
 
@@ -236,62 +239,6 @@ void TestFixturesTest::_testSingleInstanceLockFixture()
 #endif
 }
 
-// ============================================================================
-// SignalSpyFixture Tests
-// ============================================================================
-void TestFixturesTest::_testSignalSpyFixtureExpect()
-{
-    TestFixturesSignalEmitter emitter;
-    SignalSpyFixture spy(&emitter);
-    spy.expect("valueChanged");
-    // Signal not yet emitted - should fail verification
-    QVERIFY(!spy.verify());
-    // Emit the signal
-    emitter.emitValueChanged(42);
-    // Now verification should pass
-    QVERIFY(spy.verify());
-    QVERIFY(spy.wasEmitted("valueChanged"));
-}
-
-void TestFixturesTest::_testSignalSpyFixtureExpectExactly()
-{
-    TestFixturesSignalEmitter emitter;
-    SignalSpyFixture spy(&emitter);
-    spy.expectExactly("valueChanged", 2);
-    // Emit once - should fail (expecting 2)
-    emitter.emitValueChanged(1);
-    QVERIFY(!spy.verify());
-    // Emit twice - should pass
-    emitter.emitValueChanged(2);
-    QVERIFY(spy.verify());
-    // Emit third time - should fail again
-    emitter.emitValueChanged(3);
-    QVERIFY(!spy.verify());
-}
-
-void TestFixturesTest::_testSignalSpyFixtureExpectNot()
-{
-    TestFixturesSignalEmitter emitter;
-    SignalSpyFixture spy(&emitter);
-    spy.expectNot("errorOccurred");
-    // No error emitted - should pass
-    QVERIFY(spy.verify());
-    // Emit error - should fail
-    emitter.emitErrorOccurred("Test error");
-    QVERIFY(!spy.verify());
-}
-
-void TestFixturesTest::_testSignalSpyFixtureWaitAndVerify()
-{
-    TestFixturesSignalEmitter emitter;
-    SignalSpyFixture spy(&emitter);
-    spy.expect("stateChanged");
-    // Schedule signal emission after 50ms
-    QTimer::singleShot(50, &emitter, [&emitter]() { emitter.emitStateChanged(true); });
-    // Wait and verify - should succeed within timeout
-    QVERIFY(spy.waitAndVerify(1000));
-}
-
 void TestFixturesTest::_testWaitForSignalCountHelper()
 {
     TestFixturesSignalEmitter emitter;
@@ -304,7 +251,9 @@ void TestFixturesTest::_testWaitForSignalCountHelper()
     QVERIFY_SIGNAL_COUNT_WAIT(spy, 2, TestTimeout::mediumMs());
     QCOMPARE(spy.count(), 2);
 
+    expectLogMessage("Test.UnitTest", QtWarningMsg, QRegularExpression(QStringLiteral("Timeout waiting for signal count")));
     QVERIFY(!UnitTest::waitForSignalCount(spy, 3, 100, QStringLiteral("valueChanged")));
+    verifyExpectedLogMessage();
 }
 
 // ============================================================================
@@ -342,6 +291,26 @@ void TestFixturesTest::_testSettingsFixtureFactValue()
     }
     // After fixture destruction, original value should be restored
     QCOMPARE(testFact->rawValue(), originalValue);
+}
+
+// ============================================================================
+// LoggingCategoryFixture Tests
+// ============================================================================
+void TestFixturesTest::_testLoggingCategoryFixtureRestore()
+{
+    auto* const categories = QGCLoggingCategoryManager::instance();
+    const QString category = QStringLiteral("Utilities.Timing.ScheduledTask");
+    const bool original = categories->isCategoryEnabled(category);
+    const auto restore = qScopeGuard([&] { categories->setCategoryEnabled(category, original); });
+    // The fixture enables the category and leaves it as it found it, enabled or not.
+    for (const bool enabled : {false, true}) {
+        categories->setCategoryEnabled(category, enabled);
+        {
+            const LoggingCategoryFixture logging(category);
+            QVERIFY(categories->isCategoryEnabled(category));
+        }
+        QCOMPARE(categories->isCategoryEnabled(category), enabled);
+    }
 }
 
 UT_REGISTER_TEST(TestFixturesTest, TestLabel::Unit)

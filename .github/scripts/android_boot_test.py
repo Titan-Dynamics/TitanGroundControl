@@ -5,10 +5,21 @@ from __future__ import annotations
 
 import argparse
 import re
-import subprocess
 import sys
 import time
 from pathlib import Path
+
+from ci_bootstrap import ensure_tools_dir
+
+ensure_tools_dir(__file__)
+
+from typing import TYPE_CHECKING
+
+from common.gh_actions import gh_error, gh_notice, gh_warning
+from common.proc import run_bytes
+
+if TYPE_CHECKING:
+    import subprocess
 
 
 def _decode(value: bytes) -> str:
@@ -16,7 +27,8 @@ def _decode(value: bytes) -> str:
 
 
 def run_command(cmd: list[str], check: bool = False) -> subprocess.CompletedProcess[bytes]:
-    result = subprocess.run(cmd, capture_output=True)
+    """Bytes-mode adb wrapper — logcat can contain non-UTF8 on native crashes."""
+    result = run_bytes(cmd)
     if check and result.returncode != 0:
         stdout = _decode(result.stdout)
         stderr = _decode(result.stderr)
@@ -48,9 +60,8 @@ def install_with_retries(apk_path: Path, retries: int, retry_delay: int) -> bool
 
         stdout = _decode(result.stdout).strip()
         stderr = _decode(result.stderr).strip()
-        print(
-            f"::warning::adb install attempt {attempt}/{retries} failed."
-            f" stdout={stdout!r} stderr={stderr!r}"
+        gh_warning(
+            f"adb install attempt {attempt}/{retries} failed. stdout={stdout!r} stderr={stderr!r}"
         )
         if attempt < retries:
             time.sleep(retry_delay)
@@ -95,7 +106,7 @@ _GSTREAMER_FAILURE_PATTERN = re.compile(
 def print_gstreamer_log_group(content: str, max_lines: int = 120) -> None:
     matches = [line for line in content.splitlines() if _GSTREAMER_LOG_PATTERN.search(line)]
     if not matches:
-        print("::notice::No GStreamer-related logcat lines found")
+        gh_notice("No GStreamer-related logcat lines found")
         return
     print(f"::group::GStreamer logcat ({len(matches)} lines)")
     for line in matches[-max_lines:]:
@@ -185,9 +196,9 @@ def emit_failure(
     log_pattern: re.Pattern[str],
     notice: str | None = None,
 ) -> int:
-    print(f"::error::{message}")
+    gh_error(message)
     if notice:
-        print(f"::notice::{notice}")
+        gh_notice(notice)
     logcat_content = read_logcat()
     write_log(log_output, logcat_content)
     print_log_group(logcat_content, log_pattern)
@@ -282,7 +293,7 @@ def run_boot_attempt(
 
     print(f"Waiting for boot test to complete (timeout: {timeout}s)...")
     app_launched = False
-    app_launched_at = 0
+    process_running_since: float | None = None
     app_seen_running_once = False
     consecutive_not_running = 0
 
@@ -297,13 +308,16 @@ def run_boot_attempt(
         process_table = get_process_table()
         is_running = app_running_from_process_table(package_name, process_table)
         if is_running:
+            if process_running_since is None:
+                process_running_since = time.monotonic()
             app_seen_running_once = True
             consecutive_not_running = 0
+        else:
+            process_running_since = None
 
         launch_detected_in_log = bool(app_launch_pattern.search(logcat_delta))
         if not app_launched and (launch_detected_in_log or is_running or saw_app_logs):
             app_launched = True
-            app_launched_at = second
             if launch_detected_in_log:
                 launch_source = "logcat marker"
             elif is_running:
@@ -316,8 +330,7 @@ def run_boot_attempt(
             )
 
         has_relevant_crash = any(
-            crash_signature_pattern.search(line)
-            and crash_context_pattern.search(line)
+            crash_signature_pattern.search(line) and crash_context_pattern.search(line)
             for line in logcat_delta.splitlines()
         )
         if has_relevant_crash:
@@ -354,10 +367,12 @@ def run_boot_attempt(
                     crash_log_pattern,
                 )
 
-            if second - app_launched_at >= stability_window:
+            if (
+                process_running_since is not None
+                and time.monotonic() - process_running_since >= stability_window
+            ):
                 print(
-                    "Boot test passed: app remained running for "
-                    f"{stability_window}s after launch."
+                    f"Boot test passed: app remained running for {stability_window}s after launch."
                 )
                 return True, None, None, logcat_content, app_log_pattern
 
@@ -459,9 +474,8 @@ def main() -> int:
         final_log_pattern = log_pattern
 
         if attempt < args.launch_retries:
-            print(
-                f"::warning::{final_error_message} on attempt "
-                f"{attempt}/{args.launch_retries}; retrying..."
+            gh_warning(
+                f"{final_error_message} on attempt {attempt}/{args.launch_retries}; retrying..."
             )
             time.sleep(2)
 
@@ -469,9 +483,9 @@ def main() -> int:
         final_logcat = read_logcat()
 
     write_log(args.log_output, final_logcat)
-    print(f"::error::{final_error_message}")
+    gh_error(final_error_message)
     if final_notice:
-        print(f"::notice::{final_notice}")
+        gh_notice(final_notice)
     print_log_group(final_logcat, final_log_pattern)
     print_gstreamer_log_group(final_logcat)
     return 1
