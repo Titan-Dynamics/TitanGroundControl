@@ -67,7 +67,7 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
 ## CI and Releases
 
 - **`td-dev.yml`** runs on pushes to `development` (and manually). It builds Android (on Windows), macOS
-  (universal), Windows AMD64/ARM64 (NSIS via the `qgc-package` target) and Linux AppImage (Ubuntu 22.04),
+  (universal), Windows AMD64/ARM64 (NSIS via the `qgc-package` target) and Linux AppImage (Ubuntu 24.04, as upstream),
   then replaces the `dev` prerelease.
 - **`td-release.yml`** is manual. It increments the patch of the latest `v*` tag reachable from `HEAD`,
   pushes the new tag and publishes a release with the same artifacts.
