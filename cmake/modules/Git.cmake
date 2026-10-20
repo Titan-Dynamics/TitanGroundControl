@@ -130,8 +130,9 @@ endif()
 # ----------------------------------------------------------------------------
 # Extract Version String from Git Tags
 # ----------------------------------------------------------------------------
+# Only version tags count: other tags (e.g. a moving "dev" release tag) are not versions
 execute_process(
-    COMMAND "${GIT_EXECUTABLE}" describe --always --tags
+    COMMAND "${GIT_EXECUTABLE}" describe --always --tags --match "v[0-9]*"
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     OUTPUT_VARIABLE QGC_APP_VERSION_STR
     OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET
@@ -153,7 +154,7 @@ endif()
 # Extract Clean Version Tag
 # ----------------------------------------------------------------------------
 execute_process(
-    COMMAND "${GIT_EXECUTABLE}" describe --always --tags --abbrev=0
+    COMMAND "${GIT_EXECUTABLE}" describe --always --tags --abbrev=0 --match "v[0-9]*"
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     OUTPUT_VARIABLE QGC_APP_VERSION
     OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET
