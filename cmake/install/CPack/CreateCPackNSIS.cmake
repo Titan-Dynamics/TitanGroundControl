@@ -50,8 +50,14 @@ set(CPACK_NSIS_MUI_UNIICON "${QGC_WINDOWS_ICON_PATH}")
 # ----------------------------------------------------------------------------
 # Install/Uninstall Commands
 # ----------------------------------------------------------------------------
-set(_qgc_nsis_extra_preinstall
+# Removing the previous version must happen before any files are installed. CPack expands
+# CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS inside its "-Core installation" section, which runs after the
+# component sections have already installed the new files, so an upgrade into the same directory would
+# have the previous uninstaller delete them. CPACK_NSIS_DEFINES is expanded before the component
+# sections, so the removal lives in a hidden section defined there.
+set(_qgc_nsis_remove_previous_section
     [=[
+Section "-Remove previous installation"
     DetailPrint "Checking for previous @CMAKE_PROJECT_NAME@ installation"
     SetRegView 64
     ReadRegStr $R0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\@CMAKE_PROJECT_NAME@" "UninstallString"
@@ -106,9 +112,13 @@ qgc_uninstall_failed:
     Abort
 
 qgc_install_continue:
+    SetRegView default
+SectionEnd
 ]=]
 )
-string(CONFIGURE "${_qgc_nsis_extra_preinstall}" CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS @ONLY)
+string(CONFIGURE "${_qgc_nsis_remove_previous_section}" CPACK_NSIS_DEFINES @ONLY)
+# The Core section's registry writes stay in the 64-bit view the installer uses elsewhere
+set(CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS "    SetRegView 64")
 
 set(_qgc_nsis_extra_install
     [=[

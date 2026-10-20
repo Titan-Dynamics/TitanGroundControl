@@ -1,6 +1,7 @@
 # Exercise installation, upgrade preservation, and uninstallation on a CI runner.
 param([Parameter(Mandatory)][ValidateSet('Install', 'Uninstall')][string]$Phase)
 $ErrorActionPreference = 'Stop'
+$appName = if ($env:QGC_APP_NAME) { $env:QGC_APP_NAME } else { 'QGroundControl' }
 
 if ($Phase -eq 'Install') {
     $installerExe = Get-Item -LiteralPath $env:INSTALLER_PATH
@@ -8,9 +9,9 @@ if ($Phase -eq 'Install') {
     $installDir = $env:INSTALL_DIR
     Write-Host "Installing $($installerExe.Name) to $oldInstallDir"
     Start-Process -FilePath $installerExe.FullName -ArgumentList "/S", "/D=$oldInstallDir" -Wait -NoNewWindow
-    $oldBinary = Join-Path $oldInstallDir "bin\QGroundControl.exe"
+    $oldBinary = Join-Path $oldInstallDir "bin\$appName.exe"
     if (-not (Test-Path $oldBinary)) {
-      Write-Error "QGroundControl.exe not found at $oldBinary after initial install"
+      Write-Error "$appName.exe not found at $oldBinary after initial install"
       exit 1
     }
     $settingsRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::ApplicationData)
@@ -32,9 +33,18 @@ if ($Phase -eq 'Install') {
       Write-Error "Application data was removed during upgrade"
       exit 1
     }
-    $binary = Join-Path $installDir "bin\QGroundControl.exe"
+    $binary = Join-Path $installDir "bin\$appName.exe"
     if (-not (Test-Path $binary)) {
-      Write-Error "QGroundControl.exe not found at $binary after upgrade"
+      Write-Error "$appName.exe not found at $binary after upgrade"
+      Get-ChildItem -Path $installDir -Recurse | Select-Object FullName
+      exit 1
+    }
+    # Upgrades normally reinstall into the same directory, where removing the previous version
+    # must not delete the files the new installer copies
+    Write-Host "Upgrading in place: $installDir"
+    Start-Process -FilePath $installerExe.FullName -ArgumentList "/S", "/D=$installDir" -Wait -NoNewWindow
+    if (-not (Test-Path $binary)) {
+      Write-Error "$appName.exe not found at $binary after an in-place upgrade"
       Get-ChildItem -Path $installDir -Recurse | Select-Object FullName
       exit 1
     }
@@ -53,8 +63,8 @@ if ($Phase -eq 'Install') {
       Write-Error "GStreamer plugin directory not found: $pluginDir"
       exit 1
     }
-    $uninstallKey = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\QGroundControl"
-    $werKey = "HKLM:\Software\Microsoft\Windows\Windows Error Reporting\LocalDumps\QGroundControl.exe"
+    $uninstallKey = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName"
+    $werKey = "HKLM:\Software\Microsoft\Windows\Windows Error Reporting\LocalDumps\$appName.exe"
     if (-not (Test-Path -LiteralPath $uninstallKey)) {
       Write-Error "Uninstall registry key not found: $uninstallKey"
       exit 1
@@ -76,7 +86,7 @@ if ($Phase -eq 'Install') {
       exit 1
     }
     $werRegistryKey = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey(
-      "Software\Microsoft\Windows\Windows Error Reporting\LocalDumps\QGroundControl.exe"
+      "Software\Microsoft\Windows\Windows Error Reporting\LocalDumps\$appName.exe"
     )
     if ($null -eq $werRegistryKey) {
       Write-Error "Unable to open Windows Error Reporting registry key"
@@ -96,8 +106,8 @@ if ($Phase -eq 'Install') {
     $startMenuRoot = Join-Path $env:ProgramData "Microsoft\Windows\Start Menu\Programs"
     $startMenuDir = Join-Path $startMenuRoot $uninstallProperties.StartMenu
     $shortcuts = @(
-      (Join-Path $startMenuDir "QGroundControl.lnk"),
-      (Join-Path $startMenuDir "QGroundControl (GPU Safe Mode).lnk")
+      (Join-Path $startMenuDir "$appName.lnk"),
+      (Join-Path $startMenuDir "$appName (GPU Safe Mode).lnk")
     )
     foreach ($shortcut in $shortcuts) {
       if (-not (Test-Path -LiteralPath $shortcut -PathType Leaf)) {
