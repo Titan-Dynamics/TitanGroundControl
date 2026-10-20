@@ -247,6 +247,13 @@ jobs:
           build-dir: ${{ runner.temp }}/build
           build-type: Release
 
+      - name: Verify app bundle executable
+        uses: ./.github/actions/verify-executable
+        with:
+          binary-path: ${{ runner.temp }}/build/Release/TitanGroundControl.app/Contents/MacOS/TitanGroundControl
+          build-dir: ${{ runner.temp }}/build
+          expect-archs: x86_64h arm64
+
       - name: Import Code Signing Certificate
         if: env.HAS_SIGNING_SECRETS == 'true'
         uses: apple-actions/import-codesign-certs@v6
@@ -268,6 +275,20 @@ jobs:
         if: env.HAS_SIGNING_SECRETS != 'true'
         working-directory: ${{ runner.temp }}/build
         run: cmake --install . --config Release
+
+      - name: Mount DMG
+        working-directory: ${{ runner.temp }}/build
+        run: |
+          if ! hdiutil attach TitanGroundControl.dmg; then
+            echo "::error::Failed to mount DMG"
+            exit 1
+          fi
+
+      - name: Verify DMG executable
+        uses: ./.github/actions/verify-executable
+        with:
+          binary-path: /Volumes/TitanGroundControl/TitanGroundControl.app/Contents/MacOS/TitanGroundControl
+          expect-archs: x86_64h arm64
 
       - name: Upload DMG
         uses: actions/upload-artifact@v7
@@ -365,6 +386,13 @@ jobs:
           build-dir: ${{ runner.temp }}/build
           build-type: Release
 
+      - name: Verify Executable
+        uses: ./.github/actions/verify-executable
+        with:
+          binary-path: ${{ runner.temp }}/build/Release/TitanGroundControl.exe
+          type: exe
+          build-dir: ${{ runner.temp }}/build
+
       - name: Create Installer
         uses: ./.github/actions/cmake-build
         with:
@@ -372,6 +400,28 @@ jobs:
           build-type: Release
           target: qgc-package
           parallel: false
+
+      - name: Install, upgrade, and verify installer
+        shell: pwsh
+        env:
+          QGC_APP_NAME: TitanGroundControl
+          INSTALLER_PATH: ${{ runner.temp }}\build\${{ matrix.package }}.exe
+          OLD_INSTALL_DIR: ${{ runner.temp }}\qgc-install-old
+          INSTALL_DIR: ${{ runner.temp }}\qgc-install-test
+          EXPECT_GSTREAMER: ${{ matrix.gstreamer }}
+        run: ./deploy/windows/verify-installer.ps1 -Phase Install
+
+      - name: Verify installed executable
+        uses: ./.github/actions/verify-executable
+        with:
+          binary-path: ${{ env.QGC_INSTALL_TEST_BINARY }}
+          type: exe
+
+      - name: Uninstall and verify cleanup
+        shell: pwsh
+        env:
+          QGC_APP_NAME: TitanGroundControl
+        run: ./deploy/windows/verify-installer.ps1 -Phase Uninstall
 
       - name: Upload Installer
         uses: actions/upload-artifact@v7
@@ -430,9 +480,20 @@ jobs:
           build-dir: ${{ runner.temp }}/build
           build-type: Release
 
+      - name: Verify Executable
+        uses: ./.github/actions/verify-executable
+        with:
+          binary-path: ${{ runner.temp }}/build/Release/TitanGroundControl
+
       - name: Create AppImage
         working-directory: ${{ runner.temp }}/build
         run: cmake --install . --config Release
+
+      - name: Verify AppImage
+        uses: ./.github/actions/verify-executable
+        with:
+          binary-path: ${{ runner.temp }}/build/TitanGroundControl-x86_64.AppImage
+          type: appimage
 
       - name: Package AppImage as zip
         working-directory: ${{ runner.temp }}/build
