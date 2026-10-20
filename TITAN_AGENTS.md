@@ -63,6 +63,12 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
 - Map-click "Go to location" only shows the goto indicator up front when executing immediately; the confirm
   popup can be dismissed without cancelling.
 - Settings and Vehicle Configuration sidebars use a fixed width of 26 characters, with eliding labels.
+- The Windows installer removes the previous version from a hidden NSIS section placed in
+  `CPACK_NSIS_INSTALLATION_TYPES` (`cmake/install/CPack/CreateCPackNSIS.cmake`), not in
+  `CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS`. Upstream's placement runs after the files are copied, so an
+  in-place upgrade deleted the new install. `CPACK_NSIS_DEFINES` is overwritten by CPack and does not work.
+- The app version comes only from `v<digit>*` tags (`cmake/modules/Git.cmake`), so the moving `dev`
+  release tag is never picked up as a version.
 
 ## CI and Releases
 
@@ -74,6 +80,10 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
 - **Every upstream workflow is `workflow_dispatch`-only**, including ones upstream adds later. Repo-maintenance
   bots (stale, welcome, pr-checks, dependency-review, cache-cleanup-pr, build-results, lupdate, px4-metadata,
   doxygen schedule) are left as upstream has them.
+- Both td workflows verify artifacts before publishing, like upstream: Windows/macOS/Linux executables,
+  the DMG and AppImage are boot-tested, and the Windows installer goes through install, upgrade into a new
+  directory, in-place upgrade, launch and uninstall (`deploy/windows/verify-installer.ps1` with
+  `QGC_APP_NAME=TitanGroundControl`). A failing check blocks the release.
 - Binary and package names are `TitanGroundControl*`. Keep the renames when upstream touches a workflow.
 - The td workflows reuse upstream's composite actions (`build-setup`, `cmake-configure`, `cmake-build`,
   `install-dependencies`). After each sync, check their inputs and outputs still match what the td
