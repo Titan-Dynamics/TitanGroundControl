@@ -18,7 +18,7 @@ Item {
                                             ? cameraLoader.item.implicitWidth / cameraLoader.item.implicitHeight
                                             : QGroundControl.videoManager.aspectRatio
     property bool   _showGrid:          QGroundControl.settingsManager.videoSettings.gridLines.rawValue
-    property bool   _showHud:           QGroundControl.settingsManager.videoSettings.hudOverlay.rawValue && !useSmallFont
+    property bool   _showHud:           QGroundControl.settingsManager.videoSettings.hudOverlay.rawValue
     property var    _dynamicCameras:    globals.activeVehicle ? globals.activeVehicle.cameraManager : null
     property bool   _connected:         globals.activeVehicle ? !globals.activeVehicle.communicationLost : false
     property int    _curCameraIndex:    _dynamicCameras ? _dynamicCameras.currentCamera : 0
