@@ -124,6 +124,7 @@ Map {
 
         onActiveChanged: {
             if (active) {
+                wheelZoomAnimation.stop()
                 // Capture both the screen point and its geo coordinate once at pinch start.
                 // alignCoordinateToPoint requires a fixed screen anchor; using the live
                 // centroid.position causes the map to pan as fingers drift.
@@ -148,15 +149,40 @@ Map {
         //   - macOS (cocoa): trackpad scroll events are correctly reported as PointerDevice.TouchPad
         //     but are excluded by the Mouse-only default.
         // Accepting both Mouse and TouchPad on all platforms is harmless and covers every case.
+        id:                 wheelHandler
         acceptedDevices:    PointerDevice.Mouse | PointerDevice.TouchPad
         rotationScale:      1 / 120
 
+        // Wheel steps accumulate into zoomTarget and wheelZoomAnimation eases toward it, keeping the
+        // coordinate under the cursor fixed on every frame
+        property real   zoomTarget
+        property real   animatedZoom
+        property var    anchorCoord
+        property point  anchorPoint
+
         onWheel: (event) => {
-            const zoomDelta = event.angleDelta.y * rotationScale
-            const mouseGeoPos = _map.toCoordinate(Qt.point(event.x, event.y), false)
-            _map.zoomLevel = Math.max(_map.zoomLevel + zoomDelta, 0)
-            _map.alignCoordinateToPoint(mouseGeoPos, Qt.point(event.x, event.y))
+            anchorPoint = Qt.point(event.x, event.y)
+            anchorCoord = _map.toCoordinate(anchorPoint, false)
+            const baseZoom = wheelZoomAnimation.running ? zoomTarget : _map.zoomLevel
+            zoomTarget = Math.min(Math.max(baseZoom + event.angleDelta.y * rotationScale, _map.minimumZoomLevel), _map.maximumZoomLevel)
+            wheelZoomAnimation.stop()
+            wheelZoomAnimation.from = _map.zoomLevel
+            wheelZoomAnimation.to = zoomTarget
+            wheelZoomAnimation.start()
         }
+
+        onAnimatedZoomChanged: {
+            _map.zoomLevel = animatedZoom
+            _map.alignCoordinateToPoint(anchorCoord, anchorPoint)
+        }
+    }
+
+    NumberAnimation {
+        id:             wheelZoomAnimation
+        target:         wheelHandler
+        property:       "animatedZoom"
+        duration:       200
+        easing.type:    Easing.OutCubic
     }
 
     // We specifically do not use a DragHandler for panning. It just causes too many problems if you overlay anything else like a Flickable above it.
@@ -183,6 +209,7 @@ Map {
         }
 
         onGestureStarted: (gesture) => {
+            wheelZoomAnimation.stop()
             dragActive = true
             gesture.grab()
             mapPanStart()

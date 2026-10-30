@@ -24,6 +24,7 @@ rather than in `AGENTS.md` / `CLAUDE.md`, which are upstream files.
 | AI hooks on `Vehicle` | `aiChatController`, `loiterRadiusFact()`, `flightModeFromCustomMode()`, `lastGotoCoordinate()`, `guidedModeGotoLocationSent` signal in `src/Vehicle/Vehicle.*` |
 | AI voice replies while muted | `AudioOutput::say(text, mods, ignoreMute, rate)` and `stop()` in `src/Utilities/Audio/AudioOutput.*` |
 | Map POIs, goto indicator sync, Add POI | `src/FlyView/FlyViewMap.qml`, `src/FlyView/FlyViewMapClickDropPanel.qml` |
+| Smooth (animated, cursor-anchored) mouse-wheel zoom on the Fly/Plan map | `WheelHandler` and `wheelZoomAnimation` in `src/FlightMap/FlightMap.qml` |
 | Fly View toolbar (red Arm/Disarm, FLTMODE1-6 buttons, messages icon + severity pill) | `src/Toolbar/FlyViewToolBar.qml`, `src/Toolbar/MainStatusIndicator.qml` |
 | Short FBW mode names | `src/QmlControls/TDHelpers.qml` (singleton), used by `src/Toolbar/FlightModeIndicator.qml` |
 | Battery tooltip metrics and 0% icon fix | `src/Toolbar/BatteryIndicator.qml` |
