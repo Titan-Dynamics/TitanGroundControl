@@ -50,6 +50,13 @@ Item {
     property var    _layerOccluders:        widgetLayer.occluders
     property var    _mapOccluders:          _layerOccluders.all.concat(customOverlay.customOccluders).map(r => Qt.rect(r.x + widgetLayer.x, r.y + widgetLayer.y, r.width, r.height))
 
+    // Titan: the 3D map takes the left half; the map, video and widgets keep the right half
+    property real   _map3DWidth:        Map3DState.shown ? width / 2 : 0
+
+    Behavior on _map3DWidth {
+        NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+    }
+
     property real   _fullItemZorder:    0
     property real   _pipItemZorder:     QGroundControl.zOrderWidgets
 
@@ -60,6 +67,7 @@ Item {
     Item {
         id:                 mapHolder
         anchors.fill:       parent
+        anchors.leftMargin: _map3DWidth
 
         // Map engine switch (issue #14901): QtLocation FlyViewMap or the
         // experimental GeoMap engine, only one instantiated at a time. The
@@ -84,8 +92,8 @@ Item {
                 viewportRect:           Qt.rect(widgetLayer.x, widgetLayer.y, widgetLayer.width, widgetLayer.height)
                 occluders:              _mapOccluders
                 mapName:                "FlightDisplayView"
-                enabled:                !_is3DMode && !Map3DState.shown
-                visible:                !_is3DMode && !Map3DState.shown
+                enabled:                !_is3DMode
+                visible:                !_is3DMode
             }
         }
 
@@ -103,8 +111,8 @@ Item {
                 chromeTopMargin:        widgetLayer.y + _layerOccluders.topRight.y + _layerOccluders.topRight.height + _widgetMargin
                 chromeBottomMargin:     mapHolder.height - widgetLayer.y - Math.min(_layerOccluders.pipView.y, _layerOccluders.virtualJoystickLeft.y) + ScreenTools.defaultFontPixelWidth / 2
                 mapName:                "FlightDisplayView"
-                enabled:                !_is3DMode && !Map3DState.shown
-                visible:                !_is3DMode && !Map3DState.shown
+                enabled:                !_is3DMode
+                visible:                !_is3DMode
             }
         }
 
@@ -190,21 +198,6 @@ Item {
             visible:            false
         }
 
-        // Titan: Mission Planner style 3D map in place of the map while shown
-        Loader {
-            id:           map3DLoader
-            z:            1
-            anchors.fill: parent
-            active:       Map3DState.shown
-
-            sourceComponent: Component {
-                Map3DView {
-                    map2DCenter:    _mapControl ? _mapControl.center : undefined
-                    topInset:       toolbar.height
-                }
-            }
-        }
-
         Loader {
             id:           viewer3DLoader
             z:            1
@@ -226,6 +219,23 @@ Item {
         }
     }
 
+    // Titan: Mission Planner style 3D map, kept loaded while its half animates closed
+    Loader {
+        id:             map3DLoader
+        anchors.left:   parent.left
+        anchors.top:    parent.top
+        anchors.bottom: parent.bottom
+        width:          _map3DWidth
+        active:         _map3DWidth >= 1
+
+        sourceComponent: Component {
+            Map3DView {
+                map2DCenter:    _mapControl ? _mapControl.center : undefined
+                topInset:       toolbar.height
+            }
+        }
+    }
+
     // Frosted glass blur behind the toolbar
     Item {
         id:             toolbarBlur
@@ -239,17 +249,39 @@ Item {
         ShaderEffectSource {
             id:             blurSource
             sourceItem:     mapHolder
-            anchors.fill:   parent
-            sourceRect:     Qt.rect(0, 0, toolbarBlur.width, toolbarBlur.height)
+            x:              mapHolder.x
+            width:          mapHolder.width
+            height:         parent.height
+            sourceRect:     Qt.rect(0, 0, width, height)
             visible:        false
         }
 
         MultiEffect {
-            anchors.fill:   parent
+            anchors.fill:   blurSource
             source:         blurSource
             blurEnabled:    true
             blur:           0.6
             blurMax:        48
+        }
+
+        ShaderEffectSource {
+            id:             map3DBlurSource
+            sourceItem:     map3DLoader.item ? map3DLoader : null
+            live:           map3DBlur.visible
+            width:          map3DLoader.width
+            height:         parent.height
+            sourceRect:     Qt.rect(0, 0, width, height)
+            visible:        false
+        }
+
+        MultiEffect {
+            id:             map3DBlur
+            anchors.fill:   map3DBlurSource
+            source:         map3DBlurSource
+            blurEnabled:    true
+            blur:           0.6
+            blurMax:        48
+            visible:        !!map3DLoader.item
         }
     }
 
