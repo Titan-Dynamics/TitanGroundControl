@@ -751,7 +751,8 @@ ApplicationWindow {
             }
         }
 
-        onOpened: {
+        // Load before the enter transition (opened is only emitted once it finishes) so the content animates in
+        onAboutToShow: {
             _expanded                               = false;
             indicatorDrawerLoader.sourceComponent   = indicatorDrawer.sourceComponent
         }
@@ -759,6 +760,18 @@ ApplicationWindow {
             _expanded                               = false
             indicatorItem                           = undefined
             indicatorDrawerLoader.sourceComponent   = undefined
+        }
+
+        transformOrigin: Popup.Top
+
+        enter: Transition {
+            NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: 200; easing.type: Easing.OutCubic }
+            NumberAnimation { property: "scale"; from: 0.95; to: 1.0; duration: 200; easing.type: Easing.OutCubic }
+        }
+
+        exit: Transition {
+            NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: 150; easing.type: Easing.InCubic }
+            NumberAnimation { property: "scale"; from: 1.0; to: 0.95; duration: 150; easing.type: Easing.InCubic }
         }
 
         background: Item {
@@ -796,13 +809,16 @@ ApplicationWindow {
 
         contentItem: QGCFlickable {
             id:             indicatorDrawerLoaderFlickable
-            implicitWidth:  indicatorDrawer._fillWindow ? _availableWidth : Math.min(_availableWidth, indicatorDrawerLoader.width)
-            implicitHeight: indicatorDrawer._fillWindow ? _availableHeight : Math.min(_availableHeight, indicatorDrawerLoader.height)
+            implicitWidth:  indicatorDrawer._fillWindow ? _fillWidth : Math.min(_availableWidth, indicatorDrawerLoader.width)
+            implicitHeight: indicatorDrawer._fillWindow ? Math.min(_fillHeight, indicatorDrawerLoader.height) : Math.min(_availableHeight, indicatorDrawerLoader.height)
             contentWidth:   indicatorDrawerLoader.width
             contentHeight:  indicatorDrawerLoader.height
 
             property real _availableWidth:  mainWindow.contentItem.width - (2 * indicatorDrawer._margins) - (indicatorDrawer.padding * 2)
             property real _availableHeight: mainWindow.contentItem.height - ScreenTools.toolbarHeight - (2 * indicatorDrawer._margins) - (indicatorDrawer.padding * 2)
+            // On desktop, fill-window drawers take at most half the window in each direction (padding included)
+            property real _fillWidth:       ScreenTools.isMobile ? _availableWidth : Math.min(_availableWidth, (mainWindow.contentItem.width / 2) - (indicatorDrawer.padding * 2))
+            property real _fillHeight:      ScreenTools.isMobile ? _availableHeight : Math.min(_availableHeight, (mainWindow.contentItem.height / 2) - (indicatorDrawer.padding * 2))
 
             Loader {
                 id:         indicatorDrawerLoader

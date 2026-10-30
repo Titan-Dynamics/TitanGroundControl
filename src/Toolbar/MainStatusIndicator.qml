@@ -281,20 +281,7 @@ RowLayout {
             RowLayout {
                 Layout.alignment:   Qt.AlignHCenter
                 spacing:            ScreenTools.defaultFontPixelWidth
-                // Disarm must stay reachable without parameters
-                visible:            parametersReady || _guidedController.showDisarm || _rebootRequired
-
-                QGCDelayButton {
-                    objectName: "mainStatusArmButton"
-                    enabled:    _armed || _guidedController.showArm
-                    text:       _armed ? qsTr("Disarm") : qsTr("Arm")
-                    visible:    _armed ? _guidedController.showDisarm : parametersReady
-
-                    onActivated: {
-                        _activeVehicle.armed = !_armed
-                        mainWindow.closeIndicatorDrawer()
-                    }
-                }
+                visible:            parametersReady || _rebootRequired
 
                 QGCDelayButton {
                     text:       qsTr("Force Arm")

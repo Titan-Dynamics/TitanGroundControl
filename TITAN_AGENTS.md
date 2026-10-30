@@ -54,8 +54,10 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
 - The status drawer has **no Emergency Stop button**, and its unread-message **severity pill sits on the
   toolbar messages icon**, not on the status text. The messages icon opens the drawer on its Messages tab.
 - The status text is **clickable only while disconnected** ("Click to manually connect").
-- The upstream drawer's own Arm/Disarm, Force Arm (opt-in setting), Primary Link and Reboot controls are
-  kept.
+- The status drawer has **no Arm/Disarm button** either (arming lives on the toolbar); its Force Arm (opt-in
+  setting), Primary Link and Reboot controls are kept.
+- Toolbar indicator drawers fade and grow in and out. `fillWindow` drawers (the status drawer) are capped at
+  half the window width and height on desktop (`MainWindow.qml`); on mobile they still fill the window.
 - In split view the Fly/Plan view stays enabled next to the drawer: `enabled: !toolDrawer.visible || !_splitExpanded`.
 - The PiP only constrains the left-side widgets while docked in the bottom-left quadrant (`inBottomLeft`),
   because it can be dragged anywhere. Its height uses the configured aspect ratio, falling back to the
