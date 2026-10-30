@@ -35,6 +35,10 @@ rather than in `AGENTS.md` / `CLAUDE.md`, which are upstream files.
 | Settings / Vehicle Config sidebar and parameter editor polish | `src/QmlControls/AppSettings.qml`, `src/Vehicle/VehicleSetup/VehicleConfigView.qml`, `src/QmlControls/ParameterEditor.qml` |
 | Inline searchable sections for hand-coded settings pages | `tools/generators/settings_qml/emit.py`, `model.py` (`"sections"` key in `SettingsPages.json`) |
 | Branding | `cmake/CustomOptions.cmake` (`QGC_APP_NAME` = `TitanGroundControl`), `src/QmlControls/QGCPalette.cc` (orange accent, `brandPrimary`/`brandAccent`), `src/API/QGCCorePlugin.*` (update check and download URLs), icons under `resources/`, `deploy/`, `android/res/` |
+| Titan 3D map: a port of Mission Planner's Map3D (TitanPlanner `Controls/Map3D`) on Qt's RHI, separate from the 2D map | `src/TitanMap3D/`: `Map3DItem.*` (QML item, gathers telemetry, mission, ADS-B and settings on the GUI thread), `Map3DRenderer.*` (render-thread frame, terrain engine GPU side, draw passes), `Map3DScene.*` (VehicleTracker, CameraRig, Kalman filter), `Map3DTerrain.*` (quadtree LOD, tile mesh builder), `Map3DTileLoader.*` (imagery + Terrarium elevation through the shared tile cache), `Map3DGeo.*` (UTM world frame, tile maths, frustum), `Map3DOverlays.*` (indicator lines, turn arc, trail), `Map3DClouds.*`, `Map3DModel.*` (STL loading), `shaders/`, `models/*.stl`, `images/wp_3d*.png`, QML `Map3DView.qml` (mouse controls, HUD overlay, ADS-B tooltip), `Map3DStatsPanel.qml`, `Map3DSettingsDialog.qml`, `Map3DState.qml` (singleton), tool strip actions; hooks in `src/FlyView/FlyView.qml` (`map3DLoader`, 2D maps hidden while shown), `src/FlyView/FlyViewWidgetLayer.qml` (map scale hidden) and `src/FlyView/FlyViewToolStripActionList.qml`; tests in `test/TitanMap3D/` |
+| 3D map settings (Mission Planner's set and defaults) | `src/Settings/Map3DSettings.*`, `src/Settings/Map3D.SettingsGroup.json` (INI group `TitanMap3D`), `src/AppSettings/pages/Map3D.SettingsUI.json`, "3D Map" entry in `src/AppSettings/pages/SettingsPages.json` (replaces upstream's deprecated "3D View" page) and `Map3DSettings.qml` in the generated-pages list of `src/AppSettings/CMakeLists.txt` |
+| Mission Planner HUD (instrument panel option, video overlay, 3D map overlay) | `src/TitanHud/` (`HudData.*`, `HudItem.*`, `TitanHud.qml`, `TitanHudInstrument.qml`), `hudOverlay` facts in `Video.SettingsGroup.json` and `Map3D.SettingsGroup.json`, "Mission Planner HUD" in the `instrumentQmlFile2` enum of `src/Settings/FlyView.SettingsGroup.json`, overlay in `src/FlyView/FlightDisplayViewVideo.qml` |
+| Vehicle model decimation (TitanPlanner STLs) | `tools/titan/convert_vehicle_models.py` |
 | Fork defaults | `src/Settings/*.SettingsGroup.json` (audio muted, 10 km guided max altitude, no go-to distance limit, Horizontal Compass & Attitude instrument, Google maps, aspect-ratio dropdown), indoor palette on mobile in `QGCCorePlugin.cc` |
 | MSVC build flags | `/bigobj` in `CMakeLists.txt`, `/Zc:preprocessor` in `cmake/Toolchain.cmake` |
 
@@ -72,6 +76,34 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   in-place upgrade deleted the new install. `CPACK_NSIS_DEFINES` is overwritten by CPack and does not work.
 - The app version comes only from `v<digit>*` tags (`cmake/modules/Git.cmake`), so the moving `dev`
   release tag is never picked up as a version.
+- The **3D map is its own view and renderer**, not the GeoMap engine: the tool strip's 3D button shows
+  `Map3DView` over the Fly View (like upstream's Viewer3D) and hides the 2D map. The 2D map and the
+  `useGeoMapEngine` default are upstream's. Upstream's Viewer3D stays compiled and tested but is reachable from
+  neither the tool strip nor the settings pages; upstream itself deprecates it. GeoMap was tried first and
+  dropped: even its 2D mode is a Qt Quick 3D scene whose per-frame sync made the whole Fly View lag.
+- The 3D map follows TitanPlanner's `Map3D` line by line where it can: the camera rig (chase 0.8 m behind and
+  0.2 m above a model of about 1 m span, FPV kept a metre above the ground, free-look 100 m above the 2D map's
+  centre while disconnected), the mouse (drag 0.5 deg/px orbit and 0.005 m/px height within +/-5 m, wheel
+  0.1 m per notch within 0.1-10 m, double-click resets the angle, free-look 0.3 deg/px), the Kalman tracker,
+  the UTM world frame, the quadtree LOD, skirts, fog, sky, clouds (with .NET's seeded `Random`), the lines,
+  trail, markers and ADS-B. The vehicle is drawn at the terrain under it plus its height above home, as in
+  Mission Planner. Deliberate differences: elevation is Terrarium tiles on the imagery's XYZ grid (QGC's
+  Copernicus terrain fetches ~1 km tiles one at a time, far too slow for a 30-150 km view), dead reckoning is
+  capped at 5 s, the nav-bearing target is indexed by mission sequence number, and pinch zoom is added for
+  touch screens.
+- The renderer runs Mission Planner's frame on the render thread (`QQuickRhiItemRenderer::render`); the GUI
+  thread only copies a `FrameInput` in `synchronize`. Pass 2 (mission, vehicle) is kept in front of the terrain
+  by drawing into depth range [0, 0.05] with the terrain in [0.05, 1], equivalent to Mission Planner clearing
+  depth between passes. Lines are screen-space quads (`line.vert`), since D3D11 and Metal have no wide lines.
+- Imagery uses the 2D map's provider when it is a satellite type (so cached tiles are shared), the same
+  vendor's satellite type otherwise, else Google Satellite. Network tiles are cached only after they decode.
+- `HudData` decodes NAV_CONTROLLER_OUTPUT, HEARTBEAT, SYS_STATUS, EKF_STATUS_REPORT and AOA_SSA itself
+  because `Vehicle` does not keep them. The HUD is painted with QPainter (`HudItem`) on Mission Planner's
+  `fs = H/28` layout; over video and the 3D map it skips sky, ground and the horizon line (`drawBackground`).
+- The vehicle models are TitanPlanner's STLs decimated to 8000 triangles, kept in Mission Planner's frame
+  (millimetres): `Map3DModel` rotates them -90 deg about Z and the model matrix scales to metres, exactly as
+  for a custom STL. Regenerate them with `tools/titan/convert_vehicle_models.py` (needs a TitanPlanner checkout,
+  `numpy-stl` and `pyfqmr`).
 
 ## CI and Releases
 
@@ -103,6 +135,16 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   `uv`, create it with `python -m venv tools/.venv` and install the `scripts` group from `tools/pyproject.toml`.
 - In Qt Creator, set the kit's CMake tool to a 3.x CMake and its generator to Ninja *before* first opening
   the project. Otherwise clear `.qtcreator/` and the kit's build directory.
+- Fork C++ types used from QML are compiled into the app target (`target_sources`), so they register in the
+  app's QML module; the fork's QML modules (`TitanHudModule`, `TitanMap3DModule`) are QML-only and use
+  `NO_PLUGIN`. A static QML module with C++ types and `NO_PLUGIN` loses its type registrations at link time
+  ("X is not a type" at runtime).
+- `qt_add_shaders` on the app target from a subdirectory needs absolute paths plus `BASE`; relative paths
+  resolve against the top-level directory at finalization.
+- `TitanGroundControl.exe --simple-boot-test --allow-multiple` with `QT_FORCE_STDERR_LOGGING=1` is the quickest
+  QML smoke test; without it a GUI build sends Qt messages to the debugger, not stderr. Test against SITL, not a
+  second GCS on a real vehicle's link. Debug builds use Qt's unoptimized libraries: judge frame rates in a
+  Release or Profile build.
 
 ## Syncing with Upstream
 
@@ -116,7 +158,12 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
    aspect-ratio dropdown without a conflict. Diff every fork feature above against the previous fork
    `HEAD`, including settings JSON enums and defaults, resource registration, renamed C++ or QML APIs
    used by fork code (e.g. `Vehicle::flying()` became `underway()` / `airborne()`), and new upstream
-   defaults that override fork choices (e.g. `QGC_MACOS_UNIVERSAL_BUILD` defaulting to OFF).
+   defaults that override fork choices (e.g. `QGC_MACOS_UNIVERSAL_BUILD` defaulting to OFF). Re-check the fork
+  hooks inside upstream files: `FlyView.qml` (`map3DLoader`, `!Map3DState.shown` on both 2D map engines),
+  `FlyViewWidgetLayer.qml` (map scale), `FlyViewToolStripActionList.qml` (`Map3DShowAction`,
+  `Map3DSettingsAction`), `FlightDisplayViewVideo.qml` (`TitanHud`), `src/AppSettings/CMakeLists.txt`
+  (generated pages list), and `HudData.cc` / `Map3DItem.cc` against the `Vehicle`, `MissionManager`,
+  `ADSBVehicle`, tile cache (`QGeoFileTileCacheQGC`, `QGeoTileFetcherQGC`) and `UrlFactory` APIs they use.
 5. Re-apply the CI policy to every upstream workflow, including new ones, and re-check the td workflows.
 6. Build Debug with tests against the required Qt. Before attributing a test failure to the merge, compare
    with a control build of pure `upstream/master` (a `git worktree` in the gitignored `build/` directory).
@@ -135,6 +182,8 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   it, so set it to the new tag by hand after each release and merge that to `master`.
 - `AIChatWidget.qml` and `AISettings.qml` reference `qgcPal.textHighlight` / `textHighlightForeground`,
   which do not exist in `QGCPalette`. Text selection falls back to default colors and QML logs a warning.
+- The 3D map does not port Mission Planner's ADS-B aircraft type/category (QGC's `ADSBVehicle` has no raw
+  feed record) or its "grounded traffic" styling (no on-ground flag either).
 
 ## Commits
 
