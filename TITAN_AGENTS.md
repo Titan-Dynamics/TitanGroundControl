@@ -35,9 +35,9 @@ rather than in `AGENTS.md` / `CLAUDE.md`, which are upstream files.
 | Settings / Vehicle Config sidebar and parameter editor polish | `src/QmlControls/AppSettings.qml`, `src/Vehicle/VehicleSetup/VehicleConfigView.qml`, `src/QmlControls/ParameterEditor.qml` |
 | Inline searchable sections for hand-coded settings pages | `tools/generators/settings_qml/emit.py`, `model.py` (`"sections"` key in `SettingsPages.json`) |
 | Branding | `cmake/CustomOptions.cmake` (`QGC_APP_NAME` = `TitanGroundControl`), `src/QmlControls/QGCPalette.cc` (orange accent, `brandPrimary`/`brandAccent`), `src/API/QGCCorePlugin.*` (update check and download URLs), icons under `resources/`, `deploy/`, `android/res/` |
-| Titan 3D map: a port of Mission Planner's Map3D (TitanPlanner `Controls/Map3D`) on Qt's RHI, separate from the 2D map | `src/TitanMap3D/`: `Map3DItem.*` (QML item, gathers telemetry, mission, ADS-B and settings on the GUI thread), `Map3DRenderer.*` (render-thread frame, terrain engine GPU side, draw passes), `Map3DScene.*` (VehicleTracker, CameraRig, Kalman filter), `Map3DTerrain.*` (quadtree LOD, tile mesh builder), `Map3DTileLoader.*` (imagery + Terrarium elevation through the shared tile cache), `Map3DGeo.*` (UTM world frame, tile maths, frustum), `Map3DOverlays.*` (indicator lines, turn arc, trail), `Map3DClouds.*`, `Map3DModel.*` (STL loading), `shaders/`, `models/*.stl`, `images/wp_3d*.png`, QML `Map3DView.qml` (mouse controls, HUD overlay, ADS-B tooltip), `Map3DStatsPanel.qml`, `Map3DSettingsDialog.qml`, `Map3DState.qml` (singleton), tool strip actions; hooks in `src/FlyView/FlyView.qml` (`map3DLoader` in `mapHolder`, `_map3DCoversMap` on both 2D map engines), `src/FlyView/FlyViewWidgetLayer.qml` (map scale and GeoMap controls hidden) and `src/FlyView/FlyViewToolStripActionList.qml`; tests in `test/TitanMap3D/` |
+| Titan 3D map: a port of Mission Planner's Map3D (TitanPlanner `Controls/Map3D`) on Qt's RHI, separate from the 2D map | `src/TitanMap3D/`: `Map3DItem.*` (QML item, gathers telemetry, mission, ADS-B and settings on the GUI thread), `Map3DRenderer.*` (render-thread frame, terrain engine GPU side, draw passes), `Map3DScene.*` (VehicleTracker, CameraRig, Kalman filter), `Map3DTerrain.*` (quadtree LOD, tile mesh builder), `Map3DTileLoader.*` (imagery + Terrarium elevation through the shared tile cache), `Map3DGeo.*` (UTM world frame, tile maths, frustum), `Map3DOverlays.*` (indicator lines, turn arc, trail), `Map3DClouds.*`, `Map3DModel.*` (STL loading), `shaders/`, `models/*.stl`, `images/wp_3d*.png`, QML `Map3DView.qml` (mouse controls, ADS-B tooltip), `Map3DStatsPanel.qml`, `Map3DSettingsDialog.qml`, `Map3DState.qml` (singleton), tool strip actions; hooks in `src/FlyView/FlyView.qml` (`map3DLoader` in `mapHolder`, `_map3DCoversMap` on both 2D map engines), `src/FlyView/FlyViewWidgetLayer.qml` (map scale and GeoMap controls hidden) and `src/FlyView/FlyViewToolStripActionList.qml`; tests in `test/TitanMap3D/` |
 | 3D map settings (Mission Planner's set and defaults) | `src/Settings/Map3DSettings.*`, `src/Settings/Map3D.SettingsGroup.json` (INI group `TitanMap3D`), `src/AppSettings/pages/Map3D.SettingsUI.json`, "3D Map" entry in `src/AppSettings/pages/SettingsPages.json` (replaces upstream's deprecated "3D View" page) and `Map3DSettings.qml` in the generated-pages list of `src/AppSettings/CMakeLists.txt` |
-| Mission Planner HUD (instrument panel option, video overlay, 3D map overlay) | `src/TitanHud/` (`HudData.*`, `HudItem.*`, `TitanHud.qml`, `TitanHudInstrument.qml`), `hudOverlay` facts in `Video.SettingsGroup.json` and `Map3D.SettingsGroup.json`, "Mission Planner HUD" in the `instrumentQmlFile2` enum of `src/Settings/FlyView.SettingsGroup.json`, overlay in `src/FlyView/FlightDisplayViewVideo.qml` |
+| Mission Planner HUD (instrument panel option, video overlay) | `src/TitanHud/` (`HudData.*`, `HudItem.*`, `TitanHud.qml`, `TitanHudInstrument.qml`), `hudOverlay` fact in `Video.SettingsGroup.json`, "Mission Planner HUD" in the `instrumentQmlFile2` enum of `src/Settings/FlyView.SettingsGroup.json`, overlay in `src/FlyView/FlightDisplayViewVideo.qml` |
 | Vehicle model decimation (TitanPlanner STLs) | `tools/titan/convert_vehicle_models.py` |
 | Fork defaults | `src/Settings/*.SettingsGroup.json` (audio muted, 10 km guided max altitude, no go-to distance limit, Horizontal Compass & Attitude instrument, Google maps, aspect-ratio dropdown), indoor palette on mobile in `QGCCorePlugin.cc` |
 | MSVC build flags | `/bigobj` in `CMakeLists.txt`, `/Zc:preprocessor` in `cmake/Toolchain.cmake` |
@@ -108,9 +108,21 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   depth between passes. Lines are screen-space quads (`line.vert`), since D3D11 and Metal have no wide lines.
 - Imagery uses the 2D map's provider when it is a satellite type (so cached tiles are shared), the same
   vendor's satellite type otherwise, else Google Satellite. Network tiles are cached only after they decode.
+  The loader reads the shared cache database itself, on one thread with its own SQLite connection
+  (`readCachedTile`), rather than through QGC's cache worker: that worker serves one request at a time and
+  recounts the whole cache (`computeTotals`, ~180 ms on a 180 MB cache) whenever its queue empties, so cached
+  tiles took ~200 ms each instead of ~2 ms. Writes still go through the worker.
+- The tiles under the camera are requested at every level at once, ahead of everything else
+  (`TerrainQuadtree::_requestCameraColumn`). Mission Planner's traversal only asks for a tile's children once
+  it has loaded, so the ground below would otherwise arrive one round trip per level.
+- The 3D map has no HUD overlay (Mission Planner's `map3d_hud_overlay`); it was removed at the user's request.
 - `HudData` decodes NAV_CONTROLLER_OUTPUT, HEARTBEAT, SYS_STATUS, EKF_STATUS_REPORT and AOA_SSA itself
   because `Vehicle` does not keep them. The HUD is painted with QPainter (`HudItem`) on Mission Planner's
-  `fs = H/28` layout; over video and the 3D map it skips sky, ground and the horizon line (`drawBackground`).
+  `fs = H/28` layout; over video it skips sky, ground and the horizon line (`drawBackground`). Frames are
+  painted on the item's own thread and shown as a texture when done, not by a QQuickPaintedItem, which paints
+  during the scene graph sync: a frame takes QPainter ~35 ms in a Debug build and held the whole window to
+  ~9 fps. Text comes from cached outlined glyphs, stroked then filled as Mission Planner does, so it stays
+  white with a dark border.
 - The vehicle models are TitanPlanner's STLs decimated to 8000 triangles, kept in Mission Planner's frame
   (millimetres): `Map3DModel` rotates them -90 deg about Z and the model matrix scales to metres, exactly as
   for a custom STL. Regenerate them with `tools/titan/convert_vehicle_models.py` (needs a TitanPlanner checkout,
@@ -158,6 +170,8 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   QML smoke test; without it a GUI build sends Qt messages to the debugger, not stderr. Test against SITL, not a
   second GCS on a real vehicle's link. Debug builds use Qt's unoptimized libraries: judge frame rates in a
   Release or Profile build.
+- `JsonResourceAuditTest` passes but takes about two minutes in a Debug build, past ctest's 60 s limit; run
+  `TitanGroundControl.exe --unittest:JsonResourceAuditTest --allow-multiple` directly to see it finish.
 
 ## Syncing with Upstream
 
@@ -177,7 +191,8 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   (`Map3DShowAction`, `Map3DSettingsAction`), `FlightDisplayViewVideo.qml` (`TitanHud`, the `_ar` guard),
   `src/AppSettings/CMakeLists.txt`
   (generated pages list), and `HudData.cc` / `Map3DItem.cc` against the `Vehicle`, `MissionManager`,
-  `ADSBVehicle`, tile cache (`QGeoFileTileCacheQGC`, `QGeoTileFetcherQGC`) and `UrlFactory` APIs they use.
+  `ADSBVehicle`, tile cache (`QGeoFileTileCacheQGC`, `QGeoTileFetcherQGC`, `QGCTileCacheDatabase` and its
+  `Tiles` table) and `UrlFactory` APIs they use.
 5. Re-apply the CI policy to every upstream workflow, including new ones, and re-check the td workflows.
 6. Build Debug with tests against the required Qt. Before attributing a test failure to the merge, compare
    with a control build of pure `upstream/master` (a `git worktree` in the gitignored `build/` directory).
