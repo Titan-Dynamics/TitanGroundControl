@@ -1,9 +1,13 @@
 #pragma once
 
+#include <QtCore/QHash>
 #include <QtCore/QPointer>
+#include <QtCore/QThreadPool>
+#include <QtCore/QTimer>
 #include <QtGui/QColor>
 #include <QtGui/QFont>
-#include <QtQuick/QQuickPaintedItem>
+#include <QtGui/QImage>
+#include <QtQuick/QQuickItem>
 
 #include "HudData.h"
 
@@ -13,7 +17,10 @@ class QPainter;
 /// speed and altitude tapes with target bugs, cross-track and turn rate, battery, GPS/EKF/vibration
 /// badges, status texts and the flight mode. With drawBackground off (the video overlay) the
 /// sky, ground and horizon line are skipped and everything else is drawn over the host.
-class HudItem : public QQuickPaintedItem
+///
+/// Frames are painted on a thread of their own and shown once done. A QQuickPaintedItem paints during the scene
+/// graph sync, holding up the whole window, and a frame took QPainter about 35 ms in a Debug build.
+class HudItem : public QQuickItem
 {
     Q_OBJECT
     QML_ELEMENT
@@ -32,6 +39,7 @@ class HudItem : public QQuickPaintedItem
 
 public:
     explicit HudItem(QQuickItem* parent = nullptr);
+    ~HudItem() override;
 
     HudData* hudData() const { return _data; }
 
@@ -41,7 +49,10 @@ public:
 
     void setDrawBackground(bool draw);
 
-    void paint(QPainter* painter) override;
+protected:
+    QSGNode* updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data) override;
+    void geometryChange(const QRectF& newGeometry, const QRectF& oldGeometry) override;
+    void itemChange(ItemChange change, const ItemChangeData& value) override;
 
 signals:
     void hudDataChanged();
@@ -102,9 +113,26 @@ private:
         QString speedUnits;
         QString altitudeUnits;
         QString distanceUnits;
+
+        // The item's size and options, taken with the telemetry for the painting thread
+        qreal width = 0.0;
+        qreal height = 0.0;
+        bool drawBackground = true;
+        bool showHeading = true;
+        bool showSpeed = true;
+        bool showAltitude = true;
+        bool showRollPitch = true;
+        bool showXtrack = true;
+        bool showBattery = true;
+        bool showGps = true;
+        bool showLink = true;
+        bool showWaypoint = true;
+        bool showWind = true;
     };
 
     Frame _collectFrame() const;
+    void _requestPaint();
+    void _paint(QPainter& p, const Frame& f) const;
     void _connectVehicle(Vehicle* vehicle);
 
     void _drawHorizon(QPainter& p, const Frame& f) const;
@@ -124,6 +152,17 @@ private:
     void _drawText(QPainter& p, qreal x, qreal y, qreal size, const QString& text, const QColor& color,
                    bool centered = false) const;
     qreal _textWidth(qreal size, const QString& text) const;
+
+    /// A character with its outline, drawn once and blitted from then on, as Mission Planner's HUD caches its
+    /// glyphs: stroking every string's outline each frame took about 90 ms a frame in a Debug build.
+    struct Glyph
+    {
+        QImage image;    ///< Device pixels; null for blanks
+        QPointF origin;  ///< Of the image, from the top of the em box at the pen position
+        qreal advance = 0;
+    };
+
+    const Glyph& _glyph(QChar character, int pixelSize, QRgb color, qreal devicePixelRatio) const;
     void _drawArrowReadout(QPainter& p, qreal x, qreal y, qreal size, const QString& label, double direction,
                            bool showArrow, const QString& value, const Frame& f) const;
     void _drawTapePointer(QPainter& p, qreal tapeWidth, qreal fs, bool rightSide, bool extended) const;
@@ -151,4 +190,15 @@ private:
     QColor _groundBottom{0x36, 0x42, 0x05};
     QColor _targetHeadingColor{0xFF, 0x91, 0x1B};
     QString _fontFamily{QStringLiteral("Arial")};
+
+    // Only the painting thread uses these
+    mutable QHash<quint64, Glyph> _glyphs;
+    mutable qreal _glyphsDevicePixelRatio = 0;
+
+    QThreadPool _painter;
+    QTimer _paintInterval;
+    QImage _image;  ///< The latest finished frame
+    bool _imageChanged = false;
+    bool _painting = false;
+    bool _paintPending = false;
 };

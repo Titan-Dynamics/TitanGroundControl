@@ -4,6 +4,7 @@
 #include <cmath>
 #include <utility>
 
+#include <QtConcurrent/QtConcurrentRun>
 #include <QtCore/QtMath>
 #include <QtGui/QFontMetricsF>
 #include <QtGui/QLinearGradient>
@@ -11,6 +12,8 @@
 #include <QtGui/QPainterPath>
 #include <QtGui/QPen>
 #include <QtGui/QPolygonF>
+#include <QtQuick/QQuickWindow>
+#include <QtQuick/QSGSimpleTextureNode>
 
 #include "BatteryFactGroupListModel.h"
 #include "Fact.h"
@@ -33,6 +36,12 @@ const QColor kBadgePurple(0x8B, 0x3F, 0xB2);
 const QColor kShade(0, 0, 0, 40);
 const QColor kAltGround(222, 184, 135, 100);
 constexpr double kCriticalAoa = 25.0;
+/// Mission Planner's 2 px text outline pen
+constexpr qreal kTextOutlineWidth = 2.0;
+/// Plenty for every size and colour in use; dropped and rebuilt if the HUD ever churns through more
+constexpr qsizetype kMaxCachedGlyphs = 4096;
+/// At most about 60 frames a second
+constexpr int kMinPaintIntervalMs = 16;
 
 double wrap180(double degrees)
 {
@@ -59,10 +68,25 @@ double groupValue(FactGroup* group, const char* name)
 }  // namespace
 
 HudItem::HudItem(QQuickItem* parent)
-    : QQuickPaintedItem(parent)
+    : QQuickItem(parent)
 {
-    setAntialiasing(true);
-    setFillColor(Qt::transparent);
+    setFlag(ItemHasContents, true);
+    _painter.setMaxThreadCount(1);
+    _paintInterval.setSingleShot(true);
+    _paintInterval.setInterval(kMinPaintIntervalMs);
+    (void) connect(&_paintInterval, &QTimer::timeout, this, [this]() {
+        if (_paintPending) {
+            _requestPaint();
+        }
+    });
+    (void) connect(this, &HudItem::optionsChanged, this, &HudItem::_requestPaint);
+}
+
+HudItem::~HudItem()
+{
+    // The painting thread uses this item's glyph cache
+    _painter.clear();
+    _painter.waitForDone();
 }
 
 void HudItem::setHudData(HudData* data)
@@ -75,13 +99,13 @@ void HudItem::setHudData(HudData* data)
     }
     _data = data;
     if (_data) {
-        (void) connect(_data, &HudData::dataChanged, this, [this]() { update(); });
+        (void) connect(_data, &HudData::dataChanged, this, &HudItem::_requestPaint);
         (void) connect(_data, &HudData::vehicleChanged, this,
                        [this]() { _connectVehicle(_data ? _data->vehicle() : nullptr); });
     }
     _connectVehicle(_data ? _data->vehicle() : nullptr);
     emit hudDataChanged();
-    update();
+    _requestPaint();
 }
 
 void HudItem::setDrawBackground(bool draw)
@@ -91,7 +115,7 @@ void HudItem::setDrawBackground(bool draw)
     }
     _drawBackground = draw;
     emit drawBackgroundChanged();
-    update();
+    _requestPaint();
 }
 
 void HudItem::_connectVehicle(Vehicle* vehicle)
@@ -105,15 +129,28 @@ void HudItem::_connectVehicle(Vehicle* vehicle)
     if (_connectedVehicle) {
         // Attitude arrives faster than the data tick; repaint on it so the horizon never lags
         for (Fact* fact : {_connectedVehicle->roll(), _connectedVehicle->pitch(), _connectedVehicle->heading()}) {
-            (void) connect(fact, &Fact::rawValueChanged, this, [this]() { update(); });
+            (void) connect(fact, &Fact::rawValueChanged, this, &HudItem::_requestPaint);
         }
     }
-    update();
+    _requestPaint();
 }
 
 HudItem::Frame HudItem::_collectFrame() const
 {
     Frame f;
+    f.width = width();
+    f.height = height();
+    f.drawBackground = _drawBackground;
+    f.showHeading = _showHeading;
+    f.showSpeed = _showSpeed;
+    f.showAltitude = _showAltitude;
+    f.showRollPitch = _showRollPitch;
+    f.showXtrack = _showXtrack;
+    f.showBattery = _showBattery;
+    f.showGps = _showGps;
+    f.showLink = _showLink;
+    f.showWaypoint = _showWaypoint;
+    f.showWind = _showWind;
     f.speedUnits = FactMetaData::appSettingsSpeedUnitsString();
     f.altitudeUnits = FactMetaData::appSettingsVerticalDistanceUnitsString();
     f.distanceUnits = FactMetaData::appSettingsHorizontalDistanceUnitsString();
@@ -206,44 +243,114 @@ HudItem::Frame HudItem::_collectFrame() const
     return f;
 }
 
-void HudItem::paint(QPainter* painter)
+void HudItem::_requestPaint()
 {
+    _paintPending = true;
+    if (_painting || _paintInterval.isActive() || !window() || !isVisible() || (width() < 1.0) || (height() < 1.0)) {
+        // Picked up when the running frame finishes, the interval ends, or the item is shown or resized
+        return;
+    }
+    _paintPending = false;
+    _painting = true;
+    _paintInterval.start();
+
     const Frame f = _collectFrame();
-    QPainter& p = *painter;
+    const qreal devicePixelRatio = window()->effectiveDevicePixelRatio();
+    (void) QtConcurrent::run(&_painter, [this, f, devicePixelRatio]() {
+        QImage image((QSizeF(f.width, f.height) * devicePixelRatio).toSize(), QImage::Format_ARGB32_Premultiplied);
+        image.setDevicePixelRatio(devicePixelRatio);
+        image.fill(Qt::transparent);
+        {
+            QPainter painter(&image);
+            _paint(painter, f);
+        }
+        return image;
+    }).then(this, [this](const QImage& image) {
+        _image = image;
+        _imageChanged = true;
+        _painting = false;
+        update();
+        if (_paintPending) {
+            _requestPaint();
+        }
+    });
+}
+
+void HudItem::geometryChange(const QRectF& newGeometry, const QRectF& oldGeometry)
+{
+    QQuickItem::geometryChange(newGeometry, oldGeometry);
+    if (newGeometry.size() != oldGeometry.size()) {
+        _requestPaint();
+    }
+}
+
+void HudItem::itemChange(ItemChange change, const ItemChangeData& value)
+{
+    QQuickItem::itemChange(change, value);
+    if ((change == ItemSceneChange) || (change == ItemVisibleHasChanged) ||
+        (change == ItemDevicePixelRatioHasChanged)) {
+        _requestPaint();
+    }
+}
+
+QSGNode* HudItem::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData*)
+{
+    auto* node = static_cast<QSGSimpleTextureNode*>(oldNode);
+    if (_image.isNull()) {
+        delete node;
+        return nullptr;
+    }
+    if (!node) {
+        node = new QSGSimpleTextureNode();
+        node->setOwnsTexture(true);
+        node->setFiltering(QSGTexture::Linear);
+        _imageChanged = true;
+    }
+    if (_imageChanged) {
+        node->setTexture(window()->createTextureFromImage(_image, QQuickWindow::TextureHasAlphaChannel));
+        _imageChanged = false;
+    }
+    // Stretched over a resize until the frame for the new size is in
+    node->setRect(boundingRect());
+    return node;
+}
+
+void HudItem::_paint(QPainter& p, const Frame& f) const
+{
     p.setRenderHint(QPainter::Antialiasing, true);
     p.setRenderHint(QPainter::TextAntialiasing, true);
 
-    if (_drawBackground) {
+    if (f.drawBackground) {
         _drawHorizon(p, f);
     }
-    if (_showRollPitch) {
+    if (f.showRollPitch) {
         _drawPitchLadder(p, f);
     }
     if (f.fixedWing) {
         _drawFlightPathVector(p, f);
     }
-    if (_showHeading) {
+    if (f.showHeading) {
         _drawHeadingTape(p, f);
     }
-    if (_showXtrack) {
+    if (f.showXtrack) {
         _drawXtrackAndTurnRate(p, f);
     }
-    if (_showSpeed) {
+    if (f.showSpeed) {
         _drawSpeedTape(p, f);
     }
-    if (_showAltitude) {
+    if (f.showAltitude) {
         _drawAltitudeTape(p, f);
     }
-    if (_showLink) {
+    if (f.showLink) {
         _drawLinkQuality(p, f);
     }
     if (f.fixedWing && !std::isnan(f.aoa)) {
         _drawAoaGauge(p, f);
     }
-    if (_showBattery) {
+    if (f.showBattery) {
         _drawBattery(p, f);
     }
-    if (_showGps) {
+    if (f.showGps) {
         _drawBadges(p, f);
     }
     _drawCenterMessages(p, f);
@@ -257,7 +364,56 @@ qreal HudItem::_textWidth(qreal size, const QString& text) const
 {
     QFont font(_fontFamily);
     font.setPixelSize(qMax(1, qRound(size)));
-    return QFontMetricsF(font).horizontalAdvance(text);
+    const QFontMetricsF metrics(font);
+    // Character by character, as _drawText places them
+    qreal width = 0.0;
+    for (const QChar character : text) {
+        width += metrics.horizontalAdvance(character);
+    }
+    return width;
+}
+
+const HudItem::Glyph& HudItem::_glyph(QChar character, int pixelSize, QRgb color, qreal devicePixelRatio) const
+{
+    if ((devicePixelRatio != _glyphsDevicePixelRatio) || (_glyphs.size() > kMaxCachedGlyphs)) {
+        _glyphs.clear();
+        _glyphsDevicePixelRatio = devicePixelRatio;
+    }
+    const quint64 key =
+        (static_cast<quint64>(character.unicode()) << 48) | (static_cast<quint64>(pixelSize & 0xFFFF) << 32) | color;
+    const auto cached = _glyphs.constFind(key);
+    if (cached != _glyphs.cend()) {
+        return *cached;
+    }
+
+    QFont font(_fontFamily);
+    font.setPixelSize(pixelSize);
+    const QFontMetricsF metrics(font);
+    Glyph glyph;
+    glyph.advance = metrics.horizontalAdvance(character);
+
+    QPainterPath path;
+    path.addText(0.0, metrics.ascent(), font, QString(character));
+    if (!path.isEmpty()) {
+        const QRectF bounds =
+            path.boundingRect().adjusted(-kTextOutlineWidth, -kTextOutlineWidth, kTextOutlineWidth, kTextOutlineWidth);
+        const QRect pixels =
+            QRectF(bounds.topLeft() * devicePixelRatio, bounds.size() * devicePixelRatio).toAlignedRect();
+        glyph.image = QImage(pixels.size(), QImage::Format_ARGB32_Premultiplied);
+        glyph.image.fill(Qt::transparent);
+        QPainter painter(&glyph.image);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.translate(-pixels.topLeft());
+        painter.scale(devicePixelRatio, devicePixelRatio);
+        // The outline first and the fill over its inner half, as Mission Planner draws text, so the glyph stays
+        // its own colour with a dark border
+        painter.strokePath(path, QPen(kOutline, kTextOutlineWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter.fillPath(path, QColor::fromRgba(color));
+        painter.end();
+        glyph.image.setDevicePixelRatio(devicePixelRatio);
+        glyph.origin = QPointF(pixels.left() / devicePixelRatio, pixels.top() / devicePixelRatio);
+    }
+    return *_glyphs.insert(key, glyph);
 }
 
 void HudItem::_drawText(QPainter& p, qreal x, qreal y, qreal size, const QString& text, const QColor& color,
@@ -266,16 +422,25 @@ void HudItem::_drawText(QPainter& p, qreal x, qreal y, qreal size, const QString
     if (text.isEmpty() || size <= 1.0) {
         return;
     }
-    QFont font(_fontFamily);
-    font.setPixelSize(qMax(1, qRound(size)));
-    const QFontMetricsF metrics(font);
-    const qreal left = centered ? x - metrics.horizontalAdvance(text) / 2.0 : x;
-    // y is the top of the em box, as in Mission Planner; each string gets a dark halo for contrast
-    QPainterPath path;
-    path.addText(left, y + metrics.ascent(), font, text);
-    p.setPen(QPen(kOutline, qMax(1.2, size / 9.0), Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    p.setBrush(color);
-    p.drawPath(path);
+    const int pixelSize = qMax(1, qRound(size));
+    const qreal devicePixelRatio = p.device() ? p.device()->devicePixelRatio() : 1.0;
+    const QTransform device = p.deviceTransform();
+    const QTransform toLogical = device.inverted();
+    // y is the top of the em box, as in Mission Planner
+    qreal pen = centered ? x - _textWidth(size, text) / 2.0 : x;
+    for (const QChar character : text) {
+        const Glyph& glyph = _glyph(character, pixelSize, color.rgba(), devicePixelRatio);
+        if (!glyph.image.isNull()) {
+            QPointF topLeft = QPointF(pen, y) + glyph.origin;
+            if (device.type() <= QTransform::TxScale) {
+                // On whole device pixels, so the glyph is copied rather than resampled
+                const QPointF pixel = device.map(topLeft);
+                topLeft = toLogical.map(QPointF(std::round(pixel.x()), std::round(pixel.y())));
+            }
+            p.drawImage(topLeft, glyph.image);
+        }
+        pen += glyph.advance;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -283,8 +448,8 @@ void HudItem::_drawText(QPainter& p, qreal x, qreal y, qreal size, const QString
 
 void HudItem::_drawHorizon(QPainter& p, const Frame& f) const
 {
-    const qreal W = width();
-    const qreal H = height();
+    const qreal W = f.width;
+    const qreal H = f.height;
     const qreal pxPerDeg = std::floor(H / 65.0);
     const qreal pitchOffset = f.pitch * pxPerDeg;
     const QColor lineColor = f.connected ? _hudColor : QColor(0xD3, 0xD3, 0xD3);
@@ -313,8 +478,8 @@ void HudItem::_drawHorizon(QPainter& p, const Frame& f) const
 
 void HudItem::_drawPitchLadder(QPainter& p, const Frame& f) const
 {
-    const qreal W = width();
-    const qreal H = height();
+    const qreal W = f.width;
+    const qreal H = f.height;
     const qreal fs = std::floor(H / 28.0);
     const qreal pxPerDeg = std::floor(H / 65.0);
     const QColor whiteColor = f.connected ? _hudColor : QColor(0xD3, 0xD3, 0xD3);
@@ -375,8 +540,8 @@ void HudItem::_drawPitchLadder(QPainter& p, const Frame& f) const
 
 void HudItem::_drawFlightPathVector(QPainter& p, const Frame& f) const
 {
-    const qreal W = width();
-    const qreal H = height();
+    const qreal W = f.width;
+    const qreal H = f.height;
     const qreal pxPerDeg = std::floor(H / 65.0);
     const qreal aoa = std::isnan(f.aoa) ? 0.0 : f.aoa;
     const qreal ssa = std::isnan(f.ssa) ? 0.0 : f.ssa;
@@ -398,8 +563,8 @@ void HudItem::_drawFlightPathVector(QPainter& p, const Frame& f) const
 
 void HudItem::_drawHeadingTape(QPainter& p, const Frame& f) const
 {
-    const qreal W = width();
-    const qreal H = height();
+    const qreal W = f.width;
+    const qreal H = f.height;
     const qreal fs = std::floor(H / 28.0);
     const qreal barH = std::floor(1.75 * fs);
     const QColor whiteColor = f.connected ? _hudColor : QColor(0xD3, 0xD3, 0xD3);
@@ -473,8 +638,8 @@ void HudItem::_drawHeadingTape(QPainter& p, const Frame& f) const
 
 void HudItem::_drawXtrackAndTurnRate(QPainter& p, const Frame& f) const
 {
-    const qreal W = width();
-    const qreal H = height();
+    const qreal W = f.width;
+    const qreal H = f.height;
     const qreal fs = std::floor(H / 28.0);
     const qreal barBottom = std::floor(1.75 * fs);
     const QColor whiteColor = f.connected ? _hudColor : QColor(0xD3, 0xD3, 0xD3);
@@ -539,8 +704,8 @@ void HudItem::_drawTapePointer(QPainter& p, qreal tapeWidth, qreal fs, bool righ
 
 void HudItem::_drawSpeedTape(QPainter& p, const Frame& f) const
 {
-    const qreal W = width();
-    const qreal H = height();
+    const qreal W = f.width;
+    const qreal H = f.height;
     const qreal fs = std::floor(H / 28.0);
     const QColor whiteColor = f.connected ? _hudColor : QColor(0xD3, 0xD3, 0xD3);
     const QRectF tape(0, H / 4.0, W / 10.0, H / 2.0);
@@ -613,7 +778,7 @@ void HudItem::_drawSpeedTape(QPainter& p, const Frame& f) const
     // Waypoint and wind readouts under the tape
     const qreal readoutSize = 0.85 * fs;
     qreal y = B + fs / 2.0;
-    if (_showWaypoint) {
+    if (f.showWaypoint) {
         QString label = QStringLiteral("WP");
         const QString mode = f.mode.toLower();
         if (mode == QLatin1String("auto") && f.wpNumber > 0) {
@@ -641,7 +806,7 @@ void HudItem::_drawSpeedTape(QPainter& p, const Frame& f) const
         _drawArrowReadout(p, fs / 2.0, y, readoutSize, label, f.wpBearing, showArrow, value, f);
         y += 1.5 * readoutSize;
     }
-    if (_showWind && !std::isnan(f.windSpeed)) {
+    if (f.showWind && !std::isnan(f.windSpeed)) {
         const bool showArrow = !std::isnan(f.windDirection) && f.windSpeed >= 0.05;
         _drawArrowReadout(p, fs / 2.0, y, readoutSize, QStringLiteral("Wind"), f.windDirection + 180.0, showArrow,
                           QStringLiteral("%1%2").arg(f.windSpeed, 0, 'f', 1).arg(f.speedUnits), f);
@@ -678,8 +843,8 @@ void HudItem::_drawArrowReadout(QPainter& p, qreal x, qreal y, qreal size, const
 
 void HudItem::_drawAltitudeTape(QPainter& p, const Frame& f) const
 {
-    const qreal W = width();
-    const qreal H = height();
+    const qreal W = f.width;
+    const qreal H = f.height;
     const qreal fs = std::floor(H / 28.0);
     const QColor whiteColor = f.connected ? _hudColor : QColor(0xD3, 0xD3, 0xD3);
     const QRectF tape(W - W / 10.0, H / 4.0, W / 10.0, H / 2.0);
@@ -757,8 +922,8 @@ void HudItem::_drawAltitudeTape(QPainter& p, const Frame& f) const
 
 void HudItem::_drawLinkQuality(QPainter& p, const Frame& f) const
 {
-    const qreal W = width();
-    const qreal H = height();
+    const qreal W = f.width;
+    const qreal H = f.height;
     const qreal fs = std::floor(H / 28.0);
     const qreal L = W - W / 10.0;
     const qreal base = H / 4.0 - 0.3 * fs;
@@ -784,8 +949,8 @@ void HudItem::_drawLinkQuality(QPainter& p, const Frame& f) const
 
 void HudItem::_drawAoaGauge(QPainter& p, const Frame& f) const
 {
-    const qreal W = width();
-    const qreal H = height();
+    const qreal W = f.width;
+    const qreal H = f.height;
     const QRectF bar(std::floor(W * 6 / 7.0) - W / 80.0, H / 2.0 + H / 20.0 - W / 40.0, W / 50.0, H / 5.0);
 
     p.setPen(Qt::NoPen);
@@ -831,8 +996,8 @@ void HudItem::_drawBattery(QPainter& p, const Frame& f) const
     if (std::isnan(f.batteryVoltage) && std::isnan(f.batteryRemaining)) {
         return;
     }
-    const qreal W = width();
-    const qreal H = height();
+    const qreal W = f.width;
+    const qreal H = f.height;
     const qreal fs = std::floor(H / 28.0);
     const qreal bs = (fs + 2) * 3;
 
@@ -886,8 +1051,8 @@ void HudItem::_drawBadge(QPainter& p, const QRectF& rect, const QColor& fill, co
 
 void HudItem::_drawBadges(QPainter& p, const Frame& f) const
 {
-    const qreal W = width();
-    const qreal H = height();
+    const qreal W = f.width;
+    const qreal H = f.height;
     const qreal fs = std::floor(H / 28.0);
     const qreal w = std::floor(2.5 * fs);
     const qreal y = H - fs - 5;
@@ -965,8 +1130,8 @@ void HudItem::_drawBadges(QPainter& p, const Frame& f) const
 
 void HudItem::_drawCenterMessages(QPainter& p, const Frame& f) const
 {
-    const qreal W = width();
-    const qreal H = height();
+    const qreal W = f.width;
+    const qreal H = f.height;
     const qreal fs = std::floor(H / 28.0);
     const qreal cx = W / 2.0;
     const qreal cy = H / 2.0;
@@ -992,8 +1157,8 @@ void HudItem::_drawCenterMessages(QPainter& p, const Frame& f) const
 
 void HudItem::_drawFlightMode(QPainter& p, const Frame& f) const
 {
-    const qreal W = width();
-    const qreal H = height();
+    const qreal W = f.width;
+    const qreal H = f.height;
     const qreal fs = std::floor(H / 28.0);
     const QString mode = f.mode.isEmpty() ? QStringLiteral("Unknown") : f.mode;
     const qreal tsh = _textWidth(fs, mode) / 2.0 + 0.25 * fs;
