@@ -73,6 +73,9 @@ add_subdirectory(Vehicle)
 add_subdirectory(VideoManager)
 add_subdirectory(Viewer3D)
 
+# Titan Ground Control fork modules
+add_subdirectory(TitanHud)
+
 # Platform-specific
 add_subdirectory(Android)
 
@@ -162,6 +165,9 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE AutoPilotPluginsAPMModule)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE AutoPilotPluginsPX4Module)
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Viewer3DModule)
+
+# Titan Ground Control fork modules
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE TitanHudModule)
 
 # ============================================================================
 # Compile Definitions

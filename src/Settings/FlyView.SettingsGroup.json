@@ -140,8 +140,8 @@
             "name": "instrumentQmlFile2",
             "shortDesc": "Select the instrument panel display style for the Fly view.",
             "type": "string",
-            "enumStrings": "Integrated Compass & Attitude,Horizontal Compass & Attitude,Large Vertical",
-            "enumValues": "qrc:/qml/QGroundControl/FlightMap/Widgets/IntegratedCompassAttitude.qml,qrc:/qml/QGroundControl/FlightMap/Widgets/HorizontalCompassAttitude.qml,qrc:/qml/QGroundControl/FlightMap/Widgets/VerticalCompassAttitude.qml",
+            "enumStrings": "Integrated Compass & Attitude,Horizontal Compass & Attitude,Large Vertical,Mission Planner HUD",
+            "enumValues": "qrc:/qml/QGroundControl/FlightMap/Widgets/IntegratedCompassAttitude.qml,qrc:/qml/QGroundControl/FlightMap/Widgets/HorizontalCompassAttitude.qml,qrc:/qml/QGroundControl/FlightMap/Widgets/VerticalCompassAttitude.qml,qrc:/qml/QGroundControl/TitanHud/TitanHudInstrument.qml",
             "default": "qrc:/qml/QGroundControl/FlightMap/Widgets/HorizontalCompassAttitude.qml",
             "label": "Qml file for instrument panel",
             "keywords": "instrument,hud"

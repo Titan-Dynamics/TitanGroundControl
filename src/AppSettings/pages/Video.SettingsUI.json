@@ -42,7 +42,7 @@
         },
         {
             "heading": "Settings",
-            "keywords": ["aspect ratio", "low latency", "decoder", "hardware decode", "disable when disarmed", "gpu", "zero-copy"],
+            "keywords": ["aspect ratio", "low latency", "decoder", "hardware decode", "disable when disarmed", "gpu", "zero-copy", "hud", "overlay"],
             "showWhen": "!sourceDisabled",
             "controls": [
                 {
@@ -52,6 +52,9 @@
                 {
                     "setting": "videoSettings.disableWhenDisarmed",
                     "showWhen": "isStreamSource"
+                },
+                {
+                    "setting": "videoSettings.hudOverlay"
                 },
                 {
                     "setting": "videoSettings.lowLatencyMode",

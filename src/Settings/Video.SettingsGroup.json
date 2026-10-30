@@ -67,6 +67,14 @@
             "label": "Video Grid Lines"
         },
         {
+            "name": "hudOverlay",
+            "shortDesc": "Overlay the Mission Planner style HUD (attitude, speed, altitude, heading) on the video.",
+            "type": "bool",
+            "default": false,
+            "label": "HUD overlay",
+            "keywords": "hud,overlay,attitude,instruments"
+        },
+        {
             "name": "videoFit",
             "shortDesc": "Video Display Fit",
             "longDesc": "Handle Video Aspect Ratio.",

@@ -5,6 +5,7 @@ import QGroundControl
 import QGroundControl.FlyView
 import QGroundControl.FlightMap
 import QGroundControl.Controls
+import QGroundControl.TitanHud
 
 Item {
     id:     root
@@ -16,6 +17,7 @@ Item {
                                             ? cameraLoader.item.implicitWidth / cameraLoader.item.implicitHeight
                                             : QGroundControl.videoManager.aspectRatio
     property bool   _showGrid:          QGroundControl.settingsManager.videoSettings.gridLines.rawValue
+    property bool   _showHud:           QGroundControl.settingsManager.videoSettings.hudOverlay.rawValue && !useSmallFont
     property var    _dynamicCameras:    globals.activeVehicle ? globals.activeVehicle.cameraManager : null
     property bool   _connected:         globals.activeVehicle ? !globals.activeVehicle.communicationLost : false
     property int    _curCameraIndex:    _dynamicCameras ? _dynamicCameras.currentCamera : 0
@@ -128,6 +130,13 @@ Item {
             width:              parent.getWidth()
             anchors.centerIn:   parent
             visible:           _showStreamLoader || _showUvcLoader
+
+            // Titan: Mission Planner HUD over the video, stretched to the video area like Mission Planner's
+            TitanHud {
+                anchors.fill:   parent
+                drawBackground: false
+                visible:        _showHud
+            }
 
             // grid lines
             Item {
