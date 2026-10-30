@@ -1,7 +1,7 @@
 import QGroundControl
 import QGroundControl.Controls
 
-/// Fly View toolstrip action opening and closing the Titan 3D map, which takes the left half of the Fly View.
+/// Fly View toolstrip action showing and hiding the Titan 3D map in place of the 2D map.
 ToolStripAction {
     id: root
 

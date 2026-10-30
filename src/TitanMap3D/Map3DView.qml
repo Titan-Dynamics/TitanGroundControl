@@ -12,6 +12,7 @@ Item {
 
     property var  map2DCenter        ///< The 2D map's centre, followed while no vehicle is connected
     property real topInset:     0    ///< Kept clear (toolbar) by the HUD and the stats panel
+    property real rightInset:   0    ///< Kept clear (top-right widgets) by the stats panel
 
     readonly property var _settings: QGroundControl.settingsManager.map3DSettings
 
@@ -132,7 +133,7 @@ Item {
         anchors.top:        parent.top
         anchors.right:      parent.right
         anchors.topMargin:  root.topInset + ScreenTools.defaultFontPixelHeight * 0.5
-        anchors.rightMargin: ScreenTools.defaultFontPixelWidth
+        anchors.rightMargin: root.rightInset + ScreenTools.defaultFontPixelWidth
         stats:              map3D.stats
         visible:            root._settings.statsForNerds.rawValue
     }
