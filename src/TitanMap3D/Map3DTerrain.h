@@ -168,7 +168,8 @@ struct TileIdHash
 
 /// Chooses which terrain tiles to draw and which to load, Google Earth style: refined from coarse roots until each
 /// tile's texels are about a pixel on screen; a tile is only replaced by its children once all four are loaded;
-/// load requests are ranked by distance relative to tile size and angle from the view centre.
+/// load requests are ranked by distance relative to tile size and angle from the view centre, after the column of
+/// tiles under the camera.
 class TerrainQuadtree
 {
 public:
@@ -177,6 +178,8 @@ public:
     static constexpr double kOutOfViewPenalty = 8;
     static constexpr double kLevelBias = 0.1;
     static constexpr int kMaxRequests = 256;
+    /// Below every other request's priority, which starts at 0
+    static constexpr double kCameraColumnPriority = -1;
 
     explicit TerrainQuadtree(const WorldFrame& frame)
         : _frame(frame)
@@ -206,6 +209,7 @@ public:
 
 private:
     void _visit(const TileId& id, const SelectionParams& p, double now);
+    void _requestCameraColumn(const SelectionParams& p, double now);
     void _use(TerrainTile& tile, const SelectionParams& p, bool inView, double dist, double tileMeters, double now);
     void _refreshState(TerrainTile& tile, double now);
     bool _childrenUnavailable(const TileId& id, double now) const;

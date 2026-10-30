@@ -16,6 +16,7 @@ private slots:
     void _chaseCameraSitsBehindVehicle();
     void _firstPersonStaysAboveGround();
     void _quadtreeRequestsRootsFirst();
+    void _quadtreeRequestsGroundUnderCameraFirst();
     void _maxZoomFollowsHeight();
     void _meshHasSkirtsBelowEdges();
     void _gridSizeFollowsDemResolution();

@@ -57,6 +57,8 @@ void TerrainQuadtree::select(const SelectionParams& p, double now)
         return;
     }
 
+    _requestCameraColumn(p, now);
+
     // Root tiles covering the view radius around the camera
     const double dLat = p.viewRadius / 111320.0;
     const double dLng = p.viewRadius / (111320.0 * std::max(0.05, std::cos(p.cameraLat * M_PI / 180.0)));
@@ -83,6 +85,48 @@ void TerrainQuadtree::select(const SelectionParams& p, double now)
                      [](const TileRequest& a, const TileRequest& b) { return a.priority < b.priority; });
     if (_requests.count() > kMaxRequests) {
         _requests.resize(kMaxRequests);
+    }
+}
+
+void TerrainQuadtree::_requestCameraColumn(const SelectionParams& p, double now)
+{
+    // The traversal asks for a tile's children only once the tile has loaded, so the ground under the camera would
+    // arrive one round trip per level. Ask for every level of it at once instead, coarse first and ahead of
+    // everything else: the tile under the camera and its three siblings, down to the level the traversal will
+    // want straight below.
+    const double height = std::max(1.0, p.cameraZ - p.referenceHeight);
+    const double pixelsPerMeter = p.viewportHeight / (2 * height * std::tan(p.fovY / 2));
+    int target = kRootZoom;
+    while ((target < p.maxZoom) &&
+           (TileMath::tileSizeMeters(p.cameraLat, target) / TileMath::kTileSize * pixelsPerMeter > p.maxTexelPixels)) {
+        target++;
+    }
+
+    for (int z = kRootZoom; z <= target; z++) {
+        double x = 0;
+        double y = 0;
+        TileMath::latLngToTile(p.cameraLat, p.cameraLng, z, x, y);
+        const TileId under{static_cast<int>(std::floor(x)), static_cast<int>(std::floor(y)), z};
+        if (!TileMath::isValid(under)) {
+            return;
+        }
+        const TileId parent = (z > kRootZoom) ? under.parent() : under;
+        for (int c = 0; c < ((z > kRootZoom) ? 4 : 1); c++) {
+            TerrainTile& tile = getOrCreate((z > kRootZoom) ? parent.child(c) : under);
+            tile.lastVisitedFrame = _frameNumber;
+            _refreshState(tile, now);
+            double dist = 0;
+            double tileMeters = 0;
+            bool inView = false;
+            if ((tile.state == TileState::Ready) || !_measure(tile, p, dist, inView, tileMeters)) {
+                continue;
+            }
+            const qsizetype before = _requests.size();
+            _request(tile, p, inView, dist, tileMeters);
+            if (_requests.size() > before) {
+                _requests.last().priority = kCameraColumnPriority + kLevelBias * 0.1 * (z - kRootZoom);
+            }
+        }
     }
 }
 

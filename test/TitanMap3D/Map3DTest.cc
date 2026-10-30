@@ -206,6 +206,43 @@ void Map3DTest::_quadtreeRequestsRootsFirst()
     }
 }
 
+void Map3DTest::_quadtreeRequestsGroundUnderCameraFirst()
+{
+    WorldFrame frame;
+    frame.update(kLat, kLng);
+    TerrainQuadtree quadtree(frame);
+
+    // 10 m above the ground, nothing loaded yet
+    SelectionParams params;
+    params.cameraZ = 210;
+    params.cameraLat = kLat;
+    params.cameraLng = kLng;
+    params.viewRadius = 30000;
+    params.referenceHeight = 200;
+    params.maxZoom = SelectionParams::kMaxImageryZoom;
+    quadtree.select(params, 0);
+
+    // Every level under the camera at once, ahead of the rest of the view and coarse first: the root, then the
+    // tile under the camera and its three siblings at each level down to the finest
+    const QList<TileRequest>& requests = quadtree.requests();
+    const int columnSize = 1 + 4 * (SelectionParams::kMaxImageryZoom - TerrainQuadtree::kRootZoom);
+    QVERIFY(requests.size() > columnSize);
+    QCOMPARE(requests.first().id.z, TerrainQuadtree::kRootZoom);
+    for (int i = 1; i < columnSize; i++) {
+        QVERIFY(requests[i].priority < 0);
+        QVERIFY(requests[i - 1].id.z <= requests[i].id.z);
+    }
+    QVERIFY(requests[columnSize].priority >= 0);
+
+    double x = 0;
+    double y = 0;
+    TileMath::latLngToTile(kLat, kLng, SelectionParams::kMaxImageryZoom, x, y);
+    const TileId under{static_cast<int>(std::floor(x)), static_cast<int>(std::floor(y)),
+                       SelectionParams::kMaxImageryZoom};
+    QVERIFY(std::any_of(requests.cbegin(), requests.cbegin() + columnSize,
+                        [&under](const TileRequest& request) { return request.id == under; }));
+}
+
 void Map3DTest::_maxZoomFollowsHeight()
 {
     // Never finer than Google's satellite imagery, even on the ground
