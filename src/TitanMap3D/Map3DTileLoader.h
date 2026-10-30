@@ -13,6 +13,7 @@
 #include <QtCore/QQueue>
 #include <QtCore/QSet>
 #include <QtCore/QString>
+#include <QtCore/QThreadPool>
 
 #include "Map3DTerrain.h"
 
@@ -146,6 +147,8 @@ private:
     QHash<TileId, QList<std::function<void(bool)>>> _elevationWaiters;
     QHash<TileId, double> _elevationFailedAt;
     QSet<QNetworkReply*> _replies;
+    /// One thread with its own connection to the shared tile cache, see _fetchTile()
+    QThreadPool _cacheReader;
     QAtomicInt _cacheHits;
     QAtomicInt _networkFetches;
 };

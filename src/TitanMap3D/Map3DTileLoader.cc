@@ -4,6 +4,7 @@
 #include <cmath>
 #include <utility>
 
+#include <QtConcurrent/QtConcurrentRun>
 #include <QtCore/QElapsedTimer>
 #include <QtCore/QFile>
 #include <QtCore/QThreadPool>
@@ -15,9 +16,8 @@
 #include "MapProvider.h"
 #include "QGCCacheTile.h"
 #include "QGCLoggingCategory.h"
-#include "QGCMapEngine.h"
-#include "QGCMapTasks.h"
 #include "QGCMapUrlEngine.h"
+#include "QGCTileCacheDatabase.h"
 #include "QGeoFileTileCacheQGC.h"
 #include "QGeoTileFetcherQGC.h"
 
@@ -42,6 +42,25 @@ bool isBingEmptyTile(int mapId, const QByteArray& data)
     }
     const SharedMapProvider provider = UrlFactory::getMapProviderFromQtMapId(mapId);
     return provider && provider->isBingProvider();
+}
+
+/// A tile from the shared cache database, or nothing. Runs on a loader's cache reader thread, which keeps its own
+/// connection; SQLite in WAL mode serves it alongside QGroundControl's cache worker.
+QByteArray readCachedTile(const QString& hash)
+{
+    thread_local std::unique_ptr<QGCTileCacheDatabase> database;
+    if (!database) {
+        database = std::make_unique<QGCTileCacheDatabase>(QGeoFileTileCacheQGC::getDatabaseFilePath());
+        if (!database->connectDB()) {
+            qCWarning(Map3DTileLoaderLog)
+                << "cannot open the tile cache" << QGeoFileTileCacheQGC::getDatabaseFilePath();
+        }
+    }
+    if (!database->isValid()) {
+        return {};
+    }
+    const std::unique_ptr<QGCCacheTile> tile = database->getTile(hash);
+    return tile ? tile->img : QByteArray();
 }
 
 }  // namespace
@@ -177,10 +196,15 @@ TileLoader::TileLoader(const QString& imageryMapType, QObject* parent)
     if (_elevationMapId < 0) {
         qCWarning(Map3DTileLoaderLog) << "elevation provider" << kElevationMapType << "is not available";
     }
+    // A lookup takes well under a millisecond, so one thread keeps up; it lives as long as its connection
+    _cacheReader.setMaxThreadCount(1);
+    _cacheReader.setExpiryTimeout(-1);
 }
 
 TileLoader::~TileLoader()
 {
+    _cacheReader.clear();
+    _cacheReader.waitForDone();
     for (QNetworkReply* reply : std::as_const(_replies)) {
         reply->disconnect(this);
         reply->abort();
@@ -483,32 +507,19 @@ void TileLoader::_fetchTile(const QString& mapType, const TileId& id, FetchCallb
         return;
     }
 
-    QGCFetchTileTask* const task = QGeoFileTileCacheQGC::createFetchTileTask(mapType, id.x, id.y, id.z);
-    auto handled = std::make_shared<bool>(false);
-    (void) connect(task, &QGCFetchTileTask::tileFetched, this,
-                   [this, mapType, mapId, id, done, handled](QGCCacheTile* tile) {
-                       const std::unique_ptr<QGCCacheTile> guard(tile);
-                       if (std::exchange(*handled, true)) {
-                           return;
-                       }
-                       if (!tile || tile->img.isEmpty() || isBingEmptyTile(mapId, tile->img)) {
-                           _fetchFromNetwork(mapType, mapId, id, done);
-                           return;
-                       }
-                       _cacheHits.ref();
-                       done(TileLoadOutcome::Loaded, tile->img, {}, false);
-                   });
-    (void) connect(task, &QGCMapTask::error, this,
-                   [this, mapType, mapId, id, done, handled](QGCMapTask::TaskType, const QString&) {
-                       if (std::exchange(*handled, true)) {
-                           return;
-                       }
-                       _fetchFromNetwork(mapType, mapId, id, done);
-                   });
-    if (!getQGCMapEngine()->addTask(task)) {
-        task->deleteLater();
-        _fetchFromNetwork(mapType, mapId, id, done);
-    }
+    // Read straight from the cache database rather than through QGroundControl's cache worker: the worker answers
+    // one request at a time and recounts the whole cache whenever its queue empties (~180 ms on a 180 MB cache),
+    // which held every cached tile up for about as long
+    const QString hash = UrlFactory::getTileHash(mapType, id.x, id.y, id.z);
+    (void) QtConcurrent::run(&_cacheReader, readCachedTile, hash)
+        .then(this, [this, mapType, mapId, id, done](const QByteArray& data) {
+            if (data.isEmpty() || isBingEmptyTile(mapId, data)) {
+                _fetchFromNetwork(mapType, mapId, id, done);
+                return;
+            }
+            _cacheHits.ref();
+            done(TileLoadOutcome::Loaded, data, {}, false);
+        });
 }
 
 void TileLoader::_fetchFromNetwork(const QString& mapType, int mapId, const TileId& id, FetchCallback done)
