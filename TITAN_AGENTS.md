@@ -35,7 +35,7 @@ rather than in `AGENTS.md` / `CLAUDE.md`, which are upstream files.
 | Settings / Vehicle Config sidebar and parameter editor polish | `src/QmlControls/AppSettings.qml`, `src/Vehicle/VehicleSetup/VehicleConfigView.qml`, `src/QmlControls/ParameterEditor.qml` |
 | Inline searchable sections for hand-coded settings pages | `tools/generators/settings_qml/emit.py`, `model.py` (`"sections"` key in `SettingsPages.json`) |
 | Branding | `cmake/CustomOptions.cmake` (`QGC_APP_NAME` = `TitanGroundControl`), `src/QmlControls/QGCPalette.cc` (orange accent, `brandPrimary`/`brandAccent`), `src/API/QGCCorePlugin.*` (update check and download URLs), icons under `resources/`, `deploy/`, `android/res/` |
-| Titan 3D map: a port of Mission Planner's Map3D (TitanPlanner `Controls/Map3D`) on Qt's RHI, separate from the 2D map | `src/TitanMap3D/`: `Map3DItem.*` (QML item, gathers telemetry, mission, ADS-B and settings on the GUI thread), `Map3DRenderer.*` (render-thread frame, terrain engine GPU side, draw passes), `Map3DScene.*` (VehicleTracker, CameraRig, Kalman filter), `Map3DTerrain.*` (quadtree LOD, tile mesh builder), `Map3DTileLoader.*` (imagery + Terrarium elevation through the shared tile cache), `Map3DGeo.*` (UTM world frame, tile maths, frustum), `Map3DOverlays.*` (indicator lines, turn arc, trail), `Map3DClouds.*`, `Map3DModel.*` (STL loading), `shaders/`, `models/*.stl`, `images/wp_3d*.png`, QML `Map3DView.qml` (mouse controls, HUD overlay, ADS-B tooltip), `Map3DStatsPanel.qml`, `Map3DSettingsDialog.qml`, `Map3DState.qml` (singleton), tool strip actions; hooks in `src/FlyView/FlyView.qml` (`_map3DWidth`, `map3DLoader`, `mapHolder`'s left margin, the toolbar blur's two halves) and `src/FlyView/FlyViewToolStripActionList.qml`; tests in `test/TitanMap3D/` |
+| Titan 3D map: a port of Mission Planner's Map3D (TitanPlanner `Controls/Map3D`) on Qt's RHI, separate from the 2D map | `src/TitanMap3D/`: `Map3DItem.*` (QML item, gathers telemetry, mission, ADS-B and settings on the GUI thread), `Map3DRenderer.*` (render-thread frame, terrain engine GPU side, draw passes), `Map3DScene.*` (VehicleTracker, CameraRig, Kalman filter), `Map3DTerrain.*` (quadtree LOD, tile mesh builder), `Map3DTileLoader.*` (imagery + Terrarium elevation through the shared tile cache), `Map3DGeo.*` (UTM world frame, tile maths, frustum), `Map3DOverlays.*` (indicator lines, turn arc, trail), `Map3DClouds.*`, `Map3DModel.*` (STL loading), `shaders/`, `models/*.stl`, `images/wp_3d*.png`, QML `Map3DView.qml` (mouse controls, HUD overlay, ADS-B tooltip), `Map3DStatsPanel.qml`, `Map3DSettingsDialog.qml`, `Map3DState.qml` (singleton), tool strip actions; hooks in `src/FlyView/FlyView.qml` (`map3DLoader` in `mapHolder`, `_map3DCoversMap` on both 2D map engines), `src/FlyView/FlyViewWidgetLayer.qml` (map scale and GeoMap controls hidden) and `src/FlyView/FlyViewToolStripActionList.qml`; tests in `test/TitanMap3D/` |
 | 3D map settings (Mission Planner's set and defaults) | `src/Settings/Map3DSettings.*`, `src/Settings/Map3D.SettingsGroup.json` (INI group `TitanMap3D`), `src/AppSettings/pages/Map3D.SettingsUI.json`, "3D Map" entry in `src/AppSettings/pages/SettingsPages.json` (replaces upstream's deprecated "3D View" page) and `Map3DSettings.qml` in the generated-pages list of `src/AppSettings/CMakeLists.txt` |
 | Mission Planner HUD (instrument panel option, video overlay, 3D map overlay) | `src/TitanHud/` (`HudData.*`, `HudItem.*`, `TitanHud.qml`, `TitanHudInstrument.qml`), `hudOverlay` facts in `Video.SettingsGroup.json` and `Map3D.SettingsGroup.json`, "Mission Planner HUD" in the `instrumentQmlFile2` enum of `src/Settings/FlyView.SettingsGroup.json`, overlay in `src/FlyView/FlightDisplayViewVideo.qml` |
 | Vehicle model decimation (TitanPlanner STLs) | `tools/titan/convert_vehicle_models.py` |
@@ -76,10 +76,13 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   in-place upgrade deleted the new install. `CPACK_NSIS_DEFINES` is overwritten by CPack and does not work.
 - The app version comes only from `v<digit>*` tags (`cmake/modules/Git.cmake`), so the moving `dev`
   release tag is never picked up as a version.
-- The **3D map is its own view and renderer**, not the GeoMap engine. The tool strip's 3D button splits the
-  Fly View like the Settings split: `Map3DView` takes the left half and `mapHolder` (2D map, video, PiP and every
-  widget) keeps the right half through `anchors.leftMargin: _map3DWidth`, animated over 250 ms. The toolbar's
-  frosted blur samples each half separately. The 2D map and the `useGeoMapEngine` default are upstream's. Upstream's Viewer3D stays compiled and tested but is reachable from
+- The **3D map is its own view and renderer**, not the GeoMap engine. The tool strip's 3D button shows
+  `Map3DView` over the whole Fly View in place of the 2D map: it fills `mapHolder` at z 1, above the full-window
+  item and below the widgets and the PiP, so the toolbar blur, tool strip, instruments and PiP work as they do
+  over the 2D map. While the 2D map is the full-window item it is hidden, so it does not draw (`_map3DCoversMap`);
+  with the video swapped into the full window, the 3D map covers the video and the 2D map stays in the PiP. A
+  split layout (3D left, 2D right) was tried and dropped at the user's request. The 2D map and the
+  `useGeoMapEngine` default are upstream's. Upstream's Viewer3D stays compiled and tested but is reachable from
   neither the tool strip nor the settings pages; upstream itself deprecates it. GeoMap was tried first and
   dropped: even its 2D mode is a Qt Quick 3D scene whose per-frame sync made the whole Fly View lag.
 - The 3D map follows TitanPlanner's `Map3D` line by line where it can: the camera rig (chase 0.8 m behind and
@@ -93,8 +96,12 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   levels above each imagery tile (`kElevationZoomOffset`): still 32 samples per tile, as many as its mesh has
   cells, while one ~80 KB download serves 64 tiles. Imagery and elevation download in parallel, 16 tiles at a
   time; together that took loading from ~19 to ~95 tiles/s on a warm cache. Dead reckoning is
-  capped at 5 s, the nav-bearing target is indexed by mission sequence number, and pinch zoom is added for
-  touch screens.
+  capped at 5 s, the nav-bearing target is indexed by mission sequence number, pinch zoom is added for touch
+  screens, and imagery stops at zoom 22 (`SelectionParams::kMaxImageryZoom`; Mission Planner goes to 24 near the
+  ground, but Google's satellite imagery ends at 22 and answers HTTP 400 past it). Mouse adjustments to the chase
+  camera stay in `Map3DItem` and reach the settings a second after they stop, as Mission Planner saves them when
+  its map closes: every settings write rewrites the INI file (~26 ms in a Debug build), and writing on each mouse
+  move held dragging to ~25 fps.
 - The renderer runs Mission Planner's frame on the render thread (`QQuickRhiItemRenderer::render`); the GUI
   thread only copies a `FrameInput` in `synchronize`. Pass 2 (mission, vehicle) is kept in front of the terrain
   by drawing into depth range [0, 0.05] with the terrain in [0.05, 1], equivalent to Mission Planner clearing
@@ -165,9 +172,10 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
    `HEAD`, including settings JSON enums and defaults, resource registration, renamed C++ or QML APIs
    used by fork code (e.g. `Vehicle::flying()` became `underway()` / `airborne()`), and new upstream
    defaults that override fork choices (e.g. `QGC_MACOS_UNIVERSAL_BUILD` defaulting to OFF). Re-check the fork
-  hooks inside upstream files: `FlyView.qml` (`_map3DWidth`, `mapHolder`'s left margin, `map3DLoader`, the
-  toolbar blur halves), `FlyViewToolStripActionList.qml` (`Map3DShowAction`, `Map3DSettingsAction`),
-  `FlightDisplayViewVideo.qml` (`TitanHud`, the `_ar` guard), `src/AppSettings/CMakeLists.txt`
+  hooks inside upstream files: `FlyView.qml` (`map3DLoader` in `mapHolder`, `_map3DCoversMap` on both 2D map
+  engines), `FlyViewWidgetLayer.qml` (map scale and GeoMap controls), `FlyViewToolStripActionList.qml`
+  (`Map3DShowAction`, `Map3DSettingsAction`), `FlightDisplayViewVideo.qml` (`TitanHud`, the `_ar` guard),
+  `src/AppSettings/CMakeLists.txt`
   (generated pages list), and `HudData.cc` / `Map3DItem.cc` against the `Vehicle`, `MissionManager`,
   `ADSBVehicle`, tile cache (`QGeoFileTileCacheQGC`, `QGeoTileFetcherQGC`) and `UrlFactory` APIs they use.
 5. Re-apply the CI policy to every upstream workflow, including new ones, and re-check the td workflows.
