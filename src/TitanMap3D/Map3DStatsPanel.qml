@@ -107,6 +107,7 @@ Rectangle {
         Row { label: qsTr("Zooms"); value: (root.stats.minZoom || 0) + " - " + (root.stats.maxZoom || 0) + "  (max " + (root.stats.maxZoomSetting || 0) + ")" }
         Row { label: qsTr("GPU"); value: root._number(root.stats.gpuMB, 0) + " / " + root._number(root.stats.gpuBudgetMB, 0) + " MB" }
         Row { label: qsTr("Queue"); value: (root.stats.queued || 0) + " queued, " + (root.stats.inFlight || 0) + " / " + (root.stats.workers || 0) + " loading" }
+        Row { label: qsTr("Source"); value: (root.stats.cacheHits || 0) + " from disk cache, " + (root.stats.networkFetches || 0) + " downloaded" }
         Row { label: qsTr("Loaded"); value: (root.stats.loadedTotal || 0) + " (" + root._number(root.stats.loadedPerSecond, 1) + "/s)  fetch " + root._number(root.stats.fetchMs, 0) + " ms, build " + root._number(root.stats.buildMs, 1) + " ms" }
         Row {
             label:      qsTr("Health")

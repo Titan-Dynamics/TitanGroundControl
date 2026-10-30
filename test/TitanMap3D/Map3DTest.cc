@@ -267,6 +267,22 @@ void Map3DTest::_elevationDecodesTerrarium()
     QCOMPARE(tile->heights.front(), 1234.5f);
 }
 
+void Map3DTest::_elevationTileServesSeveralTerrainTiles()
+{
+    // Three levels up: one elevation tile covers 8 x 8 terrain tiles
+    const TileId id{2810, 6533, 14};
+    const TileId elevation = ElevationCache::elevationTileFor(id);
+    QCOMPARE(elevation.z, 11);
+    QCOMPARE(elevation.x, id.x / 8);
+    QCOMPARE(elevation.y, id.y / 8);
+    const TileId lastInBlock{(id.x / 8) * 8 + 7, (id.y / 8) * 8 + 7, 14};
+    QVERIFY(ElevationCache::elevationTileFor(lastInBlock) == elevation);
+
+    // Never finer than Terrarium's last level, never above the root
+    QCOMPARE(ElevationCache::elevationTileFor(TileId{1438960, 3344970, 22}).z, kMaxElevationZoom);
+    QCOMPARE(ElevationCache::elevationTileFor(TileId{1, 1, 2}).z, 0);
+}
+
 void Map3DTest::_smoothedTrailEndsAtVehicle()
 {
     WorldFrame frame;

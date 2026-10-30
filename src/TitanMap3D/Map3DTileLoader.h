@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 
+#include <QtCore/QAtomicInt>
 #include <QtCore/QHash>
 #include <QtCore/QMutex>
 #include <QtCore/QObject>
@@ -24,6 +25,9 @@ namespace Map3D {
 constexpr int kMaxElevationZoom = 15;
 /// Zoom of the elevation tiles fetched for single points (vehicle, view centre, waypoints).
 constexpr int kPointElevationZoom = 14;
+/// A terrain tile samples the elevation tile this many levels up: 256 px across 8 tiles is 32 samples per tile, as
+/// many as its mesh has cells, so one (large) elevation download serves 64 imagery tiles.
+constexpr int kElevationZoomOffset = 3;
 
 /// A decoded Terrarium tile: metres AMSL, row-major from the north-west corner.
 struct ElevationTile
@@ -49,7 +53,10 @@ public:
     bool sampleGrid(const TileId& id, const std::vector<double>& rowLats, const std::vector<double>& colLngs,
                     std::vector<float>& heights);
 
-    static TileId elevationTileFor(const TileId& id) { return id.ancestorAt(std::min(id.z, kMaxElevationZoom)); }
+    static TileId elevationTileFor(const TileId& id)
+    {
+        return id.ancestorAt(std::clamp(id.z - kElevationZoomOffset, 0, kMaxElevationZoom));
+    }
 
     static double sample(const ElevationTile& tile, double lat, double lng);
     /// Terrarium RGB: height = (R * 256 + G + B / 256) - 32768 metres
@@ -77,7 +84,7 @@ class TileLoader : public QObject
     Q_OBJECT
 
 public:
-    static constexpr int kMaxJobs = 8;
+    static constexpr int kMaxJobs = 16;
 
     TileLoader(const QString& imageryMapType, QObject* parent = nullptr);
     ~TileLoader() override;
@@ -89,6 +96,11 @@ public:
     int inFlightCount() const;
 
     int workerCount() const { return kMaxJobs; }
+
+    /// Tiles served by the shared disk cache and by the network since the loader started
+    int cacheHits() const { return _cacheHits.loadRelaxed(); }
+
+    int networkFetches() const { return _networkFetches.loadRelaxed(); }
 
     /// Fetches the elevation tile under a position, for point heights (see ElevationCache::tryHeight).
     void requestPointElevation(double lat, double lng);
@@ -134,6 +146,8 @@ private:
     QHash<TileId, QList<std::function<void(bool)>>> _elevationWaiters;
     QHash<TileId, double> _elevationFailedAt;
     QSet<QNetworkReply*> _replies;
+    QAtomicInt _cacheHits;
+    QAtomicInt _networkFetches;
 };
 
 }  // namespace Map3D

@@ -103,7 +103,7 @@ double ElevationCache::sample(const ElevationTile& tile, double lat, double lng)
 
 bool ElevationCache::tryHeight(double lat, double lng, double& height)
 {
-    for (int z = kMaxElevationZoom; z >= TerrainQuadtree::kRootZoom; z--) {
+    for (int z = kMaxElevationZoom; z >= 0; z--) {
         double tx = 0;
         double ty = 0;
         TileMath::latLngToTile(lat, lng, z, tx, ty);
@@ -281,27 +281,32 @@ void TileLoader::_startJob(const TileRequest& job)
         return;
     }
 
+    // Elevation downloads alongside the imagery rather than after it
+    const TileId elevationId = ElevationCache::elevationTileFor(job.id);
+    _withElevation(elevationId, {});
+
     auto clock = std::make_shared<QElapsedTimer>();
     clock->start();
-    _fetchTile(
-        _imageryMapType, job.id,
-        [this, job, clock](TileLoadOutcome outcome, const QByteArray& data, const QString& error, bool fromNetwork) {
-            if (outcome != TileLoadOutcome::Loaded) {
-                TileLoadResult result;
-                result.id = job.id;
-                result.kind = job.kind;
-                result.zoneVersion = job.zoneVersion;
-                result.outcome = outcome;
-                result.error = error;
-                _pushResult(std::move(result));
-                _finishJob(job.id);
-                return;
-            }
-            const double fetchMs = clock->nsecsElapsed() / 1e6;
-            // Waits for the tile's elevation too, so a tile does not appear flat and then pop to terrain
-            _withElevation(ElevationCache::elevationTileFor(job.id),
-                           [this, job, data, fetchMs, fromNetwork](bool) { _build(job, data, fetchMs, fromNetwork); });
-        });
+    _fetchTile(_imageryMapType, job.id,
+               [this, job, clock, elevationId](TileLoadOutcome outcome, const QByteArray& data, const QString& error,
+                                               bool fromNetwork) {
+                   if (outcome != TileLoadOutcome::Loaded) {
+                       TileLoadResult result;
+                       result.id = job.id;
+                       result.kind = job.kind;
+                       result.zoneVersion = job.zoneVersion;
+                       result.outcome = outcome;
+                       result.error = error;
+                       _pushResult(std::move(result));
+                       _finishJob(job.id);
+                       return;
+                   }
+                   const double fetchMs = clock->nsecsElapsed() / 1e6;
+                   // Waits for an elevation download still in flight, so a tile does not appear flat and then pop
+                   _withElevation(elevationId, [this, job, data, fetchMs, fromNetwork](bool) {
+                       _build(job, data, fetchMs, fromNetwork);
+                   });
+               });
 }
 
 void TileLoader::_build(const TileRequest& job, const QByteArray& imagery, double fetchMs, bool cacheImagery)
@@ -490,6 +495,7 @@ void TileLoader::_fetchTile(const QString& mapType, const TileId& id, FetchCallb
                            _fetchFromNetwork(mapType, mapId, id, done);
                            return;
                        }
+                       _cacheHits.ref();
                        done(TileLoadOutcome::Loaded, tile->img, {}, false);
                    });
     (void) connect(task, &QGCMapTask::error, this,
@@ -507,6 +513,7 @@ void TileLoader::_fetchTile(const QString& mapType, const TileId& id, FetchCallb
 
 void TileLoader::_fetchFromNetwork(const QString& mapType, int mapId, const TileId& id, FetchCallback done)
 {
+    _networkFetches.ref();
     const QNetworkRequest request = QGeoTileFetcherQGC::getNetworkRequest(mapId, id.x, id.y, id.z);
     QNetworkReply* const reply = _network->get(request);
     _replies.insert(reply);

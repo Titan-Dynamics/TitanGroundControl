@@ -1443,6 +1443,8 @@ void Map3DRenderer::_updateStats(double viewRadius, double frameMs, double cpuMs
     stats[QStringLiteral("queued")] = _loader->pendingCount();
     stats[QStringLiteral("inFlight")] = _loader->inFlightCount();
     stats[QStringLiteral("workers")] = _loader->workerCount();
+    stats[QStringLiteral("cacheHits")] = _loader->cacheHits();
+    stats[QStringLiteral("networkFetches")] = _loader->networkFetches();
     stats[QStringLiteral("loadedTotal")] = _loadedTotal;
     stats[QStringLiteral("loadedPerSecond")] = _loadedPerSecond;
     stats[QStringLiteral("fetchMs")] = _fetchMs;

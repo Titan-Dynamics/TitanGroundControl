@@ -20,6 +20,7 @@ private slots:
     void _gridSizeFollowsDemResolution();
     void _cloudCoverageFollowsDensity();
     void _elevationDecodesTerrarium();
+    void _elevationTileServesSeveralTerrainTiles();
     void _smoothedTrailEndsAtVehicle();
     void _modelLoadsWithNoseForward();
 };
