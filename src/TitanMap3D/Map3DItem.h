@@ -12,6 +12,7 @@
 
 #include "Map3DTypes.h"
 
+class Fact;
 class HudData;
 class Vehicle;
 
@@ -32,6 +33,9 @@ class Map3DItem : public QQuickRhiItem
     Q_PROPERTY(QGeoCoordinate map2DCenter READ map2DCenter WRITE setMap2DCenter NOTIFY map2DCenterChanged)
     Q_PROPERTY(double freeLookYaw READ freeLookYaw WRITE setFreeLookYaw NOTIFY freeLookChanged)
     Q_PROPERTY(double freeLookPitch READ freeLookPitch WRITE setFreeLookPitch NOTIFY freeLookChanged)
+    Q_PROPERTY(double cameraDistance READ cameraDistance WRITE setCameraDistance NOTIFY cameraChanged)
+    Q_PROPERTY(double cameraHeight READ cameraHeight WRITE setCameraHeight NOTIFY cameraChanged)
+    Q_PROPERTY(double cameraAngle READ cameraAngle WRITE setCameraAngle NOTIFY cameraChanged)
     Q_PROPERTY(bool vehicleConnected READ vehicleConnected NOTIFY vehicleConnectedChanged)
     Q_PROPERTY(QVariantMap stats READ stats NOTIFY statsChanged)
     Q_PROPERTY(QString adsbTooltip READ adsbTooltip NOTIFY adsbTooltipChanged)
@@ -55,6 +59,20 @@ public:
     double freeLookPitch() const { return _freeLookPitch; }
 
     void setFreeLookPitch(double pitch);
+
+    /// The chase camera's placement. Mouse adjustments are kept here and reach the settings a second after they
+    /// stop, as Mission Planner saves them when its map closes: every settings write rewrites the settings file.
+    double cameraDistance() const { return _cameraDistance; }
+
+    void setCameraDistance(double distance);
+
+    double cameraHeight() const { return _cameraHeight; }
+
+    void setCameraHeight(double height);
+
+    double cameraAngle() const { return _cameraAngle; }
+
+    void setCameraAngle(double angle);
 
     bool vehicleConnected() const { return _input.connected; }
 
@@ -80,6 +98,7 @@ signals:
     void vehicleChanged();
     void map2DCenterChanged();
     void freeLookChanged();
+    void cameraChanged();
     void vehicleConnectedChanged();
     void statsChanged();
     void adsbTooltipChanged();
@@ -91,6 +110,9 @@ protected:
 private:
     void _tick();
     void _onCoordinateChanged();
+    void _setCamera(double& value, double newValue);
+    void _followCameraSetting(Fact* fact, double& value);
+    void _saveCamera();
     void _refreshInput();
     void _refreshMission();
     void _refreshAdsb();
@@ -105,6 +127,10 @@ private:
     QGeoCoordinate _lastSeenMap2D;
     double _freeLookYaw = 0;
     double _freeLookPitch = 0;
+    double _cameraDistance = 0;
+    double _cameraHeight = 0;
+    double _cameraAngle = 0;
+    QTimer _saveCameraTimer;
 
     Map3D::FrameInput _input;
     Map3D::FrameOutput _output;

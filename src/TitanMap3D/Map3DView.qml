@@ -54,8 +54,8 @@ Item {
             const dx = mouse.x - _lastX
             const dy = mouse.y - _lastY
             if (map3D.vehicleConnected) {
-                root._settings.cameraAngle.rawValue = root._settings.cameraAngle.rawValue + dx * 0.5
-                root._settings.cameraHeight.rawValue = Math.max(-5, Math.min(5, root._settings.cameraHeight.rawValue + dy * 0.005))
+                map3D.cameraAngle += dx * 0.5
+                map3D.cameraHeight = Math.max(-5, Math.min(5, map3D.cameraHeight + dy * 0.005))
             } else {
                 // Reversed for a natural "grab the view" feel
                 Map3DState.freeLookYaw -= dx * 0.3
@@ -69,7 +69,7 @@ Item {
 
         onDoubleClicked: {
             map3D.markActive()
-            root._settings.cameraAngle.rawValue = 0
+            map3D.cameraAngle = 0
         }
 
         onWheel: (wheel) => {
@@ -77,7 +77,7 @@ Item {
                 return
             }
             // 0.1 per notch; scrolling up moves closer
-            root._settings.cameraDistance.rawValue = Math.max(0.1, Math.min(10, root._settings.cameraDistance.rawValue - wheel.angleDelta.y / 1200))
+            map3D.cameraDistance = Math.max(0.1, Math.min(10, map3D.cameraDistance - wheel.angleDelta.y / 1200))
             map3D.markActive()
         }
     }
@@ -91,12 +91,12 @@ Item {
 
         onActiveChanged: {
             if (active) {
-                _startDistance = root._settings.cameraDistance.rawValue
+                _startDistance = map3D.cameraDistance
             }
         }
         onActiveScaleChanged: {
             if (active && activeScale > 0) {
-                root._settings.cameraDistance.rawValue = Math.max(0.1, Math.min(10, _startDistance / activeScale))
+                map3D.cameraDistance = Math.max(0.1, Math.min(10, _startDistance / activeScale))
                 map3D.markActive()
             }
         }

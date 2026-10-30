@@ -31,6 +31,7 @@ namespace {
 constexpr int kTimerIntervalMs = 12;
 constexpr double kActiveLingerSeconds = 2;
 constexpr double kIdleIntervalSeconds = 1;
+constexpr int kSaveCameraDelayMs = 1000;
 
 double factValue(Fact* fact, double fallback = 0)
 {
@@ -63,13 +64,26 @@ Map3DItem::Map3DItem(QQuickItem* parent)
     _input.skyHorizon = lightened(QColor(0x9D, 0xC4, 0xDB));
     _lastActivity = nowSeconds();
 
+    Map3DSettings* const settings = SettingsManager::instance()->map3DSettings();
+    _followCameraSetting(settings->cameraDistance(), _cameraDistance);
+    _followCameraSetting(settings->cameraHeight(), _cameraHeight);
+    _followCameraSetting(settings->cameraAngle(), _cameraAngle);
+    _saveCameraTimer.setSingleShot(true);
+    _saveCameraTimer.setInterval(kSaveCameraDelayMs);
+    (void) connect(&_saveCameraTimer, &QTimer::timeout, this, &Map3DItem::_saveCamera);
+
     _timer.setInterval(kTimerIntervalMs);
     (void) connect(&_timer, &QTimer::timeout, this, &Map3DItem::_tick);
     _refreshInput();
     _timer.start();
 }
 
-Map3DItem::~Map3DItem() = default;
+Map3DItem::~Map3DItem()
+{
+    if (_saveCameraTimer.isActive()) {
+        _saveCamera();
+    }
+}
 
 QQuickRhiItemRenderer* Map3DItem::createRenderer()
 {
@@ -136,6 +150,51 @@ void Map3DItem::setFreeLookPitch(double pitch)
         _freeLookPitch = pitch;
         emit freeLookChanged();
     }
+}
+
+void Map3DItem::setCameraDistance(double distance)
+{
+    _setCamera(_cameraDistance, distance);
+}
+
+void Map3DItem::setCameraHeight(double height)
+{
+    _setCamera(_cameraHeight, height);
+}
+
+void Map3DItem::setCameraAngle(double angle)
+{
+    _setCamera(_cameraAngle, angle);
+}
+
+void Map3DItem::_setCamera(double& value, double newValue)
+{
+    if (value != newValue) {
+        value = newValue;
+        _saveCameraTimer.start();
+        emit cameraChanged();
+    }
+}
+
+void Map3DItem::_followCameraSetting(Fact* fact, double& value)
+{
+    // Edits from the settings dialog or page
+    value = fact->rawValue().toDouble();
+    (void) connect(fact, &Fact::rawValueChanged, this, [this, &value](const QVariant& rawValue) {
+        if (value != rawValue.toDouble()) {
+            value = rawValue.toDouble();
+            emit cameraChanged();
+        }
+    });
+}
+
+void Map3DItem::_saveCamera()
+{
+    _saveCameraTimer.stop();
+    Map3DSettings* const settings = SettingsManager::instance()->map3DSettings();
+    settings->cameraDistance()->setRawValue(_cameraDistance);
+    settings->cameraHeight()->setRawValue(_cameraHeight);
+    settings->cameraAngle()->setRawValue(_cameraAngle);
 }
 
 void Map3DItem::markActive()
@@ -245,9 +304,9 @@ QString Map3DItem::_modelPath() const
 void Map3DItem::_refreshInput()
 {
     Map3DSettings* const settings = SettingsManager::instance()->map3DSettings();
-    _input.cameraDistance = settings->cameraDistance()->rawValue().toDouble();
-    _input.cameraHeight = settings->cameraHeight()->rawValue().toDouble();
-    _input.cameraAngle = settings->cameraAngle()->rawValue().toDouble();
+    _input.cameraDistance = _cameraDistance;
+    _input.cameraHeight = _cameraHeight;
+    _input.cameraAngle = _cameraAngle;
     _input.fieldOfView = settings->fieldOfView()->rawValue().toDouble();
     _input.vehicleScale = settings->vehicleScale()->rawValue().toDouble();
     _input.vehicleColor = QColor(settings->vehicleColor()->rawValue().toString());
