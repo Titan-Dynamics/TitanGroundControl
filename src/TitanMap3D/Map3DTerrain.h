@@ -41,7 +41,11 @@ struct SelectionParams
     /// Ground height near the camera, used for tiles whose heights are not known yet
     double referenceHeight = 0;
 
-    /// 24 within 100 m of the ground, 22 up to 500 m, 20 above, with 10% hysteresis at each boundary.
+    /// Finest imagery level. Mission Planner goes to 24 near the ground, but Google's satellite imagery stops at 22
+    /// and answers HTTP 400 past it.
+    static constexpr int kMaxImageryZoom = 22;
+
+    /// kMaxImageryZoom up to 500 m above the ground and 20 above it, with 10% hysteresis at the boundary.
     static int maxZoomFor(double heightAboveGround, int current);
 };
 

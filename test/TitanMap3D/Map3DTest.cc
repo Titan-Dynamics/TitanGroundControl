@@ -206,6 +206,18 @@ void Map3DTest::_quadtreeRequestsRootsFirst()
     }
 }
 
+void Map3DTest::_maxZoomFollowsHeight()
+{
+    // Never finer than Google's satellite imagery, even on the ground
+    QCOMPARE(SelectionParams::kMaxImageryZoom, 22);
+    QCOMPARE(SelectionParams::maxZoomFor(1, 20), 22);
+    QCOMPARE(SelectionParams::maxZoomFor(2000, 22), 20);
+
+    // Within 10% of the 500 m boundary the level holds
+    QCOMPARE(SelectionParams::maxZoomFor(520, 22), 22);
+    QCOMPARE(SelectionParams::maxZoomFor(480, 20), 20);
+}
+
 void Map3DTest::_meshHasSkirtsBelowEdges()
 {
     const TileId id{2810, 6533, 14};

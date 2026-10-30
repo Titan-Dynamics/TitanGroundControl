@@ -11,7 +11,7 @@ namespace Map3D {
 
 int SelectionParams::maxZoomFor(double heightAboveGround, int current)
 {
-    const auto band = [](double height) { return height < 100 ? 24 : (height < 500 ? 22 : 20); };
+    const auto band = [](double height) { return height < 500 ? kMaxImageryZoom : 20; };
 
     // Only change once the height is clearly past the boundary between the two levels
     const int wanted = band(heightAboveGround);

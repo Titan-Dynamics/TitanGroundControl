@@ -47,10 +47,12 @@ Rectangle {
             color:                  root._labelColor
         }
         QGCLabel {
-            id:             rowValue
-            font.pointSize: root._fontSize
-            font.family:    ScreenTools.fixedFontFamily
-            color:          valueColor
+            id:                     rowValue
+            Layout.maximumWidth:    ScreenTools.defaultFontPixelWidth * 60
+            elide:                  Text.ElideMiddle
+            font.pointSize:         root._fontSize
+            font.family:            ScreenTools.fixedFontFamily
+            color:                  valueColor
         }
     }
 
