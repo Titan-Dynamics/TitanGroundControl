@@ -2,13 +2,14 @@ import QtQml.Models
 
 import QGroundControl
 import QGroundControl.Controls
-import QGroundControl.Viewer3D
+import QGroundControl.TitanMap3D
 
 ToolStripActionList {
     id: _root
 
     model: [
-        Viewer3DShowAction { },
+        Map3DShowAction { },
+        Map3DSettingsAction { },
         GuidedActionTakeoff { },
         GuidedActionLand { },
         GuidedActionRTL { },

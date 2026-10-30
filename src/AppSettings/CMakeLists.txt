@@ -65,6 +65,7 @@ else()
         GNSSReceiverSettings.qml
         GeneralSettings.qml
         LoggingSettings.qml
+        Map3DSettings.qml
         MapsSettings.qml
         PlanViewSettings.qml
         PX4LogTransferSettings.qml
@@ -73,7 +74,6 @@ else()
         SettingsPagesModel.qml
         TelemetrySettings.qml
         VideoSettings.qml
-        Viewer3DSettings.qml
     )
 endif()
 

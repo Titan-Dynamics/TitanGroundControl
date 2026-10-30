@@ -9,6 +9,8 @@ target_sources(
             ADSBVehicleManagerSettings.h
             AISettings.cc
             AISettings.h
+            Map3DSettings.cc
+            Map3DSettings.h
             AppSettings.cc
             AppSettings.h
             AutoConnectSettings.cc

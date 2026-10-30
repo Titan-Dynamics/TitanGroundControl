@@ -15,6 +15,7 @@ import QGroundControl.FlyView
 import QGroundControl.FlightMap
 import QGroundControl.Toolbar
 import QGroundControl.Viewer3D
+import QGroundControl.TitanMap3D
 
 Item {
     id: _root
@@ -83,8 +84,8 @@ Item {
                 viewportRect:           Qt.rect(widgetLayer.x, widgetLayer.y, widgetLayer.width, widgetLayer.height)
                 occluders:              _mapOccluders
                 mapName:                "FlightDisplayView"
-                enabled:                !_is3DMode
-                visible:                !_is3DMode
+                enabled:                !_is3DMode && !Map3DState.shown
+                visible:                !_is3DMode && !Map3DState.shown
             }
         }
 
@@ -102,8 +103,8 @@ Item {
                 chromeTopMargin:        widgetLayer.y + _layerOccluders.topRight.y + _layerOccluders.topRight.height + _widgetMargin
                 chromeBottomMargin:     mapHolder.height - widgetLayer.y - Math.min(_layerOccluders.pipView.y, _layerOccluders.virtualJoystickLeft.y) + ScreenTools.defaultFontPixelWidth / 2
                 mapName:                "FlightDisplayView"
-                enabled:                !_is3DMode
-                visible:                !_is3DMode
+                enabled:                !_is3DMode && !Map3DState.shown
+                visible:                !_is3DMode && !Map3DState.shown
             }
         }
 
@@ -187,6 +188,21 @@ Item {
             anchors.topMargin:  toolbar.height
             z:                  QGroundControl.zOrderTopMost
             visible:            false
+        }
+
+        // Titan: Mission Planner style 3D map in place of the map while shown
+        Loader {
+            id:           map3DLoader
+            z:            1
+            anchors.fill: parent
+            active:       Map3DState.shown
+
+            sourceComponent: Component {
+                Map3DView {
+                    map2DCenter:    _mapControl ? _mapControl.center : undefined
+                    topInset:       toolbar.height
+                }
+            }
         }
 
         Loader {

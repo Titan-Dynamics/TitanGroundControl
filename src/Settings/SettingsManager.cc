@@ -5,6 +5,7 @@
 
 #include "ADSBVehicleManagerSettings.h"
 #include "AISettings.h"
+#include "Map3DSettings.h"
 #include "APMMavlinkStreamRateSettings.h"
 #include "AppMessages.h"
 #include "AppSettings.h"
@@ -85,6 +86,7 @@ void SettingsManager::init()
     _viewer3DSettings = new Viewer3DSettings(this);
     _adsbVehicleManagerSettings = new ADSBVehicleManagerSettings(this);
     _aiSettings = new AISettings(this);
+    _map3DSettings = new Map3DSettings(this);
     _apmMavlinkStreamRateSettings = new APMMavlinkStreamRateSettings(this);
 
     QGCCorePlugin::instance()->registerCustomSettings(this);
@@ -120,6 +122,7 @@ void SettingsManager::registerCustomSettingsGroup(const QString &accessorName, S
 
 ADSBVehicleManagerSettings *SettingsManager::adsbVehicleManagerSettings() const { return _adsbVehicleManagerSettings; }
 AISettings *SettingsManager::aiSettings() const { return _aiSettings; }
+Map3DSettings *SettingsManager::map3DSettings() const { return _map3DSettings; }
 APMMavlinkStreamRateSettings *SettingsManager::apmMavlinkStreamRateSettings() const { return _apmMavlinkStreamRateSettings; }
 AppSettings *SettingsManager::appSettings() const { return _appSettings; }
 AutoConnectSettings *SettingsManager::autoConnectSettings() const { return _autoConnectSettings; }

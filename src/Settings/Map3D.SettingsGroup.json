@@ -1,0 +1,195 @@
+{
+    "version": 1,
+    "fileType": "FactMetaData",
+    "QGC.MetaData.Facts": [
+        {
+            "name": "cameraDistance",
+            "shortDesc": "Distance of the chase camera behind the vehicle.",
+            "type": "double",
+            "units": "m",
+            "min": 0.1,
+            "max": 100,
+            "decimalPlaces": 2,
+            "increment": 0.05,
+            "default": 0.8,
+            "label": "Camera distance",
+            "keywords": "chase,distance,zoom"
+        },
+        {
+            "name": "cameraHeight",
+            "shortDesc": "Height of the chase camera above the vehicle.",
+            "type": "double",
+            "units": "m",
+            "min": -100,
+            "max": 100,
+            "decimalPlaces": 2,
+            "increment": 0.05,
+            "default": 0.2,
+            "label": "Camera height",
+            "keywords": "chase,height"
+        },
+        {
+            "name": "cameraAngle",
+            "shortDesc": "Chase camera angle around the vehicle: 0 behind, 90 right, -90 left.",
+            "type": "double",
+            "units": "deg",
+            "decimalPlaces": 1,
+            "default": 0,
+            "label": "Camera angle",
+            "keywords": "chase,orbit,angle"
+        },
+        {
+            "name": "fieldOfView",
+            "shortDesc": "Camera field of view.",
+            "type": "double",
+            "units": "deg",
+            "min": 30,
+            "max": 120,
+            "decimalPlaces": 0,
+            "increment": 5,
+            "default": 60,
+            "label": "Camera field of view",
+            "keywords": "fov,field of view"
+        },
+        {
+            "name": "vehicleScale",
+            "shortDesc": "Vehicle model size multiplier; 1.0 is the model's real size (about a 1 m wingspan).",
+            "type": "double",
+            "units": "m",
+            "min": 0.1,
+            "max": 10,
+            "decimalPlaces": 2,
+            "increment": 0.05,
+            "default": 1.0,
+            "label": "Vehicle scale",
+            "keywords": "model,size,scale"
+        },
+        {
+            "name": "vehicleColor",
+            "shortDesc": "Color of the vehicle model.",
+            "type": "string",
+            "enumStrings": "Red,Orange,Yellow,Green,Cyan,Blue,Purple,White,Gray,Black",
+            "enumValues": "#ff0000,#ffa500,#ffff00,#00c000,#00ffff,#2060ff,#a020f0,#ffffff,#808080,#202020",
+            "default": "#ff0000",
+            "label": "Vehicle color",
+            "keywords": "model,color,colour"
+        },
+        {
+            "name": "stlPath",
+            "shortDesc": "Custom STL model for the vehicle (millimetres, Mission Planner axes). Empty uses the model for the vehicle type.",
+            "type": "string",
+            "default": "",
+            "label": "Custom vehicle STL",
+            "keywords": "model,stl,custom"
+        },
+        {
+            "name": "waypointMarkerSize",
+            "shortDesc": "Size of the waypoint markers.",
+            "type": "double",
+            "units": "m",
+            "min": 10,
+            "max": 500,
+            "decimalPlaces": 0,
+            "increment": 10,
+            "default": 60,
+            "label": "Waypoint marker size",
+            "keywords": "waypoint,marker,size"
+        },
+        {
+            "name": "adsbCircleSize",
+            "shortDesc": "Diameter of the ADS-B traffic circles.",
+            "type": "double",
+            "units": "m",
+            "min": 50,
+            "max": 2000,
+            "decimalPlaces": 0,
+            "increment": 50,
+            "default": 500,
+            "label": "ADS-B circle size",
+            "keywords": "adsb,traffic,size"
+        },
+        {
+            "name": "cloudDensity",
+            "shortDesc": "How much of the sky the clouds cover, from 0 (none) to 100.",
+            "type": "uint32",
+            "min": 0,
+            "max": 100,
+            "increment": 10,
+            "default": 50,
+            "label": "Cloud density",
+            "keywords": "clouds,sky,weather"
+        },
+        {
+            "name": "showHeadingLine",
+            "shortDesc": "Show the vehicle heading line (red).",
+            "type": "bool",
+            "default": true,
+            "label": "Heading line (red)",
+            "keywords": "heading,line,indicator"
+        },
+        {
+            "name": "showNavBearingLine",
+            "shortDesc": "Show the navigation bearing line (orange).",
+            "type": "bool",
+            "default": true,
+            "label": "Nav bearing line (orange)",
+            "keywords": "navigation,bearing,line,indicator"
+        },
+        {
+            "name": "showGpsHeadingLine",
+            "shortDesc": "Show the GPS course line (black).",
+            "type": "bool",
+            "default": true,
+            "label": "GPS heading line (black)",
+            "keywords": "gps,course,line,indicator"
+        },
+        {
+            "name": "showTurnRadius",
+            "shortDesc": "Show the predicted turn arc (pink).",
+            "type": "bool",
+            "default": true,
+            "label": "Turn radius arc (pink)",
+            "keywords": "turn,radius,arc,indicator"
+        },
+        {
+            "name": "showTrail",
+            "shortDesc": "Show the flight path trail while armed.",
+            "type": "bool",
+            "default": false,
+            "label": "Flight path trail",
+            "keywords": "trail,track,path"
+        },
+        {
+            "name": "fpvMode",
+            "shortDesc": "Look from the vehicle instead of chasing it.",
+            "type": "bool",
+            "default": false,
+            "label": "FPV mode (camera at aircraft)",
+            "keywords": "fpv,first person,cockpit,camera"
+        },
+        {
+            "name": "smoothMovement",
+            "shortDesc": "Carry the vehicle and traffic along between telemetry updates and filter their pose and the trail.",
+            "type": "bool",
+            "default": true,
+            "label": "Smooth movement",
+            "keywords": "smooth,filter,interpolate"
+        },
+        {
+            "name": "hudOverlay",
+            "shortDesc": "Draw the Mission Planner HUD over the 3D map, without its sky and ground.",
+            "type": "bool",
+            "default": false,
+            "label": "HUD overlay",
+            "keywords": "hud,overlay,attitude,instruments"
+        },
+        {
+            "name": "statsForNerds",
+            "shortDesc": "Show the diagnostics panel: frame timing, terrain streaming, view and GPU.",
+            "type": "bool",
+            "default": false,
+            "label": "Stats for nerds",
+            "keywords": "stats,diagnostics,performance,debug"
+        }
+    ]
+}

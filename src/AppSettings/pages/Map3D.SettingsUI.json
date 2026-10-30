@@ -1,0 +1,126 @@
+{
+    "version": 1,
+    "fileType": "SettingsUI",
+    "groups": [
+        {
+            "heading": "Camera",
+            "keywords": [
+                "chase",
+                "distance",
+                "height",
+                "field of view",
+                "fov",
+                "fpv",
+                "first person"
+            ],
+            "controls": [
+                {
+                    "setting": "map3DSettings.cameraDistance"
+                },
+                {
+                    "setting": "map3DSettings.cameraHeight"
+                },
+                {
+                    "setting": "map3DSettings.fieldOfView"
+                },
+                {
+                    "setting": "map3DSettings.fpvMode"
+                }
+            ]
+        },
+        {
+            "heading": "Vehicle",
+            "keywords": [
+                "model",
+                "scale",
+                "color",
+                "stl",
+                "smooth",
+                "filter"
+            ],
+            "controls": [
+                {
+                    "setting": "map3DSettings.vehicleScale"
+                },
+                {
+                    "setting": "map3DSettings.vehicleColor"
+                },
+                {
+                    "setting": "map3DSettings.stlPath",
+                    "control": "browse",
+                    "showWhen": "!ScreenTools.isMobile",
+                    "properties": {
+                        "selectFolder": false,
+                        "nameFilters": "[ qsTr(\"STL files (*.stl)\"), qsTr(\"All Files (*)\") ]"
+                    }
+                },
+                {
+                    "setting": "map3DSettings.stlPath",
+                    "control": "textfield",
+                    "showWhen": "ScreenTools.isMobile"
+                },
+                {
+                    "setting": "map3DSettings.smoothMovement"
+                }
+            ]
+        },
+        {
+            "heading": "Indicators",
+            "keywords": [
+                "heading line",
+                "nav bearing",
+                "gps course",
+                "turn radius",
+                "arc",
+                "trail"
+            ],
+            "controls": [
+                {
+                    "setting": "map3DSettings.showHeadingLine"
+                },
+                {
+                    "setting": "map3DSettings.showNavBearingLine"
+                },
+                {
+                    "setting": "map3DSettings.showGpsHeadingLine"
+                },
+                {
+                    "setting": "map3DSettings.showTurnRadius"
+                },
+                {
+                    "setting": "map3DSettings.showTrail"
+                }
+            ]
+        },
+        {
+            "heading": "Scene",
+            "keywords": [
+                "waypoint",
+                "marker",
+                "adsb",
+                "traffic",
+                "clouds",
+                "hud",
+                "overlay",
+                "stats"
+            ],
+            "controls": [
+                {
+                    "setting": "map3DSettings.waypointMarkerSize"
+                },
+                {
+                    "setting": "map3DSettings.adsbCircleSize"
+                },
+                {
+                    "setting": "map3DSettings.cloudDensity"
+                },
+                {
+                    "setting": "map3DSettings.hudOverlay"
+                },
+                {
+                    "setting": "map3DSettings.statsForNerds"
+                }
+            ]
+        }
+    ]
+}

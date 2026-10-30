@@ -7,6 +7,7 @@
 
 class ADSBVehicleManagerSettings;
 class AISettings;
+class Map3DSettings;
 class APMMavlinkStreamRateSettings;
 class AppSettings;
 class AutoConnectSettings;
@@ -43,6 +44,7 @@ class SettingsManager : public QQmlPropertyMap
     QML_UNCREATABLE("")
     Q_MOC_INCLUDE("ADSBVehicleManagerSettings.h")
     Q_MOC_INCLUDE("AISettings.h")
+    Q_MOC_INCLUDE("Map3DSettings.h")
     Q_MOC_INCLUDE("APMMavlinkStreamRateSettings.h")
     Q_MOC_INCLUDE("AppSettings.h")
     Q_MOC_INCLUDE("AutoConnectSettings.h")
@@ -69,6 +71,7 @@ class SettingsManager : public QQmlPropertyMap
     Q_MOC_INCLUDE("Viewer3DSettings.h")
     Q_PROPERTY(QObject *adsbVehicleManagerSettings      READ adsbVehicleManagerSettings     CONSTANT)
     Q_PROPERTY(QObject *aiSettings                      READ aiSettings                     CONSTANT)
+    Q_PROPERTY(QObject *map3DSettings                   READ map3DSettings                  CONSTANT)
     Q_PROPERTY(QObject *apmMavlinkStreamRateSettings    READ apmMavlinkStreamRateSettings   CONSTANT)
     Q_PROPERTY(QObject *appSettings                     READ appSettings                    CONSTANT)
     Q_PROPERTY(QObject *autoConnectSettings             READ autoConnectSettings            CONSTANT)
@@ -117,6 +120,7 @@ public:
 
     ADSBVehicleManagerSettings *adsbVehicleManagerSettings() const;
     AISettings *aiSettings() const;
+    Map3DSettings *map3DSettings() const;
     APMMavlinkStreamRateSettings *apmMavlinkStreamRateSettings() const;
     AppSettings *appSettings() const;
     AutoConnectSettings *autoConnectSettings() const;
@@ -147,6 +151,7 @@ private:
 
     ADSBVehicleManagerSettings *_adsbVehicleManagerSettings = nullptr;
     AISettings *_aiSettings = nullptr;
+    Map3DSettings *_map3DSettings = nullptr;
     APMMavlinkStreamRateSettings *_apmMavlinkStreamRateSettings = nullptr;
     AppSettings *_appSettings = nullptr;
     AutoConnectSettings *_autoConnectSettings = nullptr;
