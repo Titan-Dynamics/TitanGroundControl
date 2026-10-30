@@ -3,15 +3,14 @@ import QtPositioning
 
 import QGroundControl
 import QGroundControl.Controls
-import QGroundControl.TitanHud
 
-/// The Titan 3D map view, Mission Planner's Map3D: the scene, its mouse controls, the HUD overlay, ADS-B tooltips
-/// and the stats panel.
+/// The Titan 3D map view, Mission Planner's Map3D: the scene, its mouse controls, ADS-B tooltips and the stats
+/// panel.
 Item {
     id: root
 
     property var  map2DCenter        ///< The 2D map's centre, followed while no vehicle is connected
-    property real topInset:     0    ///< Kept clear (toolbar) by the HUD and the stats panel
+    property real topInset:     0    ///< Kept clear (toolbar) by the stats panel
     property real rightInset:   0    ///< Kept clear (top-right widgets) by the stats panel
 
     readonly property var _settings: QGroundControl.settingsManager.map3DSettings
@@ -101,13 +100,6 @@ Item {
                 map3D.markActive()
             }
         }
-    }
-
-    TitanHud {
-        anchors.fill:       parent
-        anchors.topMargin:  root.topInset
-        drawBackground:     false
-        visible:            root._settings.hudOverlay.rawValue
     }
 
     Rectangle {

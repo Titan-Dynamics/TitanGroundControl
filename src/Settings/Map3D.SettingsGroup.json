@@ -176,14 +176,6 @@
             "keywords": "smooth,filter,interpolate"
         },
         {
-            "name": "hudOverlay",
-            "shortDesc": "Draw the Mission Planner HUD over the 3D map, without its sky and ground.",
-            "type": "bool",
-            "default": false,
-            "label": "HUD overlay",
-            "keywords": "hud,overlay,attitude,instruments"
-        },
-        {
             "name": "statsForNerds",
             "shortDesc": "Show the diagnostics panel: frame timing, terrain streaming, view and GPU.",
             "type": "bool",

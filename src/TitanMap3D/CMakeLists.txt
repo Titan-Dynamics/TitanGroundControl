@@ -1,8 +1,8 @@
 # ============================================================================
 # Titan 3D Map Module
 # Mission Planner's 3D map (TitanPlanner Map3D) on Qt's RHI: streamed satellite terrain from the shared tile cache,
-# chase / FPV / free-look camera, vehicle model, mission, ADS-B, clouds and the HUD overlay. The C++ types register
-# in the app's QML module.
+# chase / FPV / free-look camera, vehicle model, mission, ADS-B and clouds. The C++ types register in the app's QML
+# module.
 # ============================================================================
 
 find_package(Qt6 REQUIRED COMPONENTS ShaderTools)

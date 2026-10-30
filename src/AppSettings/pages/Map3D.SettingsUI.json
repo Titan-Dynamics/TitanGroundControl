@@ -100,8 +100,6 @@
                 "adsb",
                 "traffic",
                 "clouds",
-                "hud",
-                "overlay",
                 "stats"
             ],
             "controls": [
@@ -113,9 +111,6 @@
                 },
                 {
                     "setting": "map3DSettings.cloudDensity"
-                },
-                {
-                    "setting": "map3DSettings.hudOverlay"
                 },
                 {
                     "setting": "map3DSettings.statsForNerds"

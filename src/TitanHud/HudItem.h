@@ -11,7 +11,7 @@ class QPainter;
 
 /// Mission Planner's HUD, drawn with QPainter: artificial horizon, pitch ladder and roll scale, heading,
 /// speed and altitude tapes with target bugs, cross-track and turn rate, battery, GPS/EKF/vibration
-/// badges, status texts and the flight mode. With drawBackground off (video and 3D map overlays) the
+/// badges, status texts and the flight mode. With drawBackground off (the video overlay) the
 /// sky, ground and horizon line are skipped and everything else is drawn over the host.
 class HudItem : public QQuickPaintedItem
 {

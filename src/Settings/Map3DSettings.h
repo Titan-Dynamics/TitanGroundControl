@@ -32,6 +32,5 @@ public:
     DEFINE_SETTINGFACT(showTrail)
     DEFINE_SETTINGFACT(fpvMode)
     DEFINE_SETTINGFACT(smoothMovement)
-    DEFINE_SETTINGFACT(hudOverlay)
     DEFINE_SETTINGFACT(statsForNerds)
 };

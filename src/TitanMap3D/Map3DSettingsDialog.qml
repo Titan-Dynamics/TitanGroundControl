@@ -21,7 +21,7 @@ QGCPopupDialog {
                        _settings.vehicleScale, _settings.waypointMarkerSize, _settings.adsbCircleSize, _settings.cloudDensity,
                        _settings.vehicleColor, _settings.stlPath, _settings.showHeadingLine, _settings.showNavBearingLine,
                        _settings.showGpsHeadingLine, _settings.showTurnRadius, _settings.showTrail, _settings.fpvMode,
-                       _settings.smoothMovement, _settings.hudOverlay, _settings.statsForNerds]
+                       _settings.smoothMovement, _settings.statsForNerds]
         for (const fact of facts) {
             fact.rawValue = fact.defaultValue
         }
@@ -107,7 +107,6 @@ QGCPopupDialog {
         FactCheckBox { text: qsTr("Flight path trail");             fact: root._settings.showTrail }
         FactCheckBox { text: qsTr("FPV mode (camera at aircraft)"); fact: root._settings.fpvMode }
         FactCheckBox { text: qsTr("Smooth movement");               fact: root._settings.smoothMovement }
-        FactCheckBox { text: qsTr("HUD overlay");                   fact: root._settings.hudOverlay }
         FactCheckBox { text: qsTr("Stats for nerds");               fact: root._settings.statsForNerds }
 
         QGCButton {
