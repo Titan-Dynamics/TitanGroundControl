@@ -1,11 +1,13 @@
 #include "QGCApplication.h"
 
+#include <QtConcurrent/QtConcurrentRun>
 #include <QtCore/QEvent>
 #include <QtCore/QFile>
 #include <QtCore/QMetaMethod>
 #include <QtCore/QMetaObject>
 #include <QtCore/private/qthread_p.h>
 #include <QtGui/QFontDatabase>
+#include <QtGui/QFontMetricsF>
 #include <QtGui/QIcon>
 #include <QtQml/QQmlApplicationEngine>
 #include <QtQml/QQmlContext>
@@ -35,6 +37,7 @@
 #include "QGCLoggingCategoryManager.h"
 #include "QGCNetworkHelper.h"
 #include "QGCVersionCheck.h"
+#include "ScreenToolsController.h"
 #include "SettingsManager.h"
 #include "Vehicle.h"
 #include "VideoManager.h"
@@ -292,6 +295,17 @@ void QGCApplication::_initForNormalAppBoot()
     (void) _initVideo();
 
     (void) _initQmlRootWindow();
+
+    // Application Settings names each language in its own script, and the first text in a new script makes Qt find
+    // and load fallback fonts: that held up the first opening of the settings by over a second in a Debug build.
+    // Measure the names now, on a worker thread, so it is done by then.
+    const QStringList languageNames = SettingsManager::instance()->appSettings()->qLocaleLanguage()->enumStrings();
+    (void) QtConcurrent::run([languageNames] {
+        const QFontMetricsF metrics{QFont(ScreenToolsController::normalFontFamily())};
+        for (const QString& name : languageNames) {
+            (void) metrics.horizontalAdvance(name);
+        }
+    });
 
     AudioOutput::instance()->init(SettingsManager::instance()->appSettings()->audioVolume(),
                                   SettingsManager::instance()->appSettings()->audioMuted());
