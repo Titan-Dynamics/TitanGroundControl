@@ -593,16 +593,25 @@ bool Map3DRenderer::_prepareView(double now)
     }
 
     _frame.update(_viewLat, _viewLng);
+    const bool groundWasKnown = _groundHeightKnown;
     _updateGroundHeight(_viewLat, _viewLng);
 
     if (_input.connected) {
-        // The vehicle is drawn at the terrain under it plus its height above home, so it sits on the rendered ground
+        // The vehicle is drawn at the terrain under it plus its height above home, so it sits on the rendered ground.
+        // Mission Planner reads that height synchronously; here it can arrive a few frames late, and the vehicle then
+        // starts from it rather than easing up from where the last known height (sea level at first) put it. The
+        // trail waits for it as well.
+        if (_groundHeightKnown && !groundWasKnown) {
+            _vehicle.reset();
+        }
         Fix fix = _input.fix;
         fix.alt = _groundHeight + _input.relativeAltitude;
         fix.timeSeconds = std::max(fix.timeSeconds, now - kMaxDeadReckonSeconds);
         _vehicle.update(_frame, fix, _input.roll, _input.pitch, _input.yaw, _groundHeight, _input.navBearing,
                         _input.groundCourse, _input.smoothMovement, _input.armed, now);
-        _trail.record(_frame, _vehicle, _input.showTrail, _input.armed, kTrailMaxPoints);
+        if (_groundHeightKnown) {
+            _trail.record(_frame, _vehicle, _input.showTrail, _input.armed, kTrailMaxPoints);
+        }
 
         // In FPV the eye stays a metre above the ground under the vehicle, or a landed vehicle would look out from
         // level with the terrain mesh
@@ -659,10 +668,16 @@ QPair<double, double> Map3DRenderer::_followMap2D()
 
 void Map3DRenderer::_updateGroundHeight(double lat, double lng)
 {
-    // Keeps the last known ground height until the data is in memory; never blocks the render thread
+    // Keeps the last known ground height until the data is in memory; never blocks the render thread. A height read
+    // further away than the vehicle tracker jumps no longer counts as known.
     double ground = 0;
     if (_loader->elevation().tryHeight(lat, lng, ground)) {
         _groundHeight = ground;
+        _groundLat = lat;
+        _groundLng = lng;
+        _groundHeightKnown = true;
+    } else if (distanceMeters(lat, lng, _groundLat, _groundLng) > VehicleTracker::kJumpDistance) {
+        _groundHeightKnown = false;
     }
     _loader->requestPointElevation(lat, lng);
 }

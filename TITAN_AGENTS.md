@@ -91,7 +91,9 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   0.1 m per notch within 0.1-10 m, double-click resets the angle, free-look 0.3 deg/px), the Kalman tracker,
   the UTM world frame, the quadtree LOD, skirts, fog, sky, clouds (with .NET's seeded `Random`), the lines,
   trail, markers and ADS-B. The vehicle is drawn at the terrain under it plus its height above home, as in
-  Mission Planner. Deliberate differences: elevation is Terrarium tiles on the imagery's XYZ grid (QGC's
+  Mission Planner; that terrain height loads asynchronously here, so the tracker starts afresh when it arrives
+  (`_groundHeightKnown`) instead of easing the vehicle up from sea level. Deliberate differences: elevation is
+  Terrarium tiles on the imagery's XYZ grid (QGC's
   Copernicus terrain fetches ~1 km tiles one at a time, far too slow for a 30-150 km view), taken three zoom
   levels above each imagery tile (`kElevationZoomOffset`): still 32 samples per tile, as many as its mesh has
   cells, while one ~80 KB download serves 64 tiles. Imagery and elevation download in parallel, 16 tiles at a

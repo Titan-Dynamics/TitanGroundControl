@@ -126,6 +126,9 @@ private:
     bool _hasLastMap2D = false;
     double _lastMap2DChange = 0;
     double _groundHeight = 0;
+    bool _groundHeightKnown = false;  ///< _groundHeight was read near the view centre
+    double _groundLat = 0;
+    double _groundLng = 0;
     QMatrix4x4 _view;
     QMatrix4x4 _overlayProjection;
     int _zoneVersion = -1;
