@@ -106,6 +106,9 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   thread only copies a `FrameInput` in `synchronize`. Pass 2 (mission, vehicle) is kept in front of the terrain
   by drawing into depth range [0, 0.05] with the terrain in [0.05, 1], equivalent to Mission Planner clearing
   depth between passes. Lines are screen-space quads (`line.vert`), since D3D11 and Metal have no wide lines.
+  A tile's GPU resources are freed with `QRhiResource::deleteLater` (the `DeleteLater` deleter in `TileGpu`):
+  eviction can drop a tile in the frame that queued its texture upload, and QRhi reads the texture only when
+  `beginPass` submits the batch, so deleting it at once crashed (`Q_UNREACHABLE` in `textureFormatInfo`).
 - Imagery uses the 2D map's provider when it is a satellite type (so cached tiles are shared), the same
   vendor's satellite type otherwise, else Google Satellite. Network tiles are cached only after they decode.
   The loader reads the shared cache database itself, on one thread with its own SQLite connection

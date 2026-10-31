@@ -31,12 +31,19 @@ protected:
     void render(QRhiCommandBuffer* cb) override;
 
 private:
+    /// Deletes a QRhi resource when the frame being recorded ends rather than at once: a tile can be evicted or
+    /// replaced in the frame that queued its texture upload, and QRhi reads the texture when it submits the batch.
+    struct DeleteLater
+    {
+        void operator()(QRhiResource* resource) const { resource->deleteLater(); }
+    };
+
     struct TileGpu
     {
-        std::unique_ptr<QRhiTexture> texture;
-        std::unique_ptr<QRhiBuffer> vertices;
-        std::unique_ptr<QRhiBuffer> uniforms;
-        std::unique_ptr<QRhiShaderResourceBindings> bindings;
+        std::unique_ptr<QRhiTexture, DeleteLater> texture;
+        std::unique_ptr<QRhiBuffer, DeleteLater> vertices;
+        std::unique_ptr<QRhiBuffer, DeleteLater> uniforms;
+        std::unique_ptr<QRhiShaderResourceBindings, DeleteLater> bindings;
         QRhiTexture* boundTexture = nullptr;
     };
 
