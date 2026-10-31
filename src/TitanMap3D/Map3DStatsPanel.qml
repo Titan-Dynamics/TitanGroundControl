@@ -16,6 +16,8 @@ Rectangle {
     readonly property color _valueColor: "#f0f0f0"
     readonly property color _accentColor: "#ffa040"
     readonly property color _badColor: "#ff6060"
+    // Values take a fixed width, so the panel keeps its size as the numbers change; longer ones elide
+    readonly property real _valueWidth: valueMetrics.advanceWidth
 
     function _number(value, decimals) {
         return (value === undefined || isNaN(value)) ? "-" : Number(value).toFixed(decimals)
@@ -25,6 +27,13 @@ Rectangle {
     height:     layout.implicitHeight + ScreenTools.defaultFontPixelHeight
     radius:     ScreenTools.defaultFontPixelHeight / 3
     color:      Qt.rgba(0.07, 0.08, 0.1, 0.82)
+
+    TextMetrics {
+        id:             valueMetrics
+        font.pointSize: root._fontSize
+        font.family:    ScreenTools.fixedFontFamily
+        text:           "0".repeat(44)
+    }
 
     component Section: QGCLabel {
         font.pointSize: root._fontSize
@@ -48,7 +57,7 @@ Rectangle {
         }
         QGCLabel {
             id:                     rowValue
-            Layout.maximumWidth:    ScreenTools.defaultFontPixelWidth * 60
+            Layout.preferredWidth:  root._valueWidth
             elide:                  Text.ElideMiddle
             font.pointSize:         root._fontSize
             font.family:            ScreenTools.fixedFontFamily
