@@ -28,7 +28,7 @@ rather than in `AGENTS.md` / `CLAUDE.md`, which are upstream files.
 | Fly View toolbar (red Arm/Disarm, FLTMODE1-6 buttons, messages icon + severity pill) | `src/Toolbar/FlyViewToolBar.qml`, `src/Toolbar/MainStatusIndicator.qml` |
 | Short FBW mode names | `src/QmlControls/TDHelpers.qml` (singleton), used by `src/Toolbar/FlightModeIndicator.qml` |
 | Battery tooltip metrics and 0% icon fix | `src/Toolbar/BatteryIndicator.qml` |
-| Centered guided-action confirm popup with "Don't show again" | `src/FlyView/GuidedActionConfirm.qml` (a `Popup`), `src/FlyView/GuidedActionsController.qml` |
+| Centered guided-action confirm popup with "Don't show again", kept across launches as action codes in `flyViewSettings.skippedGuidedConfirmations` and undone from Fly View settings → Guided Commands | `src/FlyView/GuidedActionConfirm.qml` (a `Popup`), `src/FlyView/GuidedActionsController.qml`, `src/QmlControls/GuidedConfirmationsReset.qml` |
 | Toolbar frosted-glass blur | `src/FlyView/FlyView.qml` |
 | Draggable / resizable PiP | `src/QmlControls/PipView.qml`, PiP placement in `src/FlyView/FlyView.qml` |
 | Split-view Configure/Settings drawer | `src/MainWindow/MainWindow.qml` (`_splitExpanded`, persisted in `flyViewSettings.toolDrawerFullWidth`) |

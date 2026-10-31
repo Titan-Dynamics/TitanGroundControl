@@ -150,7 +150,12 @@ Popup {
 
             QGCButton {
                 text:       qsTr("Cancel")
-                onClicked:  confirmCancelled()
+                onClicked: {
+                    if (dontAskAgainCheckBox.checked) {
+                        guidedController.declineFutureConfirmations(control.action)
+                    }
+                    confirmCancelled()
+                }
             }
         }
     }

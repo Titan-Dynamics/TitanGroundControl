@@ -69,6 +69,10 @@
                 },
                 {
                     "setting": "flyViewSettings.goToLocationRequiresConfirmInGuided"
+                },
+                {
+                    "control": "component",
+                    "component": "GuidedConfirmationsReset"
                 }
             ]
         },

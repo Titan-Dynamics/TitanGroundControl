@@ -171,6 +171,13 @@
             "keywords": "mission popup"
         },
         {
+            "name": "skippedGuidedConfirmations",
+            "shortDesc": "Guided actions that run without asking, after their confirmation was dismissed with Don't show again. Comma separated action codes.",
+            "type": "string",
+            "default": "",
+            "label": "Skipped guided action confirmations"
+        },
+        {
             "name": "allowForceArm",
             "shortDesc": "Show a Force Arm button in the main status indicator. Force arming bypasses pre-arm checks. Use with caution.",
             "type": "bool",

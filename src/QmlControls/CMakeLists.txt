@@ -117,6 +117,7 @@ qt_add_qml_module(QGroundControlControlsModule
         FileButton.qml
         FixStatusDot.qml
         FlightModeMenu.qml
+        GuidedConfirmationsReset.qml
         HeightIndicator.qml
         HorizontalFactValueGrid.qml
         IndicatorButton.qml

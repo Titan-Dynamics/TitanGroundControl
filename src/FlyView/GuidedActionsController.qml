@@ -111,8 +111,6 @@ Item {
 
     readonly property int customActionStart:                10000 // Custom actions ids should start here so that they don't collide with the built in actions
 
-    property var    _skipConfirmActions:         ({})
-
     property var    _activeVehicle:             QGroundControl.multiVehicleManager.activeVehicle
     property var    _flyViewSettings:           QGroundControl.settingsManager.flyViewSettings
     property var    _unitsConversion:           QGroundControl.unitsConversion
@@ -396,10 +394,29 @@ Item {
         guidedValueSlider.visible = false
     }
 
+    // "Don't show again" choices are kept in the settings as a comma separated list of action codes
+    function _confirmationSkipped(actionCode) {
+        return _flyViewSettings.skippedGuidedConfirmations.rawValue.split(",").indexOf(String(actionCode)) !== -1
+    }
+
+    function _isMissionPopup(actionCode) {
+        return actionCode === actionStartMission || actionCode === actionContinueMission || actionCode === actionResumeMission
+    }
+
     function skipFutureConfirmations(actionCode) {
-        _skipConfirmActions[actionCode] = true
-        // Persist "Don't show again" for Start Mission by disabling automatic popups
-        if (actionCode === actionStartMission || actionCode === actionContinueMission || actionCode === actionResumeMission) {
+        if (!_confirmationSkipped(actionCode)) {
+            const skipped = _flyViewSettings.skippedGuidedConfirmations.rawValue
+            _flyViewSettings.skippedGuidedConfirmations.rawValue = skipped === "" ? String(actionCode) : skipped + "," + actionCode
+        }
+        // The mission dialogs also pop up by themselves; stop that as well
+        if (_isMissionPopup(actionCode)) {
+            _flyViewSettings.enableAutomaticMissionPopups.rawValue = false
+        }
+    }
+
+    // Cancelling a mission dialog with "Don't show again" ticked stops it popping up by itself
+    function declineFutureConfirmations(actionCode) {
+        if (_isMissionPopup(actionCode)) {
             _flyViewSettings.enableAutomaticMissionPopups.rawValue = false
         }
     }
@@ -578,7 +595,7 @@ Item {
             }
         }
 
-        if (_skipConfirmActions[actionCode]) {
+        if (_confirmationSkipped(actionCode)) {
             var sliderOutputValue = 0
             if (guidedValueSlider.visible) {
                 sliderOutputValue = guidedValueSlider.getOutputValue()
