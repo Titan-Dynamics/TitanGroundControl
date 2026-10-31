@@ -76,7 +76,7 @@ Rectangle {
 
         Canvas {
             id:                     graph
-            Layout.preferredWidth:  ScreenTools.defaultFontPixelWidth * 34
+            Layout.fillWidth:       true
             Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2.5
 
             property var samples: root.stats.frameGraph || []
