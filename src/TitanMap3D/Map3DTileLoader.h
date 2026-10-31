@@ -128,7 +128,7 @@ private:
     void _cacheTile(const QString& mapType, const TileId& id, const QByteArray& data);
     void _withElevation(const TileId& elevationId, std::function<void(bool)> done);
     void _fetchTile(const QString& mapType, const TileId& id, FetchCallback done);
-    void _fetchFromNetwork(const QString& mapType, int mapId, const TileId& id, FetchCallback done);
+    void _fetchFromNetwork(int mapId, const TileId& id, FetchCallback done);
     void _pushResult(TileLoadResult result);
 
     QString _imageryMapType;

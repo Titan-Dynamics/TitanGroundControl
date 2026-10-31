@@ -171,6 +171,11 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   ("X is not a type" at runtime).
 - `qt_add_shaders` on the app target from a subdirectory needs absolute paths plus `BASE`; relative paths
   resolve against the top-level directory at finalization.
+- MSVC builds only warn at `/W2`, but CI builds Linux, macOS and Android with `-Wall -Wextra -Wshadow` and warnings
+  as errors (`cmake/CompilerWarnings.cmake`), so a local shadowing a variable or member, an unused parameter or an
+  unused lambda capture builds locally and fails CI. On Windows, Qt's `C:\Qt\Tools\mingw1310_64` g++ and
+  `llvm-mingw` clang++ can syntax-check a file with those flags (`-fsyntax-only`), using the include paths and
+  defines from the build's `compile_commands.json` with the Qt include directory swapped for that kit's.
 - A Debug-build assert `value < maximalPlusOne` in `qnumeric.h` means an infinite size reached `qRound`, usually a
   QML size divided by zero. The UVC camera path did this (`_ar` in `FlightDisplayViewVideo.qml`, now guarded).
 - `TitanGroundControl.exe --simple-boot-test --allow-multiple` with `QT_FORCE_STDERR_LOGGING=1` is the quickest

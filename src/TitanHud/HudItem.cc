@@ -769,10 +769,10 @@ void HudItem::_drawSpeedTape(QPainter& p, const Frame& f) const
     }
     if (f.armed) {
         const qreal mid = (T + B) / 2.0;
-        const qreal d = -std::clamp(f.airspeedAccel, -6.0, 6.0) / 12.0 * sbH;
+        const qreal accelBar = -std::clamp(f.airspeedAccel, -6.0, 6.0) / 12.0 * sbH;
         p.setPen(Qt::NoPen);
         p.setBrush(kBlue);
-        p.drawRect(QRectF(QPointF(R, mid), QPointF(R + sbW / 4.0, mid + d)).normalized());
+        p.drawRect(QRectF(QPointF(R, mid), QPointF(R + sbW / 4.0, mid + accelBar)).normalized());
     }
 
     // Waypoint and wind readouts under the tape
@@ -901,10 +901,10 @@ void HudItem::_drawAltitudeTape(QPainter& p, const Frame& f) const
     }
     {
         const qreal mid = (T + B) / 2.0;
-        const qreal d = -std::clamp(f.verticalSpeed, -6.0, 6.0) / 12.0 * sbH;
+        const qreal climbBar = -std::clamp(f.verticalSpeed, -6.0, 6.0) / 12.0 * sbH;
         p.setPen(Qt::NoPen);
         p.setBrush(kBlue);
-        p.drawRect(QRectF(QPointF(L - sbW / 4.0, mid), QPointF(L, mid + d)).normalized());
+        p.drawRect(QRectF(QPointF(L - sbW / 4.0, mid), QPointF(L, mid + climbBar)).normalized());
     }
 
     // Pointer with the altitude readout

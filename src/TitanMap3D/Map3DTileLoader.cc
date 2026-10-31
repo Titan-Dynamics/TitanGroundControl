@@ -512,9 +512,9 @@ void TileLoader::_fetchTile(const QString& mapType, const TileId& id, FetchCallb
     // which held every cached tile up for about as long
     const QString hash = UrlFactory::getTileHash(mapType, id.x, id.y, id.z);
     (void) QtConcurrent::run(&_cacheReader, readCachedTile, hash)
-        .then(this, [this, mapType, mapId, id, done](const QByteArray& data) {
+        .then(this, [this, mapId, id, done](const QByteArray& data) {
             if (data.isEmpty() || isBingEmptyTile(mapId, data)) {
-                _fetchFromNetwork(mapType, mapId, id, done);
+                _fetchFromNetwork(mapId, id, done);
                 return;
             }
             _cacheHits.ref();
@@ -522,14 +522,14 @@ void TileLoader::_fetchTile(const QString& mapType, const TileId& id, FetchCallb
         });
 }
 
-void TileLoader::_fetchFromNetwork(const QString& mapType, int mapId, const TileId& id, FetchCallback done)
+void TileLoader::_fetchFromNetwork(int mapId, const TileId& id, FetchCallback done)
 {
     _networkFetches.ref();
     const QNetworkRequest request = QGeoTileFetcherQGC::getNetworkRequest(mapId, id.x, id.y, id.z);
     QNetworkReply* const reply = _network->get(request);
     _replies.insert(reply);
 
-    (void) connect(reply, &QNetworkReply::finished, this, [this, reply, mapType, mapId, id, done] {
+    (void) connect(reply, &QNetworkReply::finished, this, [this, reply, mapId, done] {
         _replies.remove(reply);
         reply->deleteLater();
 

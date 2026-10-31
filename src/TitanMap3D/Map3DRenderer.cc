@@ -407,8 +407,9 @@ void Map3DRenderer::render(QRhiCommandBuffer* cb)
         const double cloudNow = nowSeconds();
         const double dt = std::min(1.0, cloudNow - _cloudLastTime);
         _cloudLastTime = cloudNow;
-        const double target = Clouds::baseAltitude(_groundHeight, _input.connected ? _vehicle.z : _camera.z);
-        _cloudBase = std::isnan(_cloudBase) ? target : _cloudBase + (target - _cloudBase) * (1 - std::exp(-dt / 3.0));
+        const double targetBase = Clouds::baseAltitude(_groundHeight, _input.connected ? _vehicle.z : _camera.z);
+        _cloudBase =
+            std::isnan(_cloudBase) ? targetBase : _cloudBase + (targetBase - _cloudBase) * (1 - std::exp(-dt / 3.0));
         const double fadeEnd = viewRadius * Clouds::kFadeEnd;
 
         float cloudVertices[3 * 4 * 3];
