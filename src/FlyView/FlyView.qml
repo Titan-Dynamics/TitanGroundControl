@@ -50,8 +50,8 @@ Item {
     property var    _layerOccluders:        widgetLayer.occluders
     property var    _mapOccluders:          _layerOccluders.all.concat(customOverlay.customOccluders).map(r => Qt.rect(r.x + widgetLayer.x, r.y + widgetLayer.y, r.width, r.height))
 
-    // Titan: the 3D map covers the full-window item; the 2D map is hidden, so not drawn, while under it
-    property bool   _map3DCoversMap:    Map3DState.shown && _mainWindowIsMap
+    // Titan: the 3D map covers the full-window item; the 2D map is hidden, so not drawn, once it is fully under it
+    property bool   _map3DCoversMap:    Map3DState.shown && _mainWindowIsMap && map3DLoader.opacity === 1
 
     property real   _fullItemZorder:    0
     property real   _pipItemZorder:     QGroundControl.zOrderWidgets
@@ -193,12 +193,44 @@ Item {
             visible:            false
         }
 
-        // Titan: Mission Planner style 3D map over the full-window item, below the widgets and the PiP
+        // Titan: Mission Planner style 3D map over the full-window item, below the widgets and the PiP. It fades and
+        // grows in and out like the toolbar drawers. Its first frame sets up the renderer and takes long enough to
+        // swallow the fade, so the fade waits for that frame, drawn transparent.
         Loader {
             id:             map3DLoader
             anchors.fill:   parent
             z:              _fullItemZorder + 1
-            active:         Map3DState.shown
+            active:         Map3DState.shown || opacity > 0
+            visible:        active
+            opacity:        0
+            scale:          0.95
+
+            property int _framesShown: 0
+
+            onActiveChanged: _framesShown = 0
+
+            // Two frames: the first can be one that was already under way when the map was created
+            Connections {
+                target:                 (map3DLoader.status === Loader.Ready) && (map3DLoader._framesShown < 2) ? map3DLoader.Window.window : null
+                function onFrameSwapped() { map3DLoader._framesShown++ }
+            }
+
+            states: State {
+                name:   "shown"
+                when:   Map3DState.shown && (map3DLoader._framesShown >= 2)
+                PropertyChanges { map3DLoader.opacity: 1; map3DLoader.scale: 1 }
+            }
+
+            transitions: [
+                Transition {
+                    to: "shown"
+                    NumberAnimation { properties: "opacity,scale"; duration: 200; easing.type: Easing.OutCubic }
+                },
+                Transition {
+                    from: "shown"
+                    NumberAnimation { properties: "opacity,scale"; duration: 150; easing.type: Easing.InCubic }
+                }
+            ]
 
             sourceComponent: Component {
                 Map3DView {

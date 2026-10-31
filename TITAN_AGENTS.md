@@ -79,8 +79,10 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
 - The **3D map is its own view and renderer**, not the GeoMap engine. The tool strip's 3D button shows
   `Map3DView` over the whole Fly View in place of the 2D map: it fills `mapHolder` at z 1, above the full-window
   item and below the widgets and the PiP, so the toolbar blur, tool strip, instruments and PiP work as they do
-  over the 2D map. While the 2D map is the full-window item it is hidden, so it does not draw (`_map3DCoversMap`);
-  with the video swapped into the full window, the 3D map covers the video and the 2D map stays in the PiP. A
+  over the 2D map. It fades and grows in (200 ms, once its slow first frame is out) and out (150 ms) like the
+  toolbar drawers. While the 2D map is the full-window item it is hidden once the 3D map is fully in, so it does
+  not draw (`_map3DCoversMap`), and shown again as the 3D map starts to go; with the video swapped into the full
+  window, the 3D map covers the video and the 2D map stays in the PiP. A
   split layout (3D left, 2D right) was tried and dropped at the user's request. The 2D map and the
   `useGeoMapEngine` default are upstream's. Upstream's Viewer3D stays compiled and tested but is reachable from
   neither the tool strip nor the settings pages; upstream itself deprecates it. GeoMap was tried first and
