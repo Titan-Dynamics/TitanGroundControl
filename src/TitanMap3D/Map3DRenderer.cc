@@ -1088,9 +1088,11 @@ void Map3DRenderer::_buildMarkers(QRhiResourceUpdateBatch* rub)
         batch.append({markerQuads, addQuad(spun(-1, 1), spun(1, 1), spun(-1, -1), spun(1, -1))});
         _output.markersDrawn++;
 
-        // Letters sit centred in the marker; numbers sit above it. Mirrored so text reads correctly.
+        // Letters sit centred in the marker; numbers sit above it. Mirrored so text reads correctly. Mission Planner
+        // moves letters down a twentieth because its labels centre the line of text, which leaves a capital high;
+        // labelImage centres the glyph itself.
         const double labelHalfSize = marker.special ? markerHalfSize * 0.6 : markerHalfSize * 0.4;
-        const double labelOffset = marker.special ? -(markerHalfSize / 20) : markerHalfSize * 0.5;
+        const double labelOffset = marker.special ? 0 : markerHalfSize * 0.5;
         const auto upright = [&](double h, double v) {
             return QVector3D(x - axisX * h * labelHalfSize, y - axisY * h * labelHalfSize,
                              z + v * labelHalfSize + labelOffset);
