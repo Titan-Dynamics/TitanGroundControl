@@ -63,8 +63,7 @@ qt_add_qml_module(
     URI QGroundControl.TitanMap3D
     VERSION 1.0
     RESOURCE_PREFIX /qml
-    QML_FILES Map3DSettingsAction.qml Map3DSettingsDialog.qml Map3DShowAction.qml Map3DState.qml Map3DStatsPanel.qml
-              Map3DView.qml
+    QML_FILES Map3DSettingsAction.qml Map3DShowAction.qml Map3DState.qml Map3DStatsPanel.qml Map3DView.qml
     RESOURCES images/wp_3d.png
               images/wp_3d_alt.png
               models/boat.stl

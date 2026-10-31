@@ -51,7 +51,7 @@ Configure it under **Application Settings → Titan AI** (Claude API key require
 - **Everything Mission Planner draws** — vehicle models by type (copter, helicopter, plane, QuadPlane, rover, boat, sub, or your own STL) in your color and scale, smoothed movement, heading / nav-bearing / GPS-course lines and the predicted turn arc, the flight trail, the mission with spinning waypoint markers, ADS-B traffic with tooltips, drifting cloud layers, distance haze, and a "stats for nerds" panel.
 - **Mission Planner HUD**, redrawn in full: artificial horizon, pitch ladder and roll scale, heading tape with target and home markers, speed and altitude tapes with target bugs, vertical-speed and airspeed-trend strips, cross-track and turn-rate indicators, waypoint and wind readouts, battery, link quality, GPS / EKF / vibration badges, arming and failsafe messages, and the flight mode. Use it as the **instrument panel** (Fly View settings → Instrument panel → Mission Planner HUD) or overlay it on the **video** (Video settings → HUD overlay).
 
-Configure it from the **3D Setup** button next to the 3D button, or under **Application Settings → 3D Map**.
+Configure it under **Application Settings → 3D Map**, which the **3D Setup** button next to the 3D button opens.
 
 ### 🗂️ Split-view configuration
 
