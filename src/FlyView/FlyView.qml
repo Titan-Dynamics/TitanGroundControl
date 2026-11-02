@@ -146,6 +146,8 @@ Item {
             topBound:               toolbar.height
 
             // Titan: the clicked view takes the full window, so a full-screen 3D map, which would cover it, closes
+            // first. The 2D map is hidden under it and must be shown again before it moves into the PiP: moved while
+            // hidden, it did not draw there and the PiP looked gone.
             onPipClicked: {
                 if (Map3DState.coversMap) {
                     Map3DState.shown = false
