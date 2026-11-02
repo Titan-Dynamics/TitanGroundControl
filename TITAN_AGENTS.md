@@ -26,7 +26,7 @@ rather than in `AGENTS.md` / `CLAUDE.md`, which are upstream files.
 | Map POIs, goto indicator sync, Add POI | `src/FlyView/FlyViewMap.qml`, `src/FlyView/FlyViewMapClickDropPanel.qml` |
 | Smooth (animated, cursor-anchored) mouse-wheel zoom on the Fly/Plan map, half a zoom level a notch | `WheelHandler` and `wheelZoomAnimation` in `src/FlightMap/FlightMap.qml` |
 | Telemetry panel: tiles shown as numbers or bars, with caution and warning levels, edited in place | `src/TitanTelemetry/` (`TelemetryPanelController.*`, a layout per vehicle type in INI group `TitanTelemetryPanel`, starting from `kDefaultLayout` (four columns, twelve values, the same for every vehicle type) on a fresh install and Reset, `TelemetryPanelItem.*`, `TelemetryPanel.qml`, `TelemetryTile.qml`, `TelemetryItemEditor.qml`), swapped in for upstream's `TelemetryValuesBar` in `src/FlyView/FlyViewBottomRightRowLayout.qml`; consumption per kilometre on each battery (`mahPerKm`, `whPerKm` in `src/Vehicle/FactGroups/BatteryFactGroupListModel.*` and `BatteryFact.json`, the battery tooltip's formulas); tests in `test/TitanTelemetry/` |
-| Fly View toolbar (red Arm/Disarm, FLTMODE1-6 buttons, messages icon + severity pill) | `src/Toolbar/FlyViewToolBar.qml`, `src/Toolbar/MainStatusIndicator.qml` |
+| Fly View toolbar (red Arm/Disarm, FLTMODE1-6 buttons, messages icon + severity pill, GPS and battery right after the flight modes, the Titan Dynamics logo at the right end while there is room) | `src/Toolbar/FlyViewToolBar.qml`, `src/Toolbar/FlyViewToolBarIndicators.qml` (`excludedIndicators`), `src/Toolbar/MainStatusIndicator.qml`, `resources/td_full_logo_black.png` and `td_full_logo_white.png` in `src/Toolbar/CMakeLists.txt` |
 | Short FBW mode names | `src/QmlControls/TDHelpers.qml` (singleton), used by `src/Toolbar/FlightModeIndicator.qml` |
 | Battery tooltip metrics and 0% icon fix | `src/Toolbar/BatteryIndicator.qml` |
 | Centered guided-action confirm popup with "Don't show again", kept across launches as action codes in `flyViewSettings.skippedGuidedConfirmations` and undone from Fly View settings → Guided Commands | `src/FlyView/GuidedActionConfirm.qml` (a `Popup`), `src/FlyView/GuidedActionsController.qml`, `src/QmlControls/GuidedConfirmationsReset.qml` |
@@ -42,6 +42,7 @@ rather than in `AGENTS.md` / `CLAUDE.md`, which are upstream files.
 | Vehicle model decimation (TitanPlanner STLs) | `tools/titan/convert_vehicle_models.py` |
 | Camera controls hidden unless switched on (Fly View settings → Show Camera Controls; the simple camera option only shows with it) | `showCameraControls` in `src/Settings/FlyView.SettingsGroup.json` and `FlyViewSettings.*`, `src/AppSettings/pages/FlyView.SettingsUI.json`, the `PhotoVideoControl` loaders in `src/FlyView/FlyViewTopRightColumnLayout.qml` and `src/FlyView/FlyViewTopRightPanel.qml` (whose camera page, swiping and page indicator go with it) |
 | Internet ADS-B traffic (a port of TitanPlanner's adsb.cs), traffic sent to the autopilot for avoidance, the autopilot's collision threat levels, and an icon for each aircraft category on the Fly View map | `src/TitanAdsb/` (`AdsbInternetSource.*`, `AdsbTrafficSender.*`, `AdsbCategory.*`, `AdsbIconProvider.*`, `TitanAdsbMapItem.qml`), `adsbInternetEnabled`, `adsbInternetServer`, `adsbInternetRadius`, `adsbInternetMaxAircraft` and `adsbSendToVehicle` in `src/Settings/ADSBVehicleManager.SettingsGroup.json` and `ADSBVehicleManagerSettings.*`, the ADSB Server page in `src/AppSettings/pages/ADSBVehicleManager.SettingsUI.json`; hooks in `src/ADSB/` (`ADSB.h` category, type and ground fields, `ADSBVehicle.*` properties, `ADSBVehicleManager.*` sources, echo filter and COLLISION), `MAVLINK_MSG_ID_COLLISION` routed in `src/Vehicle/Vehicle.cc`, the `TitanAdsbMapItem` delegate in `src/FlyView/FlyViewMap.qml`, `AdsbIconProvider` registered in `src/QGCApplication.cc`, and grounded traffic and the tooltip in `src/TitanMap3D/`; tests in `test/TitanAdsb/` |
+| Help page: source code and release links, and an updater from the GitHub releases (stable or development) | `src/TitanUpdater/` (`TitanUpdater.*`, a QML singleton with its channel in INI group `TitanUpdater`; `TitanHelpSection.qml`), above upstream's links in `src/AppSettings/HelpSettings.qml`; tests in `test/TitanUpdater/` |
 | Fork defaults | `src/Settings/*.SettingsGroup.json` (audio muted, 10 km guided max altitude, no go-to distance limit, the compass's additional heading indicators, camera controls hidden, Google maps, aspect-ratio dropdown, the Titan HUD over video), indoor palette on mobile in `QGCCorePlugin.cc` |
 | MSVC build flags | `/bigobj` in `CMakeLists.txt`, `/Zc:preprocessor` in `cmake/Toolchain.cmake` |
 
@@ -66,6 +67,19 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   and a searchable value picker. Upstream's `FactValueGrid` still drives the multi-vehicle cards and the video
   recording subtitles (`SubtitleWriter`), which keep upstream's `TelemetryBarUserSettings`.
 - The status text is **clickable only while disconnected** ("Click to manually connect").
+- The **updater** (Help page) follows the latest version release on the stable channel, judged by version
+  (`QGCVersionCheck::isNewerVersion`), or the `dev` prerelease on the development channel, judged by commit: the
+  dev workflow writes `**Commit:** <sha>` into the release body, and the build carries git describe's `-g<sha>`. It
+  downloads this platform's release asset, checked against GitHub's SHA-256 digest when the API gives one. The
+  Windows installer then runs (through the shell, so it can ask for elevation) and the app closes
+  (`finishCloseProcess`); an AppImage is replaced by renaming over it and restarted once this process exits, since
+  a second instance would refuse to run; macOS opens the disk image; Android opens the package in the browser.
+  Installing is disabled while a vehicle is connected, and an unsaved mission is confirmed first.
+- **GPS and battery sit right after the flight-mode buttons** (`_movedIndicators` in `FlyViewToolBar.qml`), not
+  with the indicators on the right, which skip them (`excludedIndicators`). GPS is one of the app's indicators and
+  battery one of the vehicle's, both matched by the end of their URL. The **Titan Dynamics logo** shows at the
+  right end, black on the light theme and white on the dark one, only while the whole toolbar fits without
+  scrolling (`_showLogo`).
 - The status drawer has **no Arm/Disarm button** either (arming lives on the toolbar); its Force Arm (opt-in
   setting), Primary Link and Reboot controls are kept.
 - Toolbar indicator drawers fade and grow in and out. `fillWindow` drawers (the status drawer) are capped at
@@ -263,6 +277,7 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
    `inTopLeft` / `inBottomRight` and `onPipClicked`), `PipView.qml` (`pipClicked`),
    `FlyViewBottomRightRowLayout.qml` (`TelemetryPanel`), `FlyViewWidgetLayer.qml` (map scale and GeoMap controls,
    the tool strip and bottom-right row corner states), `MainStatusIndicator.qml` (messages buttons on the left),
+   `FlyViewToolBarIndicators.qml` (`excludedIndicators`), `HelpSettings.qml` (`TitanHelpSection`),
    `FlyViewTopRightColumnLayout.qml` and `FlyViewTopRightPanel.qml` (`showCameraControls`), `ADSB.h`,
    `ADSBVehicle.*` and `ADSBVehicleManager.*` (category, ground and threat fields, the internet source, the sender,
    the echo filter and COLLISION), `Vehicle.cc` (COLLISION routed to `ADSBVehicleManager`), `FlyViewMap.qml` (the
@@ -288,8 +303,9 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
 
 ## Known Issues
 
-- `.version.txt` drives the in-app update prompt and is read from `master`. `td-release` does not bump
-  it, so set it to the new tag by hand after each release and merge that to `master`.
+- `.version.txt` drives the toolbar's update prompt (`QGCVersionCheck`) and is read from `master`. `td-release`
+  does not bump it, so set it to the new tag by hand after each release and merge that to `master`. The Help page's
+  updater asks GitHub's API instead and does not depend on it.
 - `AIChatWidget.qml` and `AISettings.qml` reference `qgcPal.textHighlight` / `textHighlightForeground`,
   which do not exist in `QGCPalette`. Text selection falls back to default colors and QML logs a warning.
 - Only internet traffic says whether it is on the ground, so the 3D map draws only that traffic as Mission Planner

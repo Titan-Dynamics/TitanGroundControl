@@ -34,6 +34,7 @@ Configure it under **Application Settings → Titan AI** (Claude API key require
 - **Arm / Disarm** button right on the toolbar, colored red for visibility.
 - **Vehicle messages icon** with an Error / Warning / Info badge for unread messages; one click opens the message list.
 - **Quick flight-mode buttons** sourced from your `FLTMODE1`–`FLTMODE6` parameters.
+- **GPS and battery** right after the flight modes, and the **Titan Dynamics logo** on the right when there's room.
 - **Guided action confirmations** as a clear centered popup instead of a cramped toolbar control.
 - **Frosted-glass blur** and reduced opacity for a cleaner overlay on top of the map and video.
 - **Shortened flight-mode names** for fixed-wing / FBW modes so they fit at a glance.
@@ -64,6 +65,10 @@ Configure it under **Application Settings → 3D Map**, which the **3D Setup** b
 - **Split toggle** to expand the Configure/Settings panel to full width, with smooth animations, and the layout is **remembered across launches**.
 - **Redesigned parameter editor** with a styled, readable table.
 - General polish across the Vehicle Configuration, Parameters and Settings pages, which wrap to fit the half-width panel.
+
+### ⬆️ Updates
+
+- **Application Settings → Help** links to the **source code** and the **releases**, and **updates the app** from the latest stable release or the latest development build: it downloads the right file for your platform and installs it (Windows and Linux AppImage), or opens it for you (macOS and Android).
 
 ### 🎨 Theming & defaults
 
