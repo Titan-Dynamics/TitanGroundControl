@@ -18,6 +18,7 @@
 
 #include "AppSettings.h"
 #include "AudioOutput.h"
+#include "AdsbIconProvider.h"
 #include "ColoredSvgImageProvider.h"
 #include "FollowMe.h"
 #include "GPSManager.h"
@@ -281,6 +282,8 @@ bool QGCApplication::_initQmlRootWindow()
     // at load time.
     _qmlAppEngine->addImageProvider(_qgcImageProviderId, new QGCImageProvider());
     _qmlAppEngine->addImageProvider(QLatin1String(ColoredSvgImageProvider::ProviderId), new ColoredSvgImageProvider());
+    // Titan: the Fly View map's ADS-B traffic icons
+    _qmlAppEngine->addImageProvider(QLatin1String(AdsbIconProvider::ProviderId), new AdsbIconProvider());
 
     // RHI graphics config / forced device must be applied before the root window's scene graph initializes. Android
     // exposes the window synchronously when the root QML shows it, so configure it as soon as its surface exists.

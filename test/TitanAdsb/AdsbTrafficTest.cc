@@ -5,6 +5,7 @@
 #include "ADSBVehicle.h"
 #include "ADSBVehicleManager.h"
 #include "AdsbCategory.h"
+#include "AdsbIconProvider.h"
 #include "AdsbInternetSource.h"
 #include "AdsbTrafficSender.h"
 #include "MAVLinkLib.h"
@@ -145,6 +146,34 @@ void AdsbTrafficTest::_nearestAircraftAreKept()
     QCOMPARE(snapshot.nearest.at(0).info.icaoAddress, 0xD00004u);
     QCOMPARE(snapshot.nearest.at(2).info.icaoAddress, 0xD00002u);
     QCOMPARE(snapshot.listed.size(), 5);
+}
+
+void AdsbTrafficTest::_iconsAreDrawn()
+{
+    AdsbIconProvider provider;
+    const QStringList names = AdsbIconProvider::iconNames();
+    QVERIFY(names.contains(QStringLiteral("airliner")));
+    for (const QString& name : names) {
+        for (const QString& state : {QStringLiteral("normal"), QStringLiteral("danger"), QStringLiteral("ground")}) {
+            QSize size;
+            const QImage image = provider.requestImage(name + QLatin1Char('/') + state, &size, QSize(48, 48));
+            QVERIFY2(!image.isNull(), qPrintable(name));
+            QCOMPARE(size, QSize(48, 48));
+            bool drawn = false;
+            for (int y = 0; (y < image.height()) && !drawn; y++) {
+                for (int x = 0; (x < image.width()) && !drawn; x++) {
+                    drawn = qAlpha(image.pixel(x, y)) > 0;
+                }
+            }
+            QVERIFY2(drawn, qPrintable(name + QLatin1Char('/') + state));
+        }
+    }
+
+    // Inside the airliner's fuselage, red when in danger
+    const QImage airliner = provider.requestImage(QStringLiteral("airliner/danger"), nullptr, QSize(72, 72));
+    const QColor fuselage = airliner.pixelColor(36, 30);
+    QVERIFY(fuselage.red() > 200);
+    QVERIFY(fuselage.green() < 60);
 }
 
 void AdsbTrafficTest::_nearestTrafficTakesTurns()

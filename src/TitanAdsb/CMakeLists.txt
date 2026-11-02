@@ -9,6 +9,8 @@ target_sources(
     ${CMAKE_PROJECT_NAME}
     PRIVATE AdsbCategory.cc
             AdsbCategory.h
+            AdsbIconProvider.cc
+            AdsbIconProvider.h
             AdsbInternetSource.cc
             AdsbInternetSource.h
             AdsbTrafficSender.cc
@@ -24,7 +26,7 @@ qt_add_qml_module(
     URI QGroundControl.TitanAdsb
     VERSION 1.0
     RESOURCE_PREFIX /qml
-    QML_FILES TitanAdsbIcon.qml TitanAdsbMapItem.qml
+    QML_FILES TitanAdsbMapItem.qml
     NO_PLUGIN
 )
 

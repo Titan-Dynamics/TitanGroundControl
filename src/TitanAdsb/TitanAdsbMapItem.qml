@@ -26,6 +26,34 @@ MapQuickItem {
     readonly property real _heading:        adsbVehicle ? adsbVehicle.heading : 0
     readonly property bool _danger:         adsbVehicle ? (adsbVehicle.alert || adsbVehicle.threatLevel >= 2) : false
     readonly property bool _detailsShown:   showDetails && !!adsbVehicle && (hoverHandler.hovered || _pinned)
+    readonly property string _state:        _onGround ? "ground" : (_danger ? "danger" : "normal")
+    readonly property bool _upright:        _icon === "balloon" || _icon === "parachute"   ///< Drawn from the side
+    readonly property string _icon: {
+        switch (_emitterType) {
+        case 1:     // Light
+        case 12:    // Ultralight
+            return "light"
+        case 6:     // Highly maneuverable
+            return "fighter"
+        case 7:     // Rotorcraft
+            return "helicopter"
+        case 9:     // Glider
+            return "glider"
+        case 10:    // Lighter than air
+        case 19:    // Point obstacle
+            return "balloon"
+        case 11:    // Parachute
+            return "parachute"
+        case 14:    // UAV
+            return "drone"
+        case 17:    // Emergency surface vehicle
+            return "emergency"
+        case 18:    // Service surface vehicle
+            return "vehicle"
+        default:
+            return "airliner"
+        }
+    }
     readonly property real _scale: {
         switch (_emitterType) {
         case 3:     // Large
@@ -78,13 +106,14 @@ MapQuickItem {
         width:  root.size * root._scale
         height: width
 
-        TitanAdsbIcon {
-            id:             icon
-            anchors.fill:   parent
-            emitterType:    root._emitterType
-            fillColor:      root._onGround ? Qt.rgba(0.66, 0.66, 0.66, 0.5) : (root._danger ? "#ff0000" : "#ffa500")
-            outlineColor:   root._onGround ? Qt.rgba(0.1, 0.1, 0.1, 0.6) : "#1a1a1a"
-            rotation:       icon.upright ? 0 : root._heading - (root.map ? root.map.bearing : 0)
+        // Drawn once for each icon, state and size by AdsbIconProvider and shared by every aircraft that shows it
+        Image {
+            anchors.fill:       parent
+            source:             "image://titanadsb/" + root._icon + "/" + root._state
+            sourceSize.width:   Math.round(width)
+            sourceSize.height:  Math.round(height)
+            rotation:           root._upright ? 0 : root._heading - (root.map ? root.map.bearing : 0)
+            smooth:             true
         }
 
         HoverHandler {
