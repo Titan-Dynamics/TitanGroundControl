@@ -195,9 +195,15 @@ def _binding_qml_type(expr: str) -> str:
     return "var"
 
 
+def _control_auto_vis(ctrl) -> str:
+    """A setting control's visibility as its own wrapper has it: its showWhen and its fact's userVisible."""
+    fact_vis = f"QGroundControl.settingsManager.{ctrl.setting}.userVisible"
+    return f"(({ctrl.showWhen}) && {fact_vis})" if ctrl.showWhen else fact_vis
+
+
 def _group_auto_vis(grp) -> str:
-    fact_refs = [f"QGroundControl.settingsManager.{c.setting}" for c in grp.controls if c.setting]
-    return " || ".join(f"{ref}.userVisible" for ref in fact_refs)
+    # Titan: each control's showWhen counts too, so a group whose controls are all hidden does not show empty
+    return " || ".join(_control_auto_vis(c) for c in grp.controls if c.setting)
 
 
 def _group_visibility_parts(grp) -> list[str]:

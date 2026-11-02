@@ -707,6 +707,24 @@ class TestGeneratePageQml:
         assert "(x === 1)" in qml
         assert "appSettings.enableFeature.userVisible" in qml
 
+    def test_group_hides_when_its_controls_are_hidden(self, settings_dir: Path):
+        page = PageDef(
+            groups=[
+                GroupDef(
+                    heading="G",
+                    controls=[
+                        ControlDef(setting="appSettings.enableFeature", showWhen="x === 1"),
+                        ControlDef(setting="appSettings.enableFeature", showWhen="x === 2"),
+                    ],
+                ),
+            ]
+        )
+        qml = generate_page_qml(page, settings_dir)
+        assert (
+            "((x === 1) && QGroundControl.settingsManager.appSettings.enableFeature.userVisible) || "
+            "((x === 2) && QGroundControl.settingsManager.appSettings.enableFeature.userVisible)"
+        ) in qml
+
     def test_enableWhen_on_control(self, settings_dir: Path):
         page = PageDef(
             groups=[
