@@ -5,6 +5,7 @@
 #include "QGCNetworkHelper.h"
 #include <QtCore/QSettings>
 #include <QtCore/QVariantList>
+#include <QtMultimedia/QMediaDevices>
 
 QGC_LOGGING_CATEGORY(VideoSettingsLog, "Settings.VideoSettings")
 
@@ -17,6 +18,41 @@ static constexpr bool kGstEnabled = false;
 #include "UVCReceiver.h"
 
 DECLARE_SETTINGGROUP(Video, "Video")
+{
+    // Titan: in a function of its own, to list the sources again when cameras come and go
+    _setVideoSourceList();
+
+    _mediaDevices = new QMediaDevices(this);
+    (void) connect(_mediaDevices, &QMediaDevices::videoInputsChanged, this, &VideoSettings::refreshVideoSources);
+
+    _setForceVideoDecodeList();
+
+    // Migrate legacy gpuZeroCopyEnabled (pre-rename) into the new force-CPU semantics.
+    {
+        QSettings settings;
+        settings.beginGroup(settingsGroup);
+        const bool hasLegacy = settings.contains(QStringLiteral("gpuZeroCopyEnabled"));
+        const bool hasNew    = settings.contains(forceCpuVideoPathName);
+        if (hasLegacy) {
+            if (!hasNew) {
+                const bool gpuZeroCopy = settings.value(QStringLiteral("gpuZeroCopyEnabled")).toBool();
+                forceCpuVideoPath()->setRawValue(!gpuZeroCopy);
+            }
+            settings.remove(QStringLiteral("gpuZeroCopyEnabled"));
+        }
+        settings.endGroup();
+    }
+
+    // Set default value for videoSource
+    _setDefaults();
+}
+
+void VideoSettings::refreshVideoSources()
+{
+    _setVideoSourceList();
+}
+
+void VideoSettings::_setVideoSourceList()
 {
     // Setup enum values for videoSource settings into meta data
     QVariantList videoSourceList;
@@ -52,28 +88,12 @@ DECLARE_SETTINGGROUP(Video, "Video")
         videoSourceCookedList.append( VideoSettings::tr(videoSource.toString().toStdString().c_str()) );
     }
 
-    _nameToMetaDataMap[videoSourceName]->setEnumInfo(videoSourceCookedList, videoSourceList);
-
-    _setForceVideoDecodeList();
-
-    // Migrate legacy gpuZeroCopyEnabled (pre-rename) into the new force-CPU semantics.
-    {
-        QSettings settings;
-        settings.beginGroup(settingsGroup);
-        const bool hasLegacy = settings.contains(QStringLiteral("gpuZeroCopyEnabled"));
-        const bool hasNew    = settings.contains(forceCpuVideoPathName);
-        if (hasLegacy) {
-            if (!hasNew) {
-                const bool gpuZeroCopy = settings.value(QStringLiteral("gpuZeroCopyEnabled")).toBool();
-                forceCpuVideoPath()->setRawValue(!gpuZeroCopy);
-            }
-            settings.remove(QStringLiteral("gpuZeroCopyEnabled"));
-        }
-        settings.endGroup();
+    // Titan: through the fact once it exists, so the source dropdown hears about the change
+    if (_videoSourceFact) {
+        _videoSourceFact->setEnumInfo(videoSourceCookedList, videoSourceList);
+    } else {
+        _nameToMetaDataMap[videoSourceName]->setEnumInfo(videoSourceCookedList, videoSourceList);
     }
-
-    // Set default value for videoSource
-    _setDefaults();
 }
 
 void VideoSettings::_setDefaults()

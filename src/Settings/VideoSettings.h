@@ -4,6 +4,8 @@
 
 #include "SettingsGroup.h"
 
+class QMediaDevices;
+
 class VideoSettings : public SettingsGroup
 {
     Q_OBJECT
@@ -59,6 +61,10 @@ public:
     /// initialized (the registry is empty until then).
     void pruneUnavailableDecoders();
 
+    /// Titan: lists the video sources again, for a USB camera plugged in or out while the app runs. It also runs
+    /// when the system reports a camera arriving or leaving.
+    Q_INVOKABLE void refreshVideoSources();
+
     static constexpr const char* videoSourceNoVideo           = QT_TRANSLATE_NOOP("VideoSettings", "No Video Available");
     static constexpr const char* videoDisabled                = QT_TRANSLATE_NOOP("VideoSettings", "Video Stream Disabled");
     static constexpr const char* videoSourceRTSP              = QT_TRANSLATE_NOOP("VideoSettings", "RTSP Video Stream");
@@ -80,9 +86,11 @@ private slots:
 
 private:
     void _setDefaults               ();
+    void _setVideoSourceList        ();  // Titan
     void _setForceVideoDecodeList();
 
 private:
     bool _noVideo = false;
+    QMediaDevices* _mediaDevices = nullptr;  // Titan
 
 };

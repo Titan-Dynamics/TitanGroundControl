@@ -17,7 +17,8 @@
             "controls": [
                 {
                     "setting": "videoSettings.videoSource",
-                    "control": "combobox",
+                    "control": "component",
+                    "component": "VideoSourceSelector",
                     "enableWhen": "!autoStreamConfig"
                 },
                 {
