@@ -38,18 +38,20 @@ Configure it under **Application Settings → Titan AI** (Claude API key require
 - **Frosted-glass blur** and reduced opacity for a cleaner overlay on top of the map and video.
 - **Shortened flight-mode names** for fixed-wing / FBW modes so they fit at a glance.
 - **Richer battery tooltip** showing current, power draw, and efficiency — plus a fix for the upstream bug that showed a half-full yellow icon at 0%.
+- **Telemetry panel** of tiles you set up in place: pick any value from a searchable list, show it as a **number, a percentage of its range, or a bar**, give it caution and warning levels that turn it amber or red, drag tiles into order, and choose the columns and text size. Each vehicle type keeps its own layout, and each battery adds its consumption in mAh/km and Wh/km.
 
 ### 📹 Picture-in-Picture video
 
 - **Draggable PiP overlay** that snaps to screen edges and stays put when the window resizes.
 - **Resizable** with a settings gear and a dropdown of common **aspect ratios**.
+- **Old-TV static** while there's no picture, in place of a stock photo.
 
 ### 🌍 3D map & Titan HUD
 
-- **Mission Planner's 3D map, ported from TitanPlanner** — the Fly View tool strip's **3D** button swaps the 2D map for the 3D map, full screen under the same toolbar, instruments and video picture-in-picture. Satellite terrain with real elevation streams in Google Earth style, from the same disk tile cache as the 2D map, so cached and offline tiles work in 3D too.
+- **Mission Planner's 3D map, ported from TitanPlanner** — the Fly View tool strip's **3D** button swaps the 2D map for the 3D map, full screen under the same toolbar, instruments and video picture-in-picture, or with **Split-screen** on shows it on the right half, beside the 2D map. Satellite terrain with real elevation streams in Google Earth style, from the same disk tile cache as the 2D map, so cached and offline tiles work in 3D too.
 - **The same camera and mouse as Mission Planner** — a chase camera right behind the vehicle (drag to orbit and raise or lower it, scroll for distance, double-click to snap back behind), an **FPV** cockpit view, and free-look over the 2D map's position when no vehicle is connected.
 - **Everything Mission Planner draws** — vehicle models by type (copter, helicopter, plane, QuadPlane, rover, boat, sub, or your own STL) in your color and scale, smoothed movement, heading / nav-bearing / GPS-course lines and the predicted turn arc, the flight trail, the mission with spinning waypoint markers, ADS-B traffic with tooltips, drifting cloud layers, distance haze, and a "stats for nerds" panel.
-- **Titan HUD**, a fighter-style head-up display: flight path marker, pitch ladder with bent dive lines, bank scale, heading tape with autopilot, track and home markers and a turn trend, speed and altitude tapes with rolling readouts, target bugs and trend vectors, cross-track deviation, waypoint (with time to go), home and wind readouts, battery gauges, link / GPS / EKF / vibration status that stays quiet until something is off, arming and failsafe alerts, autopilot messages and the flight mode. Overlay it on the **video** (Video settings → HUD overlay) or use it as the **instrument panel** (Fly View settings → Instrument panel → Titan HUD), over its own dark synthetic horizon.
+- **Titan HUD**, a fighter-style head-up display: flight path marker, pitch ladder with bent dive lines, bank scale, heading tape with autopilot, track and home markers and a turn trend, speed and altitude tapes with rolling readouts, target bugs and trend vectors, cross-track deviation, waypoint (with time to go), home and wind readouts, battery gauges, link / GPS / EKF / vibration status that stays quiet until something is off, arming and failsafe alerts, autopilot messages and the flight mode. Overlay it on the **video** (Video settings → HUD overlay, in a small, medium or large scale and the color of your choice) or use it as the **instrument panel** (Fly View settings → Instrument panel → Titan HUD), over a dark synthetic horizon whose ground grid moves with the vehicle, as it also shows while waiting for video.
 
 Configure it under **Application Settings → 3D Map**, which the **3D Setup** button next to the 3D button opens.
 

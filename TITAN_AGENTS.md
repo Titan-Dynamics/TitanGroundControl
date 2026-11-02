@@ -24,7 +24,8 @@ rather than in `AGENTS.md` / `CLAUDE.md`, which are upstream files.
 | AI hooks on `Vehicle` | `aiChatController`, `loiterRadiusFact()`, `flightModeFromCustomMode()`, `lastGotoCoordinate()`, `guidedModeGotoLocationSent` signal in `src/Vehicle/Vehicle.*` |
 | AI voice replies while muted | `AudioOutput::say(text, mods, ignoreMute, rate)` and `stop()` in `src/Utilities/Audio/AudioOutput.*` |
 | Map POIs, goto indicator sync, Add POI | `src/FlyView/FlyViewMap.qml`, `src/FlyView/FlyViewMapClickDropPanel.qml` |
-| Smooth (animated, cursor-anchored) mouse-wheel zoom on the Fly/Plan map | `WheelHandler` and `wheelZoomAnimation` in `src/FlightMap/FlightMap.qml` |
+| Smooth (animated, cursor-anchored) mouse-wheel zoom on the Fly/Plan map, half a zoom level a notch | `WheelHandler` and `wheelZoomAnimation` in `src/FlightMap/FlightMap.qml` |
+| Telemetry panel: tiles shown as numbers or bars, with caution and warning levels, edited in place | `src/TitanTelemetry/` (`TelemetryPanelController.*`, a layout per vehicle type in INI group `TitanTelemetryPanel`, `TelemetryPanelItem.*`, `TelemetryPanel.qml`, `TelemetryTile.qml`, `TelemetryItemEditor.qml`), swapped in for upstream's `TelemetryValuesBar` in `src/FlyView/FlyViewBottomRightRowLayout.qml`; consumption per kilometre on each battery (`mahPerKm`, `whPerKm` in `src/Vehicle/FactGroups/BatteryFactGroupListModel.*` and `BatteryFact.json`, the battery tooltip's formulas); tests in `test/TitanTelemetry/` |
 | Fly View toolbar (red Arm/Disarm, FLTMODE1-6 buttons, messages icon + severity pill) | `src/Toolbar/FlyViewToolBar.qml`, `src/Toolbar/MainStatusIndicator.qml` |
 | Short FBW mode names | `src/QmlControls/TDHelpers.qml` (singleton), used by `src/Toolbar/FlightModeIndicator.qml` |
 | Battery tooltip metrics and 0% icon fix | `src/Toolbar/BatteryIndicator.qml` |
@@ -35,11 +36,11 @@ rather than in `AGENTS.md` / `CLAUDE.md`, which are upstream files.
 | Settings / Vehicle Config sidebar and parameter editor polish | `src/QmlControls/AppSettings.qml`, `src/Vehicle/VehicleSetup/VehicleConfigView.qml`, `src/QmlControls/ParameterEditor.qml` |
 | Inline searchable sections for hand-coded settings pages | `tools/generators/settings_qml/emit.py`, `model.py` (`"sections"` key in `SettingsPages.json`) |
 | Branding | `cmake/CustomOptions.cmake` (`QGC_APP_NAME` = `TitanGroundControl`, `QGC_ANDROID_PACKAGE_NAME` = `aero.titandynamics.titangroundcontrol`), `src/QmlControls/QGCPalette.cc` (orange accent, `brandPrimary`/`brandAccent`), `src/API/QGCCorePlugin.*` (update check and download URLs), icons under `resources/`, `deploy/`, `android/res/` |
-| Titan 3D map: a port of Mission Planner's Map3D (TitanPlanner `Controls/Map3D`) on Qt's RHI, separate from the 2D map | `src/TitanMap3D/`: `Map3DItem.*` (QML item, gathers telemetry, mission, ADS-B and settings on the GUI thread), `Map3DRenderer.*` (render-thread frame, terrain engine GPU side, draw passes), `Map3DScene.*` (VehicleTracker, CameraRig, Kalman filter), `Map3DTerrain.*` (quadtree LOD, tile mesh builder), `Map3DTileLoader.*` (imagery + Terrarium elevation through the shared tile cache), `Map3DGeo.*` (UTM world frame, tile maths, frustum), `Map3DOverlays.*` (indicator lines, turn arc, trail), `Map3DClouds.*`, `Map3DModel.*` (STL loading), `shaders/`, `models/*.stl`, `images/wp_3d*.png`, QML `Map3DView.qml` (mouse controls, ADS-B tooltip), `Map3DStatsPanel.qml`, `Map3DState.qml` (singleton), tool strip actions (3D Setup opens the 3D Map settings page); hooks in `src/FlyView/FlyView.qml` (`map3DLoader` in `mapHolder`, `_map3DCoversMap` on both 2D map engines), `src/FlyView/FlyViewWidgetLayer.qml` (map scale and GeoMap controls hidden) and `src/FlyView/FlyViewToolStripActionList.qml`; tests in `test/TitanMap3D/` |
-| 3D map settings (Mission Planner's set and defaults, except waypoint markers at 25 m rather than 60) | `src/Settings/Map3DSettings.*`, `src/Settings/Map3D.SettingsGroup.json` (INI group `TitanMap3D`), `src/AppSettings/pages/Map3D.SettingsUI.json`, "3D Map" entry in `src/AppSettings/pages/SettingsPages.json` (replaces upstream's deprecated "3D View" page) and `Map3DSettings.qml` in the generated-pages list of `src/AppSettings/CMakeLists.txt` |
-| Titan HUD (instrument panel option, video overlay) | `src/TitanHud/` (`HudData.*`, `HudItem.*`, `HudPainter.*`, `TitanHud.qml`, `TitanHudInstrument.qml`, B612 Mono in `fonts/` under the SIL Open Font License), `hudOverlay` fact in `Video.SettingsGroup.json`, "Titan HUD" in the `instrumentQmlFile2` enum of `src/Settings/FlyView.SettingsGroup.json`, overlay in `src/FlyView/FlightDisplayViewVideo.qml`; tests in `test/TitanHud/` |
+| Titan 3D map: a port of Mission Planner's Map3D (TitanPlanner `Controls/Map3D`) on Qt's RHI, separate from the 2D map | `src/TitanMap3D/`: `Map3DItem.*` (QML item, gathers telemetry, mission, ADS-B and settings on the GUI thread), `Map3DRenderer.*` (render-thread frame, terrain engine GPU side, draw passes), `Map3DScene.*` (VehicleTracker, CameraRig, Kalman filter), `Map3DTerrain.*` (quadtree LOD, tile mesh builder), `Map3DTileLoader.*` (imagery + Terrarium elevation through the shared tile cache), `Map3DGeo.*` (UTM world frame, tile maths, frustum), `Map3DOverlays.*` (indicator lines, turn arc, trail), `Map3DClouds.*`, `Map3DModel.*` (STL loading), `shaders/`, `models/*.stl`, `images/` (waypoint markers, the tool strip's cube icon `map3d.svg`), QML `Map3DView.qml` (mouse controls, ADS-B tooltip), `Map3DStatsPanel.qml`, `Map3DState.qml` (singleton), tool strip actions (3D Setup opens the 3D Map settings page); hooks in `src/FlyView/FlyView.qml` (`map3DViewComponent`, `map3DLoader` and `map3DSplitLoader` in `mapHolder`, `_map3DCoversMap` on both 2D map engines, `_map3DSplitWidth` on the full-window items' right margin, `_mapViewportRect`, the PiP's `onPipClicked`) and `src/QmlControls/PipView.qml` (`pipClicked`), `src/FlyView/FlyViewWidgetLayer.qml` (map scale and GeoMap controls hidden while `Map3DState.coversMap`) and `src/FlyView/FlyViewToolStripActionList.qml`; tests in `test/TitanMap3D/` |
+| 3D map settings (Mission Planner's set and defaults, except waypoint markers at 25 m rather than 60, plus the fork's Split-screen) | `src/Settings/Map3DSettings.*`, `src/Settings/Map3D.SettingsGroup.json` (INI group `TitanMap3D`), `src/AppSettings/pages/Map3D.SettingsUI.json`, "3D Map" entry in `src/AppSettings/pages/SettingsPages.json` (replaces upstream's deprecated "3D View" page) and `Map3DSettings.qml` in the generated-pages list of `src/AppSettings/CMakeLists.txt` |
+| Titan HUD (instrument panel option, video overlay) | `src/TitanHud/` (`HudData.*`, `HudItem.*`, `HudPainter.*`, `TitanHud.qml`, `TitanHudInstrument.qml`, B612 Mono in `fonts/` under the SIL Open Font License, the no-video TV static `TvStatic.qml` with `shaders/tvstatic.frag`), `hudOverlay`, `hudScale` and `hudColor` facts in `Video.SettingsGroup.json`, "Titan HUD" in the `instrumentQmlFile2` enum of `src/Settings/FlyView.SettingsGroup.json`, overlay in `src/FlyView/FlightDisplayViewVideo.qml`; tests in `test/TitanHud/` |
 | Vehicle model decimation (TitanPlanner STLs) | `tools/titan/convert_vehicle_models.py` |
-| Fork defaults | `src/Settings/*.SettingsGroup.json` (audio muted, 10 km guided max altitude, no go-to distance limit, Horizontal Compass & Attitude instrument, Google maps, aspect-ratio dropdown), indoor palette on mobile in `QGCCorePlugin.cc` |
+| Fork defaults | `src/Settings/*.SettingsGroup.json` (audio muted, 10 km guided max altitude, no go-to distance limit, Horizontal Compass & Attitude instrument with its additional heading indicators, Google maps, aspect-ratio dropdown, the Titan HUD over video), indoor palette on mobile in `QGCCorePlugin.cc` |
 | MSVC build flags | `/bigobj` in `CMakeLists.txt`, `/Zc:preprocessor` in `cmake/Toolchain.cmake` |
 
 Fork-only resources are registered through CMake (`QGC_APP_RESOURCES` in `CMakeLists.txt` and the
@@ -58,15 +59,22 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   `showArm` / `showDisarm`, which hide Disarm whenever ArduPilot reports the vehicle airborne.
 - The status drawer has **no Emergency Stop button**, and its unread-message **severity pill sits on the
   toolbar messages icon**, not on the status text. The messages icon opens the drawer on its Messages tab.
+- The Fly View **telemetry panel is the fork's own** (`TelemetryPanel`), not upstream's `TelemetryValuesBar`: a flat list of
+  tiles, each a number or a bar, edited from a pencil button (also right click or press and hold), with drag to reorder
+  and a searchable value picker. Upstream's `FactValueGrid` still drives the multi-vehicle cards and the video
+  recording subtitles (`SubtitleWriter`), which keep upstream's `TelemetryBarUserSettings`.
 - The status text is **clickable only while disconnected** ("Click to manually connect").
 - The status drawer has **no Arm/Disarm button** either (arming lives on the toolbar); its Force Arm (opt-in
   setting), Primary Link and Reboot controls are kept.
 - Toolbar indicator drawers fade and grow in and out. `fillWindow` drawers (the status drawer) are capped at
   half the window width and height on desktop (`MainWindow.qml`); on mobile they still fill the window.
 - In split view the Fly/Plan view stays enabled next to the drawer: `enabled: !toolDrawer.visible || !_splitExpanded`.
-- The PiP only constrains the left-side widgets while docked in the bottom-left quadrant (`inBottomLeft`),
-  because it can be dragged anywhere. Its height uses the configured aspect ratio, falling back to the
-  detected stream ratio (setting 0 = Auto) and then 16:9.
+- The PiP can be dragged anywhere, so widgets only make way for it in their own corner: bottom-left
+  (`inBottomLeft`) the virtual joysticks rise above it; top-left (`inTopLeft`) the tool strip moves to the bottom-left
+  corner; bottom-right (`inBottomRight`) the telemetry panel and instrument row moves to the bottom-left corner. They
+  jump between corners (animated anchor states in `FlyViewWidgetLayer.qml`) rather than tracking the PiP's edge.
+  The PiP's height uses the configured aspect ratio, falling back to the detected stream ratio (setting 0 = Auto)
+  and then 16:9.
 - Map-click "Go to location" only shows the goto indicator up front when executing immediately; the confirm
   popup can be dismissed without cancelling.
 - Settings and Vehicle Configuration sidebars use a fixed width of 26 characters, with eliding labels.
@@ -81,17 +89,24 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   Android, so it installs beside an APK built under the old ID instead of upgrading it.
 - The app version comes only from `v<digit>*` tags (`cmake/modules/Git.cmake`), so the moving `dev`
   release tag is never picked up as a version.
-- The **3D map is its own view and renderer**, not the GeoMap engine. The tool strip's 3D button shows
-  `Map3DView` over the whole Fly View in place of the 2D map: it fills `mapHolder` at z 1, above the full-window
-  item and below the widgets and the PiP, so the toolbar blur, tool strip, instruments and PiP work as they do
-  over the 2D map. It fades and grows in (200 ms, once its slow first frame is out) and out (150 ms) like the
-  toolbar drawers. While the 2D map is the full-window item it is hidden once the 3D map is fully in, so it does
-  not draw (`_map3DCoversMap`), and shown again as the 3D map starts to go; with the video swapped into the full
-  window, the 3D map covers the video and the 2D map stays in the PiP. A
-  split layout (3D left, 2D right) was tried and dropped at the user's request. The 2D map and the
+- The **3D map is its own view and renderer**, not the GeoMap engine. The tool strip's 3D button shows `Map3DView`
+  over the whole Fly View in place of the 2D map: it fills `mapHolder` at z 1, above the full-window item and below
+  the widgets and the PiP, so the toolbar blur, tool strip, instruments and PiP work as they do over the 2D map. It
+  fades and grows in (200 ms, once its slow first frame is out) and out (150 ms) like the toolbar drawers. While
+  the 2D map is the full-window item it is hidden once the 3D map is fully in, so it does not draw
+  (`_map3DCoversMap`), and shown again as the 3D map starts to go; with the video swapped into the full window, the
+  3D map covers the video and the 2D map stays in the PiP. Clicking the PiP closes a full-screen 3D map, so the
+  clicked view takes the full window (`PipView.pipClicked`). The 3D map's **Split-screen** setting (off by default)
+  puts it on the right half instead, at the same z, beside the full-window item (the 2D map, or the video when
+  swapped in). Only that item narrows to the left half (its `anchors.rightMargin`, from `_map3DSplitWidth`, while
+  in PipState's full state), with the Settings split's 250 ms animation once the 3D map's first frame is out (drawn
+  just past the right edge); the toolbar, widgets and PiP keep the whole view, over both halves, and the 2D map
+  keeps the vehicle within its own half (`_mapViewportRect`). A 2 px divider in the palette's window color marks
+  the seam. Full-screen video closes the split. Two other splits were tried and dropped at the user's request: the
+  3D map on the left as the only layout, and narrowing the whole Fly View, widgets included. The 2D map and the
   `useGeoMapEngine` default are upstream's. Upstream's Viewer3D stays compiled and tested but is reachable from
-  neither the tool strip nor the settings pages; upstream itself deprecates it. GeoMap was tried first and
-  dropped: even its 2D mode is a Qt Quick 3D scene whose per-frame sync made the whole Fly View lag.
+  neither the tool strip nor the settings pages; upstream itself deprecates it. GeoMap was tried first and dropped:
+  even its 2D mode is a Qt Quick 3D scene whose per-frame sync made the whole Fly View lag.
 - The 3D map follows TitanPlanner's `Map3D` line by line where it can: the camera rig (chase 0.8 m behind and
   0.2 m above a model of about 1 m span, FPV kept a metre above the ground, free-look 100 m above the 2D map's
   centre while disconnected), the mouse (drag 0.5 deg/px orbit and 0.005 m/px height within +/-5 m, wheel
@@ -128,17 +143,21 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   (`TerrainQuadtree::_requestCameraColumn`). Mission Planner's traversal only asks for a tile's children once
   it has loaded, so the ground below would otherwise arrive one round trip per level.
 - The 3D map has no HUD overlay (Mission Planner's `map3d_hud_overlay`); it was removed at the user's request.
-- The HUD is the fork's own fighter-style design and deliberately does not copy Mission Planner's. `HudData` decodes
-  NAV_CONTROLLER_OUTPUT, HEARTBEAT, SYS_STATUS, EKF_STATUS_REPORT and AOA_SSA itself because `Vehicle` does not
-  keep them. `HudItem` gathers a `HudFrame` on the GUI thread and `HudPainter` paints it with QPainter on the
+- - The HUD is the fork's own fighter-style design and deliberately does not copy Mission Planner's. `HudData`
+  decodes NAV_CONTROLLER_OUTPUT, HEARTBEAT, SYS_STATUS, EKF_STATUS_REPORT and AOA_SSA itself because `Vehicle` does
+  not keep them. `HudItem` gathers a `HudFrame` on the GUI thread and `HudPainter` paints it with QPainter on the
   item's own thread, shown as a texture when done: a QQuickPaintedItem paints during the scene graph sync and held
-  the whole window to ~9 fps. A 1080p frame takes ~12 ms in a Debug build. The symbology is one phosphor green
-  with a dark halo over video and a glow on the instrument panel's synthetic sky; amber and red only mark cautions
-  and warnings, and nominal system rows recede. The layout scales with the HUD's size, and small HUDs leave out
-  secondary text instead of shrinking it past reading (`Detail`: full, compact for the instrument panel, minimal
-  for the PiP). Text is B612 Mono Bold, Airbus's cockpit display typeface, blitted from cached glyph images. The
-  flight path marker sits at the climb angle and drift (GPS track minus heading) once moving faster than 2 m/s.
-  A moving ground grid on the instrument's synthetic ground was tried and dropped at the user's request.
+  the whole window to ~9 fps. A 1080p frame takes ~12 ms in a Debug build. The symbology is one color (`hudColor`,
+  white by default, the 3D map model color's choices but black and gray), with a dark halo over video and a glow on
+  the synthetic sky; amber and red only mark cautions and warnings (ARMED is red), and nominal system rows recede.
+  The layout scales with the HUD's size, and small HUDs leave out secondary text instead of shrinking it past
+  reading (`Detail`: full, compact for the instrument panel, minimal for the PiP); the overlay's `hudScale` setting
+  (`symbolScale`) only resizes the symbology. Over video the HUD covers just the part of the picture on screen,
+  since a fit or fill mode can make the picture overhang the view. Text is B612 Mono Bold, Airbus's cockpit display
+  typeface, blitted from cached glyph images. The flight path marker sits at the climb angle and drift (GPS track
+  minus heading) once moving faster than 2 m/s. The synthetic sky and ground (the instrument panel, and the overlay
+  while waiting for video, under a larger waiting message) carry a ground grid laid out from home that slides by
+  with the vehicle; it is never drawn over video.
 - The vehicle models are TitanPlanner's STLs decimated to 8000 triangles, kept in Mission Planner's frame
   (millimetres): `Map3DModel` rotates them -90 deg about Z and the model matrix scales to metres, exactly as
   for a custom STL. Regenerate them with `tools/titan/convert_vehicle_models.py` (needs a TitanPlanner checkout,
@@ -202,18 +221,22 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
    conflicts).
 3. Resolve conflicts by porting the fork's intent onto upstream's new code, not by taking one side
    wholesale. Check `git log <merge-base>..HEAD -- <file>` for why the fork changed something.
-4. **Audit beyond the conflicts.** Silent losses have happened before: an earlier sync dropped the
-   aspect-ratio dropdown without a conflict. Diff every fork feature above against the previous fork
-   `HEAD`, including settings JSON enums and defaults, resource registration, renamed C++ or QML APIs
-   used by fork code (e.g. `Vehicle::flying()` became `underway()` / `airborne()`), and new upstream
-   defaults that override fork choices (e.g. `QGC_MACOS_UNIVERSAL_BUILD` defaulting to OFF). Re-check the fork
-  hooks inside upstream files: `FlyView.qml` (`map3DLoader` in `mapHolder`, `_map3DCoversMap` on both 2D map
-  engines), `FlyViewWidgetLayer.qml` (map scale and GeoMap controls), `FlyViewToolStripActionList.qml`
-  (`Map3DShowAction`, `Map3DSettingsAction`), `FlightDisplayViewVideo.qml` (`TitanHud`, the `_ar` guard),
-  `src/AppSettings/CMakeLists.txt`
-  (generated pages list), and `HudData.cc` / `Map3DItem.cc` against the `Vehicle`, `MissionManager`,
-  `ADSBVehicle`, tile cache (`QGeoFileTileCacheQGC`, `QGeoTileFetcherQGC`, `QGCTileCacheDatabase` and its
-  `Tiles` table) and `UrlFactory` APIs they use.
+4. **Audit beyond the conflicts.** Silent losses have happened before: an earlier sync dropped the aspect-ratio
+   dropdown without a conflict. Diff every fork feature above against the previous fork `HEAD`, including settings
+   JSON enums and defaults, resource registration, renamed C++ or QML APIs used by fork code (e.g.
+   `Vehicle::flying()` became `underway()` / `airborne()`), and new upstream defaults that override fork choices
+   (e.g. `QGC_MACOS_UNIVERSAL_BUILD` defaulting to OFF). Re-check the fork hooks inside upstream files:
+   `FlyView.qml` (`map3DViewComponent`, `map3DLoader` and `map3DSplitLoader` in `mapHolder`, `_map3DSplitWidth` on
+   the full-window items' right margins, `_mapViewportRect`, `_map3DCoversMap` on both 2D map engines, the PiP's
+   `inTopLeft` / `inBottomRight` and `onPipClicked`), `PipView.qml` (`pipClicked`),
+   `FlyViewBottomRightRowLayout.qml` (`TelemetryPanel`), `FlyViewWidgetLayer.qml` (map scale and GeoMap controls,
+   the tool strip and bottom-right row corner states), `MainStatusIndicator.qml` (messages buttons on the left),
+   `BatteryFactGroupListModel.*` and `BatteryFact.json` (`mahPerKm`, `whPerKm`), `FlyViewToolStripActionList.qml`
+   (`Map3DShowAction`, `Map3DSettingsAction`), `FlightDisplayViewVideo.qml` (`TitanHud` and its waiting message,
+   `TvStatic` in place of upstream's deleted `NoVideoBackground.jpg`, the `_ar` guard),
+   `src/AppSettings/CMakeLists.txt` (generated pages list), and `HudData.cc` / `Map3DItem.cc` against the
+   `Vehicle`, `MissionManager`, `ADSBVehicle`, tile cache (`QGeoFileTileCacheQGC`, `QGeoTileFetcherQGC`,
+   `QGCTileCacheDatabase` and its `Tiles` table) and `UrlFactory` APIs they use.
 5. Re-apply the CI policy to every upstream workflow, including new ones, and re-check the td workflows.
 6. Build Debug with tests against the required Qt. Before attributing a test failure to the merge, compare
    with a control build of pure `upstream/master` (a `git worktree` in the gitignored `build/` directory).
