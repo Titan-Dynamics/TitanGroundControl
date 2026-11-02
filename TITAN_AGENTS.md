@@ -37,7 +37,7 @@ rather than in `AGENTS.md` / `CLAUDE.md`, which are upstream files.
 | Branding | `cmake/CustomOptions.cmake` (`QGC_APP_NAME` = `TitanGroundControl`, `QGC_ANDROID_PACKAGE_NAME` = `aero.titandynamics.titangroundcontrol`), `src/QmlControls/QGCPalette.cc` (orange accent, `brandPrimary`/`brandAccent`), `src/API/QGCCorePlugin.*` (update check and download URLs), icons under `resources/`, `deploy/`, `android/res/` |
 | Titan 3D map: a port of Mission Planner's Map3D (TitanPlanner `Controls/Map3D`) on Qt's RHI, separate from the 2D map | `src/TitanMap3D/`: `Map3DItem.*` (QML item, gathers telemetry, mission, ADS-B and settings on the GUI thread), `Map3DRenderer.*` (render-thread frame, terrain engine GPU side, draw passes), `Map3DScene.*` (VehicleTracker, CameraRig, Kalman filter), `Map3DTerrain.*` (quadtree LOD, tile mesh builder), `Map3DTileLoader.*` (imagery + Terrarium elevation through the shared tile cache), `Map3DGeo.*` (UTM world frame, tile maths, frustum), `Map3DOverlays.*` (indicator lines, turn arc, trail), `Map3DClouds.*`, `Map3DModel.*` (STL loading), `shaders/`, `models/*.stl`, `images/wp_3d*.png`, QML `Map3DView.qml` (mouse controls, ADS-B tooltip), `Map3DStatsPanel.qml`, `Map3DState.qml` (singleton), tool strip actions (3D Setup opens the 3D Map settings page); hooks in `src/FlyView/FlyView.qml` (`map3DLoader` in `mapHolder`, `_map3DCoversMap` on both 2D map engines), `src/FlyView/FlyViewWidgetLayer.qml` (map scale and GeoMap controls hidden) and `src/FlyView/FlyViewToolStripActionList.qml`; tests in `test/TitanMap3D/` |
 | 3D map settings (Mission Planner's set and defaults) | `src/Settings/Map3DSettings.*`, `src/Settings/Map3D.SettingsGroup.json` (INI group `TitanMap3D`), `src/AppSettings/pages/Map3D.SettingsUI.json`, "3D Map" entry in `src/AppSettings/pages/SettingsPages.json` (replaces upstream's deprecated "3D View" page) and `Map3DSettings.qml` in the generated-pages list of `src/AppSettings/CMakeLists.txt` |
-| Mission Planner HUD (instrument panel option, video overlay) | `src/TitanHud/` (`HudData.*`, `HudItem.*`, `TitanHud.qml`, `TitanHudInstrument.qml`), `hudOverlay` fact in `Video.SettingsGroup.json`, "Mission Planner HUD" in the `instrumentQmlFile2` enum of `src/Settings/FlyView.SettingsGroup.json`, overlay in `src/FlyView/FlightDisplayViewVideo.qml` |
+| Titan HUD (instrument panel option, video overlay) | `src/TitanHud/` (`HudData.*`, `HudItem.*`, `HudPainter.*`, `TitanHud.qml`, `TitanHudInstrument.qml`, B612 Mono in `fonts/` under the SIL Open Font License), `hudOverlay` fact in `Video.SettingsGroup.json`, "Titan HUD" in the `instrumentQmlFile2` enum of `src/Settings/FlyView.SettingsGroup.json`, overlay in `src/FlyView/FlightDisplayViewVideo.qml`; tests in `test/TitanHud/` |
 | Vehicle model decimation (TitanPlanner STLs) | `tools/titan/convert_vehicle_models.py` |
 | Fork defaults | `src/Settings/*.SettingsGroup.json` (audio muted, 10 km guided max altitude, no go-to distance limit, Horizontal Compass & Attitude instrument, Google maps, aspect-ratio dropdown), indoor palette on mobile in `QGCCorePlugin.cc` |
 | MSVC build flags | `/bigobj` in `CMakeLists.txt`, `/Zc:preprocessor` in `cmake/Toolchain.cmake` |
@@ -128,13 +128,17 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   (`TerrainQuadtree::_requestCameraColumn`). Mission Planner's traversal only asks for a tile's children once
   it has loaded, so the ground below would otherwise arrive one round trip per level.
 - The 3D map has no HUD overlay (Mission Planner's `map3d_hud_overlay`); it was removed at the user's request.
-- `HudData` decodes NAV_CONTROLLER_OUTPUT, HEARTBEAT, SYS_STATUS, EKF_STATUS_REPORT and AOA_SSA itself
-  because `Vehicle` does not keep them. The HUD is painted with QPainter (`HudItem`) on Mission Planner's
-  `fs = H/28` layout; over video it skips sky, ground and the horizon line (`drawBackground`). Frames are
-  painted on the item's own thread and shown as a texture when done, not by a QQuickPaintedItem, which paints
-  during the scene graph sync: a frame takes QPainter ~35 ms in a Debug build and held the whole window to
-  ~9 fps. Text comes from cached outlined glyphs, stroked then filled as Mission Planner does, so it stays
-  white with a dark border.
+- The HUD is the fork's own fighter-style design and deliberately does not copy Mission Planner's. `HudData` decodes
+  NAV_CONTROLLER_OUTPUT, HEARTBEAT, SYS_STATUS, EKF_STATUS_REPORT and AOA_SSA itself because `Vehicle` does not
+  keep them. `HudItem` gathers a `HudFrame` on the GUI thread and `HudPainter` paints it with QPainter on the
+  item's own thread, shown as a texture when done: a QQuickPaintedItem paints during the scene graph sync and held
+  the whole window to ~9 fps. A 1080p frame takes ~12 ms in a Debug build. The symbology is one phosphor green
+  with a dark halo over video and a glow on the instrument panel's synthetic sky; amber and red only mark cautions
+  and warnings, and nominal system rows recede. The layout scales with the HUD's size, and small HUDs leave out
+  secondary text instead of shrinking it past reading (`Detail`: full, compact for the instrument panel, minimal
+  for the PiP). Text is B612 Mono Bold, Airbus's cockpit display typeface, blitted from cached glyph images. The
+  flight path marker sits at the climb angle and drift (GPS track minus heading) once moving faster than 2 m/s.
+  A moving ground grid on the instrument's synthetic ground was tried and dropped at the user's request.
 - The vehicle models are TitanPlanner's STLs decimated to 8000 triangles, kept in Mission Planner's frame
   (millimetres): `Map3DModel` rotates them -90 deg about Z and the model matrix scales to metres, exactly as
   for a custom STL. Regenerate them with `tools/titan/convert_vehicle_models.py` (needs a TitanPlanner checkout,

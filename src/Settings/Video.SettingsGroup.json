@@ -68,7 +68,7 @@
         },
         {
             "name": "hudOverlay",
-            "shortDesc": "Overlay the Mission Planner style HUD (attitude, speed, altitude, heading) on the video.",
+            "shortDesc": "Overlay the Titan HUD (attitude, speed, altitude, heading) on the video.",
             "type": "bool",
             "default": false,
             "label": "HUD overlay",

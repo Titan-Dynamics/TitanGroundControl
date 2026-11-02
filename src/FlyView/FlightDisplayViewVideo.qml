@@ -132,7 +132,7 @@ Item {
             anchors.centerIn:   parent
             visible:           _showStreamLoader || _showUvcLoader
 
-            // Titan: Mission Planner HUD over the video, stretched to the video area like Mission Planner's
+            // Titan: the Titan HUD over the video, filling the video area
             TitanHud {
                 anchors.fill:   parent
                 drawBackground: false

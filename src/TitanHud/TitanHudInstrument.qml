@@ -3,8 +3,8 @@ import QtQuick
 import QGroundControl
 import QGroundControl.Controls
 
-/// Instrument-panel variant of the Mission Planner HUD (Fly View settings > Instrument panel):
-/// a 4:3 panel with its own sky and ground, sized like the other instrument widgets.
+/// Instrument-panel variant of the Titan HUD (Fly View settings > Instrument panel): a 4:3 panel over
+/// its own synthetic sky and ground, sized like the other instrument widgets.
 Rectangle {
     id:     control
     width:  Math.min(mainWindow.width * 0.25, ScreenTools.defaultFontPixelHeight * 20)

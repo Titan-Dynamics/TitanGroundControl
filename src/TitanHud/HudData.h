@@ -9,7 +9,7 @@
 
 #include "Vehicle.h"
 
-/// Telemetry for the Mission Planner style HUD that QGroundControl's Vehicle does not keep: the
+/// Telemetry for the Titan HUD that QGroundControl's Vehicle does not keep: the
 /// navigation controller output, ArduPilot's EKF status report and angle of attack, the heartbeat and
 /// system status flags, plus values derived from the vehicle facts (airspeed trend, turn rate, targets)
 /// and the highest-severity recent status text.
