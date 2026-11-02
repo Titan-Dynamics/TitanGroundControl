@@ -43,12 +43,13 @@ Item {
 
     property double _thermalHeightFactor: 0.85 //-- TODO
 
-        Image {
+        // Titan: old-television static in place of upstream's no-video picture, still while the HUD's own sky and
+        // ground cover it
+        TvStatic {
             id:             noVideo
             anchors.fill:   parent
-            source:         "/res/NoVideoBackground.jpg"
-            fillMode:       Image.PreserveAspectCrop
             visible:        !_showStreamLoader && !_showUvcLoader
+            running:        visible && !(hud.visible && !hud._overVideo)
 
             Rectangle {
                 anchors.centerIn:   parent
@@ -131,13 +132,6 @@ Item {
             width:              parent.getWidth()
             anchors.centerIn:   parent
             visible:           _showStreamLoader || _showUvcLoader
-
-            // Titan: the Titan HUD over the video, filling the video area
-            TitanHud {
-                anchors.fill:   parent
-                drawBackground: false
-                visible:        _showHud
-            }
 
             // grid lines
             Item {
@@ -236,5 +230,42 @@ Item {
             }
             property int zoom: 0
         }
+    }
+
+    // Titan: the Titan HUD over the part of the video on screen (a fit or fill mode can make the centered picture
+    // overhang the view), or while waiting for video, over the whole view on its own sky and ground
+    TitanHud {
+        id: hud
+
+        readonly property bool _overVideo: videoBackground.visible
+
+        x:              _overVideo ? Math.max(0, (root.width - videoContentArea.width) / 2) : 0
+        y:              _overVideo ? Math.max(0, (root.height - videoContentArea.height) / 2) : 0
+        width:          _overVideo ? Math.min(videoContentArea.width, root.width) : root.width
+        height:         _overVideo ? Math.min(videoContentArea.height, root.height) : root.height
+        drawBackground: !_overVideo
+        symbolScale:    QGroundControl.settingsManager.videoSettings.hudScale.rawValue
+        visible:        root._showHud && (_overVideo || QGroundControl.videoManager.hasVideo)
+    }
+
+    // Titan: the waiting message, larger, over the HUD's sky and ground
+    Rectangle {
+        anchors.centerIn:   parent
+        width:              hudWaitingLabel.contentWidth + ScreenTools.defaultFontPixelHeight * 1.5
+        height:             hudWaitingLabel.contentHeight + ScreenTools.defaultFontPixelHeight
+        radius:             ScreenTools.defaultFontPixelWidth / 2
+        color:              "black"
+        opacity:            0.6
+        visible:            hud.visible && !hud._overVideo
+    }
+
+    QGCLabel {
+        id:                 hudWaitingLabel
+        anchors.centerIn:   parent
+        text:               noVideoLabel.text
+        font.bold:          true
+        color:              "white"
+        font.pointSize:     root.useSmallFont ? ScreenTools.defaultFontPointSize : ScreenTools.largeFontPointSize * 1.6
+        visible:            hud.visible && !hud._overVideo
     }
 }

@@ -4,6 +4,7 @@
 #include <QtCore/QPointer>
 #include <QtCore/QThreadPool>
 #include <QtCore/QTimer>
+#include <QtGui/QColor>
 #include <QtGui/QImage>
 #include <QtQuick/QQuickItem>
 
@@ -21,6 +22,8 @@ class HudItem : public QQuickItem
     QML_ELEMENT
     Q_PROPERTY(HudData* hudData READ hudData WRITE setHudData NOTIFY hudDataChanged)
     Q_PROPERTY(bool drawBackground READ drawBackground WRITE setDrawBackground NOTIFY drawBackgroundChanged)
+    Q_PROPERTY(qreal symbolScale READ symbolScale WRITE setSymbolScale NOTIFY symbolScaleChanged)
+    Q_PROPERTY(QColor symbolColor READ symbolColor WRITE setSymbolColor NOTIFY symbolColorChanged)
 
 public:
     explicit HudItem(QQuickItem* parent = nullptr);
@@ -34,6 +37,14 @@ public:
 
     void setDrawBackground(bool draw);
 
+    qreal symbolScale() const { return _symbolScale; }
+
+    void setSymbolScale(qreal scale);
+
+    QColor symbolColor() const { return _symbolColor; }
+
+    void setSymbolColor(const QColor& color);
+
 protected:
     QSGNode* updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data) override;
     void geometryChange(const QRectF& newGeometry, const QRectF& oldGeometry) override;
@@ -42,6 +53,8 @@ protected:
 signals:
     void hudDataChanged();
     void drawBackgroundChanged();
+    void symbolScaleChanged();
+    void symbolColorChanged();
 
 private:
     HudFrame _collectFrame() const;
@@ -51,6 +64,8 @@ private:
     QPointer<HudData> _data;
     QPointer<Vehicle> _connectedVehicle;
     bool _drawBackground = true;
+    qreal _symbolScale = 1.0;
+    QColor _symbolColor{Qt::white};
     QElapsedTimer _clock;
 
     HudPainter _hudPainter;  ///< Used only by the painting thread

@@ -10,6 +10,8 @@ private slots:
     void init() override;
     void _overlayLeavesVideoVisible();
     void _instrumentFillsItsPanel();
+    void _symbolScaleSizesTheSymbology();
+    void _symbolColorTintsTheSymbology();
     void _paintsWithoutVehicle();
     void _survivesMissingAndExtremeValues();
     void _paintsEveryAttitudeAndSize();

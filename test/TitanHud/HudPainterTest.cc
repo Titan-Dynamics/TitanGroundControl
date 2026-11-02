@@ -4,6 +4,7 @@
 
 #include <QtCore/QRegularExpression>
 #include <QtCore/QtMath>
+#include <QtGui/QColor>
 #include <QtGui/QImage>
 #include <QtGui/QPainter>
 
@@ -60,6 +61,9 @@ HudFrame cruiseFrame(QSize size, bool background)
     f.linkQuality = 98.0;
     f.message = QStringLiteral("PreArm: Battery 1 below minimum arming voltage");
     f.messageSeverity = 4;
+    f.northMeters = 812.0;
+    f.eastMeters = -431.0;
+    f.heightMeters = 120.4;
     f.speedUnits = QStringLiteral("m/s");
     f.altitudeUnits = QStringLiteral("m");
     f.distanceUnits = QStringLiteral("m");
@@ -120,6 +124,41 @@ void HudPainterTest::_instrumentFillsItsPanel()
     QCOMPARE(coverage(paint(painter, cruiseFrame(QSize(320, 240), true))), 1.0);
 }
 
+void HudPainterTest::_symbolScaleSizesTheSymbology()
+{
+    HudPainter::registerFont();
+    HudPainter painter;
+    double previous = 0.0;
+    for (const double scale : {0.8, 1.0, 1.25}) {
+        HudFrame f = cruiseFrame(QSize(1280, 720), false);
+        f.symbolScale = scale;
+        const double covered = coverage(paint(painter, f));
+        QVERIFY2(covered > previous, qPrintable(QStringLiteral("%1 covered at scale %2").arg(covered).arg(scale)));
+        previous = covered;
+    }
+}
+
+void HudPainterTest::_symbolColorTintsTheSymbology()
+{
+    HudPainter::registerFont();
+    HudPainter painter;
+    auto bluePixels = [](const QImage& image) {
+        qsizetype count = 0;
+        for (int y = 0; y < image.height(); y++) {
+            const auto* line = reinterpret_cast<const QRgb*>(image.constScanLine(y));
+            for (int x = 0; x < image.width(); x++) {
+                count += (qBlue(line[x]) > 200) && (qRed(line[x]) < 100) && (qGreen(line[x]) < 140) ? 1 : 0;
+            }
+        }
+        return count;
+    };
+
+    HudFrame f = cruiseFrame(QSize(1280, 720), false);
+    QVERIFY(bluePixels(paint(painter, f)) < 50);
+    f.symbolColor = QColor(0x20, 0x60, 0xFF);
+    QVERIFY(bluePixels(paint(painter, f)) > 1000);
+}
+
 void HudPainterTest::_paintsWithoutVehicle()
 {
     HudPainter::registerFont();
@@ -170,6 +209,10 @@ void HudPainterTest::_survivesMissingAndExtremeValues()
         f.vibration = 1e300;
         f.ekfStatus = inf;
         f.linkQuality = -1e300;
+        f.northMeters = 1e300;
+        f.eastMeters = nan;
+        f.heightMeters = -inf;
+        f.symbolColor = QColor();
         f.message = QString(500, QLatin1Char('W'));
         QVERIFY(coverage(paint(painter, f)) > 0.0);
     }

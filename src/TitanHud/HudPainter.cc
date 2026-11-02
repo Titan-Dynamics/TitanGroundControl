@@ -21,7 +21,6 @@
 QGC_LOGGING_CATEGORY(HudPainterLog, "TitanHud.HudPainter")
 
 namespace {
-const QColor kSymbol(0x66, 0xFF, 0x99);
 const QColor kSymbolLost(0x9A, 0xA6, 0x9F);
 const QColor kCaution(0xFF, 0xC2, 0x3D);
 const QColor kWarning(0xFF, 0x50, 0x46);
@@ -228,6 +227,9 @@ void HudPainter::paint(QPainter& p, const HudFrame& frame)
     f.wpDistance = optional(f.wpDistance);
     f.linkQuality = std::isfinite(f.linkQuality) ? std::clamp(f.linkQuality, 0.0, 100.0) : qQNaN();
     f.vibration = optional(f.vibration);
+    if (!f.symbolColor.isValid()) {
+        f.symbolColor = Qt::white;
+    }
 
     _layout(f);
     _devicePixelRatio = p.device() ? p.device()->devicePixelRatio() : 1.0;
@@ -255,8 +257,10 @@ void HudPainter::_layout(const HudFrame& f)
 {
     _cx = f.width / 2.0;
     _cy = f.height / 2.0;
-    _unit = std::min(f.height, f.width * 0.75) / 100.0;
-    _detail = (_unit >= 4.4) ? Detail::Full : (_unit >= 2.2) ? Detail::Compact : Detail::Minimal;
+    // How much is shown follows the HUD's size; the symbol scale only makes it bigger or smaller
+    const qreal size = std::min(f.height, f.width * 0.75) / 100.0;
+    _detail = (size >= 4.4) ? Detail::Full : (size >= 2.2) ? Detail::Compact : Detail::Minimal;
+    _unit = size * (std::isfinite(f.symbolScale) ? std::clamp(f.symbolScale, 0.5, 2.0) : 1.0);
     const bool minimal = _detail == Detail::Minimal;
     _lineWidth = std::max(1.25, 0.24 * _unit);
     _haloWidth = std::max(1.0, 0.2 * _unit);
@@ -269,11 +273,12 @@ void HudPainter::_layout(const HudFrame& f)
     _fieldRadius = std::max(10.0 * _unit, std::min(0.36 * f.height, _tapeOffset - 5.0 * _unit));
     _margin = std::max(3.0, 1.6 * _unit);
     _glow = f.drawBackground;
+    _symbol = _symbolColor(f);
 }
 
 QColor HudPainter::_symbolColor(const HudFrame& f) const
 {
-    return f.connected ? kSymbol : kSymbolLost;
+    return f.connected ? f.symbolColor : kSymbolLost;
 }
 
 // ---------------------------------------------------------------------------
@@ -403,7 +408,7 @@ qreal HudPainter::_textWidth(qreal size, const QString& text)
     const int pixelSize = qMax(1, qRound(size));
     qreal width = 0.0;
     for (const QChar character : text) {
-        width += _glyph(character, pixelSize, kSymbol, _devicePixelRatio).advance;
+        width += _glyph(character, pixelSize, _symbol, _devicePixelRatio).advance;
     }
     return width;
 }
@@ -519,6 +524,8 @@ void HudPainter::_drawBackground(QPainter& p, const HudFrame& f) const
     ground.setColorAt(1.0, kGroundNadir);
     p.fillRect(QRectF(-reach, horizonY, 2.0 * reach, 2.0 * reach), ground);
 
+    _drawGroundGrid(p, f, horizonY);
+
     // A thin band of light along the horizon
     const QColor symbol = _symbolColor(f);
     const qreal band = 2.5 * _unit;
@@ -530,6 +537,76 @@ void HudPainter::_drawBackground(QPainter& p, const HudFrame& f) const
     p.setPen(QPen(withAlpha(symbol, 0.55), 1.0));
     p.drawLine(QPointF(-reach, horizonY), QPointF(reach, horizonY));
     p.restore();
+}
+
+void HudPainter::_drawGroundGrid(QPainter& p, const HudFrame& f, qreal horizonY) const
+{
+    if (!std::isfinite(f.northMeters) || !std::isfinite(f.eastMeters) || (std::abs(f.northMeters) > kMaxReadout) ||
+        (std::abs(f.eastMeters) > kMaxReadout)) {
+        return;
+    }
+
+    // A grid fixed to the ground under the vehicle, in the ladder's projection, so it slides by as the vehicle flies.
+    // Its spacing doubles with height, the lines about to go fading out first so nothing pops.
+    const double height = std::clamp(finiteOr(f.heightMeters, 0.0), 3.0, 50000.0);
+    const double level = std::log2(height * 0.8);
+    const double spacing = std::exp2(std::floor(level));
+    const double oddAlpha = 1.0 - (level - std::floor(level));
+    const double reach = 14.0 * height;
+    const int lineCount = static_cast<int>(std::ceil(reach / spacing));
+    constexpr int kSamples = 40;
+
+    auto project = [&](double north, double east, bool& visible) {
+        const double azimuth = qRadiansToDegrees(std::atan2(east, north));
+        const double relative = wrap180(azimuth - f.heading);
+        visible = std::abs(relative) < 100.0;
+        const double elevation = -qRadiansToDegrees(std::atan2(height, std::hypot(north, east)));
+        return QPointF(relative * _pxPerDegree, (f.pitch - elevation) * _pxPerDegree);
+    };
+
+    QPainterPath even;
+    QPainterPath odd;
+    for (const bool northSouth : {true, false}) {
+        const double position = northSouth ? f.eastMeters : f.northMeters;
+        const qint64 base = static_cast<qint64>(std::floor(position / spacing));
+        for (int k = -lineCount; k <= lineCount; k++) {
+            const qint64 index = base + k;
+            const double offset = static_cast<double>(index) * spacing - position;
+            if (std::abs(offset) > reach) {
+                continue;
+            }
+            QPainterPath& path = (index % 2 == 0) ? even : odd;
+            bool drawing = false;
+            for (int i = 0; i <= kSamples; i++) {
+                // Denser near the vehicle, where the lines sweep fastest
+                const double t = 2.0 * i / kSamples - 1.0;
+                const double along = reach * t * std::abs(t);
+                bool visible = false;
+                const QPointF point = northSouth ? project(along, offset, visible) : project(offset, along, visible);
+                if (!visible) {
+                    drawing = false;
+                    continue;
+                }
+                if (drawing) {
+                    path.lineTo(point);
+                } else {
+                    path.moveTo(point);
+                    drawing = true;
+                }
+            }
+        }
+    }
+
+    const QColor symbol = _symbolColor(f);
+    QLinearGradient fade(0.0, horizonY, 0.0, horizonY + 0.4 * f.height);
+    fade.setColorAt(0.0, withAlpha(symbol, 0.0));
+    fade.setColorAt(1.0, withAlpha(symbol, 0.3));
+    p.setBrush(Qt::NoBrush);
+    p.setPen(QPen(QBrush(fade), std::max(1.0, 0.12 * _unit)));
+    p.drawPath(even);
+    p.setOpacity(oddAlpha);
+    p.drawPath(odd);
+    p.setOpacity(1.0);
 }
 
 // ---------------------------------------------------------------------------
@@ -1274,8 +1351,9 @@ void HudPainter::_drawArming(QPainter& p, const HudFrame& f)
     }
     const QColor color = _symbolColor(f);
     qreal y = f.height - _margin - 0.5 * _textSize;
+    // Armed is red, the props can turn
     _text(p, _margin, y, _textSize, f.armed ? QStringLiteral("ARMED") : QStringLiteral("DISARMED"),
-          f.armed ? color : withAlpha(color, 0.8));
+          f.armed ? kWarning : withAlpha(color, 0.8));
     y -= 0.5 * _textSize + 1.0 * _unit + 0.5 * _smallTextSize;
     if (!f.armed && f.prearmAvailable) {
         _text(p, _margin, y, _smallTextSize, f.prearmOk ? QStringLiteral("READY TO ARM") : QStringLiteral("NOT READY"),
@@ -1334,7 +1412,7 @@ void HudPainter::_drawAlerts(QPainter& p, const HudFrame& f)
         callouts.append({QStringLiteral("FAILSAFE"), kWarning, true});
     }
     if (f.hasVehicle && f.recentlyArmed && f.armed) {
-        callouts.append({QStringLiteral("ARMED"), kCaution, false});
+        callouts.append({QStringLiteral("ARMED"), kWarning, false});
     }
     qreal y = _cy - 0.42 * _fieldRadius;
     for (const Callout& callout : callouts) {

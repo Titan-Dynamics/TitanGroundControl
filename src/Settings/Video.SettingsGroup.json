@@ -70,9 +70,29 @@
             "name": "hudOverlay",
             "shortDesc": "Overlay the Titan HUD (attitude, speed, altitude, heading) on the video.",
             "type": "bool",
-            "default": false,
+            "default": true,
             "label": "HUD overlay",
             "keywords": "hud,overlay,attitude,instruments"
+        },
+        {
+            "name": "hudScale",
+            "shortDesc": "Size of the HUD's text and symbols over the video.",
+            "type": "float",
+            "enumStrings": "Small,Medium,Large",
+            "enumValues": "0.8,1,1.25",
+            "default": 1,
+            "label": "HUD scale",
+            "keywords": "hud,overlay,scale,size,text"
+        },
+        {
+            "name": "hudColor",
+            "shortDesc": "Color of the HUD's text and symbols. Cautions and warnings stay amber and red.",
+            "type": "string",
+            "enumStrings": "Red,Orange,Yellow,Green,Cyan,Blue,Purple,White",
+            "enumValues": "#ff0000,#ffa500,#ffff00,#00c000,#00ffff,#2060ff,#a020f0,#ffffff",
+            "default": "#ffffff",
+            "label": "HUD color",
+            "keywords": "hud,overlay,color,colour,text"
         },
         {
             "name": "videoFit",

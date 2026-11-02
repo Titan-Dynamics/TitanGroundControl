@@ -18,8 +18,10 @@ struct HudFrame
 {
     qreal width = 0.0;
     qreal height = 0.0;
-    bool drawBackground = true;  ///< Synthetic sky and ground (instrument panel); off over video
-    qint64 clockMs = 0;          ///< Drives blinking warnings
+    bool drawBackground = true;     ///< Synthetic sky and ground (instrument panel); off over video
+    double symbolScale = 1.0;       ///< Text and symbol size relative to the HUD's own size
+    QColor symbolColor{Qt::white};  ///< Lines and text; cautions and warnings stay amber and red
+    qint64 clockMs = 0;             ///< Drives blinking warnings
 
     bool hasVehicle = false;
     bool connected = false;
@@ -86,6 +88,11 @@ struct HudFrame
 
     QString message;
     int messageSeverity = 6;
+
+    // Synthetic ground grid: the vehicle's position from home, in metres, and its height above it
+    double northMeters = qQNaN();
+    double eastMeters = qQNaN();
+    double heightMeters = 0.0;
 
     QString speedUnits;
     QString altitudeUnits;
@@ -176,6 +183,7 @@ private:
     QColor _symbolColor(const HudFrame& f) const;
 
     void _drawBackground(QPainter& p, const HudFrame& f) const;
+    void _drawGroundGrid(QPainter& p, const HudFrame& f, qreal horizonY) const;
     void _drawPitchLadder(QPainter& p, const HudFrame& f);
     void _drawBankScale(QPainter& p, const HudFrame& f) const;
     void _drawHeadingTape(QPainter& p, const HudFrame& f);
@@ -225,6 +233,7 @@ private:
     qreal _fieldRadius = 80.0;  ///< Where the pitch ladder fades out, and the bank scale's radius
     qreal _margin = 3.0;
     bool _glow = false;
+    QColor _symbol{Qt::white};  ///< This frame's symbology colour
     qreal _devicePixelRatio = 1.0;
 
     QHash<GlyphKey, Glyph> _glyphs;

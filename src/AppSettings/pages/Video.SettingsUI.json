@@ -6,7 +6,8 @@
         "autoStreamConfig": "QGroundControl.videoManager.autoStreamConfigured",
         "sourceDisabled": "videoSource === QGroundControl.settingsManager.videoSettings.disabledVideoSource",
         "isStreamSource": "QGroundControl.videoManager.isStreamSource",
-        "rtpLatencyVisible": "!QGroundControl.settingsManager.videoSettings.lowLatencyMode.rawValue"
+        "rtpLatencyVisible": "!QGroundControl.settingsManager.videoSettings.lowLatencyMode.rawValue",
+        "hudOverlay": "QGroundControl.settingsManager.videoSettings.hudOverlay.rawValue"
     },
     "groups": [
         {
@@ -42,7 +43,7 @@
         },
         {
             "heading": "Settings",
-            "keywords": ["aspect ratio", "low latency", "decoder", "hardware decode", "disable when disarmed", "gpu", "zero-copy", "hud", "overlay"],
+            "keywords": ["aspect ratio", "low latency", "decoder", "hardware decode", "disable when disarmed", "gpu", "zero-copy", "hud", "overlay", "hud scale", "hud color"],
             "showWhen": "!sourceDisabled",
             "controls": [
                 {
@@ -55,6 +56,14 @@
                 },
                 {
                     "setting": "videoSettings.hudOverlay"
+                },
+                {
+                    "setting": "videoSettings.hudScale",
+                    "showWhen": "hudOverlay"
+                },
+                {
+                    "setting": "videoSettings.hudColor",
+                    "showWhen": "hudOverlay"
                 },
                 {
                     "setting": "videoSettings.lowLatencyMode",

@@ -7,8 +7,10 @@ import QGroundControl
 Item {
     id: root
 
-    property var  vehicle:        QGroundControl.multiVehicleManager.activeVehicle
-    property bool drawBackground: true
+    property var   vehicle:        QGroundControl.multiVehicleManager.activeVehicle
+    property bool  drawBackground: true
+    property real  symbolScale:    1    ///< Text and symbol size
+    property color symbolColor:    QGroundControl.settingsManager.videoSettings.hudColor.rawValue
 
     // Detached while hidden so an unused HUD neither polls telemetry nor requests frames
     HudData {
@@ -20,5 +22,7 @@ Item {
         anchors.fill:   parent
         hudData:        hudDataSource
         drawBackground: root.drawBackground
+        symbolScale:    root.symbolScale
+        symbolColor:    root.symbolColor
     }
 }

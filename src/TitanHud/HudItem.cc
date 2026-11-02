@@ -28,6 +28,7 @@ constexpr double kTrendSeconds = 6.0;
 /// Below this ground speed the flight path is mostly GPS noise
 constexpr double kFlightPathMinSpeed = 2.0;  ///< m/s
 constexpr double kMinTimeToGoSpeed = 1.0;    ///< m/s
+constexpr double kMetersPerDegreeLatitude = 111320.0;
 
 double wrap180(double degrees)
 {
@@ -122,6 +123,26 @@ void HudItem::setDrawBackground(bool draw)
     _requestPaint();
 }
 
+void HudItem::setSymbolColor(const QColor& color)
+{
+    if (color == _symbolColor) {
+        return;
+    }
+    _symbolColor = color;
+    emit symbolColorChanged();
+    _requestPaint();
+}
+
+void HudItem::setSymbolScale(qreal scale)
+{
+    if (qFuzzyCompare(_symbolScale, scale)) {
+        return;
+    }
+    _symbolScale = scale;
+    emit symbolScaleChanged();
+    _requestPaint();
+}
+
 void HudItem::_connectVehicle(Vehicle* vehicle)
 {
     if (_connectedVehicle) {
@@ -145,6 +166,8 @@ HudFrame HudItem::_collectFrame() const
     f.width = width();
     f.height = height();
     f.drawBackground = _drawBackground;
+    f.symbolScale = _symbolScale;
+    f.symbolColor = _symbolColor;
     f.clockMs = _clock.elapsed();
     f.speedUnits = FactMetaData::appSettingsSpeedUnitsString();
     f.altitudeUnits = FactMetaData::appSettingsVerticalDistanceUnitsString();
@@ -243,6 +266,16 @@ HudFrame HudItem::_collectFrame() const
     f.linkQuality = f.connected ? std::clamp(100.0 - vehicle->mavlinkLossPercent(), 0.0, 100.0) : 0.0;
     f.message = _data->message();
     f.messageSeverity = _data->messageSeverity();
+
+    // The instrument panel's ground grid is laid out from home, so it slides by under the vehicle
+    const QGeoCoordinate home = vehicle->homePosition();
+    const QGeoCoordinate position = vehicle->coordinate();
+    if (home.isValid() && position.isValid()) {
+        f.northMeters = (position.latitude() - home.latitude()) * kMetersPerDegreeLatitude;
+        f.eastMeters = (position.longitude() - home.longitude()) * kMetersPerDegreeLatitude *
+                       std::cos(qDegreesToRadians(home.latitude()));
+    }
+    f.heightMeters = std::isnan(altitude) ? 0.0 : altitude;
 
     return f;
 }
