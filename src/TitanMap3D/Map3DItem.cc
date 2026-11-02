@@ -461,8 +461,6 @@ void Map3DItem::_refreshAdsb()
         aircraft.squawk = adsb->squawk();
         aircraft.alert = adsb->alert();
         aircraft.timeSeconds = track.timeSeconds;
-        aircraft.aircraftType = adsb->aircraftType();
-        aircraft.categoryName = adsb->categoryName();
         aircraft.onGround = adsb->onGround();
         aircraft.threatLevel = adsb->threatLevel();
         _input.adsb.append(aircraft);
@@ -540,10 +538,18 @@ QString Map3DItem::_tooltipFor(quint32 icao, double distance) const
     QStringList lines;
     lines << tr("ICAO: %1").arg(aircraft->icao, 6, 16, QLatin1Char('0')).toUpper();
     lines << tr("Callsign: %1").arg(aircraft->callsign);
-    lines << tr("Type/Category: %1")
-                 .arg(aircraft->aircraftType.isEmpty() ? aircraft->categoryName
-                                                       : aircraft->aircraftType + QStringLiteral(" / ") +
-                                                             aircraft->categoryName);
+    // Type and category only for the tooltip, rather than copied for every aircraft every frame
+    const QmlObjectListModel* const vehicles = ADSBVehicleManager::instance()->adsbVehicles();
+    for (int i = 0; i < vehicles->count(); i++) {
+        const ADSBVehicle* const adsb = vehicles->value<const ADSBVehicle*>(i);
+        if (adsb && (adsb->icaoAddress() == icao)) {
+            lines << tr("Type/Category: %1")
+                         .arg(adsb->aircraftType().isEmpty()
+                                  ? adsb->categoryName()
+                                  : adsb->aircraftType() + QStringLiteral(" / ") + adsb->categoryName());
+            break;
+        }
+    }
     // MAVLink and the internet feeds carry the squawk's four digits as a decimal number
     lines << tr("Squawk: %1").arg(aircraft->squawk, 4, 10, QLatin1Char('0'));
     lines << tr("Altitude: %1 %2").arg(altitude, 0, 'f', 0).arg(altitudeUnits);
