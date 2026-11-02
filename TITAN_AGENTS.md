@@ -26,12 +26,12 @@ rather than in `AGENTS.md` / `CLAUDE.md`, which are upstream files.
 | Map POIs, goto indicator sync, Add POI | `src/FlyView/FlyViewMap.qml`, `src/FlyView/FlyViewMapClickDropPanel.qml` |
 | Smooth (animated, cursor-anchored) mouse-wheel zoom on the Fly/Plan map, half a zoom level a notch | `WheelHandler` and `wheelZoomAnimation` in `src/FlightMap/FlightMap.qml` |
 | Telemetry panel: tiles shown as numbers or bars, with caution and warning levels, edited in place | `src/TitanTelemetry/` (`TelemetryPanelController.*`, a layout per vehicle type in INI group `TitanTelemetryPanel`, starting from `kDefaultLayout` (four columns, twelve values, the same for every vehicle type) on a fresh install and Reset, `TelemetryPanelItem.*`, `TelemetryPanel.qml`, `TelemetryTile.qml`, `TelemetryItemEditor.qml`), swapped in for upstream's `TelemetryValuesBar` in `src/FlyView/FlyViewBottomRightRowLayout.qml`; consumption per kilometre on each battery (`mahPerKm`, `whPerKm` in `src/Vehicle/FactGroups/BatteryFactGroupListModel.*` and `BatteryFact.json`, the battery tooltip's formulas); tests in `test/TitanTelemetry/` |
-| Fly View toolbar (red Arm/Disarm, FLTMODE1-6 buttons, messages icon + severity pill, GPS and battery right after the flight modes, the Titan Dynamics logo at the right end while there is room) | `src/Toolbar/FlyViewToolBar.qml`, `src/Toolbar/FlyViewToolBarIndicators.qml` (`excludedIndicators`), `src/Toolbar/MainStatusIndicator.qml`, `resources/td_full_logo_black.png` and `td_full_logo_white.png` in `src/Toolbar/CMakeLists.txt` |
+| Fly View toolbar (red Arm/Disarm, FLTMODE1-6 buttons, messages icon + severity pill, every indicator right after the flight modes with GPS, battery and RC first, the Titan Dynamics logo alone at the right end while there is room) | `src/Toolbar/FlyViewToolBar.qml` (`_leadingIndicators`), `src/Toolbar/MainStatusIndicator.qml`, `resources/td_full_logo_black.png` and `td_full_logo_white.png` in `src/Toolbar/CMakeLists.txt` |
 | Short FBW mode names | `src/QmlControls/TDHelpers.qml` (singleton), used by `src/Toolbar/FlightModeIndicator.qml` |
 | Battery tooltip metrics and 0% icon fix | `src/Toolbar/BatteryIndicator.qml` |
 | Centered guided-action confirm popup with "Don't show again", kept across launches as action codes in `flyViewSettings.skippedGuidedConfirmations` and undone from Fly View settings → Guided Commands | `src/FlyView/GuidedActionConfirm.qml` (a `Popup`), `src/FlyView/GuidedActionsController.qml`, `src/QmlControls/GuidedConfirmationsReset.qml` |
 | Toolbar frosted-glass blur | `src/FlyView/FlyView.qml` |
-| Draggable / resizable PiP | `src/QmlControls/PipView.qml`, PiP placement in `src/FlyView/FlyView.qml` |
+| Draggable / resizable PiP, which shrinks into its show button as it collapses and grows back out of it | `src/QmlControls/PipView.qml` (`pipScaler`, `_expansion`), PiP placement in `src/FlyView/FlyView.qml` |
 | Split-view Configure/Settings drawer | `src/MainWindow/MainWindow.qml` (`_splitExpanded`, persisted in `flyViewSettings.toolDrawerFullWidth`) |
 | Settings / Vehicle Config sidebar and parameter editor polish, settings pages no wider than the view | `src/QmlControls/AppSettings.qml`, `src/AppSettings/SettingsPage.qml`, `src/Vehicle/VehicleSetup/VehicleConfigView.qml`, `src/QmlControls/ParameterEditor.qml` |
 | Inline searchable sections for hand-coded settings pages; generated groups hide when all their controls are hidden | `tools/generators/settings_qml/emit.py` (`_group_auto_vis` counts each control's `showWhen`), `model.py` (`"sections"` key in `SettingsPages.json`) |
@@ -76,10 +76,11 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   (`finishCloseProcess`); an AppImage is replaced by renaming over it and restarted once this process exits, since
   a second instance would refuse to run; macOS opens the disk image; Android opens the package in the browser.
   Installing is disabled while a vehicle is connected, and an unsaved mission is confirmed first.
-- **GPS and battery sit right after the flight-mode buttons** (`_movedIndicators` in `FlyViewToolBar.qml`), not
-  with the indicators on the right, which skip them (`excludedIndicators`). GPS is one of the app's indicators and
-  battery one of the vehicle's, both matched by the end of their URL. The **Titan Dynamics logo** shows at the
-  right end, black on the light theme and white on the dark one, only while the whole toolbar fits without
+- **Every toolbar indicator sits right after the flight-mode buttons**: GPS, battery and RC first
+  (`_leadingIndicators` in `FlyViewToolBar.qml`, matched by the end of their URL), then the rest as the app and the
+  firmware list them. GPS is one of the app's indicators, the others the vehicle's. Upstream's
+  `FlyViewToolBarIndicators.qml`, which docks them at the right end, is not used. The **Titan Dynamics logo** alone
+  sits there, black on the light theme and white on the dark one, only while the whole toolbar fits without
   scrolling (`_showLogo`).
 - The status drawer has **no Arm/Disarm button** either (arming lives on the toolbar); its Force Arm (opt-in
   setting), Primary Link and Reboot controls are kept.
@@ -280,10 +281,12 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
    (e.g. `QGC_MACOS_UNIVERSAL_BUILD` defaulting to OFF). Re-check the fork hooks inside upstream files:
    `FlyView.qml` (`map3DViewComponent`, `map3DLoader` and `map3DSplitLoader` in `mapHolder`, `_map3DSplitWidth` on
    the full-window items' right margins, `_mapViewportRect`, `_map3DCoversMap` on both 2D map engines, the PiP's
-   `inTopLeft` / `inBottomRight` and `onPipClicked`), `PipView.qml` (`pipClicked`),
+   `inTopLeft` / `inBottomRight` and `onPipClicked`), `PipView.qml` (`pipClicked`, the collapse animation's
+   `pipScaler` and `_expansion`),
    `FlyViewBottomRightRowLayout.qml` (`TelemetryPanel`), `FlyViewWidgetLayer.qml` (map scale and GeoMap controls,
    the tool strip and bottom-right row corner states), `MainStatusIndicator.qml` (messages buttons on the left),
-   `FlyViewToolBarIndicators.qml` (`excludedIndicators`), `HelpSettings.qml` (`TitanHelpSection`),
+   `FlyViewToolBar.qml` (`_indicators` in place of upstream's `FlyViewToolBarIndicators.qml`: carry over upstream's
+   changes to that file), `HelpSettings.qml` (`TitanHelpSection`),
    `VideoSettings.*` (`refreshVideoSources`, `_setVideoSourceList`), `FlyViewTopRightColumnLayout.qml` and
    `FlyViewTopRightPanel.qml` (`showCameraControls`), `ADSB.h`, `ADSBVehicle.*` and `ADSBVehicleManager.*`
    (category, ground and threat fields, the internet source, the sender, the echo filter and COLLISION),
