@@ -19,6 +19,23 @@ Item {
     property bool   _parametersReady: QGroundControl.multiVehicleManager.parameterReadyVehicleAvailable
     property var    _fltmodeNames:   (_activeVehicle && _activeVehicle.apmFirmware && _parametersReady) ? _buildFltmodeList() : []
 
+    // GPS and battery sit right after the flight modes rather than with the other indicators on the right. GPS is one
+    // of the app's indicators (it also shows a GNSS receiver without a vehicle), battery one of the vehicle's.
+    readonly property var  _movedIndicators: [ "/GPSIndicator.qml", "BatteryIndicator.qml" ]
+    readonly property var  _leftIndicators:  QGroundControl.corePlugin.toolBarIndicators.filter(_isMovedIndicator)
+                                                 .concat(_activeVehicle ? _activeVehicle.toolIndicators.filter(_isMovedIndicator) : [])
+    readonly property real _indicatorMargins: ScreenTools.defaultFontPixelHeight * 0.66
+
+    // The Titan Dynamics logo at the right end, in the theme's color, while the toolbar has room for it
+    readonly property real _logoHeight:      ScreenTools.toolbarHeight * 0.7
+    readonly property real _logoWidth:       _logoHeight * 4.5   // The images are 1800 x 400
+    readonly property real _logoMargin:      ScreenTools.defaultFontPixelWidth * 1.5
+    readonly property bool _showLogo:        width >= leftPanelLayout.implicitWidth + flyViewIndicators.width + _logoWidth + _logoMargin * 2
+
+    function _isMovedIndicator(url) {
+        return _movedIndicators.some(name => url.toString().endsWith(name))
+    }
+
     function dropMainStatusIndicatorTool(showMessages = false) {
         mainStatusIndicator.dropMainStatusIndicator(showMessages);
     }
@@ -73,12 +90,31 @@ Item {
         id:             rightPanel
         anchors.right:  parent.right
         anchors.top:    parent.top
-        width:          flyViewIndicators.width
+        width:          flyViewIndicators.width + (control._showLogo ? control._logoWidth + control._logoMargin * 2 : 0)
         height:         parent.height
 
+        // Titan: clicks on the logo and between the indicators stop here rather than reaching the map
+        DeadMouseArea {
+            anchors.fill: parent
+        }
+
         FlyViewToolBarIndicators {
-            id:     flyViewIndicators
-            height: parent.height
+            id:                 flyViewIndicators
+            height:             parent.height
+            excludedIndicators: control._movedIndicators
+        }
+
+        Image {
+            anchors.right:          parent.right
+            anchors.rightMargin:    control._logoMargin
+            anchors.verticalCenter: parent.verticalCenter
+            width:                  control._logoWidth
+            height:                 control._logoHeight
+            source:                 qgcPal.globalTheme === QGCPalette.Light ? "/res/td_full_logo_black.png" : "/res/td_full_logo_white.png"
+            sourceSize.height:      height
+            fillMode:               Image.PreserveAspectFit
+            mipmap:                 true
+            visible:                control._showLogo
         }
     }
 
@@ -237,6 +273,25 @@ Item {
                             id:         fltmodeResetTimer
                             interval:   150
                             onTriggered: parent.progress = 0
+                        }
+                    }
+                }
+
+                // Titan: GPS and battery, right after the flight modes
+                Row {
+                    Layout.fillHeight:  true
+                    spacing:            ScreenTools.defaultFontPixelWidth * 1.75
+
+                    Repeater {
+                        model: control._leftIndicators
+
+                        Loader {
+                            anchors.top:            parent.top
+                            anchors.bottom:         parent.bottom
+                            anchors.topMargin:      control._indicatorMargins
+                            anchors.bottomMargin:   control._indicatorMargins
+                            source:                 modelData
+                            visible:                item ? item.showIndicator : false
                         }
                     }
                 }

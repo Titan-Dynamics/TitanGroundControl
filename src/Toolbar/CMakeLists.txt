@@ -42,6 +42,8 @@ qt_add_resources(
     FILES "${CMAKE_SOURCE_DIR}/resources/FlyingPaperPlane.svg" "${CMAKE_SOURCE_DIR}/resources/GearWithPaperPlane.svg"
           "${CMAKE_SOURCE_DIR}/resources/OpenDoor.svg" "${CMAKE_SOURCE_DIR}/resources/PowerButton.svg"
           "${CMAKE_SOURCE_DIR}/resources/VehicleMessages.png"
+          # Titan: the toolbar's Titan Dynamics logo, black for the light theme and white for the dark one
+          "${CMAKE_SOURCE_DIR}/resources/td_full_logo_black.png" "${CMAKE_SOURCE_DIR}/resources/td_full_logo_white.png"
 )
 
 qt_add_resources(
