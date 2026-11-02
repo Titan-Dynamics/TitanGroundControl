@@ -488,8 +488,6 @@ RowLayout {
                     spacing:            ScreenTools.defaultFontPixelWidth / 2
                     visible:            !vehicleMessageList.noMessages
 
-                    Item { Layout.fillWidth: true }
-
                     QGCButton {
                         objectName:     "vehicleMessagesMarkReadButton"
                         small:          true
@@ -507,6 +505,8 @@ RowLayout {
                             mainWindow.closeIndicatorDrawer()
                         }
                     }
+
+                    Item { Layout.fillWidth: true }
                 }
 
                 VehicleMessageList {
