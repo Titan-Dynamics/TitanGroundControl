@@ -461,6 +461,10 @@ void Map3DItem::_refreshAdsb()
         aircraft.squawk = adsb->squawk();
         aircraft.alert = adsb->alert();
         aircraft.timeSeconds = track.timeSeconds;
+        aircraft.aircraftType = adsb->aircraftType();
+        aircraft.categoryName = adsb->categoryName();
+        aircraft.onGround = adsb->onGround();
+        aircraft.threatLevel = adsb->threatLevel();
         _input.adsb.append(aircraft);
     }
     for (auto it = _adsbTracks.begin(); it != _adsbTracks.end();) {
@@ -536,10 +540,15 @@ QString Map3DItem::_tooltipFor(quint32 icao, double distance) const
     QStringList lines;
     lines << tr("ICAO: %1").arg(aircraft->icao, 6, 16, QLatin1Char('0')).toUpper();
     lines << tr("Callsign: %1").arg(aircraft->callsign);
-    lines << tr("Squawk: %1").arg(aircraft->squawk, 4, 8, QLatin1Char('0'));
+    lines << tr("Type/Category: %1")
+                 .arg(aircraft->aircraftType.isEmpty() ? aircraft->categoryName
+                                                       : aircraft->aircraftType + QStringLiteral(" / ") +
+                                                             aircraft->categoryName);
+    // MAVLink and the internet feeds carry the squawk's four digits as a decimal number
+    lines << tr("Squawk: %1").arg(aircraft->squawk, 4, 10, QLatin1Char('0'));
     lines << tr("Altitude: %1 %2").arg(altitude, 0, 'f', 0).arg(altitudeUnits);
     lines << tr("Speed: %1 %2").arg(speed, 0, 'f', 0).arg(speedUnits);
-    lines << tr("Heading: %1°").arg(aircraft->heading, 0, 'f', 0);
+    lines << tr("Heading: %1°").arg(aircraft->heading, 0, 'f', 0) + (aircraft->onGround ? tr(" (On Ground)") : QString());
     lines << (distance > 1000
                   ? tr("Distance: %1 km").arg(distance / 1000, 0, 'f', 1)
                   : tr("Distance: %1 %2")
@@ -549,8 +558,10 @@ QString Map3DItem::_tooltipFor(quint32 icao, double distance) const
                  .arg(delta >= 0 ? QStringLiteral("+") : QString())
                  .arg(delta, 0, 'f', 0)
                  .arg(altitudeUnits);
-    if (aircraft->alert) {
+    if (aircraft->alert || (aircraft->threatLevel >= MAV_COLLISION_THREAT_LEVEL_HIGH)) {
         lines << tr("Collision risk: Danger");
+    } else if (aircraft->threatLevel == MAV_COLLISION_THREAT_LEVEL_LOW) {
+        lines << tr("Collision risk: Warning");
     }
     return lines.join(QLatin1Char('\n'));
 }

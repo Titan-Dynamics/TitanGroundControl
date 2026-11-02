@@ -49,6 +49,10 @@ struct AdsbAircraft
     quint16 squawk = 0;
     bool alert = false;
     double timeSeconds = 0;  ///< when the last report arrived
+    QString aircraftType;    ///< ICAO type designator, such as B738
+    QString categoryName;
+    bool onGround = false;
+    int threatLevel = 0;  ///< MAV_COLLISION_THREAT_LEVEL from the vehicle
 };
 
 /// Everything the renderer needs for a frame, gathered on the GUI thread.

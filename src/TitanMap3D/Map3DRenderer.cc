@@ -1245,6 +1245,7 @@ void Map3DRenderer::_buildAdsb(const QMatrix4x4& viewProjection, const QSize& si
         double lng;
         double alt;
         double distance;
+        bool onGround;
     };
 
     QList<Plane> planes;
@@ -1257,9 +1258,9 @@ void Map3DRenderer::_buildAdsb(const QMatrix4x4& viewProjection, const QSize& si
         if ((age > kAdsbMaxAgeSeconds) || ((aircraft.lat == 0) && (aircraft.lng == 0))) {
             continue;
         }
-        Plane plane{i, aircraft.lat, aircraft.lng, aircraft.alt, 0};
-        // Carried forward between feed updates so traffic moves at the frame rate
-        if (_input.smoothMovement && (aircraft.speed > 0)) {
+        Plane plane{i, aircraft.lat, aircraft.lng, aircraft.alt, 0, aircraft.onGround};
+        // Carried forward between feed updates so traffic moves at the frame rate; traffic on the ground stays put
+        if (_input.smoothMovement && (aircraft.speed > 0) && !aircraft.onGround) {
             newPosition(aircraft.lat, aircraft.lng, aircraft.heading, aircraft.speed * std::max(0.0, age), plane.lat,
                         plane.lng);
         }
@@ -1277,11 +1278,16 @@ void Map3DRenderer::_buildAdsb(const QMatrix4x4& viewProjection, const QSize& si
     const double tanHalfFov = std::tan(qDegreesToRadians(_input.fieldOfView) / 2);
     const float width = 3.0f * static_cast<float>(_input.devicePixelRatio);
     for (const Plane& plane : std::as_const(planes)) {
-        const double radius = _input.adsbCircleSize / 2.0;
+        // Traffic on the ground is drawn small, grey and kept above the terrain already loaded, as Mission Planner does
+        const double radius = _input.adsbCircleSize / 2.0 / (plane.onGround ? 5.0 : 1.0);
         double x = 0;
         double y = 0;
         _frame.toLocal(plane.lat, plane.lng, x, y);
-        const double z = plane.alt;
+        double z = plane.alt;
+        double terrain = 0;
+        if (plane.onGround && _loader->elevation().tryHeight(plane.lat, plane.lng, terrain)) {
+            z = std::max(z, terrain + 10);
+        }
         const double dx = x - _camera.x;
         const double dy = y - _camera.y;
         const double dz = z - _camera.z;
@@ -1303,7 +1309,8 @@ void Map3DRenderer::_buildAdsb(const QMatrix4x4& viewProjection, const QSize& si
             _output.adsb.append(screen);
         }
         Overlays::addBillboardCircle(_adsbLines.lines, QVector3D(x, y, z), radius, dx / distanceToCamera,
-                                     dy / distanceToCamera, dz / distanceToCamera, Overlays::adsbColor(plane.distance),
+                                     dy / distanceToCamera, dz / distanceToCamera,
+                                     plane.onGround ? Rgba{0.7f, 0.7f, 0.7f, 1.0f} : Overlays::adsbColor(plane.distance),
                                      width);
     }
 }
