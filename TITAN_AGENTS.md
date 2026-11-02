@@ -34,7 +34,7 @@ rather than in `AGENTS.md` / `CLAUDE.md`, which are upstream files.
 | Draggable / resizable PiP | `src/QmlControls/PipView.qml`, PiP placement in `src/FlyView/FlyView.qml` |
 | Split-view Configure/Settings drawer | `src/MainWindow/MainWindow.qml` (`_splitExpanded`, persisted in `flyViewSettings.toolDrawerFullWidth`) |
 | Settings / Vehicle Config sidebar and parameter editor polish, settings pages no wider than the view | `src/QmlControls/AppSettings.qml`, `src/AppSettings/SettingsPage.qml`, `src/Vehicle/VehicleSetup/VehicleConfigView.qml`, `src/QmlControls/ParameterEditor.qml` |
-| Inline searchable sections for hand-coded settings pages | `tools/generators/settings_qml/emit.py`, `model.py` (`"sections"` key in `SettingsPages.json`) |
+| Inline searchable sections for hand-coded settings pages; generated groups hide when all their controls are hidden | `tools/generators/settings_qml/emit.py` (`_group_auto_vis` counts each control's `showWhen`), `model.py` (`"sections"` key in `SettingsPages.json`) |
 | Branding | `cmake/CustomOptions.cmake` (`QGC_APP_NAME` = `TitanGroundControl`, `QGC_ANDROID_PACKAGE_NAME` = `aero.titandynamics.titangroundcontrol`), `src/QmlControls/QGCPalette.cc` (orange accent, `brandPrimary`/`brandAccent`), `src/API/QGCCorePlugin.*` (update check and download URLs), icons under `resources/`, `deploy/`, `android/res/` |
 | Titan 3D map: a port of Mission Planner's Map3D (TitanPlanner `Controls/Map3D`) on Qt's RHI, separate from the 2D map | `src/TitanMap3D/`: `Map3DItem.*` (QML item, gathers telemetry, mission, ADS-B and settings on the GUI thread), `Map3DRenderer.*` (render-thread frame, terrain engine GPU side, draw passes), `Map3DScene.*` (VehicleTracker, CameraRig, Kalman filter), `Map3DTerrain.*` (quadtree LOD, tile mesh builder), `Map3DTileLoader.*` (imagery + Terrarium elevation through the shared tile cache), `Map3DGeo.*` (UTM world frame, tile maths, frustum), `Map3DOverlays.*` (indicator lines, turn arc, trail), `Map3DClouds.*`, `Map3DModel.*` (STL loading), `shaders/`, `models/*.stl`, `images/` (waypoint markers, the tool strip's cube icon `map3d.svg`), QML `Map3DView.qml` (mouse controls, ADS-B tooltip), `Map3DStatsPanel.qml`, `Map3DState.qml` (singleton), tool strip actions (3D Setup opens the 3D Map settings page); hooks in `src/FlyView/FlyView.qml` (`map3DViewComponent`, `map3DLoader` and `map3DSplitLoader` in `mapHolder`, `_map3DCoversMap` on both 2D map engines, `_map3DSplitWidth` on the full-window items' right margin, `_mapViewportRect`, the PiP's `onPipClicked`) and `src/QmlControls/PipView.qml` (`pipClicked`), `src/FlyView/FlyViewWidgetLayer.qml` (map scale and GeoMap controls hidden while `Map3DState.coversMap`) and `src/FlyView/FlyViewToolStripActionList.qml`; tests in `test/TitanMap3D/` |
 | 3D map settings (Mission Planner's set and defaults, except waypoint markers at 25 m rather than 60, plus the fork's Split-screen) | `src/Settings/Map3DSettings.*`, `src/Settings/Map3D.SettingsGroup.json` (INI group `TitanMap3D`), `src/AppSettings/pages/Map3D.SettingsUI.json`, "3D Map" entry in `src/AppSettings/pages/SettingsPages.json` (replaces upstream's deprecated "3D View" page) and `Map3DSettings.qml` in the generated-pages list of `src/AppSettings/CMakeLists.txt` |
@@ -88,11 +88,14 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
 - A settings page is no wider than the drawer shows (`SettingsPage.qml`), at least 50 characters: a wrapping
   description's implicit width is its whole text on one line, which ran pages off the edge of the split drawer.
 - The PiP can be dragged anywhere, so widgets only make way for it in their own corner: bottom-left
-  (`inBottomLeft`) the virtual joysticks rise above it; top-left (`inTopLeft`) the tool strip moves to the bottom-left
-  corner; bottom-right (`inBottomRight`) the telemetry panel and instrument row moves to the bottom-left corner. They
-  jump between corners (animated anchor states in `FlyViewWidgetLayer.qml`) rather than tracking the PiP's edge.
-  The PiP's height uses the configured aspect ratio, falling back to the detected stream ratio (setting 0 = Auto)
-  and then 16:9.
+  (`inBottomLeft`) the virtual joysticks rise above it; top-left (`inTopLeft`) the tool strip moves to the
+  bottom-left corner; bottom-right (`inBottomRight`) the telemetry panel and instrument row moves to the
+  bottom-left corner. They jump between corners (animated anchor states in `FlyViewWidgetLayer.qml`) rather than
+  tracking the PiP's edge. The PiP's height uses the configured aspect ratio, falling back to the detected stream
+  ratio (setting 0 = Auto) and then 16:9. So Aspect Ratio sits right under the source in the Video settings for
+  every source but disabled video, not only for manually configured streams in the Settings group as upstream has
+  it, and while a MAVLink camera configures the stream only the source dropdown is disabled, not the group
+  (`Video.SettingsUI.json`).
 - Map-click "Go to location" only shows the goto indicator up front when executing immediately; the confirm
   popup can be dismissed without cancelling.
 - Settings and Vehicle Configuration sidebars use a fixed width of 26 characters, with eliding labels.
