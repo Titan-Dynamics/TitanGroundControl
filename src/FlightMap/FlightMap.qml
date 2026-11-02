@@ -151,7 +151,8 @@ Map {
         // Accepting both Mouse and TouchPad on all platforms is harmless and covers every case.
         id:                 wheelHandler
         acceptedDevices:    PointerDevice.Mouse | PointerDevice.TouchPad
-        rotationScale:      1 / 120
+        // Titan: half a zoom level a wheel notch; a whole level a notch was too fast
+        rotationScale:      0.5 / 120
 
         // Wheel steps accumulate into zoomTarget and wheelZoomAnimation eases toward it, keeping the
         // coordinate under the cursor fixed on every frame
