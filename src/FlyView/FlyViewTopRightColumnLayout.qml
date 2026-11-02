@@ -34,10 +34,13 @@ ColumnLayout {
     // We use a Loader to load the photoVideoControlComponent only when we have an active vehicle and a camera manager.
     // This make it easier to implement PhotoVideoControl without having to check for the mavlink camera
     // to be null all over the place
+    // Titan: and only when the camera controls are switched on in the Fly View settings
     Loader {
         id:                 photoVideoControlLoader
         Layout.alignment:   Qt.AlignRight
-        sourceComponent:    globals.activeVehicle && globals.activeVehicle.cameraManager ? photoVideoControlComponent : undefined
+        sourceComponent:    _showCameraControls && globals.activeVehicle && globals.activeVehicle.cameraManager ? photoVideoControlComponent : undefined
+
+        property bool _showCameraControls: QGroundControl.settingsManager.flyViewSettings.showCameraControls.rawValue
 
         Component {
             id: photoVideoControlComponent

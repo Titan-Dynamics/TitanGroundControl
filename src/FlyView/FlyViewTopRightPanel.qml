@@ -31,6 +31,15 @@ Rectangle {
     property real  minimumHeight:           swipeViewContainer.implicitHeight
     property real  maximumHeight
 
+    // Titan: the camera page goes with the Fly View's camera controls setting
+    property bool  _showCameraControls:     QGroundControl.settingsManager.flyViewSettings.showCameraControls.rawValue
+
+    on_ShowCameraControlsChanged: {
+        if (!_showCameraControls) {
+            swipePages.currentIndex = 0
+        }
+    }
+
     QGCPalette { id: qgcPal }
 
     DeadMouseArea {
@@ -92,6 +101,7 @@ Rectangle {
             QGCSwipeView {
                 id:                swipePages
                 anchors.fill:      parent
+                interactive:       topRightPanel._showCameraControls
                 spacing:           ScreenTools.defaultFontPixelHeight
                 implicitHeight:    Math.max(buttonsPage.implicitHeight, photoVideoPage.implicitHeight)
                 implicitWidth:     Math.max(buttonsPage.implicitWidth, photoVideoPage.implicitWidth)
@@ -201,7 +211,7 @@ Rectangle {
                     Loader {
                         id:                         photoVideoControlLoader
                         anchors.horizontalCenter:   parent.horizontalCenter
-                        sourceComponent:            globals.activeVehicle ? photoVideoControlComponent : undefined
+                        sourceComponent:            topRightPanel._showCameraControls && globals.activeVehicle ? photoVideoControlComponent : undefined
 
                         Component {
                             id: photoVideoControlComponent
@@ -215,6 +225,7 @@ Rectangle {
 
             QGCPageIndicator {
                 id:                       pageIndicator
+                visible:                  topRightPanel._showCameraControls
                 count:                    swipePages.count
                 currentIndex:             swipePages.currentIndex
                 anchors.bottom:           parent.bottom

@@ -25,6 +25,7 @@ public:
     DEFINE_SETTINGFACT(forwardFlightGoToLocationLoiterRad)
     DEFINE_SETTINGFACT(goToLocationRequiresConfirmInGuided)
     DEFINE_SETTINGFACT(keepMapCenteredOnVehicle)
+    DEFINE_SETTINGFACT(showCameraControls)
     DEFINE_SETTINGFACT(showSimpleCameraControl)
     DEFINE_SETTINGFACT(showAIChatWidget)
     DEFINE_SETTINGFACT(showObstacleDistanceOverlay)

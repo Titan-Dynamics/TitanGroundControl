@@ -8,7 +8,7 @@
     "groups": [
         {
             "heading": "General",
-            "keywords": ["checklist", "preflight", "multi vehicle", "center map", "log replay", "camera control", "home position", "mission popup", "geomap", "3d map", "map engine", "debug", "force arm", "titan ai", "ai chat", "chat widget", "show ai"],
+            "keywords": ["checklist", "preflight", "multi vehicle", "center map", "log replay", "camera control", "camera controls", "photo", "video", "home position", "mission popup", "geomap", "3d map", "map engine", "debug", "force arm", "titan ai", "ai chat", "chat widget", "show ai"],
             "controls": [
                 {
                     "setting": "appSettings.useChecklist"
@@ -31,7 +31,11 @@
                     "setting": "flyViewSettings.showAIChatWidget"
                 },
                 {
-                    "setting": "flyViewSettings.showSimpleCameraControl"
+                    "setting": "flyViewSettings.showCameraControls"
+                },
+                {
+                    "setting": "flyViewSettings.showSimpleCameraControl",
+                    "showWhen": "QGroundControl.settingsManager.flyViewSettings.showCameraControls.rawValue"
                 },
                 {
                     "setting": "flyViewSettings.updateHomePosition"

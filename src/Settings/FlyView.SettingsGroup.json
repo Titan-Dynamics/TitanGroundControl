@@ -70,6 +70,14 @@
             "keywords": "center map"
         },
         {
+            "name": "showCameraControls",
+            "shortDesc": "Show the photo, video and zoom controls in the Fly View.",
+            "type": "bool",
+            "default": false,
+            "label": "Show Camera Controls",
+            "keywords": "camera,photo,video,record,zoom,controls"
+        },
+        {
             "name": "showSimpleCameraControl",
             "shortDesc": "Display simple camera trigger controls using MAVLink DIGICAM_CONTROL commands.",
             "type": "bool",
