@@ -207,7 +207,7 @@ Item {
         FlyViewGeoMapControls {
             id:      geoMapControls
             geoMap:  mapControl && mapControl.geoMap ? mapControl.geoMap : null
-            visible: !!geoMap && !ScreenTools.isTinyScreen && QGCViewer3DManager.displayMode !== QGCViewer3DManager.View3D && !Map3DState.shown && mapControl.pipState.state === mapControl.pipState.fullState
+            visible: !!geoMap && !ScreenTools.isTinyScreen && QGCViewer3DManager.displayMode !== QGCViewer3DManager.View3D && !Map3DState.coversMap && mapControl.pipState.state === mapControl.pipState.fullState
         }
 
         MapScale {
@@ -217,7 +217,7 @@ Item {
             autoHide:               true
             // geoMap check: scale is ill-defined under the GeoMap engine's 3D
             // tilt; isTopDown keeps it hidden until the 3D->2D tilt animation lands
-            visible:                !ScreenTools.isTinyScreen && QGroundControl.corePlugin.options.flyView.showMapScale && QGCViewer3DManager.displayMode !== QGCViewer3DManager.View3D && !Map3DState.shown && mapControl && mapControl.pipState.state === mapControl.pipState.fullState &&
+            visible:                !ScreenTools.isTinyScreen && QGroundControl.corePlugin.options.flyView.showMapScale && QGCViewer3DManager.displayMode !== QGCViewer3DManager.View3D && !Map3DState.coversMap && mapControl && mapControl.pipState.state === mapControl.pipState.fullState &&
                                     (!mapControl.geoMap || (mapControl.geoMap.camera.mode === GeoMapCamera.Mode2D && mapControl.geoMap.camera.isTopDown))
         }
     }

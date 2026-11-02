@@ -15,6 +15,7 @@ public:
 
     DEFINE_SETTING_NAME_GROUP()
 
+    DEFINE_SETTINGFACT(splitScreen)
     DEFINE_SETTINGFACT(cameraDistance)
     DEFINE_SETTINGFACT(cameraHeight)
     DEFINE_SETTINGFACT(cameraAngle)

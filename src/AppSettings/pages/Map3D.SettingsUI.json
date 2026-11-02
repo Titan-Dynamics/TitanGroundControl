@@ -3,6 +3,19 @@
     "fileType": "SettingsUI",
     "groups": [
         {
+            "heading": "Layout",
+            "keywords": [
+                "split",
+                "split screen",
+                "side by side"
+            ],
+            "controls": [
+                {
+                    "setting": "map3DSettings.splitScreen"
+                }
+            ]
+        },
+        {
             "heading": "Camera",
             "keywords": [
                 "chase",

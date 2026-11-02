@@ -51,7 +51,21 @@ Item {
     property var    _mapOccluders:          _layerOccluders.all.concat(customOverlay.customOccluders).map(r => Qt.rect(r.x + widgetLayer.x, r.y + widgetLayer.y, r.width, r.height))
 
     // Titan: the 3D map covers the full-window item; the 2D map is hidden, so not drawn, once it is fully under it
-    property bool   _map3DCoversMap:    Map3DState.shown && _mainWindowIsMap && map3DLoader.opacity === 1
+    property bool   _map3DCoversMap:    Map3DState.coversMap && _mainWindowIsMap && map3DLoader.opacity === 1
+
+    // Titan: share of the right half taken by the split-screen 3D map, 0 to 1, and its width. The full-window item
+    // narrows by that width with the Settings split's 250 ms animation, which starts once the 3D map's slow first frame
+    // is out; the widgets and the PiP keep the whole view. Full-screen video closes the split.
+    property bool   _map3DSplitShown:   Map3DState.shown && Map3DState.splitScreen && !QGroundControl.videoManager.fullScreen
+    property real   _map3DSplit:        _map3DSplitShown && map3DSplitLoader._framesShown >= 2 ? 1 : 0
+    property real   _map3DSplitWidth:   _map3DSplit * mapHolder.width / 2
+
+    Behavior on _map3DSplit {
+        NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+    }
+
+    // Titan: the map keeps the vehicle within the widget layer, left of a split-screen 3D map
+    property rect   _mapViewportRect:   Qt.rect(widgetLayer.x, widgetLayer.y, Math.min(widgetLayer.width, mapHolder.width - _map3DSplitWidth - _widgetMargin - widgetLayer.x), widgetLayer.height)
 
     property real   _fullItemZorder:    0
     property real   _pipItemZorder:     QGroundControl.zOrderWidgets
@@ -80,11 +94,12 @@ Item {
 
             FlyViewMap {
                 objectName:             "flyViewMap"
+                anchors.rightMargin:    pipState.state === pipState.fullState ? _map3DSplitWidth : 0  // Titan: split-screen 3D map
                 planMasterController:   _planController
                 rightPanelWidth:        ScreenTools.defaultFontPixelHeight * 9
                 pipView:                _pipView
                 pipMode:                !_mainWindowIsMap
-                viewportRect:           Qt.rect(widgetLayer.x, widgetLayer.y, widgetLayer.width, widgetLayer.height)
+                viewportRect:           _mapViewportRect
                 occluders:              _mapOccluders
                 mapName:                "FlightDisplayView"
                 enabled:                !_is3DMode && !_map3DCoversMap
@@ -97,11 +112,12 @@ Item {
 
             FlyViewGeoMapAdapter {
                 objectName:             "flyViewGeoMapAdapter"
+                anchors.rightMargin:    pipState.state === pipState.fullState ? _map3DSplitWidth : 0  // Titan: split-screen 3D map
                 planMasterController:   _planController
                 rightPanelWidth:        ScreenTools.defaultFontPixelHeight * 9
                 pipView:                _pipView
                 pipMode:                !_mainWindowIsMap
-                viewportRect:           Qt.rect(widgetLayer.x, widgetLayer.y, widgetLayer.width, widgetLayer.height)
+                viewportRect:           _mapViewportRect
                 occluders:              _mapOccluders
                 chromeTopMargin:        widgetLayer.y + _layerOccluders.topRight.y + _layerOccluders.topRight.height + _widgetMargin
                 chromeBottomMargin:     mapHolder.height - widgetLayer.y - Math.min(_layerOccluders.pipView.y, _layerOccluders.virtualJoystickLeft.y) + ScreenTools.defaultFontPixelWidth / 2
@@ -112,8 +128,9 @@ Item {
         }
 
         FlyViewVideo {
-            id:         videoControl
-            pipView:    _pipView
+            id:                     videoControl
+            anchors.rightMargin:    pipState.state === pipState.fullState ? _root._map3DSplitWidth : 0    // Titan: split-screen 3D map
+            pipView:                _pipView
         }
 
         PipView {
@@ -199,6 +216,17 @@ Item {
             visible:            false
         }
 
+        // Titan: the 3D map, shown full screen by map3DLoader or beside the full-window item by map3DSplitLoader
+        Component {
+            id: map3DViewComponent
+
+            Map3DView {
+                map2DCenter:    _mapControl ? _mapControl.center : undefined
+                topInset:       toolbar.height
+                rightInset:     mapHolder.width - widgetLayer.x - _layerOccluders.topRight.x
+            }
+        }
+
         // Titan: Mission Planner style 3D map over the full-window item, below the widgets and the PiP. It fades and
         // grows in and out like the toolbar drawers. Its first frame sets up the renderer and takes long enough to
         // swallow the fade, so the fade waits for that frame, drawn transparent.
@@ -206,7 +234,7 @@ Item {
             id:             map3DLoader
             anchors.fill:   parent
             z:              _fullItemZorder + 1
-            active:         Map3DState.shown || opacity > 0
+            active:         Map3DState.coversMap || opacity > 0
             visible:        active
             opacity:        0
             scale:          0.95
@@ -223,7 +251,7 @@ Item {
 
             states: State {
                 name:   "shown"
-                when:   Map3DState.shown && (map3DLoader._framesShown >= 2)
+                when:   Map3DState.coversMap && (map3DLoader._framesShown >= 2)
                 PropertyChanges { map3DLoader.opacity: 1; map3DLoader.scale: 1 }
             }
 
@@ -238,13 +266,41 @@ Item {
                 }
             ]
 
-            sourceComponent: Component {
-                Map3DView {
-                    map2DCenter:    _mapControl ? _mapControl.center : undefined
-                    topInset:       toolbar.height
-                    rightInset:     mapHolder.width - widgetLayer.x - _layerOccluders.topRight.x
-                }
+            sourceComponent: map3DViewComponent
+        }
+
+        // Titan: the 3D map's Split-screen setting puts it on the right half, beside the full-window item and below the
+        // widgets and the PiP, which keep the whole view. It slides in from the right edge as the full-window item
+        // narrows, once its first frame is out, drawn just past that edge.
+        Loader {
+            id:             map3DSplitLoader
+            x:              parent.width - _root._map3DSplitWidth
+            width:          parent.width / 2
+            height:         parent.height
+            z:              _fullItemZorder + 1
+            active:         _root._map3DSplitShown || _root._map3DSplit > 0
+
+            property int _framesShown: 0
+
+            onActiveChanged: _framesShown = 0
+
+            // Two frames: the first can be one that was already under way when the map was created
+            Connections {
+                target:                 (map3DSplitLoader.status === Loader.Ready) && (map3DSplitLoader._framesShown < 2) ? map3DSplitLoader.Window.window : null
+                function onFrameSwapped() { map3DSplitLoader._framesShown++ }
             }
+
+            sourceComponent: map3DViewComponent
+        }
+
+        // Titan: divider between the full-window item and the split-screen 3D map
+        Rectangle {
+            x:          map3DSplitLoader.x - width / 2
+            width:      2
+            height:     parent.height
+            z:          _fullItemZorder + 1
+            color:      QGroundControl.globalPalette.window
+            visible:    _root._map3DSplitWidth > 0
         }
 
         Loader {

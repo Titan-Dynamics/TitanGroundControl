@@ -3,6 +3,14 @@
     "fileType": "FactMetaData",
     "QGC.MetaData.Facts": [
         {
+            "name": "splitScreen",
+            "shortDesc": "Show the 3D map beside the 2D map, on the right half of the Fly View, instead of in its place.",
+            "type": "bool",
+            "default": false,
+            "label": "Split-screen",
+            "keywords": "split,split screen,side by side,layout"
+        },
+        {
             "name": "cameraDistance",
             "shortDesc": "Distance of the chase camera behind the vehicle.",
             "type": "double",

@@ -5,6 +5,7 @@ DECLARE_SETTINGGROUP(Map3D, "TitanMap3D")
 {
 }
 
+DECLARE_SETTINGSFACT(Map3DSettings, splitScreen)
 DECLARE_SETTINGSFACT(Map3DSettings, cameraDistance)
 DECLARE_SETTINGSFACT(Map3DSettings, cameraHeight)
 DECLARE_SETTINGSFACT(Map3DSettings, cameraAngle)
