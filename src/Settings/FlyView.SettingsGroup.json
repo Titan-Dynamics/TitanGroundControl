@@ -49,8 +49,8 @@
             "name": "showAdditionalIndicatorsCompass",
             "shortDesc": "Display additional heading reference indicators on the compass.",
             "type": "bool",
-            "default": false,
-            "label": "Show additional heading indicators on Compass",
+            "default": true,
+            "label": "Show Additional Heading Indicators On Compass",
             "keywords": "compass,indicators"
         },
         {
