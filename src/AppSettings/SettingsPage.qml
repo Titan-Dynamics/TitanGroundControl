@@ -22,7 +22,8 @@ Item {
         ColumnLayout {
             id:         mainLayout
             x:          Math.max(0, root.width / 2 - width / 2)
-            width:      Math.max(implicitWidth, ScreenTools.defaultFontPixelWidth * 50)
+            // Titan: no wider than the view, so in the split drawer descriptions wrap rather than run off the edge
+            width:      Math.max(Math.min(implicitWidth, root.width), ScreenTools.defaultFontPixelWidth * 50)
             spacing:    ScreenTools.defaultFontPixelHeight
         }
     }
