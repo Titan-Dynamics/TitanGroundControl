@@ -43,6 +43,7 @@ rather than in `AGENTS.md` / `CLAUDE.md`, which are upstream files.
 | Camera controls hidden unless switched on (Fly View settings → Show Camera Controls; the simple camera option only shows with it) | `showCameraControls` in `src/Settings/FlyView.SettingsGroup.json` and `FlyViewSettings.*`, `src/AppSettings/pages/FlyView.SettingsUI.json`, the `PhotoVideoControl` loaders in `src/FlyView/FlyViewTopRightColumnLayout.qml` and `src/FlyView/FlyViewTopRightPanel.qml` (whose camera page, swiping and page indicator go with it) |
 | Internet ADS-B traffic (a port of TitanPlanner's adsb.cs), traffic sent to the autopilot for avoidance, the autopilot's collision threat levels, and an icon for each aircraft category on the Fly View map | `src/TitanAdsb/` (`AdsbInternetSource.*`, `AdsbTrafficSender.*`, `AdsbCategory.*`, `AdsbIconProvider.*`, `TitanAdsbMapItem.qml`), `adsbInternetEnabled`, `adsbInternetServer`, `adsbInternetRadius`, `adsbInternetMaxAircraft` and `adsbSendToVehicle` in `src/Settings/ADSBVehicleManager.SettingsGroup.json` and `ADSBVehicleManagerSettings.*`, the ADSB Server page in `src/AppSettings/pages/ADSBVehicleManager.SettingsUI.json`; hooks in `src/ADSB/` (`ADSB.h` category, type and ground fields, `ADSBVehicle.*` properties, `ADSBVehicleManager.*` sources, echo filter and COLLISION), `MAVLINK_MSG_ID_COLLISION` routed in `src/Vehicle/Vehicle.cc`, the `TitanAdsbMapItem` delegate in `src/FlyView/FlyViewMap.qml`, `AdsbIconProvider` registered in `src/QGCApplication.cc`, and grounded traffic and the tooltip in `src/TitanMap3D/`; tests in `test/TitanAdsb/` |
 | Help page: source code and release links, and an updater from the GitHub releases (stable or development) | `src/TitanUpdater/` (`TitanUpdater.*`, a QML singleton with its channel in INI group `TitanUpdater`; `TitanHelpSection.qml`), above upstream's links in `src/AppSettings/HelpSettings.qml`; tests in `test/TitanUpdater/` |
+| Video sources listed again when a camera is plugged in or out, and a Refresh button by the source | `refreshVideoSources` and `QMediaDevices::videoInputsChanged` in `src/Settings/VideoSettings.*`, `src/QmlControls/VideoSourceSelector.qml` (the source dropdown and Refresh), used as a component control in `src/AppSettings/pages/Video.SettingsUI.json` |
 | Fork defaults | `src/Settings/*.SettingsGroup.json` (audio muted, 10 km guided max altitude, no go-to distance limit, the compass's additional heading indicators, camera controls hidden, Google maps, aspect-ratio dropdown, the Titan HUD over video), indoor palette on mobile in `QGCCorePlugin.cc` |
 | MSVC build flags | `/bigobj` in `CMakeLists.txt`, `/Zc:preprocessor` in `cmake/Toolchain.cmake` |
 
@@ -117,17 +118,19 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   the 2D map is the full-window item it is hidden once the 3D map is fully in, so it does not draw
   (`_map3DCoversMap`), and shown again as the 3D map starts to go; with the video swapped into the full window, the
   3D map covers the video and the 2D map stays in the PiP. Clicking the PiP closes a full-screen 3D map, so the
-  clicked view takes the full window (`PipView.pipClicked`). The 3D map's **Split-screen** setting (off by default)
-  puts it on the right half instead, at the same z, beside the full-window item (the 2D map, or the video when
-  swapped in). Only that item narrows to the left half (its `anchors.rightMargin`, from `_map3DSplitWidth`, while
-  in PipState's full state), with the Settings split's 250 ms animation once the 3D map's first frame is out (drawn
-  just past the right edge); the toolbar, widgets and PiP keep the whole view, over both halves, and the 2D map
-  keeps the vehicle within its own half (`_mapViewportRect`). A 2 px divider in the palette's window color marks
-  the seam. Full-screen video closes the split. Two other splits were tried and dropped at the user's request: the
-  3D map on the left as the only layout, and narrowing the whole Fly View, widgets included. The 2D map and the
-  `useGeoMapEngine` default are upstream's. Upstream's Viewer3D stays compiled and tested but is reachable from
-  neither the tool strip nor the settings pages; upstream itself deprecates it. GeoMap was tried first and dropped:
-  even its 2D mode is a Qt Quick 3D scene whose per-frame sync made the whole Fly View lag.
+  clicked view takes the full window (`PipView.pipClicked`, emitted before the swap: the 2D map hidden under the 3D
+  map must be shown again before it moves into the PiP, where, moved while hidden, it did not draw). The 3D map's
+  **Split-screen** setting (off by default) puts it on the right half instead, at the same z, beside the
+  full-window item (the 2D map, or the video when swapped in). Only that item narrows to the left half (its
+  `anchors.rightMargin`, from `_map3DSplitWidth`, while in PipState's full state), with the Settings split's 250 ms
+  animation once the 3D map's first frame is out (drawn just past the right edge); the toolbar, widgets and PiP
+  keep the whole view, over both halves, and the 2D map keeps the vehicle within its own half (`_mapViewportRect`).
+  A 2 px divider in the palette's window color marks the seam. Full-screen video closes the split. Two other splits
+  were tried and dropped at the user's request: the 3D map on the left as the only layout, and narrowing the whole
+  Fly View, widgets included. The 2D map and the `useGeoMapEngine` default are upstream's. Upstream's Viewer3D
+  stays compiled and tested but is reachable from neither the tool strip nor the settings pages; upstream itself
+  deprecates it. GeoMap was tried first and dropped: even its 2D mode is a Qt Quick 3D scene whose per-frame sync
+  made the whole Fly View lag.
 - The 3D map follows TitanPlanner's `Map3D` line by line where it can: the camera rig (chase 0.8 m behind and
   0.2 m above a model of about 1 m span, FPV kept a metre above the ground, free-look 100 m above the 2D map's
   centre while disconnected), the mouse (drag 0.5 deg/px orbit and 0.005 m/px height within +/-5 m, wheel
@@ -281,17 +284,17 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
    `FlyViewBottomRightRowLayout.qml` (`TelemetryPanel`), `FlyViewWidgetLayer.qml` (map scale and GeoMap controls,
    the tool strip and bottom-right row corner states), `MainStatusIndicator.qml` (messages buttons on the left),
    `FlyViewToolBarIndicators.qml` (`excludedIndicators`), `HelpSettings.qml` (`TitanHelpSection`),
-   `FlyViewTopRightColumnLayout.qml` and `FlyViewTopRightPanel.qml` (`showCameraControls`), `ADSB.h`,
-   `ADSBVehicle.*` and `ADSBVehicleManager.*` (category, ground and threat fields, the internet source, the sender,
-   the echo filter and COLLISION), `Vehicle.cc` (COLLISION routed to `ADSBVehicleManager`), `FlyViewMap.qml` (the
-   `TitanAdsbMapItem` delegate), `QGCApplication.cc` (`AdsbIconProvider`), `SettingsPage.qml` (no wider than the
-   view), `FlightMap.qml` (the smooth wheel zoom), `BatteryFactGroupListModel.*` and `BatteryFact.json`
-   (`mahPerKm`, `whPerKm`), `FlyViewToolStripActionList.qml` (`Map3DShowAction`, `Map3DSettingsAction`),
-   `FlightDisplayViewVideo.qml` (`TitanHud` and its waiting message, `TvStatic` in place of upstream's deleted
-   `NoVideoBackground.jpg`, the `_ar` guard), `src/AppSettings/CMakeLists.txt` (generated pages list), and
-   `HudData.cc` / `Map3DItem.cc` against the `Vehicle`, `MissionManager`, `ADSBVehicle`, tile cache
-   (`QGeoFileTileCacheQGC`, `QGeoTileFetcherQGC`, `QGCTileCacheDatabase` and its `Tiles` table) and `UrlFactory`
-   APIs they use.
+   `VideoSettings.*` (`refreshVideoSources`, `_setVideoSourceList`), `FlyViewTopRightColumnLayout.qml` and
+   `FlyViewTopRightPanel.qml` (`showCameraControls`), `ADSB.h`, `ADSBVehicle.*` and `ADSBVehicleManager.*`
+   (category, ground and threat fields, the internet source, the sender, the echo filter and COLLISION),
+   `Vehicle.cc` (COLLISION routed to `ADSBVehicleManager`), `FlyViewMap.qml` (the `TitanAdsbMapItem` delegate),
+   `QGCApplication.cc` (`AdsbIconProvider`), `SettingsPage.qml` (no wider than the view), `FlightMap.qml` (the
+   smooth wheel zoom), `BatteryFactGroupListModel.*` and `BatteryFact.json` (`mahPerKm`, `whPerKm`),
+   `FlyViewToolStripActionList.qml` (`Map3DShowAction`, `Map3DSettingsAction`), `FlightDisplayViewVideo.qml`
+   (`TitanHud` and its waiting message, `TvStatic` in place of upstream's deleted `NoVideoBackground.jpg`, the
+   `_ar` guard), `src/AppSettings/CMakeLists.txt` (generated pages list), and `HudData.cc` / `Map3DItem.cc` against
+   the `Vehicle`, `MissionManager`, `ADSBVehicle`, tile cache (`QGeoFileTileCacheQGC`, `QGeoTileFetcherQGC`,
+   `QGCTileCacheDatabase` and its `Tiles` table) and `UrlFactory` APIs they use.
 5. Re-apply the CI policy to every upstream workflow, including new ones, and re-check the td workflows.
 6. Build Debug with tests against the required Qt. Before attributing a test failure to the merge, compare
    with a control build of pure `upstream/master` (a `git worktree` in the gitignored `build/` directory).
