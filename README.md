@@ -38,6 +38,7 @@ Configure it under **Application Settings → Titan AI** (Claude API key require
 - **Frosted-glass blur** and reduced opacity for a cleaner overlay on top of the map and video.
 - **Shortened flight-mode names** for fixed-wing / FBW modes so they fit at a glance.
 - **Richer battery tooltip** showing current, power draw, and efficiency — plus a fix for the upstream bug that showed a half-full yellow icon at 0%.
+- **ADS-B traffic from the internet** (adsb.fi), drawn with an icon for each kind of aircraft and its details on hover, and **sent to the autopilot for avoidance**, as TitanPlanner does.
 - **Telemetry panel** of tiles you set up in place: pick any value from a searchable list, show it as a **number, a percentage of its range, or a bar**, give it caution and warning levels that turn it amber or red, drag tiles into order, and choose the columns and text size. Each vehicle type keeps its own layout, and each battery adds its consumption in mAh/km and Wh/km.
 
 ### 📹 Picture-in-Picture video

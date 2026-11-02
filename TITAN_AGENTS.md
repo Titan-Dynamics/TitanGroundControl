@@ -33,14 +33,16 @@ rather than in `AGENTS.md` / `CLAUDE.md`, which are upstream files.
 | Toolbar frosted-glass blur | `src/FlyView/FlyView.qml` |
 | Draggable / resizable PiP | `src/QmlControls/PipView.qml`, PiP placement in `src/FlyView/FlyView.qml` |
 | Split-view Configure/Settings drawer | `src/MainWindow/MainWindow.qml` (`_splitExpanded`, persisted in `flyViewSettings.toolDrawerFullWidth`) |
-| Settings / Vehicle Config sidebar and parameter editor polish | `src/QmlControls/AppSettings.qml`, `src/Vehicle/VehicleSetup/VehicleConfigView.qml`, `src/QmlControls/ParameterEditor.qml` |
+| Settings / Vehicle Config sidebar and parameter editor polish, settings pages no wider than the view | `src/QmlControls/AppSettings.qml`, `src/AppSettings/SettingsPage.qml`, `src/Vehicle/VehicleSetup/VehicleConfigView.qml`, `src/QmlControls/ParameterEditor.qml` |
 | Inline searchable sections for hand-coded settings pages | `tools/generators/settings_qml/emit.py`, `model.py` (`"sections"` key in `SettingsPages.json`) |
 | Branding | `cmake/CustomOptions.cmake` (`QGC_APP_NAME` = `TitanGroundControl`, `QGC_ANDROID_PACKAGE_NAME` = `aero.titandynamics.titangroundcontrol`), `src/QmlControls/QGCPalette.cc` (orange accent, `brandPrimary`/`brandAccent`), `src/API/QGCCorePlugin.*` (update check and download URLs), icons under `resources/`, `deploy/`, `android/res/` |
 | Titan 3D map: a port of Mission Planner's Map3D (TitanPlanner `Controls/Map3D`) on Qt's RHI, separate from the 2D map | `src/TitanMap3D/`: `Map3DItem.*` (QML item, gathers telemetry, mission, ADS-B and settings on the GUI thread), `Map3DRenderer.*` (render-thread frame, terrain engine GPU side, draw passes), `Map3DScene.*` (VehicleTracker, CameraRig, Kalman filter), `Map3DTerrain.*` (quadtree LOD, tile mesh builder), `Map3DTileLoader.*` (imagery + Terrarium elevation through the shared tile cache), `Map3DGeo.*` (UTM world frame, tile maths, frustum), `Map3DOverlays.*` (indicator lines, turn arc, trail), `Map3DClouds.*`, `Map3DModel.*` (STL loading), `shaders/`, `models/*.stl`, `images/` (waypoint markers, the tool strip's cube icon `map3d.svg`), QML `Map3DView.qml` (mouse controls, ADS-B tooltip), `Map3DStatsPanel.qml`, `Map3DState.qml` (singleton), tool strip actions (3D Setup opens the 3D Map settings page); hooks in `src/FlyView/FlyView.qml` (`map3DViewComponent`, `map3DLoader` and `map3DSplitLoader` in `mapHolder`, `_map3DCoversMap` on both 2D map engines, `_map3DSplitWidth` on the full-window items' right margin, `_mapViewportRect`, the PiP's `onPipClicked`) and `src/QmlControls/PipView.qml` (`pipClicked`), `src/FlyView/FlyViewWidgetLayer.qml` (map scale and GeoMap controls hidden while `Map3DState.coversMap`) and `src/FlyView/FlyViewToolStripActionList.qml`; tests in `test/TitanMap3D/` |
 | 3D map settings (Mission Planner's set and defaults, except waypoint markers at 25 m rather than 60, plus the fork's Split-screen) | `src/Settings/Map3DSettings.*`, `src/Settings/Map3D.SettingsGroup.json` (INI group `TitanMap3D`), `src/AppSettings/pages/Map3D.SettingsUI.json`, "3D Map" entry in `src/AppSettings/pages/SettingsPages.json` (replaces upstream's deprecated "3D View" page) and `Map3DSettings.qml` in the generated-pages list of `src/AppSettings/CMakeLists.txt` |
 | Titan HUD (instrument panel option, video overlay) | `src/TitanHud/` (`HudData.*`, `HudItem.*`, `HudPainter.*`, `TitanHud.qml`, `TitanHudInstrument.qml`, B612 Mono in `fonts/` under the SIL Open Font License, the no-video TV static `TvStatic.qml` with `shaders/tvstatic.frag`), `hudOverlay`, `hudScale` and `hudColor` facts in `Video.SettingsGroup.json`, "Titan HUD" in the `instrumentQmlFile2` enum of `src/Settings/FlyView.SettingsGroup.json`, overlay in `src/FlyView/FlightDisplayViewVideo.qml`; tests in `test/TitanHud/` |
 | Vehicle model decimation (TitanPlanner STLs) | `tools/titan/convert_vehicle_models.py` |
-| Fork defaults | `src/Settings/*.SettingsGroup.json` (audio muted, 10 km guided max altitude, no go-to distance limit, Horizontal Compass & Attitude instrument with its additional heading indicators, Google maps, aspect-ratio dropdown, the Titan HUD over video), indoor palette on mobile in `QGCCorePlugin.cc` |
+| Camera controls hidden unless switched on (Fly View settings → Show Camera Controls; the simple camera option only shows with it) | `showCameraControls` in `src/Settings/FlyView.SettingsGroup.json` and `FlyViewSettings.*`, `src/AppSettings/pages/FlyView.SettingsUI.json`, the `PhotoVideoControl` loaders in `src/FlyView/FlyViewTopRightColumnLayout.qml` and `src/FlyView/FlyViewTopRightPanel.qml` (whose camera page, swiping and page indicator go with it) |
+| Internet ADS-B traffic (a port of TitanPlanner's adsb.cs), traffic sent to the autopilot for avoidance, the autopilot's collision threat levels, and an icon for each aircraft category on the Fly View map | `src/TitanAdsb/` (`AdsbInternetSource.*`, `AdsbTrafficSender.*`, `AdsbCategory.*`, `TitanAdsbMapItem.qml`, `TitanAdsbIcon.qml`), `adsbInternetEnabled`, `adsbInternetServer` and `adsbSendToVehicle` in `src/Settings/ADSBVehicleManager.SettingsGroup.json` and `ADSBVehicleManagerSettings.*`, the ADSB Server page in `src/AppSettings/pages/ADSBVehicleManager.SettingsUI.json`; hooks in `src/ADSB/` (`ADSB.h` category, type and ground fields, `ADSBVehicle.*` properties, `ADSBVehicleManager.*` sources, echo filter and COLLISION), `MAVLINK_MSG_ID_COLLISION` routed in `src/Vehicle/Vehicle.cc`, the `TitanAdsbMapItem` delegate in `src/FlyView/FlyViewMap.qml`, and grounded traffic and the tooltip in `src/TitanMap3D/`; tests in `test/TitanAdsb/` |
+| Fork defaults | `src/Settings/*.SettingsGroup.json` (audio muted, 10 km guided max altitude, no go-to distance limit, the compass's additional heading indicators, camera controls hidden, Google maps, aspect-ratio dropdown, the Titan HUD over video), indoor palette on mobile in `QGCCorePlugin.cc` |
 | MSVC build flags | `/bigobj` in `CMakeLists.txt`, `/Zc:preprocessor` in `cmake/Toolchain.cmake` |
 
 Fork-only resources are registered through CMake (`QGC_APP_RESOURCES` in `CMakeLists.txt` and the
@@ -69,6 +71,8 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
 - Toolbar indicator drawers fade and grow in and out. `fillWindow` drawers (the status drawer) are capped at
   half the window width and height on desktop (`MainWindow.qml`); on mobile they still fill the window.
 - In split view the Fly/Plan view stays enabled next to the drawer: `enabled: !toolDrawer.visible || !_splitExpanded`.
+- A settings page is no wider than the drawer shows (`SettingsPage.qml`), at least 50 characters: a wrapping
+  description's implicit width is its whole text on one line, which ran pages off the edge of the split drawer.
 - The PiP can be dragged anywhere, so widgets only make way for it in their own corner: bottom-left
   (`inBottomLeft`) the virtual joysticks rise above it; top-left (`inTopLeft`) the tool strip moves to the bottom-left
   corner; bottom-right (`inBottomRight`) the telemetry panel and instrument row moves to the bottom-left corner. They
@@ -158,6 +162,30 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   minus heading) once moving faster than 2 m/s. The synthetic sky and ground (the instrument panel, and the overlay
   while waiting for video, under a larger waiting message) carry a ground grid laid out from home that slides by
   with the vehicle; it is never drawn over video.
+- **Internet ADS-B** ports TitanPlanner's adsb.cs (ADSB Server settings, Get Traffic From The Internet, off by
+  default). While on it replaces the SBS server, whose controls are disabled. It polls adsb.fi
+  (`/api/v3/lat/{lat}/lon/{lon}/dist/{nm}`, every 1.1 s) or an ADSBExchange-style server such as adsb.lol
+  (`/v2/point`, every 3 s) around the active vehicle, or the Fly View map without a vehicle position
+  (`QGroundControlQmlGlobal::flightMapPosition`), from 100 nm, growing 10 nm a poll to 250 nm while fewer than ten
+  aircraft come back; errors double the interval up to 10 s and a 429's Retry-After is honoured up to a minute.
+  Each aircraft is carried forward along its track, at most 10 s, from when its position was measured (`seen_pos`
+  plus the snapshot's age), republished every 500 ms (`ADSBVehicle` passes on one update a second) and dropped 30 s
+  after the feed stops listing it. Deliberate differences: geometric altitude (`alt_geom`, comparable with GPS
+  altitude) is preferred to TitanPlanner's barometric `alt_baro`, and non-ICAO (`~`) addresses get bit 24 set.
+  adsb.fi's data is for personal, non-commercial use.
+- **Traffic is sent to the autopilot for avoidance** (Send Traffic To The Vehicle For Avoidance, on by default), as
+  TitanPlanner does: once a second, the next of the ten nearest aircraft within 10 km that QGroundControl got
+  itself (the internet or the SBS server, `isLocalTraffic`), as ADSB_VEHICLE on the active vehicle's primary link,
+  never a high-latency one. The vehicle's own copies of that traffic are ignored, and its COLLISION reports set
+  each aircraft's `threatLevel`, which lapses 5 s after the last report: high draws it red on the map, and the
+  tooltips say Warning or Danger. ArduPilot acts on it only with its ADS-B and avoidance parameters set
+  (`ADSB_TYPE`, `AVD_ENABLE`).
+- **Traffic icons are the fork's own** vector silhouettes in QGroundControl's style (`TitanAdsbIcon.qml`, QML
+  Shapes with the curve renderer), one for each emitter category with QGroundControl's airliner for the generic
+  one, rather than TitanPlanner's tar1090 sprites, at the user's request. Colors and sizes follow TitanPlanner:
+  orange, red for a high threat or an alert, translucent grey on the ground, large 1.25 and heavy 1.5 times; its
+  details show on hover or a tap. Upstream's `ADSBVehicleMapItem` stays, for its unit test, but the Fly View map no
+  longer uses it; the GeoMap engine keeps upstream's traffic item.
 - The vehicle models are TitanPlanner's STLs decimated to 8000 triangles, kept in Mission Planner's frame
   (millimetres): `Map3DModel` rotates them -90 deg about Z and the model matrix scales to metres, exactly as
   for a custom STL. Regenerate them with `tools/titan/convert_vehicle_models.py` (needs a TitanPlanner checkout,
@@ -231,11 +259,14 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
    `inTopLeft` / `inBottomRight` and `onPipClicked`), `PipView.qml` (`pipClicked`),
    `FlyViewBottomRightRowLayout.qml` (`TelemetryPanel`), `FlyViewWidgetLayer.qml` (map scale and GeoMap controls,
    the tool strip and bottom-right row corner states), `MainStatusIndicator.qml` (messages buttons on the left),
-   `BatteryFactGroupListModel.*` and `BatteryFact.json` (`mahPerKm`, `whPerKm`), `FlyViewToolStripActionList.qml`
-   (`Map3DShowAction`, `Map3DSettingsAction`), `FlightDisplayViewVideo.qml` (`TitanHud` and its waiting message,
-   `TvStatic` in place of upstream's deleted `NoVideoBackground.jpg`, the `_ar` guard),
-   `src/AppSettings/CMakeLists.txt` (generated pages list), and `HudData.cc` / `Map3DItem.cc` against the
-   `Vehicle`, `MissionManager`, `ADSBVehicle`, tile cache (`QGeoFileTileCacheQGC`, `QGeoTileFetcherQGC`,
+   `FlyViewTopRightColumnLayout.qml` and `FlyViewTopRightPanel.qml` (`showCameraControls`), `ADSB.h`,
+   `ADSBVehicle.*` and `ADSBVehicleManager.*` (category, ground and threat fields, the internet source, the sender,
+   the echo filter and COLLISION), `Vehicle.cc` (COLLISION routed to `ADSBVehicleManager`), `FlyViewMap.qml` (the
+   `TitanAdsbMapItem` delegate), `BatteryFactGroupListModel.*` and `BatteryFact.json` (`mahPerKm`, `whPerKm`),
+   `FlyViewToolStripActionList.qml` (`Map3DShowAction`, `Map3DSettingsAction`), `FlightDisplayViewVideo.qml`
+   (`TitanHud` and its waiting message, `TvStatic` in place of upstream's deleted `NoVideoBackground.jpg`, the
+   `_ar` guard), `src/AppSettings/CMakeLists.txt` (generated pages list), and `HudData.cc` / `Map3DItem.cc` against
+   the `Vehicle`, `MissionManager`, `ADSBVehicle`, tile cache (`QGeoFileTileCacheQGC`, `QGeoTileFetcherQGC`,
    `QGCTileCacheDatabase` and its `Tiles` table) and `UrlFactory` APIs they use.
 5. Re-apply the CI policy to every upstream workflow, including new ones, and re-check the td workflows.
 6. Build Debug with tests against the required Qt. Before attributing a test failure to the merge, compare
@@ -255,8 +286,9 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   it, so set it to the new tag by hand after each release and merge that to `master`.
 - `AIChatWidget.qml` and `AISettings.qml` reference `qgcPal.textHighlight` / `textHighlightForeground`,
   which do not exist in `QGCPalette`. Text selection falls back to default colors and QML logs a warning.
-- The 3D map does not port Mission Planner's ADS-B aircraft type/category (QGC's `ADSBVehicle` has no raw
-  feed record) or its "grounded traffic" styling (no on-ground flag either).
+- Only internet traffic says whether it is on the ground, so the 3D map draws only that traffic as Mission Planner
+  draws grounded aircraft (small, grey, kept above the terrain already loaded); SBS and vehicle traffic always
+  counts as airborne.
 
 ## Commits
 
