@@ -91,7 +91,7 @@
             "max": 500,
             "decimalPlaces": 0,
             "increment": 10,
-            "default": 60,
+            "default": 25,
             "label": "Waypoint marker size",
             "keywords": "waypoint,marker,size"
         },

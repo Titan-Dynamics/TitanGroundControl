@@ -79,7 +79,7 @@ struct FrameInput
     double vehicleScale = 1;
     QColor vehicleColor = Qt::red;
     QString modelPath;  ///< file or resource path of the vehicle STL
-    double waypointMarkerSize = 60;
+    double waypointMarkerSize = 25;
     double adsbCircleSize = 500;
     int cloudDensity = 50;
     bool showHeadingLine = true;
