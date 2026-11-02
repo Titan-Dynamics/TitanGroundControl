@@ -7,7 +7,7 @@ ToolStripAction {
 
     objectName: "flyToolStrip_map3DButton"
 
-    iconSource: "/qml/QGroundControl/Viewer3D/City3DMapIcon.svg"
+    iconSource: "/qml/QGroundControl/TitanMap3D/images/map3d.svg"
     text:       Map3DState.shown ? qsTr("Hide 3D") : qsTr("3D")
 
     onTriggered: Map3DState.shown = !Map3DState.shown

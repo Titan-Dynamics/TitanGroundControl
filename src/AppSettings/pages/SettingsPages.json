@@ -104,10 +104,10 @@
             "visible": "QGroundControl.settingsManager.videoSettings.userVisible"
         },
         {
-            "comment": "Titan 3D map (GeoMap engine); replaces the deprecated upstream 3D View page",
+            "comment": "Titan 3D map (src/TitanMap3D); replaces the deprecated upstream 3D View page",
             "name": "3D Map",
             "qml": "Map3DSettings.qml",
-            "icon": "qrc:/qml/QGroundControl/Viewer3D/City3DMapIcon.svg",
+            "icon": "qrc:/qml/QGroundControl/TitanMap3D/images/map3d.svg",
             "pageDefinition": "Map3D.SettingsUI.json"
         },
         {

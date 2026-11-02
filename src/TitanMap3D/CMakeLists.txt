@@ -64,7 +64,8 @@ qt_add_qml_module(
     VERSION 1.0
     RESOURCE_PREFIX /qml
     QML_FILES Map3DSettingsAction.qml Map3DShowAction.qml Map3DState.qml Map3DStatsPanel.qml Map3DView.qml
-    RESOURCES images/wp_3d.png
+    RESOURCES images/map3d.svg
+              images/wp_3d.png
               images/wp_3d_alt.png
               models/boat.stl
               models/copter.stl
