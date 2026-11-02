@@ -16,6 +16,8 @@ Item {
     property bool   show:                   true
     property real   topBound:               0       // Set externally to toolbar height
 
+    signal pipClicked()     ///< Titan: a click on the PiP swapped it with the full-window item
+
     // Area covering the parent, in PipView coordinates: just the restore button while collapsed
     readonly property rect occupiedRect: _isExpanded ? Qt.rect(0, 0, width, height) : Qt.rect(showPip.x, showPip.y, showPip.width, showPip.height)
 
@@ -245,7 +247,10 @@ Item {
             }
         }
 
-        onClicked: _swapPip()
+        onClicked: {
+            _swapPip()
+            _root.pipClicked()
+        }
     }
 
     // MouseArea to drag in order to resize the PiP area

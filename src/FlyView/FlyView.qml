@@ -145,6 +145,13 @@ Item {
             z:                      QGroundControl.zOrderWidgets
             topBound:               toolbar.height
 
+            // Titan: the clicked view takes the full window, so a full-screen 3D map, which would cover it, closes
+            onPipClicked: {
+                if (Map3DState.coversMap) {
+                    Map3DState.shown = false
+                }
+            }
+
             // The PiP is draggable, so widgets only make way for it in their own corner: the virtual joysticks rise
             // above it bottom-left, the tool strip moves to the bottom-left corner from under it top-left, and the
             // bottom-right row moves to the bottom-left corner from under it bottom-right
