@@ -1,19 +1,35 @@
 {
     "version": 1,
     "fileType": "SettingsUI",
+    "bindings": {
+        "internetTraffic": "QGroundControl.settingsManager.adsbVehicleManagerSettings.adsbInternetEnabled.rawValue"
+    },
     "groups": [
         {
             "heading": "ADSB Server",
-            "keywords": ["adsb", "ads-b", "traffic", "aircraft", "tracking", "sbs", "server", "host", "port"],
+            "keywords": ["adsb", "ads-b", "traffic", "aircraft", "tracking", "sbs", "server", "host", "port", "internet", "adsb.fi", "avoidance"],
             "controls": [
                 {
-                    "setting": "adsbVehicleManagerSettings.adsbServerConnectEnabled"
+                    "setting": "adsbVehicleManagerSettings.adsbInternetEnabled"
                 },
                 {
-                    "setting": "adsbVehicleManagerSettings.adsbServerHostAddress"
+                    "setting": "adsbVehicleManagerSettings.adsbInternetServer",
+                    "showWhen": "internetTraffic"
                 },
                 {
-                    "setting": "adsbVehicleManagerSettings.adsbServerPort"
+                    "setting": "adsbVehicleManagerSettings.adsbServerConnectEnabled",
+                    "enableWhen": "!internetTraffic"
+                },
+                {
+                    "setting": "adsbVehicleManagerSettings.adsbServerHostAddress",
+                    "enableWhen": "!internetTraffic"
+                },
+                {
+                    "setting": "adsbVehicleManagerSettings.adsbServerPort",
+                    "enableWhen": "!internetTraffic"
+                },
+                {
+                    "setting": "adsbVehicleManagerSettings.adsbSendToVehicle"
                 }
             ]
         }

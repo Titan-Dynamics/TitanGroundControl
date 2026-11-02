@@ -24,6 +24,13 @@ class ADSBVehicle : public QObject
     Q_PROPERTY(double           verticalVel READ    verticalVel NOTIFY verticalVelChanged)
     Q_PROPERTY(uint16_t         squawk      READ    squawk      NOTIFY squawkChanged)
     Q_PROPERTY(bool             alert       READ    alert       NOTIFY alertChanged)
+    // Titan: category and type for the map icon and tooltip, the ground state, and the autopilot's collision threat
+    // level (MAV_COLLISION_THREAT_LEVEL)
+    Q_PROPERTY(int              emitterType     READ emitterType    NOTIFY emitterTypeChanged)
+    Q_PROPERTY(QString          categoryName    READ categoryName   NOTIFY emitterTypeChanged)
+    Q_PROPERTY(QString          aircraftType    READ aircraftType   NOTIFY aircraftTypeChanged)
+    Q_PROPERTY(bool             onGround        READ onGround       NOTIFY onGroundChanged)
+    Q_PROPERTY(int              threatLevel     READ threatLevel    NOTIFY threatLevelChanged)
 
 public:
     explicit ADSBVehicle(const ADSB::VehicleInfo_t &vehicleInfo, QObject *parent = nullptr);
@@ -38,6 +45,12 @@ public:
     double verticalVel() const { return _info.verticalVel; }
     uint16_t squawk() const { return _info.squawk; }
     bool alert() const { return _info.alert; }
+    int emitterType() const { return _info.emitterType; }
+    QString categoryName() const;
+    QString aircraftType() const { return _info.aircraftType; }
+    bool onGround() const { return _info.onGround; }
+    int threatLevel() const { return _threatLevel; }
+    void setThreatLevel(int threatLevel);
     bool expired() const { return !_lastUpdateTimer.isValid() || _lastUpdateTimer.hasExpired(_expirationTimeoutMs); }
     void update(const ADSB::VehicleInfo_t &vehicleInfo);
 
@@ -50,9 +63,14 @@ signals:
     void verticalVelChanged();
     void squawkChanged();
     void alertChanged();
+    void emitterTypeChanged();
+    void aircraftTypeChanged();
+    void onGroundChanged();
+    void threatLevelChanged();
 
 private:
     ADSB::VehicleInfo_t _info{};
+    int _threatLevel = 0;
     QElapsedTimer _lastUpdateTimer;
     QElapsedTimer _lastPropertyUpdateTimer;
 

@@ -16,4 +16,7 @@ public:
     DEFINE_SETTINGFACT(adsbServerConnectEnabled)
     DEFINE_SETTINGFACT(adsbServerHostAddress)
     DEFINE_SETTINGFACT(adsbServerPort)
+    DEFINE_SETTINGFACT(adsbInternetEnabled)
+    DEFINE_SETTINGFACT(adsbInternetServer)
+    DEFINE_SETTINGFACT(adsbSendToVehicle)
 };

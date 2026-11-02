@@ -10,6 +10,7 @@ import QGroundControl.Controls
 import QGroundControl.FlyView
 import QGroundControl.FlightMap
 import QGroundControl.PlanView
+import QGroundControl.TitanAdsb
 
 FlightMap {
     id:                         _root
@@ -210,17 +211,14 @@ FlightMap {
         }
     }
     // Add ADSB vehicles to the map
+    // Titan: an icon for each aircraft's category, as TitanPlanner draws traffic, with its details on hover
     MapItemView {
         model: QGroundControl.adsbVehicleManager.adsbVehicles
-        delegate: ADSBVehicleMapItem {
-            coordinate:     object.coordinate
-            altitude:       object.altitude
-            callsign:       object.callsign
-            heading:        object.heading
-            alert:          object.alert
+        delegate: TitanAdsbMapItem {
+            adsbVehicle:    object
             map:            _root
-            size:           pipMode ? ScreenTools.defaultFontPixelHeight : ScreenTools.defaultFontPixelHeight * 2.5
-            z:              QGroundControl.zOrderVehicles
+            size:           pipMode ? ScreenTools.defaultFontPixelHeight : ScreenTools.defaultFontPixelHeight * 2.2
+            showDetails:    !pipMode
         }
     }
 

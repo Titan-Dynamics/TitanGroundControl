@@ -1,4 +1,5 @@
 #include "ADSBVehicle.h"
+#include "AdsbCategory.h"
 #include "QGCMath.h"
 #include "QGCLoggingCategory.h"
 
@@ -96,5 +97,37 @@ void ADSBVehicle::update(const ADSB::VehicleInfo_t &vehicleInfo)
             _info.alert = vehicleInfo.alert;
             emit alertChanged();
         }
+    }
+
+    // Titan
+    if (vehicleInfo.availableFlags & ADSB::CategoryAvailable) {
+        if (vehicleInfo.emitterType != _info.emitterType) {
+            _info.emitterType = vehicleInfo.emitterType;
+            emit emitterTypeChanged();
+        }
+        if (vehicleInfo.aircraftType != _info.aircraftType) {
+            _info.aircraftType = vehicleInfo.aircraftType;
+            emit aircraftTypeChanged();
+        }
+    }
+
+    if (vehicleInfo.availableFlags & ADSB::GroundAvailable) {
+        if (vehicleInfo.onGround != _info.onGround) {
+            _info.onGround = vehicleInfo.onGround;
+            emit onGroundChanged();
+        }
+    }
+}
+
+QString ADSBVehicle::categoryName() const
+{
+    return AdsbCategory::name(_info.emitterType);
+}
+
+void ADSBVehicle::setThreatLevel(int threatLevel)
+{
+    if (threatLevel != _threatLevel) {
+        _threatLevel = threatLevel;
+        emit threatLevelChanged();
     }
 }

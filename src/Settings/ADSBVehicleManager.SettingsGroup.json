@@ -26,6 +26,30 @@
             "default": 30003,
             "label": "Server port",
             "keywords": "adsb,server,port"
+        },
+        {
+            "name": "adsbInternetEnabled",
+            "shortDesc": "Get nearby traffic from the internet, in place of the SBS server.",
+            "type": "bool",
+            "default": false,
+            "label": "Get Traffic From The Internet",
+            "keywords": "adsb,ads-b,traffic,internet,online,adsb.fi,adsb.lol"
+        },
+        {
+            "name": "adsbInternetServer",
+            "shortDesc": "adsb.fi (non-commercial use only), or an ADSBExchange-style API such as adsb.lol.",
+            "type": "string",
+            "default": "https://opendata.adsb.fi",
+            "label": "Internet traffic server",
+            "keywords": "adsb,internet,server,api,adsb.fi,adsb.lol"
+        },
+        {
+            "name": "adsbSendToVehicle",
+            "shortDesc": "Send nearby traffic to the autopilot for its ADS-B avoidance (ArduPilot AVD_ENABLE).",
+            "type": "bool",
+            "default": true,
+            "label": "Send Traffic To The Vehicle For Avoidance",
+            "keywords": "adsb,avoidance,avoid,collision,autopilot,traffic"
         }
     ]
 }

@@ -38,7 +38,10 @@ enum AvailableInfoType {
     CallsignAvailable       = 1 << 4,
     SquawkAvailable         = 1 << 5,
     VerticalVelAvailable    = 1 << 6,
-    AlertAvailable          = 1 << 7
+    AlertAvailable          = 1 << 7,
+    // Titan: the aircraft's category and type, and whether it is on the ground
+    CategoryAvailable       = 1 << 8,
+    GroundAvailable         = 1 << 9
 };
 Q_FLAG_NS(AvailableInfoType)
 Q_DECLARE_FLAGS(AvailableInfoTypes, AvailableInfoType)
@@ -59,6 +62,8 @@ struct VehicleInfo_t {
     bool alert = false;
     ADSB_ALTITUDE_TYPE altitudeeType = ADSB_ALTITUDE_TYPE_PRESSURE_QNH;
     ADSB_EMITTER_TYPE emitterType = ADSB_EMITTER_TYPE_NO_INFO;
+    QString aircraftType;   ///< Titan: ICAO type designator, such as B738
+    bool onGround = false;  ///< Titan
     // TODO: Use QGeoPositionInfo, QGeoPositionInfoSource, QGeoPositionInfoSourceFactory
 };
 } // namespace ADSB
