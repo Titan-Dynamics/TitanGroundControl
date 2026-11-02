@@ -224,7 +224,7 @@ set(QGC_QT_ANDROID_MIN_SDK_VERSION
     CACHE STRING "Android minimum SDK version"
 )
 set(QGC_ANDROID_PACKAGE_NAME
-    "${QGC_PACKAGE_NAME}"
+    "aero.titandynamics.titangroundcontrol"
     CACHE STRING "Android package identifier"
 )
 set(QGC_ANDROID_PACKAGE_SOURCE_DIR
