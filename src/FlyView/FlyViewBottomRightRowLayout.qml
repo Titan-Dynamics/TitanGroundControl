@@ -4,13 +4,13 @@ import QtQuick.Layouts
 import QGroundControl
 import QGroundControl.Controls
 import QGroundControl.FlyView
+import QGroundControl.TitanTelemetry
 
 RowLayout {
-    TelemetryValuesBar {
-        Layout.alignment:       Qt.AlignBottom
-        extraWidth:             instrumentPanel.extraValuesWidth
-        settingsGroup:          factValueGrid.telemetryBarSettingsGroup
-        specificVehicleForCard: null // Tracks active vehicle
+    // Titan: the fork's telemetry panel in place of upstream's TelemetryValuesBar
+    TelemetryPanel {
+        Layout.alignment:   Qt.AlignBottom
+        extraWidth:         instrumentPanel.extraValuesWidth
     }
 
     FlyViewInstrumentPanel {

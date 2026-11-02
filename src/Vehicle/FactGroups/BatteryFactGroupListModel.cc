@@ -1,5 +1,6 @@
 #include "BatteryFactGroupListModel.h"
 #include "MAVLinkLib.h"
+#include "Vehicle.h"
 
 BatteryFactGroupListModel::BatteryFactGroupListModel(QObject* parent)
     : FactGroupListModel("battery", parent)
@@ -47,6 +48,8 @@ BatteryFactGroup::BatteryFactGroup(uint32_t batteryId, QObject *parent)
     _addFact(&_timeRemainingStrFact);
     _addFact(&_chargeStateFact);
     _addFact(&_instantPowerFact);
+    _addFact(&_mahPerKmFact);
+    _addFact(&_whPerKmFact);
 
     _idFact.setRawValue(batteryId);
     _batteryFunctionFact.setRawValue(MAV_BATTERY_FUNCTION_UNKNOWN);
@@ -59,6 +62,8 @@ BatteryFactGroup::BatteryFactGroup(uint32_t batteryId, QObject *parent)
     _timeRemainingFact.setRawValue(qQNaN());
     _chargeStateFact.setRawValue(MAV_BATTERY_CHARGE_STATE_UNDEFINED);
     _instantPowerFact.setRawValue(qQNaN());
+    _mahPerKmFact.setRawValue(qQNaN());
+    _whPerKmFact.setRawValue(qQNaN());
 
     (void) connect(&_timeRemainingFact, &Fact::rawValueChanged, this, &BatteryFactGroup::_timeRemainingChanged);
 }
@@ -100,7 +105,7 @@ void BatteryFactGroup::_handleHighLatency2(Vehicle * /*vehicle*/, const mavlink_
     _setTelemetryAvailable(true);
 }
 
-void BatteryFactGroup::_handleBatteryStatus(Vehicle * /*vehicle*/, const mavlink_message_t &message)
+void BatteryFactGroup::_handleBatteryStatus(Vehicle *vehicle, const mavlink_message_t &message)
 {
     mavlink_battery_status_t batteryStatus{};
     mavlink_msg_battery_status_decode(&message, &batteryStatus);
@@ -141,6 +146,12 @@ void BatteryFactGroup::_handleBatteryStatus(Vehicle * /*vehicle*/, const mavlink
     timeRemaining()->setRawValue((batteryStatus.time_remaining == 0) ? qQNaN() : batteryStatus.time_remaining);
     chargeState()->setRawValue(batteryStatus.charge_state);
     instantPower()->setRawValue(totalVoltage * current()->rawValue().toDouble());
+
+    // Titan: consumption per kilometre, as the battery tooltip shows it, once moving
+    const double groundSpeed = vehicle ? vehicle->groundSpeed()->rawValue().toDouble() : qQNaN();
+    const double kilometresPerHour = (groundSpeed > 0.5) ? groundSpeed * 3.6 : qQNaN();
+    mahPerKm()->setRawValue(current()->rawValue().toDouble() * 1000.0 / kilometresPerHour);
+    whPerKm()->setRawValue(instantPower()->rawValue().toDouble() / kilometresPerHour);
 
     _setTelemetryAvailable(true);
 }

@@ -31,6 +31,8 @@ class BatteryFactGroup : public FactGroupWithId
     Q_PROPERTY(Fact *timeRemainingStr   READ timeRemainingStr   CONSTANT)
     Q_PROPERTY(Fact *chargeState        READ chargeState        CONSTANT)
     Q_PROPERTY(Fact *instantPower       READ instantPower       CONSTANT)
+    Q_PROPERTY(Fact *mahPerKm           READ mahPerKm           CONSTANT)
+    Q_PROPERTY(Fact *whPerKm            READ whPerKm            CONSTANT)
 
 public:
     explicit BatteryFactGroup(uint32_t batteryId, QObject *parent = nullptr);
@@ -43,6 +45,8 @@ public:
     Fact *current() { return &_currentFact; }
     Fact *temperature() { return &_temperatureFact; }
     Fact *instantPower() { return &_instantPowerFact; }
+    Fact *mahPerKm() { return &_mahPerKmFact; }
+    Fact *whPerKm() { return &_whPerKmFact; }
     Fact *timeRemaining() { return &_timeRemainingFact; }
     Fact *timeRemainingStr() { return &_timeRemainingStrFact; }
     Fact *chargeState() { return &_chargeStateFact; }
@@ -69,4 +73,7 @@ private:
     Fact _timeRemainingStrFact = Fact(0, QStringLiteral("timeRemainingStr"), FactMetaData::valueTypeString);
     Fact _chargeStateFact = Fact(0, QStringLiteral("chargeState"), FactMetaData::valueTypeUint8);
     Fact _instantPowerFact = Fact(0, QStringLiteral("instantPower"), FactMetaData::valueTypeDouble);
+    // Titan: consumption per kilometre at the current ground speed
+    Fact _mahPerKmFact = Fact(0, QStringLiteral("mahPerKm"), FactMetaData::valueTypeDouble);
+    Fact _whPerKmFact = Fact(0, QStringLiteral("whPerKm"), FactMetaData::valueTypeDouble);
 };

@@ -85,6 +85,20 @@
     "enumStrings":      "n/a,Ok,Low,Critical,Emergency,Failed,Unhealthy,Charging",
     "enumValues":       "0,1,2,3,4,5,6,7",
     "decimalPlaces":    0
+},
+{
+    "name":             "mahPerKm",
+    "shortDesc":        "mAh per km",
+    "type":             "double",
+    "decimalPlaces":    0,
+    "units":            "mAh/km"
+},
+{
+    "name":             "whPerKm",
+    "shortDesc":        "Wh per km",
+    "type":             "double",
+    "decimalPlaces":    1,
+    "units":            "Wh/km"
 }
 ]
 }
