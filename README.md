@@ -29,7 +29,7 @@ A built-in AI assistant that lets you fly and configure your aircraft by talking
 
 Configure it under **Application Settings → Titan AI** (Claude API key required; Groq key optional for voice).
 
-### 🛠️ Redesigned Fly View toolbar
+### 🛠️ Redesigned Fly View
 
 - **Arm / Disarm** button right on the toolbar, colored red for visibility.
 - **Vehicle messages icon** with an Error / Warning / Info badge for unread messages; one click opens the message list.
@@ -38,7 +38,8 @@ Configure it under **Application Settings → Titan AI** (Claude API key require
 - **Frosted-glass blur** and reduced opacity for a cleaner overlay on top of the map and video.
 - **Shortened flight-mode names** for fixed-wing / FBW modes so they fit at a glance.
 - **Richer battery tooltip** showing current, power draw, and efficiency — plus a fix for the upstream bug that showed a half-full yellow icon at 0%.
-- **ADS-B traffic from the internet** (adsb.fi), drawn with an icon for each kind of aircraft and its details on hover, and **sent to the autopilot for avoidance**, as TitanPlanner does.
+- **ADS-B traffic from the internet** (adsb.fi), within the radius and number of aircraft you choose, drawn with an icon for each kind of aircraft and its details on hover, and **sent to the autopilot for avoidance**, as TitanPlanner does.
+- **Smooth mouse-wheel zoom** on the map, anchored at the cursor.
 - **Telemetry panel** of tiles you set up in place: pick any value from a searchable list, show it as a **number, a percentage of its range, or a bar**, give it caution and warning levels that turn it amber or red, drag tiles into order, and choose the columns and text size. Each vehicle type keeps its own layout, and each battery adds its consumption in mAh/km and Wh/km.
 
 ### 📹 Picture-in-Picture video
@@ -46,12 +47,14 @@ Configure it under **Application Settings → Titan AI** (Claude API key require
 - **Draggable PiP overlay** that snaps to screen edges and stays put when the window resizes.
 - **Resizable** with a settings gear and a dropdown of common **aspect ratios**.
 - **Old-TV static** while there's no picture, in place of a stock photo.
+- **Widgets make way** for it: docked top-left it sends the tool strip to the bottom-left corner, and docked bottom-right it sends the telemetry panel and instruments there.
+- **Click it** to swap it into the main view, which also closes a full-screen 3D map.
 
 ### 🌍 3D map & Titan HUD
 
 - **Mission Planner's 3D map, ported from TitanPlanner** — the Fly View tool strip's **3D** button swaps the 2D map for the 3D map, full screen under the same toolbar, instruments and video picture-in-picture, or with **Split-screen** on shows it on the right half, beside the 2D map. Satellite terrain with real elevation streams in Google Earth style, from the same disk tile cache as the 2D map, so cached and offline tiles work in 3D too.
 - **The same camera and mouse as Mission Planner** — a chase camera right behind the vehicle (drag to orbit and raise or lower it, scroll for distance, double-click to snap back behind), an **FPV** cockpit view, and free-look over the 2D map's position when no vehicle is connected.
-- **Everything Mission Planner draws** — vehicle models by type (copter, helicopter, plane, QuadPlane, rover, boat, sub, or your own STL) in your color and scale, smoothed movement, heading / nav-bearing / GPS-course lines and the predicted turn arc, the flight trail, the mission with spinning waypoint markers, ADS-B traffic with tooltips, drifting cloud layers, distance haze, and a "stats for nerds" panel.
+- **Everything Mission Planner draws** — vehicle models by type (copter, helicopter, plane, QuadPlane, rover, boat, sub, or your own STL) in your color and scale, smoothed movement, heading / nav-bearing / GPS-course lines and the predicted turn arc, the flight trail, the mission with spinning waypoint markers, ADS-B traffic (grey on the ground) with tooltips, drifting cloud layers, distance haze, and a "stats for nerds" panel.
 - **Titan HUD**, a fighter-style head-up display: flight path marker, pitch ladder with bent dive lines, bank scale, heading tape with autopilot, track and home markers and a turn trend, speed and altitude tapes with rolling readouts, target bugs and trend vectors, cross-track deviation, waypoint (with time to go), home and wind readouts, battery gauges, link / GPS / EKF / vibration status that stays quiet until something is off, arming and failsafe alerts, autopilot messages and the flight mode. Overlay it on the **video** (Video settings → HUD overlay, in a small, medium or large scale and the color of your choice) or use it as the **instrument panel** (Fly View settings → Instrument panel → Titan HUD), over a dark synthetic horizon whose ground grid moves with the vehicle, as it also shows while waiting for video.
 
 Configure it under **Application Settings → 3D Map**, which the **3D Setup** button next to the 3D button opens.
@@ -60,12 +63,12 @@ Configure it under **Application Settings → 3D Map**, which the **3D Setup** b
 
 - **Split toggle** to expand the Configure/Settings panel to full width, with smooth animations, and the layout is **remembered across launches**.
 - **Redesigned parameter editor** with a styled, readable table.
-- General polish across the Vehicle Configuration and Parameters pages.
+- General polish across the Vehicle Configuration, Parameters and Settings pages, which wrap to fit the half-width panel.
 
 ### 🎨 Theming & defaults
 
 - **Orange accent theme** and Titan Dynamics branding throughout.
-- Sensible out-of-the-box defaults: instrument panel set to **Horizontal Compass & Attitude**, audio **muted on first run**, and a mobile layout that uses full-width panels and the indoor theme.
+- Sensible out-of-the-box defaults: the compass's **additional heading indicators** on, the **Titan HUD over the video**, camera controls hidden until you want them, a ready-made **telemetry panel**, audio **muted on first run**, and a mobile layout that uses full-width panels and the indoor theme.
 
 ---
 
