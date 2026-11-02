@@ -13,6 +13,7 @@ rather than in `AGENTS.md` / `CLAUDE.md`, which are upstream files.
 - [Building Locally](#building-locally)
 - [Syncing with Upstream](#syncing-with-upstream)
 - [Known Issues](#known-issues)
+- [Documentation](#documentation)
 - [Commits](#commits)
 
 ## Fork Features and Where They Live
@@ -320,6 +321,18 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
 - Only internet traffic says whether it is on the ground, so the 3D map draws only that traffic as Mission Planner
   draws grounded aircraft (small, grey, kept above the terrain already loaded); SBS and vehicle traffic always
   counts as airborne.
+
+## Documentation
+
+- [README.md](README.md) is the fork's front page for users: a concise list of what the fork adds, a line or two
+  for each feature, grouped by area, with no emojis and no internals (those belong here). When a change adds a major
+  user-facing feature, or changes or removes one the README lists, update the README in the same change. The
+  screenshot at the top, `.github/assets/screenshot.jpg`, is replaced by hand. It is a JPEG because pre-commit
+  rejects files over 2000 KB, as a full-size PNG screenshot is.
+- This file is for agents. Add each new fork feature to
+  [Fork Features and Where They Live](#fork-features-and-where-they-live), each deliberate difference from upstream
+  to [Deliberate Fork Behavior](#deliberate-fork-behavior), and each fork hook inside an upstream file to the audit
+  list in [Syncing with Upstream](#syncing-with-upstream).
 
 ## Commits
 

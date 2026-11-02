@@ -3,7 +3,8 @@
 Instructions for AI coding agents (Codex, Claude Code, etc.) working on QGroundControl.
 
 > **Titan Ground Control fork:** also read [TITAN_AGENTS.md](TITAN_AGENTS.md) for fork features,
-> deliberate behavior changes, CI, and the upstream sync procedure.
+> deliberate behavior changes, CI, the upstream sync procedure, and keeping [README.md](README.md)'s
+> feature list current as features are added.
 
 ## Quick References
 
