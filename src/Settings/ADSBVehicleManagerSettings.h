@@ -18,5 +18,7 @@ public:
     DEFINE_SETTINGFACT(adsbServerPort)
     DEFINE_SETTINGFACT(adsbInternetEnabled)
     DEFINE_SETTINGFACT(adsbInternetServer)
+    DEFINE_SETTINGFACT(adsbInternetRadius)
+    DEFINE_SETTINGFACT(adsbInternetMaxAircraft)
     DEFINE_SETTINGFACT(adsbSendToVehicle)
 };

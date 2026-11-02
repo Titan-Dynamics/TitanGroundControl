@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include <QtConcurrent/QtConcurrentRun>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDateTime>
 #include <QtCore/QJsonArray>
@@ -47,7 +48,7 @@ QString normalizedServer(const QString& server)
 
 }  // namespace
 
-AdsbInternetSource::AdsbInternetSource(const QString& server, QObject* parent)
+AdsbInternetSource::AdsbInternetSource(const QString& server, int radiusNm, int maxAircraft, QObject* parent)
     : QObject(parent)
     , _network(new QNetworkAccessManager(this))
     , _userAgent(
@@ -60,7 +61,10 @@ AdsbInternetSource::AdsbInternetSource(const QString& server, QObject* parent)
     _publishTimer.setInterval(kPublishIntervalMs);
     (void) connect(&_publishTimer, &QTimer::timeout, this, &AdsbInternetSource::_publish);
     _publishTimer.start();
+    (void) connect(&_parseWatcher, &QFutureWatcher<Snapshot>::finished, this, &AdsbInternetSource::_applySnapshot);
 
+    _radiusNm = std::clamp(radiusNm, 1, kMaxRadiusNm);
+    _maxAircraft = std::max(1, maxAircraft);
     setServer(server);
 }
 
@@ -71,13 +75,30 @@ AdsbInternetSource::~AdsbInternetSource()
 
 void AdsbInternetSource::setServer(const QString& server)
 {
-    _cancelRequest();
     _server = normalizedServer(server);
     _intervalMs = pollIntervalMs(_server);
     _delayMs = _intervalMs;
-    _radiusNm = kInitialRadiusNm;
-    _dropAll();
     qCDebug(AdsbInternetSourceLog) << "server" << _server << "every" << _intervalMs << "ms";
+    _restart();
+}
+
+void AdsbInternetSource::setRadiusNm(int radiusNm)
+{
+    _radiusNm = std::clamp(radiusNm, 1, kMaxRadiusNm);
+    _restart();
+}
+
+void AdsbInternetSource::setMaxAircraft(int maxAircraft)
+{
+    _maxAircraft = std::max(1, maxAircraft);
+    _restart();
+}
+
+void AdsbInternetSource::_restart()
+{
+    _generation++;
+    _cancelRequest();
+    _dropAll();
     _pollTimer.start(0);
 }
 
@@ -211,6 +232,31 @@ QList<AdsbInternetSource::Report> AdsbInternetSource::parseResponse(const QByteA
     return reports;
 }
 
+AdsbInternetSource::Snapshot AdsbInternetSource::selectNearest(const QList<Report>& reports,
+                                                               const QGeoCoordinate& center, int maxAircraft)
+{
+    Snapshot snapshot;
+    snapshot.listed.reserve(reports.size());
+    for (const Report& report : reports) {
+        snapshot.listed.insert(report.info.icaoAddress);
+    }
+
+    QList<QPair<double, qsizetype>> byDistance;
+    byDistance.reserve(reports.size());
+    for (qsizetype i = 0; i < reports.size(); i++) {
+        const double distance = center.isValid() ? center.distanceTo(reports.at(i).info.location) : 0.0;
+        byDistance.append({distance, i});
+    }
+    const qsizetype kept = std::min<qsizetype>(byDistance.size(), std::max(0, maxAircraft));
+    std::partial_sort(byDistance.begin(), byDistance.begin() + kept, byDistance.end(),
+                      [](const auto& a, const auto& b) { return a.first < b.first; });
+    snapshot.nearest.reserve(kept);
+    for (qsizetype i = 0; i < kept; i++) {
+        snapshot.nearest.append(reports.at(byDistance.at(i).second));
+    }
+    return snapshot;
+}
+
 QGeoCoordinate AdsbInternetSource::predict(const QGeoCoordinate& measured, double trackDegrees, double groundSpeed,
                                            double verticalSpeed, double secondsAhead)
 {
@@ -227,7 +273,8 @@ QGeoCoordinate AdsbInternetSource::predict(const QGeoCoordinate& measured, doubl
 
 void AdsbInternetSource::_poll()
 {
-    if (_reply) {
+    if (_reply || _parseWatcher.isRunning()) {
+        _pollTimer.start(kBusyRetryMs);
         return;
     }
     const QGeoCoordinate center = _center();
@@ -236,6 +283,7 @@ void AdsbInternetSource::_poll()
         return;
     }
 
+    _requestCenter = center;
     _pollStartedMs = QDateTime::currentMSecsSinceEpoch();
     QNetworkRequest request(requestUrl(_server, center.latitude(), center.longitude(), _radiusNm));
     request.setHeader(QNetworkRequest::UserAgentHeader, _userAgent);
@@ -262,19 +310,18 @@ void AdsbInternetSource::_replyFinished()
     const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     if ((reply->error() == QNetworkReply::NoError) && (status == 200)) {
         _delayMs = _intervalMs;
-        const QList<Report> reports = parseResponse(reply->readAll(), nowMs);
-        if (reports.size() < kFewAircraft) {
-            _radiusNm = std::min(_radiusNm + kRadiusStepNm, kMaxRadiusNm);
-        }
-        for (const Report& report : reports) {
-            Track& track = _tracks[report.info.icaoAddress];
-            track.info = report.info;
-            track.trackKnown = report.trackKnown;
-            track.receivedMs = nowMs;
-            track.measuredMs = nowMs - qRound64(report.ageSeconds * 1000.0);
-            emit vehicleUpdated(_predicted(track, nowMs));
-        }
-    } else if (status == 429) {
+        _receivedMs = nowMs;
+        _parseGeneration = _generation;
+        const QByteArray body = reply->readAll();
+        const QGeoCoordinate center = _requestCenter;
+        const int maxAircraft = _maxAircraft;
+        _parseWatcher.setFuture(QtConcurrent::run([body, center, maxAircraft, nowMs] {
+            return selectNearest(parseResponse(body, nowMs), center, maxAircraft);
+        }));
+        // The next request goes out once this one is applied
+        return;
+    }
+    if (status == 429) {
         // Retrying sooner than the server says only gets more refusals
         _delayMs = std::min(_delayMs * 2, kMaxDelayMs);
         bool ok = false;
@@ -287,6 +334,41 @@ void AdsbInternetSource::_replyFinished()
         _delayMs = std::min(_delayMs * 2, kMaxDelayMs);
         qCDebug(AdsbInternetSourceLog) << "request failed:" << status << reply->errorString() << "next in" << _delayMs
                                        << "ms";
+    }
+
+    _pollTimer.start(static_cast<int>(std::max<qint64>(0, _delayMs - (nowMs - _pollStartedMs))));
+}
+
+void AdsbInternetSource::_applySnapshot()
+{
+    if (_parseGeneration != _generation) {
+        // From before the server or the area changed
+        return;
+    }
+    const Snapshot snapshot = _parseWatcher.result();
+    const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    QSet<uint32_t> kept;
+    kept.reserve(snapshot.nearest.size());
+    for (const Report& report : snapshot.nearest) {
+        Track& track = _tracks[report.info.icaoAddress];
+        track.info = report.info;
+        track.trackKnown = report.trackKnown;
+        track.receivedMs = _receivedMs;
+        track.measuredMs = _receivedMs - qRound64(report.ageSeconds * 1000.0);
+        kept.insert(report.info.icaoAddress);
+        emit vehicleUpdated(_predicted(track, nowMs));
+    }
+
+    // Aircraft still listed but no longer among the nearest go at once; ones missing from a response stay until
+    // kDropAfterMs after they were last listed, as TitanPlanner keeps them
+    for (auto it = _tracks.begin(); it != _tracks.end();) {
+        if (!kept.contains(it.key()) && snapshot.listed.contains(it.key())) {
+            const uint32_t address = it.key();
+            it = _tracks.erase(it);
+            emit vehicleLost(address);
+        } else {
+            ++it;
+        }
     }
 
     _pollTimer.start(static_cast<int>(std::max<qint64>(0, _delayMs - (nowMs - _pollStartedMs))));
@@ -312,10 +394,13 @@ void AdsbInternetSource::_publish()
             const uint32_t address = it.key();
             it = _tracks.erase(it);
             emit vehicleLost(address);
-        } else {
-            emit vehicleUpdated(_predicted(*it, nowMs));
-            ++it;
+            continue;
         }
+        // Only moving aircraft change between responses
+        if (!it->info.onGround && it->trackKnown && (it->info.velocity > 0)) {
+            emit vehicleUpdated(_predicted(*it, nowMs));
+        }
+        ++it;
     }
 }
 

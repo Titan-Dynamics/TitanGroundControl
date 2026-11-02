@@ -44,6 +44,27 @@
             "keywords": "adsb,internet,server,api,adsb.fi,adsb.lol"
         },
         {
+            "name": "adsbInternetRadius",
+            "shortDesc": "How far around the vehicle to get internet traffic.",
+            "type": "uint32",
+            "units": "nm",
+            "min": 1,
+            "max": 250,
+            "default": 25,
+            "label": "Traffic radius",
+            "keywords": "adsb,internet,radius,range,distance"
+        },
+        {
+            "name": "adsbInternetMaxAircraft",
+            "shortDesc": "The most internet traffic to show, nearest first. Fewer is faster.",
+            "type": "uint32",
+            "min": 1,
+            "max": 500,
+            "default": 50,
+            "label": "Maximum aircraft",
+            "keywords": "adsb,internet,aircraft,count,limit,performance"
+        },
+        {
             "name": "adsbSendToVehicle",
             "shortDesc": "Send nearby traffic to the autopilot for its ADS-B avoidance (ArduPilot AVD_ENABLE).",
             "type": "bool",

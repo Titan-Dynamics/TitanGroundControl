@@ -60,6 +60,16 @@ ADSBVehicleManager::ADSBVehicleManager(ADSBVehicleManagerSettings *settings, QOb
             _internetSource->setServer(server.toString());
         }
     });
+    (void) connect(_adsbSettings->adsbInternetRadius(), &Fact::rawValueChanged, this, [this](const QVariant &radius) {
+        if (_internetSource) {
+            _internetSource->setRadiusNm(radius.toInt());
+        }
+    });
+    (void) connect(_adsbSettings->adsbInternetMaxAircraft(), &Fact::rawValueChanged, this, [this](const QVariant &count) {
+        if (_internetSource) {
+            _internetSource->setMaxAircraft(count.toInt());
+        }
+    });
     _updateInternetTraffic();
     _trafficSender = new AdsbTrafficSender(this, _adsbSettings->adsbSendToVehicle(), this);
 }
@@ -294,7 +304,9 @@ void ADSBVehicleManager::_updateInternetTraffic()
 
     if (enabled) {
         _stop();
-        _internetSource = new AdsbInternetSource(_adsbSettings->adsbInternetServer()->rawValue().toString(), this);
+        _internetSource = new AdsbInternetSource(_adsbSettings->adsbInternetServer()->rawValue().toString(),
+                                                 _adsbSettings->adsbInternetRadius()->rawValue().toInt(),
+                                                 _adsbSettings->adsbInternetMaxAircraft()->rawValue().toInt(), this);
         (void) connect(_internetSource, &AdsbInternetSource::vehicleUpdated, this, &ADSBVehicleManager::adsbVehicleUpdate);
         (void) connect(_internetSource, &AdsbInternetSource::vehicleLost, this, &ADSBVehicleManager::_removeVehicle);
         return;

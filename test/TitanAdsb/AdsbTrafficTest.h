@@ -11,6 +11,7 @@ private slots:
     void _requestsFollowTheServer();
     void _responseIsRead();
     void _trafficIsCarriedForward();
+    void _nearestAircraftAreKept();
     void _nearestTrafficTakesTurns();
     void _vehicleEchoesOfLocalTrafficAreIgnored();
     void _collisionReportsSetTheThreatLevel();

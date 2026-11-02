@@ -127,6 +127,26 @@ void AdsbTrafficTest::_trafficIsCarriedForward()
     QCOMPARE(AdsbInternetSource::predict(measured, 90.0, 0.0, 0.0, 3.0), measured);
 }
 
+void AdsbTrafficTest::_nearestAircraftAreKept()
+{
+    const QGeoCoordinate center(47.0, 8.0);
+
+    // Five aircraft, 5 km out down to 1 km
+    QList<AdsbInternetSource::Report> reports;
+    for (int i = 0; i < 5; i++) {
+        AdsbInternetSource::Report report;
+        report.info.icaoAddress = 0xD00000 + static_cast<uint32_t>(i);
+        report.info.location = center.atDistanceAndAzimuth(1000.0 * (5 - i), 45.0);
+        reports.append(report);
+    }
+
+    const AdsbInternetSource::Snapshot snapshot = AdsbInternetSource::selectNearest(reports, center, 3);
+    QCOMPARE(snapshot.nearest.size(), 3);
+    QCOMPARE(snapshot.nearest.at(0).info.icaoAddress, 0xD00004u);
+    QCOMPARE(snapshot.nearest.at(2).info.icaoAddress, 0xD00002u);
+    QCOMPARE(snapshot.listed.size(), 5);
+}
+
 void AdsbTrafficTest::_nearestTrafficTakesTurns()
 {
     const QGeoCoordinate own(47.0, 8.0);

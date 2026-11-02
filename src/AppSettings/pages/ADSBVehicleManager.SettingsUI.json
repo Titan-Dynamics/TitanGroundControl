@@ -17,6 +17,14 @@
                     "showWhen": "internetTraffic"
                 },
                 {
+                    "setting": "adsbVehicleManagerSettings.adsbInternetRadius",
+                    "showWhen": "internetTraffic"
+                },
+                {
+                    "setting": "adsbVehicleManagerSettings.adsbInternetMaxAircraft",
+                    "showWhen": "internetTraffic"
+                },
+                {
                     "setting": "adsbVehicleManagerSettings.adsbServerConnectEnabled",
                     "enableWhen": "!internetTraffic"
                 },
