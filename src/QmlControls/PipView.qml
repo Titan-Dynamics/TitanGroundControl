@@ -18,8 +18,8 @@ Item {
 
     signal pipClicked()     ///< Titan: a click on the PiP is about to swap it with the full-window item
 
-    // Area covering the parent, in PipView coordinates: just the restore button while collapsed
-    readonly property rect occupiedRect: _isExpanded ? Qt.rect(0, 0, width, height) : Qt.rect(showPip.x, showPip.y, showPip.width, showPip.height)
+    // Area covering the parent, in PipView coordinates: just the restore button once collapsed
+    readonly property rect occupiedRect: _expansion > 0 ? Qt.rect(0, 0, width, height) : Qt.rect(showPip.x, showPip.y, showPip.width, showPip.height)
 
     readonly property string _pipExpandedSettingsKey: "IsPIPVisible"
 
@@ -28,6 +28,9 @@ Item {
     property alias  _windowContentItem: window.contentItem
     property alias  _pipContentItem:    pipContent
     property bool   _isExpanded:        true
+    property real   _expansion:         1       // Titan: 1 expanded, 0 collapsed into the show button
+    readonly property bool _fullyExpanded:  _isExpanded && _expansion >= 1
+    readonly property real _collapsedScale: Math.min(1, showPip.width / Math.max(1, width))
     property real   _pipSize:           parent.width * 0.35
     // A configured ratio of 0 means auto-detect: use the stream's ratio, or 16:9 until one is known
     readonly property real _aspectRatio: {
@@ -183,6 +186,35 @@ Item {
     function _setPipIsExpanded(isExpanded) {
         QGroundControl.saveBoolGlobalSetting(_pipExpandedSettingsKey, isExpanded)
         _isExpanded = isExpanded
+        // Titan: the content shrinks into the show button and grows back out of it, like the toolbar drawers. A
+        // collapse saved from the last run just shows, before the PiP is placed.
+        expandAnimation.stop()
+        collapseAnimation.stop()
+        if (!_componentComplete) {
+            _expansion = isExpanded ? 1 : 0
+        } else if (isExpanded) {
+            expandAnimation.start()
+        } else {
+            collapseAnimation.start()
+        }
+    }
+
+    NumberAnimation {
+        id:             expandAnimation
+        target:         _root
+        property:       "_expansion"
+        to:             1
+        duration:       250
+        easing.type:    Easing.OutCubic
+    }
+
+    NumberAnimation {
+        id:             collapseAnimation
+        target:         _root
+        property:       "_expansion"
+        to:             0
+        duration:       200
+        easing.type:    Easing.InCubic
     }
 
     Window {
@@ -197,23 +229,37 @@ Item {
         }
     }
 
+    // Titan: the content and its hover overlay, shrunk and faded toward the show button's corner as the PiP collapses
     Item {
-        id:             pipContent
+        id:             pipScaler
         anchors.fill:   parent
-        visible:        _isExpanded
-        clip:           true
-    }
+        visible:        _root._expansion > 0
+        opacity:        _root._expansion
 
-    // Dark overlay that fades in on hover for icon contrast
-    Rectangle {
-        id:             hoverOverlay
-        anchors.fill:   parent
-        color:          "black"
-        opacity:        pipMouseArea.containsMouse ? 0.35 : 0.0
-        visible:        _isExpanded && !ScreenTools.isMobile
+        transform: Scale {
+            origin.x:   _root._isOnRight ? pipScaler.width : 0
+            origin.y:   pipScaler.height
+            xScale:     _root._collapsedScale + (1 - _root._collapsedScale) * _root._expansion
+            yScale:     _root._collapsedScale + (1 - _root._collapsedScale) * _root._expansion
+        }
 
-        Behavior on opacity {
-            NumberAnimation { duration: 250; easing.type: Easing.InOutQuad }
+        Item {
+            id:             pipContent
+            anchors.fill:   parent
+            clip:           true
+        }
+
+        // Dark overlay that fades in on hover for icon contrast, and out as the PiP collapses
+        Rectangle {
+            id:             hoverOverlay
+            anchors.fill:   parent
+            color:          "black"
+            opacity:        _root._isExpanded && pipMouseArea.containsMouse ? 0.35 : 0.0
+            visible:        !ScreenTools.isMobile
+
+            Behavior on opacity {
+                NumberAnimation { duration: 250; easing.type: Easing.InOutQuad }
+            }
         }
     }
 
@@ -296,7 +342,7 @@ Item {
         mirror:         _isOnRight
         anchors.top:    parent.top
         anchors.right:  parent.right
-        visible:        _isExpanded && (ScreenTools.isMobile || pipMouseArea.containsMouse)
+        visible:        _root._fullyExpanded && (ScreenTools.isMobile || pipMouseArea.containsMouse)
         height:         _iconSize
         width:          _iconSize
         sourceSize.height:  height
@@ -342,7 +388,7 @@ Item {
         fillMode:       Image.PreserveAspectFit
         anchors.left:   parent.left
         anchors.top:    parent.top
-        visible:        _isExpanded && !ScreenTools.isMobile && pipMouseArea.containsMouse
+        visible:        _root._fullyExpanded && !ScreenTools.isMobile && pipMouseArea.containsMouse
         height:         _iconSize
         width:          _iconSize
         sourceSize.height:  height
@@ -365,7 +411,7 @@ Item {
         mirror:         _isOnRight
         anchors.left:   parent.left
         anchors.bottom: parent.bottom
-        visible:        _isExpanded && (ScreenTools.isMobile || pipMouseArea.containsMouse)
+        visible:        _root._fullyExpanded && (ScreenTools.isMobile || pipMouseArea.containsMouse)
         height:         _iconSize
         width:          _iconSize
         sourceSize.height:  height
@@ -385,7 +431,7 @@ Item {
         anchors.bottom: parent.bottom
         anchors.rightMargin:  _iconSize * 0.15
         anchors.bottomMargin: _iconSize * 0.15
-        visible:        _isExpanded && (ScreenTools.isMobile || pipMouseArea.containsMouse)
+        visible:        _root._fullyExpanded && (ScreenTools.isMobile || pipMouseArea.containsMouse)
         height:         _iconSize * 0.7
         width:          _iconSize * 0.7
         sourceSize.height:  height
@@ -402,7 +448,8 @@ Item {
         height:                 ScreenTools.defaultFontPixelHeight * 2
         width:                  ScreenTools.defaultFontPixelHeight * 2
         radius:                 ScreenTools.defaultFontPixelHeight / 3
-        visible:                !_isExpanded
+        visible:                _root._expansion < 1
+        opacity:                1 - _root._expansion
         color:                  _fullItem.pipState.isDark ? Qt.rgba(0,0,0,0.75) : Qt.rgba(0,0,0,0.5)
         Image {
             width:              parent.width  * 0.75
@@ -417,6 +464,7 @@ Item {
         }
         MouseArea {
             anchors.fill:   parent
+            enabled:        !_root._isExpanded
             onClicked:      _root._setPipIsExpanded(true)
         }
     }
