@@ -78,6 +78,7 @@ add_subdirectory(TitanAdsb)
 add_subdirectory(TitanHud)
 add_subdirectory(TitanMap3D)
 add_subdirectory(TitanTelemetry)
+add_subdirectory(TitanUpdater)
 
 # Platform-specific
 add_subdirectory(Android)
@@ -170,7 +171,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE AutoPilotPluginsPX4Module)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Viewer3DModule)
 
 # Titan Ground Control fork modules
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE TitanAdsbModule TitanHudModule TitanMap3DModule TitanTelemetryModule)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE TitanAdsbModule TitanHudModule TitanMap3DModule TitanTelemetryModule TitanUpdaterModule)
 
 # ============================================================================
 # Compile Definitions
