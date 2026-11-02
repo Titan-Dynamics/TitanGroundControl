@@ -142,7 +142,7 @@
             "type": "string",
             "enumStrings": "Integrated Compass & Attitude,Horizontal Compass & Attitude,Large Vertical,Titan HUD",
             "enumValues": "qrc:/qml/QGroundControl/FlightMap/Widgets/IntegratedCompassAttitude.qml,qrc:/qml/QGroundControl/FlightMap/Widgets/HorizontalCompassAttitude.qml,qrc:/qml/QGroundControl/FlightMap/Widgets/VerticalCompassAttitude.qml,qrc:/qml/QGroundControl/TitanHud/TitanHudInstrument.qml",
-            "default": "qrc:/qml/QGroundControl/FlightMap/Widgets/HorizontalCompassAttitude.qml",
+            "default": "qrc:/qml/QGroundControl/FlightMap/Widgets/IntegratedCompassAttitude.qml",
             "label": "Qml file for instrument panel",
             "keywords": "instrument,hud"
         },
