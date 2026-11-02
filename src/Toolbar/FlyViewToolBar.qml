@@ -19,21 +19,25 @@ Item {
     property bool   _parametersReady: QGroundControl.multiVehicleManager.parameterReadyVehicleAvailable
     property var    _fltmodeNames:   (_activeVehicle && _activeVehicle.apmFirmware && _parametersReady) ? _buildFltmodeList() : []
 
-    // GPS and battery sit right after the flight modes rather than with the other indicators on the right. GPS is one
-    // of the app's indicators (it also shows a GNSS receiver without a vehicle), battery one of the vehicle's.
-    readonly property var  _movedIndicators: [ "/GPSIndicator.qml", "BatteryIndicator.qml" ]
-    readonly property var  _leftIndicators:  QGroundControl.corePlugin.toolBarIndicators.filter(_isMovedIndicator)
-                                                 .concat(_activeVehicle ? _activeVehicle.toolIndicators.filter(_isMovedIndicator) : [])
-    readonly property real _indicatorMargins: ScreenTools.defaultFontPixelHeight * 0.66
+    // Titan: every indicator follows the flight modes, leaving the right end to the logo: GPS, battery and RC first,
+    // then the rest as the app and the firmware list them. GPS is one of the app's indicators (it also shows a GNSS
+    // receiver without a vehicle), the others are the vehicle's.
+    readonly property var  _leadingIndicators: [ "/GPSIndicator.qml", "/BatteryIndicator.qml", "/RCRSSIIndicator.qml" ]
+    readonly property var  _indicators:        _orderIndicators(QGroundControl.corePlugin.toolBarIndicators,
+                                                                _activeVehicle ? _activeVehicle.toolIndicators : [])
+    readonly property real _indicatorMargins:  ScreenTools.defaultFontPixelHeight * 0.66
 
     // The Titan Dynamics logo at the right end, in the theme's color, while the toolbar has room for it
     readonly property real _logoHeight:      ScreenTools.toolbarHeight * 0.7
     readonly property real _logoWidth:       _logoHeight * 4.5   // The images are 1800 x 400
     readonly property real _logoMargin:      ScreenTools.defaultFontPixelWidth * 1.5
-    readonly property bool _showLogo:        width >= leftPanelLayout.implicitWidth + flyViewIndicators.width + _logoWidth + _logoMargin * 2
+    readonly property bool _showLogo:        width >= leftPanelLayout.implicitWidth + _logoWidth + _logoMargin * 2
 
-    function _isMovedIndicator(url) {
-        return _movedIndicators.some(name => url.toString().endsWith(name))
+    function _orderIndicators(appIndicators, vehicleIndicators) {
+        const all = Array.from(appIndicators).concat(Array.from(vehicleIndicators))
+        const leadIndex = url => _leadingIndicators.findIndex(name => url.toString().endsWith(name))
+        const leading = all.filter(url => leadIndex(url) >= 0).sort((a, b) => leadIndex(a) - leadIndex(b))
+        return leading.concat(all.filter(url => leadIndex(url) < 0))
     }
 
     function dropMainStatusIndicatorTool(showMessages = false) {
@@ -85,23 +89,17 @@ Item {
         color:          qgcPal.windowTransparent
     }
 
-    // Right panel docked to the right edge, outside the flickable
+    // Right panel docked to the right edge, outside the flickable. Titan: only the logo; indicators are on the left.
     Item {
         id:             rightPanel
         anchors.right:  parent.right
         anchors.top:    parent.top
-        width:          flyViewIndicators.width + (control._showLogo ? control._logoWidth + control._logoMargin * 2 : 0)
+        width:          control._showLogo ? control._logoWidth + control._logoMargin * 2 : 0
         height:         parent.height
 
-        // Titan: clicks on the logo and between the indicators stop here rather than reaching the map
+        // Titan: clicks on the logo stop here rather than reaching the map
         DeadMouseArea {
             anchors.fill: parent
-        }
-
-        FlyViewToolBarIndicators {
-            id:                 flyViewIndicators
-            height:             parent.height
-            excludedIndicators: control._movedIndicators
         }
 
         Image {
@@ -277,13 +275,13 @@ Item {
                     }
                 }
 
-                // Titan: GPS and battery, right after the flight modes
+                // Titan: the indicators, right after the flight modes
                 Row {
                     Layout.fillHeight:  true
                     spacing:            ScreenTools.defaultFontPixelWidth * 1.75
 
                     Repeater {
-                        model: control._leftIndicators
+                        model: control._indicators
 
                         Loader {
                             anchors.top:            parent.top
