@@ -128,8 +128,12 @@ Item {
             z:                      QGroundControl.zOrderWidgets
             topBound:               toolbar.height
 
-            // The PiP is draggable, so it only constrains the left-side widgets while docked bottom-left
-            property bool inBottomLeft: x + width / 2 < parent.width / 2 && y + height / 2 > parent.height / 2
+            // The PiP is draggable, so widgets only make way for it in their own corner: the virtual joysticks rise
+            // above it bottom-left, the tool strip moves to the bottom-left corner from under it top-left, and the
+            // bottom-right row moves to the bottom-left corner from under it bottom-right
+            property bool inBottomLeft:     x + width / 2 < parent.width / 2 && y + height / 2 > parent.height / 2
+            property bool inTopLeft:        x + width / 2 < parent.width / 2 && y + height / 2 <= parent.height / 2
+            property bool inBottomRight:    x + width / 2 >= parent.width / 2 && y + height / 2 > parent.height / 2
         }
 
         FlyViewWidgetLayer {
@@ -143,6 +147,8 @@ Item {
             anchors.topMargin:      toolbar.height + _widgetMargin
             z:                      _fullItemZorder + 2
             pipViewRect:            _pipView.visible && _pipView.inBottomLeft ? Qt.rect(_pipView.x + _pipView.occupiedRect.x - x, _pipView.y + _pipView.occupiedRect.y - y, _pipView.occupiedRect.width, _pipView.occupiedRect.height) : Qt.rect(0, height, 0, 0)
+            pipViewBottom:          _pipView.visible && _pipView.inTopLeft ? _pipView.y + _pipView.occupiedRect.y + _pipView.occupiedRect.height - y : 0
+            pipInBottomRight:       _pipView.visible && _pipView.inBottomRight
             mapControl:             _mapControl
             viewer3DCameraController: viewer3DLoader.item ? viewer3DLoader.item.cameraController : null
             visible:                !QGroundControl.videoManager.fullScreen

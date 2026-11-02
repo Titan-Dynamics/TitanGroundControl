@@ -21,6 +21,8 @@ Item {
     id: _root
 
     property rect   pipViewRect:            Qt.rect(0, height, 0, 0)
+    property real   pipViewBottom:          0       ///< Bottom of a PiP docked top-left; the tool strip moves to the bottom corner
+    property bool   pipInBottomRight:       false   ///< A PiP docked bottom-right; the bottom-right row moves to the left corner
     property var    occluders:              _occluders
     property var    mapControl
     property var    viewer3DCameraController
@@ -85,6 +87,21 @@ Item {
         anchors.bottom:     parent.bottom
         anchors.right:      parent.right
         spacing:            _layoutSpacing
+
+        // Titan: in the bottom-left corner while the PiP is docked bottom-right, over this row
+        states: State {
+            when: _root.pipInBottomRight
+
+            AnchorChanges {
+                target:         bottomRightRowLayout
+                anchors.right:  undefined
+                anchors.left:   _root.left
+            }
+        }
+
+        transitions: Transition {
+            AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
+        }
     }
 
     FlyViewMissionCompleteDialog {
@@ -146,8 +163,29 @@ Item {
         anchors.left:           parent.left
         anchors.top:            parent.top
         z:                      QGroundControl.zOrderWidgets
-        maxHeight:              pipViewRect.y - y - _toolsMargin
+        // Titan: measured from the top, where it is anchored, rather than from y, which animates on the way back from the
+        // bottom corner and would shrink the strip as it slides up
+        maxHeight:             Math.max(0, Math.min(pipViewRect.y, _root.pipInBottomRight ? bottomRightRowLayout.y : _root.height) - _toolsMargin)
         visible:                !QGroundControl.videoManager.fullScreen
+
+        // Titan: in the bottom-left corner while the PiP is docked top-left
+        states: State {
+            when: _root.pipViewBottom > 0
+
+            AnchorChanges {
+                target:         toolStrip
+                anchors.top:    undefined
+                anchors.bottom: _root.bottom
+            }
+
+            PropertyChanges {
+                toolStrip.maxHeight: Math.max(0, _root.height - _root.pipViewBottom - _root._toolsMargin)
+            }
+        }
+
+        transitions: Transition {
+            AnchorAnimation { duration: 200; easing.type: Easing.OutCubic }
+        }
     }
 
     VehicleWarnings {
