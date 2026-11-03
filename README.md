@@ -35,6 +35,7 @@ Set it up under **Application Settings → Titan AI** (Claude API key required; 
 - **Telemetry panel** of tiles you set up in place: any value as a number or a bar, with caution and warning levels, in the order, columns and size you choose, kept per vehicle type. Batteries add their consumption per kilometre.
 - **Guided action confirmations** in a centered popup, with **Don't show again**.
 - **Richer battery tooltip**, smooth **mouse-wheel zoom** anchored at the cursor, a **frosted-glass** toolbar, and camera controls hidden until you turn them on.
+- **Swarms connect quietly**: no dialog to dismiss for each vehicle after the first.
 
 ### Video
 

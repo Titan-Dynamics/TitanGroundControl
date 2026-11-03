@@ -128,9 +128,8 @@ void MultiVehicleManager::_vehicleHeartbeatInfo(LinkInterface* link, int vehicle
 
     emit vehicleAdded(vehicle);
 
-    if (_vehicles->count() > 1) {
-        QGC::showAppMessage(tr("Connected to Vehicle %1").arg(vehicleId));
-    } else {
+    // Titan: no "Connected to Vehicle" dialog for each further vehicle, one per vehicle to dismiss in a swarm
+    if (_vehicles->count() == 1) {
         setActiveVehicle(vehicle);
     }
 

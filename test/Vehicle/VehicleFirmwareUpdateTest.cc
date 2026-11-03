@@ -35,13 +35,11 @@ void VehicleFirmwareUpdateTest::_acknowledgementAppliesToMatchingConnectedVehicl
     QVERIFY(first);
     QTRY_VERIFY_WITH_TIMEOUT(first->isInitialConnectComplete(), TestTimeout::longMs());
 
-    expectAppMessage(QRegularExpression(QStringLiteral("Connected to Vehicle [0-9]+")));
     const SharedLinkInterfacePtr secondLink = createMockLink(QStringLiteral("Second"));
     auto* const secondMockLink = qobject_cast<MockLink*>(secondLink.get());
     QVERIFY(secondMockLink);
     QTRY_VERIFY_WITH_TIMEOUT(MultiVehicleManager::instance()->getVehicleById(secondMockLink->vehicleId()),
                              TestTimeout::longMs());
-    verifyExpectedLogMessage();
     Vehicle* const second = MultiVehicleManager::instance()->getVehicleById(secondMockLink->vehicleId());
     QVERIFY(second != first);
     QTRY_VERIFY_WITH_TIMEOUT(second->isInitialConnectComplete(), TestTimeout::longMs());

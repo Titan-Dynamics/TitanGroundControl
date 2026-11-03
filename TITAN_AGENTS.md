@@ -41,6 +41,7 @@ rather than in `AGENTS.md` / `CLAUDE.md`, which are upstream files.
 | 3D map settings (Mission Planner's set and defaults, except waypoint markers at 25 m rather than 60, plus the fork's Split-screen) | `src/Settings/Map3DSettings.*`, `src/Settings/Map3D.SettingsGroup.json` (INI group `TitanMap3D`), `src/AppSettings/pages/Map3D.SettingsUI.json`, "3D Map" entry in `src/AppSettings/pages/SettingsPages.json` (replaces upstream's deprecated "3D View" page) and `Map3DSettings.qml` in the generated-pages list of `src/AppSettings/CMakeLists.txt` |
 | Titan HUD (instrument panel option, video overlay) | `src/TitanHud/` (`HudData.*`, `HudItem.*`, `HudPainter.*`, `TitanHud.qml`, `TitanHudInstrument.qml`, B612 Mono in `fonts/` under the SIL Open Font License, the no-video TV static `TvStatic.qml` with `shaders/tvstatic.frag`), `hudOverlay`, `hudScale` and `hudColor` facts in `Video.SettingsGroup.json`, "Titan HUD" in the `instrumentQmlFile2` enum of `src/Settings/FlyView.SettingsGroup.json`, overlay in `src/FlyView/FlightDisplayViewVideo.qml`; tests in `test/TitanHud/` |
 | Vehicle model decimation (TitanPlanner STLs) | `tools/titan/convert_vehicle_models.py` |
+| No "Connected to Vehicle" dialog for each vehicle after the first (swarms) | `_vehicleHeartbeatInfo` in `src/Vehicle/MultiVehicleManager.cc`; the tests that expected it, `test/GPS/Corrections/RTCMMAVLinkVehicleTest.cc` and `test/Vehicle/VehicleFirmwareUpdateTest.cc` |
 | Camera controls hidden unless switched on (Fly View settings → Show Camera Controls; the simple camera option only shows with it) | `showCameraControls` in `src/Settings/FlyView.SettingsGroup.json` and `FlyViewSettings.*`, `src/AppSettings/pages/FlyView.SettingsUI.json`, the `PhotoVideoControl` loaders in `src/FlyView/FlyViewTopRightColumnLayout.qml` and `src/FlyView/FlyViewTopRightPanel.qml` (whose camera page, swiping and page indicator go with it) |
 | Internet ADS-B traffic (a port of TitanPlanner's adsb.cs), traffic sent to the autopilot for avoidance, the autopilot's collision threat levels, and an icon for each aircraft category on the Fly View map | `src/TitanAdsb/` (`AdsbInternetSource.*`, `AdsbTrafficSender.*`, `AdsbCategory.*`, `AdsbIconProvider.*`, `TitanAdsbMapItem.qml`), `adsbInternetEnabled`, `adsbInternetServer`, `adsbInternetRadius`, `adsbInternetMaxAircraft` and `adsbSendToVehicle` in `src/Settings/ADSBVehicleManager.SettingsGroup.json` and `ADSBVehicleManagerSettings.*`, the ADSB Server page in `src/AppSettings/pages/ADSBVehicleManager.SettingsUI.json`; hooks in `src/ADSB/` (`ADSB.h` category, type and ground fields, `ADSBVehicle.*` properties, `ADSBVehicleManager.*` sources, echo filter and COLLISION), `MAVLINK_MSG_ID_COLLISION` routed in `src/Vehicle/Vehicle.cc`, the `TitanAdsbMapItem` delegate in `src/FlyView/FlyViewMap.qml`, `AdsbIconProvider` registered in `src/QGCApplication.cc`, and grounded traffic and the tooltip in `src/TitanMap3D/`; tests in `test/TitanAdsb/` |
 | Help page: source code and release links, and an updater from the GitHub releases (stable or development) | `src/TitanUpdater/` (`TitanUpdater.*`, a QML singleton with its channel in INI group `TitanUpdater`; `TitanHelpSection.qml`), above upstream's links in `src/AppSettings/HelpSettings.qml`; tests in `test/TitanUpdater/` |
@@ -71,6 +72,9 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   and a searchable value picker. Upstream's `FactValueGrid` still drives the multi-vehicle cards and the video
   recording subtitles (`SubtitleWriter`), which keep upstream's `TelemetryBarUserSettings`.
 - The status text is **clickable only while disconnected** ("Click to manually connect").
+- **Connecting another vehicle shows no dialog.** Upstream shows "Connected to Vehicle N" for each vehicle after the
+  first, so a swarm left one dialog per vehicle to dismiss. The first vehicle still becomes the active one; the others
+  are picked from the toolbar's vehicle selector or the map.
 - The **updater** (Help page) follows the latest version release on the stable channel, judged by version
   (`QGCVersionCheck::isNewerVersion`), or the `dev` prerelease on the development channel, judged by commit: the
   dev workflow writes `**Commit:** <sha>` into the release body, and the build carries git describe's `-g<sha>`. It
@@ -327,7 +331,9 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
    `FlyViewTopRightColumnLayout.qml` and
    `FlyViewTopRightPanel.qml` (`showCameraControls`), `ADSB.h`, `ADSBVehicle.*` and `ADSBVehicleManager.*`
    (category, ground and threat fields, the internet source, the sender, the echo filter and COLLISION),
-   `Vehicle.cc` (COLLISION routed to `ADSBVehicleManager`), `FlyViewMap.qml` (the `TitanAdsbMapItem` delegate),
+   `Vehicle.cc` (COLLISION routed to `ADSBVehicleManager`), `MultiVehicleManager.cc` (no "Connected to Vehicle"
+   dialog, which `RTCMMAVLinkVehicleTest.cc` and `VehicleFirmwareUpdateTest.cc` no longer expect), `FlyViewMap.qml`
+   (the `TitanAdsbMapItem` delegate),
    `QGCApplication.cc` (`AdsbIconProvider`), `deploy/linux/AppRun` (`TitanGroundControl` first among the binary
    names), `QGCCorePlugin.cc` (the Link Stats entry in `analyzePages()`), `SettingsPage.qml` (no wider than the
    view), `FlightMap.qml` (the

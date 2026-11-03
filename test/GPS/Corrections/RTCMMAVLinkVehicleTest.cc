@@ -95,14 +95,12 @@ void RTCMMAVLinkVehicleTest::_replayExcludedFromLiveAdmissions()
     sender.submitToOutputs(payload);
     QCOMPARE(sender.totalBytesSubmitted(), 0ULL);
 
-    expectAppMessage(QRegularExpression(QStringLiteral("Connected to Vehicle [0-9]+")));
     const auto live = createMockLink(QStringLiteral("Live corrections"));
     QVERIFY(live);
     auto* mockLink = qobject_cast<MockLink*>(live.get());
     QVERIFY(mockLink);
     auto* vehicles = MultiVehicleManager::instance();
     QTRY_VERIFY_WITH_TIMEOUT(vehicles->getVehicleById(mockLink->vehicleId()), TestTimeout::mediumMs());
-    verifyExpectedLogMessage();
     auto* liveVehicle = vehicles->getVehicleById(mockLink->vehicleId());
     QVERIFY(liveVehicle);
     QVERIFY(liveVehicle != replayVehicle);
