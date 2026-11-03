@@ -104,6 +104,11 @@ const QVariantList &QGCCorePlugin::analyzePages()
             QUrl::fromUserInput(QStringLiteral("qrc:/qml/QGroundControl/AnalyzeView/MAVLinkInspector/MAVLinkInspectorPage.qml")),
             QUrl::fromUserInput(QStringLiteral("qrc:/qmlimages/MAVLinkInspector.svg")),
             nullptr, true /* requiresVehicle */)),
+        // Titan: TitanPlanner's Link Stats (src/TitanLinkStats), which also reads a link with no vehicle on it yet
+        QVariant::fromValue(new QmlComponentInfo(
+            tr("Link Stats"),
+            QUrl::fromUserInput(QStringLiteral("qrc:/qml/QGroundControl/TitanLinkStats/LinkStatsPage.qml")),
+            QUrl::fromUserInput(QStringLiteral("qrc:/qmlimages/TelemRSSI.svg")))),
         QVariant::fromValue(new QmlComponentInfo(
             tr("Vibration"),
             QUrl::fromUserInput(QStringLiteral("qrc:/qml/QGroundControl/AnalyzeView/Vibration/VibrationPage.qml")),
