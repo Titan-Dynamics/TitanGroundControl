@@ -46,6 +46,7 @@ rather than in `AGENTS.md` / `CLAUDE.md`, which are upstream files.
 | Help page: source code and release links, and an updater from the GitHub releases (stable or development) | `src/TitanUpdater/` (`TitanUpdater.*`, a QML singleton with its channel in INI group `TitanUpdater`; `TitanHelpSection.qml`), above upstream's links in `src/AppSettings/HelpSettings.qml`; tests in `test/TitanUpdater/` |
 | Video sources listed again when a camera is plugged in or out, and a Refresh button by the source | `refreshVideoSources` and `QMediaDevices::videoInputsChanged` in `src/Settings/VideoSettings.*`, `src/QmlControls/VideoSourceSelector.qml` (the source dropdown and Refresh), used as a component control in `src/AppSettings/pages/Video.SettingsUI.json` |
 | USB cameras and capture cards on Android through the app's own UVC driver, where Android's camera service does not list them | `src/TitanUsbCamera/` (`UsbCameraDevices.*`, the sources named "USB Camera: <product>"; `TitanUsbCamera.*`, a QML element feeding a VideoOutput's sink; `UvcStream.*`, libuvc on libusb, both built from CPM sources for Android only), `android/src/org/mavlink/qgroundcontrol/TitanUsbCameraManager.java` (USB permission, file descriptors, plugging in and out) and its keep rule in `android/proguard-rules.pro`; hooks in `UVCReceiver.cc`, `VideoSettings.cc`, `VideoManager.cc` and `FlightDisplayViewUVC.qml` |
+| Link Stats under Analyze Tools, after MAVLink Inspector: TitanPlanner's Link Stats (bytes and packets each way, their rates, lost packets, quality, the longest gap between packets, a Link Bandwidth chart) | `src/TitanLinkStats/` (`LinkStats.*`, the statistics in one-second steps; `LinkStatsController.*`, a QML element on the vehicle's link; `LinkStatsPage.qml`), its entry in `analyzePages()` in `src/API/QGCCorePlugin.cc`; tests in `test/TitanLinkStats/` |
 | Fork defaults | `src/Settings/*.SettingsGroup.json` (audio muted, 10 km guided max altitude, no go-to distance limit, the compass's additional heading indicators, camera controls hidden, Google maps, aspect-ratio dropdown, the Titan HUD over video), indoor palette on mobile in `QGCCorePlugin.cc` |
 | MSVC build flags | `/bigobj` in `CMakeLists.txt`, `/Zc:preprocessor` in `cmake/Toolchain.cmake` |
 
@@ -227,6 +228,13 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   than queueing them. The sources sit beside Qt's cameras as "USB Camera: <product>"; one chosen before it is
   plugged in opens when it is, as `VideoManager` re-reads the source whenever the list changes (`enumsChanged`),
   and the Qt `Camera` stays off for these (`hasCameraDevice`), as it would otherwise open the default camera.
+- **Link Stats** works as TitanPlanner's `Controls/ConnectionStats.cs`: received bytes, packets and quality over
+  the last 3 s and sent bytes over 5 s, lost packets from the gaps in each sender's sequence numbers (as
+  `MAVLinkProtocol` counts them), the longest gap between packets since Reset, and a Link Bandwidth chart of each
+  second's bytes each way, 30 s wide and scrolling, its Min/Max/Mean over the last minute. It reads the active
+  vehicle's primary link, or the first link while no vehicle is connected, and starts afresh when that link
+  changes. The chart is the MAVLink Inspector's Qt Graphs `GraphsView` and styling, not a new widget.
+  TitanPlanner's MAVLink 2 and signing switches were left out at the user's request.
 - The vehicle models are TitanPlanner's STLs decimated to 8000 triangles, kept in Mission Planner's frame
   (millimetres): `Map3DModel` rotates them -90 deg about Z and the model matrix scales to metres, exactly as
   for a custom STL. Regenerate them with `tools/titan/convert_vehicle_models.py` (needs a TitanPlanner checkout,
@@ -288,6 +296,9 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   Release or Profile build.
 - `JsonResourceAuditTest` passes but takes about two minutes in a Debug build, past ctest's 60 s limit; run
   `TitanGroundControl.exe --unittest:JsonResourceAuditTest --allow-multiple` directly to see it finish.
+- Run a test directly on Windows with Qt's `bin` on `PATH` (ctest's runs exit with 0xc0000135, a missing DLL), and
+  for a test that loads QML, `QT_QPA_PLATFORM=offscreen` with `QT_QPA_FONTDIR=C:/Windows/Fonts`: otherwise the
+  offscreen platform warns it has no font directory, which strict tests count as a failure.
 
 ## Syncing with Upstream
 
@@ -318,7 +329,8 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
    (category, ground and threat fields, the internet source, the sender, the echo filter and COLLISION),
    `Vehicle.cc` (COLLISION routed to `ADSBVehicleManager`), `FlyViewMap.qml` (the `TitanAdsbMapItem` delegate),
    `QGCApplication.cc` (`AdsbIconProvider`), `deploy/linux/AppRun` (`TitanGroundControl` first among the binary
-   names), `SettingsPage.qml` (no wider than the view), `FlightMap.qml` (the
+   names), `QGCCorePlugin.cc` (the Link Stats entry in `analyzePages()`), `SettingsPage.qml` (no wider than the
+   view), `FlightMap.qml` (the
    smooth wheel zoom), `BatteryFactGroupListModel.*` and `BatteryFact.json` (`mahPerKm`, `whPerKm`),
    `FlyViewToolStripActionList.qml` (`Map3DShowAction`, `Map3DSettingsAction`), `FlightDisplayViewVideo.qml`
    (`TitanHud` and its waiting message, `TvStatic` in place of upstream's deleted `NoVideoBackground.jpg`, the

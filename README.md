@@ -60,6 +60,10 @@ Set it up under **Application Settings → Titan AI** (Claude API key required; 
 - **Sent to the autopilot for avoidance**, with the aircraft it flags as threats shown in red.
 - **An icon for each kind of aircraft**, with its details on hover or tap.
 
+### Analyze tools
+
+- **Link Stats**, as in TitanPlanner: bytes and packets each way, lost packets, link quality, the longest gap between packets, and a chart of the link's bandwidth.
+
 ### Settings and setup
 
 - **Split view**: Settings and Vehicle Configuration open beside the map, which stays usable, or at full width, as you last left them.
