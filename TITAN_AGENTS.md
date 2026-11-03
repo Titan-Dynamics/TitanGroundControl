@@ -315,7 +315,8 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
    `FlyViewTopRightPanel.qml` (`showCameraControls`), `ADSB.h`, `ADSBVehicle.*` and `ADSBVehicleManager.*`
    (category, ground and threat fields, the internet source, the sender, the echo filter and COLLISION),
    `Vehicle.cc` (COLLISION routed to `ADSBVehicleManager`), `FlyViewMap.qml` (the `TitanAdsbMapItem` delegate),
-   `QGCApplication.cc` (`AdsbIconProvider`), `SettingsPage.qml` (no wider than the view), `FlightMap.qml` (the
+   `QGCApplication.cc` (`AdsbIconProvider`), `deploy/linux/AppRun` (`TitanGroundControl` first among the binary
+   names), `SettingsPage.qml` (no wider than the view), `FlightMap.qml` (the
    smooth wheel zoom), `BatteryFactGroupListModel.*` and `BatteryFact.json` (`mahPerKm`, `whPerKm`),
    `FlyViewToolStripActionList.qml` (`Map3DShowAction`, `Map3DSettingsAction`), `FlightDisplayViewVideo.qml`
    (`TitanHud` and its waiting message, `TvStatic` in place of upstream's deleted `NoVideoBackground.jpg`, the

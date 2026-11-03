@@ -81,7 +81,9 @@ export PYTHONNOUSERSITE=1
 export XDG_DATA_DIRS="${APPDIR}/usr/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
 
 QGC_BINARY=""
-for expected_name in QGroundControl Custom-QGroundControl; do
+# Titan: the fork's binary is TitanGroundControl. The fallback below would otherwise pick usr/bin/qt.conf, which
+# sorts first in most locales and passes -x on the AppImage's FUSE mount, then fails with "Permission denied".
+for expected_name in TitanGroundControl QGroundControl Custom-QGroundControl; do
     if [ -x "${APPDIR}/usr/bin/${expected_name}" ] && [ -f "${APPDIR}/usr/bin/${expected_name}" ]; then
         QGC_BINARY="${APPDIR}/usr/bin/${expected_name}"
         break
