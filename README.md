@@ -49,6 +49,7 @@ Set it up under **Application Settings → Titan AI** (Claude API key required; 
 
 - **Mission Planner's 3D map, ported from TitanPlanner**: satellite terrain with real elevation, the vehicle model with its heading lines and trail, the mission and ADS-B traffic, seen from Mission Planner's chase, FPV or free-look cameras. It reads the 2D map's tile cache, so cached tiles work offline.
 - **Full screen or split**: the Fly View tool strip's **3D** button shows it in place of the 2D map, or beside it with **Split-screen** on. Configure it under **Application Settings → 3D Map**.
+- **Every connected vehicle**: the one you follow drawn solid and the rest half transparent, as on the 2D map, each in a pulsing ring under its name so it stands out however far off. Switching vehicles flies the camera over to the new one and starts its trail afresh.
 
 ### Titan HUD
 

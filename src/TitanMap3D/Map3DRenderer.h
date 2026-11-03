@@ -68,9 +68,40 @@ private:
         bool home = false;
     };
 
+    /// A vehicle model's vertices, shared by every vehicle drawn with it
+    struct ModelMesh
+    {
+        std::unique_ptr<QRhiBuffer> vertices;
+        int vertexCount = 0;
+        float radius = 0;  ///< of its farthest vertex from its origin, in the STL's millimetres
+    };
+
+    /// The uniforms of one of the other vehicles' models
+    struct GhostGpu
+    {
+        std::unique_ptr<QRhiBuffer> uniforms;
+        std::unique_ptr<QRhiShaderResourceBindings> bindings;
+    };
+
+    struct GhostDraw
+    {
+        const ModelMesh* mesh = nullptr;
+        size_t gpuIndex = 0;
+    };
+
+    /// Another vehicle's smoothed pose, and the terrain height last read under it
+    struct OtherVehicleState
+    {
+        Map3D::VehicleTracker tracker;
+        double groundHeight = 0;
+        bool groundKnown = false;
+    };
+
     // Scene
     bool _prepareView(double now);
     QPair<double, double> _followMap2D();
+    void _updateOtherVehicles(double now);
+    void _flyCamera(double now);
     void _updateGroundHeight(double lat, double lng);
     void _updateTerrain(const QMatrix4x4& terrainProjection, double viewRadius, double fovY,
                         QRhiResourceUpdateBatch* rub);
@@ -94,12 +125,18 @@ private:
     void _releasePipelines();
     QRhiGraphicsPipeline* _pipeline(const QString& vertex, const QString& fragment, const QRhiVertexInputLayout& layout,
                                     QRhiShaderResourceBindings* layoutBindings, QRhiGraphicsPipeline::Topology topology,
-                                    bool depthTest, bool depthWrite, bool blend);
+                                    bool depthTest, bool depthWrite, bool blend, bool colorWrite = true);
     void _prepareLines(LineBatch& batch, const QMatrix4x4& mvp, const QSize& size, QRhiResourceUpdateBatch* rub);
     void _drawLines(QRhiCommandBuffer* cb, LineBatch& batch, QRhiGraphicsPipeline* pipeline,
                     const QRhiViewport& viewport);
     QRhiTexture* _labelTexture(const QString& label, QRhiResourceUpdateBatch* rub);
-    void _ensureModel(QRhiResourceUpdateBatch* rub);
+    TexturedQuads* _vehicleLabel(const QString& label, QRhiResourceUpdateBatch* rub);
+    void _ensureQuadBindings(TexturedQuads& quads);
+    const ModelMesh* _modelMesh(const QString& path, QRhiResourceUpdateBatch* rub);
+    void _writeModelUniforms(QRhiBuffer* buffer, const Map3D::VehicleTracker& vehicle, const QMatrix4x4& viewProjection,
+                             const QColor& color, QRhiResourceUpdateBatch* rub) const;
+    void _buildOtherVehicles(const QMatrix4x4& viewProjection, const QSize& size, double now,
+                             QRhiResourceUpdateBatch* rub);
     void _ensureClouds(QRhiResourceUpdateBatch* rub);
 
     QRhi* _rhi = nullptr;
@@ -182,14 +219,29 @@ private:
     QHash<QString, std::shared_ptr<TexturedQuads>> _labelQuads;
     QList<QuadDraw> _quadDraws;  ///< in draw order: far to near, home last
 
-    // Vehicle model
-    QString _modelPath;
-    QFuture<std::vector<float>> _modelFuture;
-    QString _pendingModelPath;
-    std::unique_ptr<QRhiBuffer> _modelVertices;
+    // Vehicle models, by file, loaded off the render thread
+    QHash<QString, std::shared_ptr<ModelMesh>> _modelMeshes;
+    QHash<QString, QFuture<std::vector<float>>> _modelLoads;
     std::unique_ptr<QRhiBuffer> _modelUniforms;
     std::unique_ptr<QRhiShaderResourceBindings> _modelBindings;
-    int _modelVertexCount = 0;
+
+    // The other vehicles, at half opacity: depth first, then the colour blended once over the nearest surface. Each
+    // sits in a ring, under its name, that keeps it in sight however far off it is.
+    QHash<int, OtherVehicleState> _otherVehicles;
+    std::vector<GhostGpu> _ghostGpu;
+    std::vector<GhostDraw> _ghostDraws;
+    std::unique_ptr<QRhiGraphicsPipeline> _ghostDepthPipeline;
+    std::unique_ptr<QRhiGraphicsPipeline> _ghostPipeline;
+    LineBatch _otherVehicleLines;
+    QHash<QString, std::shared_ptr<TexturedQuads>> _vehicleLabels;
+    std::unique_ptr<QRhiBuffer> _vehicleLabelVertices;
+    QList<QuadDraw> _vehicleLabelDraws;
+
+    // Following another vehicle
+    quint64 _vehicleGeneration = 0;
+    bool _followingVehicle = false;  ///< the last frame chased a vehicle
+    Map3D::CameraPose _lastCamera;   ///< as last drawn, where a flight to another vehicle starts
+    Map3D::CameraFlight _cameraFlight;
 
     // Clouds
     std::unique_ptr<QRhiTexture> _cloudTexture;

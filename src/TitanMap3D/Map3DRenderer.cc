@@ -5,6 +5,7 @@
 
 #include <QtConcurrent/QtConcurrentRun>
 #include <QtCore/QFile>
+#include <QtCore/QSet>
 #include <QtCore/QTime>
 #include <QtCore/QtMath>
 #include <QtGui/QFont>
@@ -36,6 +37,22 @@ constexpr double kMinMarkerDistance = 61.0;  // 200 ft
 constexpr double kAdsbMaxDistance = 50000;
 constexpr double kAdsbMaxAgeSeconds = 30;
 constexpr int kTrailMaxPoints = 200 * 15;
+/// The other vehicles are drawn at half opacity, as the 2D map draws them
+constexpr float kOtherVehicleOpacity = 0.5f;
+/// The ring round each of them: never smaller on screen than this, nor tighter than the model. Every couple of
+/// seconds a ping spreads out from it and fades.
+constexpr double kRingMinPixels = 15;
+constexpr double kRingModelMargin = 1.25;
+constexpr double kPingPeriodSeconds = 2.4;
+constexpr double kPingSeconds = 1.2;
+constexpr double kPingGrowth = 1.5;
+/// The vehicle's name above its ring
+constexpr double kVehicleLabelPixels = 24;
+constexpr double kVehicleLabelGapPixels = 3;
+constexpr int kVehicleLabelWidth = 256;
+constexpr int kVehicleLabelHeight = 64;
+/// How far above the ground the camera stays on its flight to another vehicle
+constexpr double kFlightGroundClearance = 2;
 constexpr int kLabelTextureSize = 128;
 constexpr float kLightDirection[3] = {0.4f, 0.6f, 0.7f};
 constexpr int kTerrainUniformSize = 64 + 64 + 16 + 16;
@@ -92,26 +109,44 @@ float wrap(double value)
     return static_cast<float>(value - std::floor(value));
 }
 
-QImage labelImage(const QString& label)
+QImage labelImage(const QString& label, const QSize& size, int fontPixels, qreal outline)
 {
-    // White Arial Bold with a black outline, centred in a square, as Mission Planner draws its labels
-    QImage image(kLabelTextureSize, kLabelTextureSize, QImage::Format_ARGB32_Premultiplied);
+    // White Arial Bold with a black outline, centred, as Mission Planner draws its labels
+    QImage image(size, QImage::Format_ARGB32_Premultiplied);
     image.fill(Qt::transparent);
     QPainter painter(&image);
     painter.setRenderHint(QPainter::Antialiasing);
     QFont font(QStringLiteral("Arial"));
     font.setBold(true);
-    font.setPixelSize(48);
+    font.setPixelSize(fontPixels);
     QPainterPath path;
     path.addText(0, 0, font, label);
     const QRectF bounds = path.boundingRect();
-    path.translate(kLabelTextureSize / 2.0 - bounds.center().x(), kLabelTextureSize / 2.0 - bounds.center().y());
-    painter.setPen(QPen(Qt::black, 6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    path.translate(size.width() / 2.0 - bounds.center().x(), size.height() / 2.0 - bounds.center().y());
+    painter.setPen(QPen(Qt::black, outline, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
     painter.setBrush(Qt::NoBrush);
     painter.drawPath(path);
     painter.fillPath(path, Qt::white);
     painter.end();
     return image.convertToFormat(QImage::Format_RGBA8888);
+}
+
+/// A textured quad's two triangles (position, then texture coordinates), the image's top left at topLeft. Returns its
+/// first vertex.
+int appendQuad(std::vector<float>& vertices, const QVector3D& topLeft, const QVector3D& topRight,
+               const QVector3D& bottomLeft, const QVector3D& bottomRight)
+{
+    const int first = static_cast<int>(vertices.size() / 5);
+    const auto corner = [&vertices](const QVector3D& p, float u, float v) {
+        vertices.insert(vertices.end(), {p.x(), p.y(), p.z(), u, v});
+    };
+    corner(topLeft, 0, 0);
+    corner(bottomLeft, 0, 1);
+    corner(topRight, 1, 0);
+    corner(topRight, 1, 0);
+    corner(bottomLeft, 0, 1);
+    corner(bottomRight, 1, 1);
+    return first;
 }
 
 }  // namespace
@@ -120,8 +155,8 @@ Map3DRenderer::Map3DRenderer() = default;
 
 Map3DRenderer::~Map3DRenderer()
 {
-    if (_modelFuture.isRunning()) {
-        _modelFuture.waitForFinished();
+    for (QFuture<std::vector<float>>& load : _modelLoads) {
+        load.waitForFinished();
     }
 }
 
@@ -134,6 +169,12 @@ void Map3DRenderer::initialize(QRhiCommandBuffer* cb)
     if (_rhi != rhi()) {
         _releasePipelines();
         _releaseAllTerrain();
+        _modelMeshes.clear();
+        _modelUniforms.reset();
+        _modelBindings.reset();
+        _ghostGpu.clear();
+        _vehicleLabels.clear();
+        _vehicleLabelVertices.reset();
         _rhi = rhi();
     }
     if ((_sampleCount != renderTarget()->sampleCount()) || (_colorFormat != _targetFormat()) || !_terrainPipeline) {
@@ -159,6 +200,8 @@ void Map3DRenderer::_releasePipelines()
     _quadPipeline.reset();
     _quadNoDepthPipeline.reset();
     _modelPipeline.reset();
+    _ghostDepthPipeline.reset();
+    _ghostPipeline.reset();
     _cloudPipeline.reset();
 }
 
@@ -166,7 +209,7 @@ QRhiGraphicsPipeline* Map3DRenderer::_pipeline(const QString& vertex, const QStr
                                                const QRhiVertexInputLayout& layout,
                                                QRhiShaderResourceBindings* layoutBindings,
                                                QRhiGraphicsPipeline::Topology topology, bool depthTest, bool depthWrite,
-                                               bool blend)
+                                               bool blend, bool colorWrite)
 {
     QRhiGraphicsPipeline* const pipeline = _rhi->newGraphicsPipeline();
     pipeline->setShaderStages(
@@ -188,6 +231,10 @@ QRhiGraphicsPipeline* Map3DRenderer::_pipeline(const QString& vertex, const QStr
         targetBlend.srcAlpha = QRhiGraphicsPipeline::One;
         targetBlend.dstAlpha = QRhiGraphicsPipeline::OneMinusSrcAlpha;
         pipeline->setTargetBlends({targetBlend});
+    } else if (!colorWrite) {
+        QRhiGraphicsPipeline::TargetBlend depthOnly;
+        depthOnly.colorWrite = {};
+        pipeline->setTargetBlends({depthOnly});
     }
     if (!pipeline->create()) {
         qCWarning(Map3DRendererLog) << "pipeline creation failed for" << vertex << fragment;
@@ -264,6 +311,13 @@ void Map3DRenderer::_createPipelines()
         {{0, 0, QRhiVertexInputAttribute::Float3, 0}, {0, 1, QRhiVertexInputAttribute::Float3, 3 * sizeof(float)}});
     _modelPipeline.reset(_pipeline(QStringLiteral("model.vert"), QStringLiteral("color.frag"), modelLayout,
                                    _uniformLayout.get(), QRhiGraphicsPipeline::Triangles, true, true, false));
+    // A translucent model shows only its nearest surface, as the 2D map's half-opaque icon does: its depth first,
+    // then its colour blended where that depth is
+    _ghostDepthPipeline.reset(_pipeline(QStringLiteral("model.vert"), QStringLiteral("color.frag"), modelLayout,
+                                        _uniformLayout.get(), QRhiGraphicsPipeline::Triangles, true, true, false,
+                                        false));
+    _ghostPipeline.reset(_pipeline(QStringLiteral("model.vert"), QStringLiteral("color.frag"), modelLayout,
+                                   _uniformLayout.get(), QRhiGraphicsPipeline::Triangles, true, false, true));
 
     QRhiVertexInputLayout cloudLayout;
     cloudLayout.setBindings({{3 * sizeof(float)}});
@@ -475,30 +529,22 @@ void Map3DRenderer::render(QRhiCommandBuffer* cb)
     _prepareLines(_indicatorLines, overlayViewProjection, size, rub);
     _prepareLines(_trailLines, overlayViewProjection, size, rub);
 
-    const bool drawModel = _input.connected && !_input.fpvMode;
-    if (drawModel) {
-        _ensureModel(rub);
+    // In FPV the camera is inside the followed vehicle, so only the others are drawn
+    const ModelMesh* const model = (_input.connected && !_input.fpvMode) ? _modelMesh(_input.modelPath, rub) : nullptr;
+    if (model) {
+        if (!_modelUniforms) {
+            _modelUniforms.reset(_rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, kModelUniformSize));
+            _modelUniforms->create();
+            _modelBindings.reset(_rhi->newShaderResourceBindings());
+            _modelBindings->setBindings({QRhiShaderResourceBinding::uniformBuffer(
+                0, QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage,
+                _modelUniforms.get())});
+            _modelBindings->create();
+        }
+        _writeModelUniforms(_modelUniforms.get(), _vehicle, overlayViewProjection, _input.vehicleColor, rub);
     }
-    if (drawModel && _modelVertexCount > 0) {
-        QMatrix4x4 model;
-        model.translate(static_cast<float>(_vehicle.x), static_cast<float>(_vehicle.y), static_cast<float>(_vehicle.z));
-        model.rotate(-_vehicle.yaw, 0, 0, 1);
-        model.rotate(_vehicle.pitch, 1, 0, 0);
-        model.rotate(_vehicle.roll, 0, 1, 0);
-        // The STL is in millimetres
-        const float scale = static_cast<float>(_input.vehicleScale / 1000.0);
-        model.scale(scale);
-        const float lightLength =
-            std::sqrt(kLightDirection[0] * kLightDirection[0] + kLightDirection[1] * kLightDirection[1] +
-                      kLightDirection[2] * kLightDirection[2]);
-        float uniforms[kModelUniformSize / 4];
-        writeMatrix(uniforms, model);
-        writeMatrix(uniforms + 16, overlayViewProjection * model);
-        writeVec4(uniforms + 32, kLightDirection[0] / lightLength, kLightDirection[1] / lightLength,
-                  kLightDirection[2] / lightLength, 0);
-        writeColor(uniforms + 36, _input.vehicleColor);
-        rub->updateDynamicBuffer(_modelUniforms.get(), 0, sizeof(uniforms), uniforms);
-    }
+    _buildOtherVehicles(overlayViewProjection, size, now, rub);
+    _prepareLines(_otherVehicleLines, overlayViewProjection, size, rub);
 
     // ---- Record
     cb->beginPass(target, horizon, {1.0f, 0}, rub);
@@ -559,13 +605,37 @@ void Map3DRenderer::render(QRhiCommandBuffer* cb)
     _drawLines(cb, _indicatorLines, _linePipeline.get(), overlayViewport);
     _drawLines(cb, _trailLines, _blendedLinePipeline.get(), overlayViewport);
 
-    if (drawModel && (_modelVertexCount > 0)) {
+    if (model) {
         cb->setGraphicsPipeline(_modelPipeline.get());
         cb->setViewport(overlayViewport);
         cb->setShaderResources(_modelBindings.get());
-        const QRhiCommandBuffer::VertexInput modelInput(_modelVertices.get(), 0);
+        const QRhiCommandBuffer::VertexInput modelInput(model->vertices.get(), 0);
         cb->setVertexInput(0, 1, &modelInput);
-        cb->draw(_modelVertexCount);
+        cb->draw(model->vertexCount);
+    }
+
+    // The other vehicles after the opaque one, farthest first, so a nearer one blends over a farther one
+    for (const GhostDraw& ghost : std::as_const(_ghostDraws)) {
+        const QRhiCommandBuffer::VertexInput ghostInput(ghost.mesh->vertices.get(), 0);
+        for (QRhiGraphicsPipeline* const pipeline : {_ghostDepthPipeline.get(), _ghostPipeline.get()}) {
+            cb->setGraphicsPipeline(pipeline);
+            cb->setViewport(overlayViewport);
+            cb->setShaderResources(_ghostGpu[ghost.gpuIndex].bindings.get());
+            cb->setVertexInput(0, 1, &ghostInput);
+            cb->draw(ghost.mesh->vertexCount);
+        }
+    }
+    _drawLines(cb, _otherVehicleLines, _blendedLinePipeline.get(), overlayViewport);
+    if (!_vehicleLabelDraws.isEmpty()) {
+        // Names never hide behind anything
+        const QRhiCommandBuffer::VertexInput labelInput(_vehicleLabelVertices.get(), 0);
+        cb->setGraphicsPipeline(_quadNoDepthPipeline.get());
+        cb->setViewport(overlayViewport);
+        for (const QuadDraw& draw : std::as_const(_vehicleLabelDraws)) {
+            cb->setShaderResources(draw.quads->bindings.get());
+            cb->setVertexInput(0, 1, &labelInput);
+            cb->draw(6, 1, draw.firstVertex, 0);
+        }
     }
 
     cb->endPass();
@@ -598,6 +668,17 @@ bool Map3DRenderer::_prepareView(double now)
     _updateGroundHeight(_viewLat, _viewLng);
 
     if (_input.connected) {
+        if (_input.vehicleGeneration != _vehicleGeneration) {
+            // Another vehicle followed: it is drawn where it is at once and its trail starts afresh, while the
+            // camera flies over to it from where it was
+            _vehicleGeneration = _input.vehicleGeneration;
+            _vehicle.reset();
+            _trail.clear();
+            if (_followingVehicle) {
+                _cameraFlight.start(_lastCamera, now);
+            }
+        }
+
         // The vehicle is drawn at the terrain under it plus its height above home, so it sits on the rendered ground.
         // Mission Planner reads that height synchronously; here it can arrive a few frames late, and the vehicle then
         // starts from it rather than easing up from where the last known height (sea level at first) put it. The
@@ -621,15 +702,75 @@ bool Map3DRenderer::_prepareView(double now)
         } else {
             _camera.chase(_vehicle, _input.cameraDistance, _input.cameraHeight, _input.cameraAngle);
         }
+        _flyCamera(now);
+        _followingVehicle = true;
     } else {
         // Free-look from 100 m above the 2D map's centre, starting from the last known heading
         _vehicle.reset();
+        _cameraFlight.stop();
+        _followingVehicle = false;
+        _vehicleGeneration = _input.vehicleGeneration;
         double x = 0;
         double y = 0;
         _frame.toLocal(_viewLat, _viewLng, x, y);
         _camera.look(x, y, _groundHeight + 100, _vehicle.yaw + _input.freeLookYaw, _input.freeLookPitch);
     }
+    _lastCamera = _camera.pose(_frame);
+    _updateOtherVehicles(now);
     return true;
+}
+
+void Map3DRenderer::_flyCamera(double now)
+{
+    // From the pose the camera had when another vehicle was picked to the one chasing it now
+    if (!_cameraFlight.active()) {
+        return;
+    }
+    double arc = 0;
+    CameraPose pose = _cameraFlight.update(_camera.pose(_frame), now, arc);
+    if (!_cameraFlight.active()) {
+        return;
+    }
+    double lat = 0;
+    double lng = 0;
+    _frame.toLatLng(pose.east - _frame.originEasting(), pose.north - _frame.originNorthing(), lat, lng);
+    bool groundKnown = false;
+    const double ground = _terrainHeight(lat, lng, groundKnown);
+    if (groundKnown) {
+        // Clear of the hills on the way, easing in and out so neither end of the flight moves
+        pose.up = std::max(pose.up, pose.up + (ground + kFlightGroundClearance - pose.up) * arc);
+    }
+    _camera.setPose(_frame, pose);
+}
+
+void Map3DRenderer::_updateOtherVehicles(double now)
+{
+    // Each one is drawn as the followed vehicle is, at the terrain under it plus its height above home, once that
+    // terrain height is known
+    QSet<int> present;
+    for (const OtherVehicle& other : std::as_const(_input.otherVehicles)) {
+        present.insert(other.id);
+        OtherVehicleState& state = _otherVehicles[other.id];
+        bool known = false;
+        const double ground = _terrainHeight(other.fix.lat, other.fix.lng, known);
+        if (known) {
+            if (!state.groundKnown) {
+                state.tracker.reset();
+            }
+            state.groundHeight = ground;
+            state.groundKnown = true;
+        }
+        if (!state.groundKnown) {
+            continue;
+        }
+        Fix fix = other.fix;
+        fix.alt = state.groundHeight + other.relativeAltitude;
+        fix.timeSeconds = std::max(fix.timeSeconds, now - kMaxDeadReckonSeconds);
+        state.tracker.update(_frame, fix, other.roll, other.pitch, other.yaw, state.groundHeight, 0, 0,
+                             _input.smoothMovement, other.armed, now);
+    }
+    _otherVehicles.removeIf(
+        [&present](QHash<int, OtherVehicleState>::iterator it) { return !present.contains(it.key()); });
 }
 
 QPair<double, double> Map3DRenderer::_followMap2D()
@@ -952,7 +1093,7 @@ QRhiTexture* Map3DRenderer::_labelTexture(const QString& label, QRhiResourceUpda
     auto it = _labelQuads.find(label);
     if (it == _labelQuads.end()) {
         auto quads = std::make_shared<TexturedQuads>();
-        const QImage image = labelImage(label);
+        const QImage image = labelImage(label, QSize(kLabelTextureSize, kLabelTextureSize), 48, 6);
         quads->texture.reset(_rhi->newTexture(QRhiTexture::RGBA8, image.size(), 1,
                                               QRhiTexture::MipMapped | QRhiTexture::UsedWithGenerateMips));
         quads->texture->create();
@@ -970,6 +1111,10 @@ void Map3DRenderer::_buildMarkers(QRhiResourceUpdateBatch* rub)
         _quadUniforms.reset(_rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, kQuadUniformSize));
         _quadUniforms->create();
     }
+    // Also the vehicles' names
+    float uniforms[16];
+    writeMatrix(uniforms, _rhi->clipSpaceCorrMatrix() * _overlayProjection * _view);
+    rub->updateDynamicBuffer(_quadUniforms.get(), 0, sizeof(uniforms), uniforms);
     const auto ensureTexture = [this, rub](TexturedQuads& quads, const QString& resource) {
         if (quads.texture) {
             return;
@@ -1047,21 +1192,6 @@ void Map3DRenderer::_buildMarkers(QRhiResourceUpdateBatch* rub)
     QList<PendingQuad> home;
     QHash<QString, int> labelUse;
 
-    const auto addQuad = [&vertices](const QVector3D& topLeft, const QVector3D& topRight, const QVector3D& bottomLeft,
-                                     const QVector3D& bottomRight) {
-        const int first = static_cast<int>(vertices.size() / 5);
-        const auto corner = [&vertices](const QVector3D& p, float u, float v) {
-            vertices.insert(vertices.end(), {p.x(), p.y(), p.z(), u, v});
-        };
-        corner(topLeft, 0, 0);
-        corner(bottomLeft, 0, 1);
-        corner(topRight, 1, 0);
-        corner(topRight, 1, 0);
-        corner(bottomLeft, 0, 1);
-        corner(bottomRight, 1, 1);
-        return first;
-    };
-
     for (const Marker& marker : std::as_const(markers)) {
         if ((marker.point.lat == 0) && (marker.point.lng == 0)) {
             continue;
@@ -1086,7 +1216,7 @@ void Map3DRenderer::_buildMarkers(QRhiResourceUpdateBatch* rub)
             return QVector3D(x + axisX * rh * markerHalfSize, y + axisY * rh * markerHalfSize, z + rv * markerHalfSize);
         };
         TexturedQuads* const markerQuads = marker.special ? &_markerAltQuads : &_markerQuads;
-        batch.append({markerQuads, addQuad(spun(-1, 1), spun(1, 1), spun(-1, -1), spun(1, -1))});
+        batch.append({markerQuads, appendQuad(vertices, spun(-1, 1), spun(1, 1), spun(-1, -1), spun(1, -1))});
         _output.markersDrawn++;
 
         // Letters sit centred in the marker; numbers sit above it. Mirrored so text reads correctly. Mission Planner
@@ -1100,7 +1230,8 @@ void Map3DRenderer::_buildMarkers(QRhiResourceUpdateBatch* rub)
         };
         _labelTexture(marker.label, rub);
         TexturedQuads* const labelQuads = _labelQuads.value(marker.label).get();
-        batch.append({labelQuads, addQuad(upright(-1, 1), upright(1, 1), upright(-1, -1), upright(1, -1))});
+        batch.append(
+            {labelQuads, appendQuad(vertices, upright(-1, 1), upright(1, 1), upright(-1, -1), upright(1, -1))});
     }
     if (vertices.empty()) {
         return;
@@ -1113,32 +1244,31 @@ void Map3DRenderer::_buildMarkers(QRhiResourceUpdateBatch* rub)
         _quadVertices->create();
     }
     rub->updateDynamicBuffer(_quadVertices.get(), 0, bytes, vertices.data());
-    float uniforms[16];
-    writeMatrix(uniforms, _rhi->clipSpaceCorrMatrix() * _overlayProjection * _view);
-    rub->updateDynamicBuffer(_quadUniforms.get(), 0, sizeof(uniforms), uniforms);
 
-    // Every quad is its own draw so the far-to-near order holds across textures; the quads of one texture
-    // share bindings
-    const auto bindingsFor = [this](TexturedQuads* quads) {
-        if (!quads->bindings) {
-            quads->bindings.reset(_rhi->newShaderResourceBindings());
-            quads->bindings->setBindings(
-                {QRhiShaderResourceBinding::uniformBuffer(
-                     0, QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage,
-                     _quadUniforms.get()),
-                 QRhiShaderResourceBinding::sampledTexture(1, QRhiShaderResourceBinding::FragmentStage,
-                                                           quads->texture.get(), _mipSampler.get())});
-            quads->bindings->create();
-        }
-    };
+    // Every quad is its own draw so the far-to-near order holds across textures
     for (const PendingQuad& quad : std::as_const(normal)) {
-        bindingsFor(quad.quads);
+        _ensureQuadBindings(*quad.quads);
         _quadDraws.append({quad.quads, quad.firstVertex, false});
     }
     for (const PendingQuad& quad : std::as_const(home)) {
-        bindingsFor(quad.quads);
+        _ensureQuadBindings(*quad.quads);
         _quadDraws.append({quad.quads, quad.firstVertex, true});
     }
+}
+
+void Map3DRenderer::_ensureQuadBindings(TexturedQuads& quads)
+{
+    // The quads of one texture share bindings
+    if (quads.bindings) {
+        return;
+    }
+    quads.bindings.reset(_rhi->newShaderResourceBindings());
+    quads.bindings->setBindings(
+        {QRhiShaderResourceBinding::uniformBuffer(
+             0, QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage, _quadUniforms.get()),
+         QRhiShaderResourceBinding::sampledTexture(1, QRhiShaderResourceBinding::FragmentStage, quads.texture.get(),
+                                                   _mipSampler.get())});
+    quads.bindings->create();
 }
 
 // ---------------------------------------------------------------------------
@@ -1190,47 +1320,196 @@ void Map3DRenderer::_buildVehicleOverlays()
     }
 }
 
-void Map3DRenderer::_ensureModel(QRhiResourceUpdateBatch* rub)
+const Map3DRenderer::ModelMesh* Map3DRenderer::_modelMesh(const QString& path, QRhiResourceUpdateBatch* rub)
 {
-    if ((_input.modelPath != _modelPath) && (_input.modelPath != _pendingModelPath)) {
-        if (_modelFuture.isRunning()) {
-            _modelFuture.waitForFinished();
-        }
-        _pendingModelPath = _input.modelPath;
-        // Parsed off the render thread: a large custom ASCII STL can take a second
-        _modelFuture = QtConcurrent::run([path = _pendingModelPath] {
-            QString error;
-            std::vector<float> vertices = Model::loadStl(path, &error);
-            if (vertices.empty()) {
-                qCWarning(Map3DRendererLog) << "could not load vehicle model" << path << error;
-            }
-            return vertices;
-        });
+    // Null until the file has loaded, and for good if it can't be
+    if (path.isEmpty()) {
+        return nullptr;
     }
-    if (_pendingModelPath.isEmpty() || !_modelFuture.isFinished()) {
-        return;
+    if (const auto mesh = _modelMeshes.constFind(path); mesh != _modelMeshes.cend()) {
+        return ((*mesh)->vertexCount > 0) ? mesh->get() : nullptr;
+    }
+    const auto load = _modelLoads.find(path);
+    if (load == _modelLoads.end()) {
+        // Parsed off the render thread: a large custom ASCII STL can take a second
+        _modelLoads.insert(path, QtConcurrent::run([path] {
+                               QString error;
+                               std::vector<float> vertices = Model::loadStl(path, &error);
+                               if (vertices.empty()) {
+                                   qCWarning(Map3DRendererLog) << "could not load vehicle model" << path << error;
+                               }
+                               return vertices;
+                           }));
+        return nullptr;
+    }
+    if (!load->isFinished()) {
+        return nullptr;
     }
 
-    const std::vector<float> vertices = _modelFuture.result();
-    _modelPath = _pendingModelPath;
-    _pendingModelPath.clear();
-    _modelVertexCount = static_cast<int>(vertices.size() / 6);
-    if (_modelVertexCount == 0) {
+    const std::vector<float> vertices = load->result();
+    _modelLoads.erase(load);
+    const auto mesh = std::make_shared<ModelMesh>();
+    mesh->vertexCount = static_cast<int>(vertices.size() / 6);
+    for (size_t i = 0; i + 2 < vertices.size(); i += 6) {
+        mesh->radius = std::max(mesh->radius, std::hypot(vertices[i], vertices[i + 1], vertices[i + 2]));
+    }
+    if (mesh->vertexCount > 0) {
+        mesh->vertices.reset(_rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer,
+                                             static_cast<quint32>(vertices.size() * sizeof(float))));
+        mesh->vertices->create();
+        rub->uploadStaticBuffer(mesh->vertices.get(), vertices.data());
+    }
+    _modelMeshes.insert(path, mesh);
+    return (mesh->vertexCount > 0) ? mesh.get() : nullptr;
+}
+
+void Map3DRenderer::_writeModelUniforms(QRhiBuffer* buffer, const VehicleTracker& vehicle,
+                                        const QMatrix4x4& viewProjection, const QColor& color,
+                                        QRhiResourceUpdateBatch* rub) const
+{
+    QMatrix4x4 model;
+    model.translate(static_cast<float>(vehicle.x), static_cast<float>(vehicle.y), static_cast<float>(vehicle.z));
+    model.rotate(-vehicle.yaw, 0, 0, 1);
+    model.rotate(vehicle.pitch, 1, 0, 0);
+    model.rotate(vehicle.roll, 0, 1, 0);
+    // The STL is in millimetres
+    model.scale(static_cast<float>(_input.vehicleScale / 1000.0));
+    const float lightLength =
+        std::sqrt(kLightDirection[0] * kLightDirection[0] + kLightDirection[1] * kLightDirection[1] +
+                  kLightDirection[2] * kLightDirection[2]);
+    float uniforms[kModelUniformSize / 4];
+    writeMatrix(uniforms, model);
+    writeMatrix(uniforms + 16, viewProjection * model);
+    writeVec4(uniforms + 32, kLightDirection[0] / lightLength, kLightDirection[1] / lightLength,
+              kLightDirection[2] / lightLength, 0);
+    writeColor(uniforms + 36, color);
+    rub->updateDynamicBuffer(buffer, 0, sizeof(uniforms), uniforms);
+}
+
+void Map3DRenderer::_buildOtherVehicles(const QMatrix4x4& viewProjection, const QSize& size, double now,
+                                        QRhiResourceUpdateBatch* rub)
+{
+    struct Other
+    {
+        const VehicleTracker* vehicle = nullptr;
+        const ModelMesh* mesh = nullptr;
+        QString label;
+        double distance = 0;
+    };
+
+    _ghostDraws.clear();
+    _otherVehicleLines.lines.clear();
+    _vehicleLabelDraws.clear();
+    std::vector<Other> others;
+    for (const OtherVehicle& other : std::as_const(_input.otherVehicles)) {
+        const auto state = _otherVehicles.constFind(other.id);
+        if ((state == _otherVehicles.cend()) || !state->groundKnown) {
+            continue;
+        }
+        const VehicleTracker& vehicle = state->tracker;
+        const double dx = vehicle.x - _camera.x;
+        const double dy = vehicle.y - _camera.y;
+        const double dz = vehicle.z - _camera.z;
+        others.push_back(
+            {&vehicle, _modelMesh(other.modelPath, rub), other.label, std::sqrt(dx * dx + dy * dy + dz * dz)});
+    }
+    // Farthest first, so a nearer one blends over a farther one
+    std::sort(others.begin(), others.end(), [](const Other& a, const Other& b) { return a.distance > b.distance; });
+
+    QColor modelColor = _input.vehicleColor;
+    modelColor.setAlphaF(modelColor.alphaF() * kOtherVehicleOpacity);
+    const QColor& color = _input.vehicleColor;
+    const float dpr = static_cast<float>(_input.devicePixelRatio);
+    // What a pixel spans one metre from the camera, in metres
+    const double pixelSpan = std::tan(qDegreesToRadians(_input.fieldOfView) / 2) / (std::max(1, size.height()) / 2.0);
+    const double ping = std::fmod(now, kPingPeriodSeconds) / kPingSeconds;
+    std::vector<float> labelVertices;
+
+    for (const Other& other : others) {
+        const VehicleTracker& vehicle = *other.vehicle;
+        if (other.mesh) {
+            const size_t gpuIndex = _ghostDraws.size();
+            if (gpuIndex == _ghostGpu.size()) {
+                GhostGpu gpu;
+                gpu.uniforms.reset(_rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, kModelUniformSize));
+                gpu.uniforms->create();
+                gpu.bindings.reset(_rhi->newShaderResourceBindings());
+                gpu.bindings->setBindings({QRhiShaderResourceBinding::uniformBuffer(
+                    0, QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage,
+                    gpu.uniforms.get())});
+                gpu.bindings->create();
+                _ghostGpu.push_back(std::move(gpu));
+            }
+            _writeModelUniforms(_ghostGpu[gpuIndex].uniforms.get(), vehicle, viewProjection, modelColor, rub);
+            _ghostDraws.push_back({other.mesh, gpuIndex});
+        }
+        if (other.distance < 1) {
+            continue;
+        }
+
+        // A ring facing the camera, outlined in black so it shows over any ground, with the ping under it
+        const QVector3D center(static_cast<float>(vehicle.x), static_cast<float>(vehicle.y),
+                               static_cast<float>(vehicle.z));
+        const double viewX = (vehicle.x - _camera.x) / other.distance;
+        const double viewY = (vehicle.y - _camera.y) / other.distance;
+        const double viewZ = (vehicle.z - _camera.z) / other.distance;
+        const double metresPerPixel = other.distance * pixelSpan;
+        const double modelRadius = other.mesh ? other.mesh->radius * _input.vehicleScale / 1000.0 : 0;
+        const double radius = std::max(modelRadius * kRingModelMargin, kRingMinPixels * dpr * metresPerPixel);
+        const auto addRing = [&](double ringRadius, float opacity) {
+            Overlays::addBillboardCircle(_otherVehicleLines.lines, center, ringRadius, viewX, viewY, viewZ,
+                                         {0, 0, 0, 0.55f * opacity}, 4.0f * dpr);
+            Overlays::addBillboardCircle(_otherVehicleLines.lines, center, ringRadius, viewX, viewY, viewZ,
+                                         {color.redF(), color.greenF(), color.blueF(), opacity}, 2.0f * dpr);
+        };
+        if (ping < 1) {
+            const double spread = 1 - std::pow(1 - ping, 3);
+            addRing(radius * (1 + kPingGrowth * spread), static_cast<float>((1 - ping) * (1 - ping)));
+        }
+        addRing(radius, 1);
+
+        // Its name just above the ring
+        QVector3D right;
+        QVector3D up;
+        Overlays::billboardAxes(viewX, viewY, viewZ, right, up);
+        const float halfHeight = static_cast<float>(kVehicleLabelPixels * dpr * metresPerPixel / 2);
+        const float halfWidth = halfHeight * kVehicleLabelWidth / kVehicleLabelHeight;
+        const QVector3D labelCenter =
+            center + up * static_cast<float>(radius + kVehicleLabelGapPixels * dpr * metresPerPixel + halfHeight);
+        const QVector3D across = right * halfWidth;
+        const QVector3D upward = up * halfHeight;
+        const int firstVertex = appendQuad(labelVertices, labelCenter - across + upward, labelCenter + across + upward,
+                                           labelCenter - across - upward, labelCenter + across - upward);
+        _vehicleLabelDraws.append({_vehicleLabel(other.label, rub), firstVertex, false});
+    }
+
+    if (labelVertices.empty()) {
         return;
     }
-    _modelVertices.reset(_rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer,
-                                         static_cast<quint32>(vertices.size() * sizeof(float))));
-    _modelVertices->create();
-    rub->uploadStaticBuffer(_modelVertices.get(), vertices.data());
-    if (!_modelUniforms) {
-        _modelUniforms.reset(_rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, kModelUniformSize));
-        _modelUniforms->create();
-        _modelBindings.reset(_rhi->newShaderResourceBindings());
-        _modelBindings->setBindings({QRhiShaderResourceBinding::uniformBuffer(
-            0, QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage,
-            _modelUniforms.get())});
-        _modelBindings->create();
+    const quint32 bytes = static_cast<quint32>(labelVertices.size() * sizeof(float));
+    if (!_vehicleLabelVertices || (_vehicleLabelVertices->size() < bytes)) {
+        _vehicleLabelVertices.reset(
+            _rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::VertexBuffer, std::max<quint32>(bytes * 2, 4 * 1024)));
+        _vehicleLabelVertices->create();
     }
+    rub->updateDynamicBuffer(_vehicleLabelVertices.get(), 0, bytes, labelVertices.data());
+}
+
+Map3DRenderer::TexturedQuads* Map3DRenderer::_vehicleLabel(const QString& label, QRhiResourceUpdateBatch* rub)
+{
+    auto it = _vehicleLabels.find(label);
+    if (it == _vehicleLabels.end()) {
+        auto quads = std::make_shared<TexturedQuads>();
+        const QImage image = labelImage(label, QSize(kVehicleLabelWidth, kVehicleLabelHeight), 36, 5);
+        quads->texture.reset(_rhi->newTexture(QRhiTexture::RGBA8, image.size(), 1,
+                                              QRhiTexture::MipMapped | QRhiTexture::UsedWithGenerateMips));
+        quads->texture->create();
+        rub->uploadTexture(quads->texture.get(), image);
+        rub->generateMips(quads->texture.get());
+        it = _vehicleLabels.insert(label, quads);
+    }
+    _ensureQuadBindings(*it.value());
+    return it.value().get();
 }
 
 // ---------------------------------------------------------------------------
@@ -1308,10 +1587,10 @@ void Map3DRenderer::_buildAdsb(const QMatrix4x4& viewProjection, const QSize& si
             screen.distance = plane.distance;
             _output.adsb.append(screen);
         }
-        Overlays::addBillboardCircle(_adsbLines.lines, QVector3D(x, y, z), radius, dx / distanceToCamera,
-                                     dy / distanceToCamera, dz / distanceToCamera,
-                                     plane.onGround ? Rgba{0.7f, 0.7f, 0.7f, 1.0f} : Overlays::adsbColor(plane.distance),
-                                     width);
+        Overlays::addBillboardCircle(
+            _adsbLines.lines, QVector3D(x, y, z), radius, dx / distanceToCamera, dy / distanceToCamera,
+            dz / distanceToCamera, plane.onGround ? Rgba{0.7f, 0.7f, 0.7f, 1.0f} : Overlays::adsbColor(plane.distance),
+            width);
     }
 }
 

@@ -183,6 +183,126 @@ void Map3DTest::_firstPersonStaysAboveGround()
     QVERIFY(camera.lookZ > camera.z);
 }
 
+void Map3DTest::_cameraPoseRoundTrips()
+{
+    WorldFrame frame;
+    frame.update(kLat, kLng);
+    VehicleTracker vehicle;
+    vehicle.x = 120;
+    vehicle.y = -40;
+    vehicle.z = 300;
+    vehicle.yaw = 30;
+    CameraRig camera;
+    camera.chase(vehicle, 10, 2, 0);
+
+    const CameraPose pose = camera.pose(frame);
+    QCOMPARE(pose.zone, frame.zone());
+    QVERIFY(std::abs(pose.east - (camera.x + frame.originEasting())) < 1e-6);
+    QVERIFY(std::abs(pose.north - (camera.y + frame.originNorthing())) < 1e-6);
+    QVERIFY(std::abs(pose.yaw - 30) < 1e-6);
+    QVERIFY(pose.pitch < 0);
+
+    CameraRig copy;
+    copy.setPose(frame, pose);
+    QVERIFY(std::abs(copy.x - camera.x) < 1e-6);
+    QVERIFY(std::abs(copy.y - camera.y) < 1e-6);
+    QVERIFY(std::abs(copy.z - camera.z) < 1e-6);
+    double fx = 0;
+    double fy = 0;
+    double fz = 0;
+    double gx = 0;
+    double gy = 0;
+    double gz = 0;
+    camera.forward(fx, fy, fz);
+    copy.forward(gx, gy, gz);
+    QVERIFY(std::abs(fx - gx) < 1e-6);
+    QVERIFY(std::abs(fy - gy) < 1e-6);
+    QVERIFY(std::abs(fz - gz) < 1e-6);
+}
+
+void Map3DTest::_cameraFlightArcsOverToTheNextVehicle()
+{
+    CameraPose from;
+    from.east = 500000;
+    from.north = 3780000;
+    from.up = 100;
+    from.pitch = -10;
+    from.zone = 11;
+    CameraPose to = from;
+    to.east += 1000;
+    to.yaw = 90;
+    to.pitch = -14;
+    const double duration = std::clamp(CameraFlight::kBaseSeconds + 1000 / CameraFlight::kMetresPerSecond,
+                                       CameraFlight::kMinSeconds, CameraFlight::kMaxSeconds);
+
+    // It starts where the camera was
+    CameraFlight flight;
+    flight.start(from, 10);
+    double arc = -1;
+    CameraPose pose = flight.update(to, 10, arc);
+    QVERIFY(flight.active());
+    QCOMPARE(arc, 0.0);
+    QVERIFY(std::abs(pose.east - from.east) < 1e-6);
+    QVERIFY(std::abs(pose.up - from.up) < 1e-6);
+    QVERIFY(std::abs(pose.yaw - from.yaw) < 1e-6);
+    QVERIFY(std::abs(pose.pitch - from.pitch) < 1e-6);
+
+    // Halfway there it is at the top of its climb, a share of the distance up, turned halfway and looking down
+    pose = flight.update(to, 10 + duration / 2, arc);
+    QVERIFY(flight.active());
+    QVERIFY(std::abs(arc - 1) < 1e-6);
+    QVERIFY(std::abs(pose.east - (from.east + 500)) < 1e-6);
+    QVERIFY(std::abs(pose.up - (from.up + 1000 * CameraFlight::kRise)) < 1e-6);
+    QVERIFY(std::abs(pose.yaw - 45) < 1e-6);
+    QVERIFY(pose.pitch < -12 - 20);
+
+    // Then it is over, where the camera is now
+    pose = flight.update(to, 10 + duration + 1e-3, arc);
+    QVERIFY(!flight.active());
+    QCOMPARE(arc, 0.0);
+    QCOMPARE(pose.east, to.east);
+    QCOMPARE(pose.yaw, to.yaw);
+}
+
+void Map3DTest::_cameraFlightTurnsTheShortWay()
+{
+    CameraPose from;
+    from.yaw = 350;
+    from.zone = 11;
+    CameraPose to = from;
+    to.yaw = 10;
+
+    // Going nowhere, it takes the shortest flight
+    CameraFlight flight;
+    flight.start(from, 0);
+    double arc = 0;
+    const CameraPose pose = flight.update(to, CameraFlight::kMinSeconds / 2, arc);
+    QVERIFY(std::abs(std::remainder(pose.yaw, 360.0)) < 1e-6);
+    QCOMPARE(pose.up, from.up);
+
+    (void) flight.update(to, CameraFlight::kMinSeconds * 0.99, arc);
+    QVERIFY(flight.active());
+    (void) flight.update(to, CameraFlight::kMinSeconds, arc);
+    QVERIFY(!flight.active());
+}
+
+void Map3DTest::_cameraFlightGoesStraightToAnotherZone()
+{
+    CameraPose from;
+    from.zone = 11;
+    CameraPose to;
+    to.east = 300000;
+    to.zone = 12;
+
+    CameraFlight flight;
+    flight.start(from, 0);
+    double arc = -1;
+    const CameraPose pose = flight.update(to, 0.5, arc);
+    QVERIFY(!flight.active());
+    QCOMPARE(arc, 0.0);
+    QCOMPARE(pose.east, to.east);
+}
+
 void Map3DTest::_quadtreeRequestsRootsFirst()
 {
     WorldFrame frame;

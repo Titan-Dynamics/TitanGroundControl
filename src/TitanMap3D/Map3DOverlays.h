@@ -50,6 +50,10 @@ void addDirection(LineList& lines, const VehicleTracker& vehicle, double bearing
 /// The path the vehicle will fly at its current turn radius (negative turns left), climbing with pitch (radians).
 void addTurnArc(LineList& lines, const VehicleTracker& vehicle, double radius, double pitch, float width);
 
+/// The right and up of a billboard facing a camera that looks along the unit view direction, up as near world up
+/// as it can be.
+void billboardAxes(double viewX, double viewY, double viewZ, QVector3D& right, QVector3D& up);
+
 /// A circle facing the camera, as separate segments, for ADS-B traffic.
 void addBillboardCircle(LineList& lines, const QVector3D& center, double radius, double viewX, double viewY,
                         double viewZ, const Rgba& color, float width);
@@ -64,6 +68,14 @@ class Trail
 {
 public:
     void record(const WorldFrame& frame, const VehicleTracker& vehicle, bool enabled, bool armed, int maxPoints);
+
+    /// Forgets the points, as when another vehicle is followed
+    void clear()
+    {
+        _points.clear();
+        _stableFrames = 0;
+    }
+
     /// Velocity is the vehicle's in m/s (north, east, down), the direction a smoothed trail arrives along.
     void draw(LineList& lines, const WorldFrame& frame, const VehicleTracker& vehicle, bool armed, bool smooth,
               double velocityNorth, double velocityEast, double velocityDown, float width) const;

@@ -15,6 +15,10 @@ private slots:
     void _trackerSmoothsWhenArmed();
     void _chaseCameraSitsBehindVehicle();
     void _firstPersonStaysAboveGround();
+    void _cameraPoseRoundTrips();
+    void _cameraFlightArcsOverToTheNextVehicle();
+    void _cameraFlightTurnsTheShortWay();
+    void _cameraFlightGoesStraightToAnotherZone();
     void _quadtreeRequestsRootsFirst();
     void _quadtreeRequestsGroundUnderCameraFirst();
     void _maxZoomFollowsHeight();

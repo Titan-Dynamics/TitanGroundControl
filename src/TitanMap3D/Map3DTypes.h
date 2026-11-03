@@ -50,7 +50,21 @@ struct AdsbAircraft
     bool alert = false;
     double timeSeconds = 0;  ///< when the last report arrived
     bool onGround = false;
-    int threatLevel = 0;  ///< MAV_COLLISION_THREAT_LEVEL from the vehicle
+    int threatLevel = 0;     ///< MAV_COLLISION_THREAT_LEVEL from the vehicle
+};
+
+/// A connected vehicle other than the one followed, drawn at half opacity as the 2D map draws it.
+struct OtherVehicle
+{
+    int id = 0;
+    Fix fix;  ///< altitude is unused: the renderer adds relativeAltitude to the terrain under the vehicle
+    double relativeAltitude = 0;
+    double roll = 0;
+    double pitch = 0;
+    double yaw = 0;
+    bool armed = false;
+    QString modelPath;
+    QString label;  ///< its name, as the 2D map shows it
 };
 
 /// Everything the renderer needs for a frame, gathered on the GUI thread.
@@ -67,6 +81,9 @@ struct FrameInput
     double groundSpeed = 0;
     double turnRadius = 0;
     double relativeAltitude = 0;
+    /// Changes when another vehicle is followed: the camera flies over to it and the trail starts afresh
+    quint64 vehicleGeneration = 0;
+    QList<OtherVehicle> otherVehicles;
 
     bool hasMap2DCenter = false;
     double map2DLat = 0;

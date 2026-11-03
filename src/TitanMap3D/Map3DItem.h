@@ -116,9 +116,10 @@ private:
     void _refreshInput();
     void _refreshMission();
     void _refreshAdsb();
+    void _refreshOtherVehicles();
     bool _needsFrame() const;
     QString _imageryMapType() const;
-    QString _modelPath() const;
+    QString _modelPath(Vehicle* vehicle) const;
     QString _tooltipFor(quint32 icao, double distance) const;
 
     QPointer<Vehicle> _vehicle;
@@ -151,4 +152,5 @@ private:
     };
 
     QHash<quint32, AdsbTrack> _adsbTracks;
+    QHash<int, Map3D::Fix> _otherFixes;  ///< Other vehicles' fixes, kept with the time each position arrived
 };

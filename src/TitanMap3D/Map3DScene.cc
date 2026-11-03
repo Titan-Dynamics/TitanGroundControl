@@ -8,6 +8,16 @@
 
 namespace Map3D {
 
+namespace {
+
+/// Slow, faster, slow again: 0 to 1 as t goes from 0 to 1
+double easeInOutCubic(double t)
+{
+    return (t < 0.5) ? 4 * t * t * t : 1 - std::pow(2 - 2 * t, 3) / 2;
+}
+
+}  // namespace
+
 double nowSeconds()
 {
     static QElapsedTimer clock = [] {
@@ -242,6 +252,78 @@ void CameraRig::forward(double& fx, double& fy, double& fz) const
     fx /= length;
     fy /= length;
     fz /= length;
+}
+
+CameraPose CameraRig::pose(const WorldFrame& frame) const
+{
+    double fx = 0;
+    double fy = 0;
+    double fz = 0;
+    forward(fx, fy, fz);
+    CameraPose result;
+    result.east = x + frame.originEasting();
+    result.north = y + frame.originNorthing();
+    result.up = z;
+    result.yaw = qRadiansToDegrees(std::atan2(fx, fy));
+    result.pitch = qRadiansToDegrees(std::atan2(fz, std::hypot(fx, fy)));
+    result.roll = roll;
+    result.zone = frame.zone();
+    return result;
+}
+
+void CameraRig::setPose(const WorldFrame& frame, const CameraPose& target)
+{
+    look(target.east - frame.originEasting(), target.north - frame.originNorthing(), target.up, target.yaw,
+         target.pitch);
+    roll = static_cast<float>(target.roll);
+}
+
+// ---------------------------------------------------------------------------
+// CameraFlight
+
+void CameraFlight::start(const CameraPose& from, double timeSeconds)
+{
+    _from = from;
+    _startSeconds = timeSeconds;
+    _durationSeconds = 0;
+    _active = true;
+}
+
+CameraPose CameraFlight::update(const CameraPose& to, double timeSeconds, double& arc)
+{
+    arc = 0;
+    if (!_active || (to.zone != _from.zone)) {
+        // Positions in another UTM zone don't compare: straight there
+        _active = false;
+        return to;
+    }
+
+    const double east = to.east - _from.east;
+    const double north = to.north - _from.north;
+    const double up = to.up - _from.up;
+    const double distance = std::sqrt(east * east + north * north + up * up);
+    if (_durationSeconds <= 0) {
+        _durationSeconds = std::clamp(kBaseSeconds + distance / kMetresPerSecond, kMinSeconds, kMaxSeconds);
+    }
+    const double t = (timeSeconds - _startSeconds) / _durationSeconds;
+    if (t >= 1) {
+        _active = false;
+        return to;
+    }
+
+    const double progress = easeInOutCubic(std::max(0.0, t));
+    arc = std::sin(M_PI * progress);
+    const double rise = std::min(distance * kRise, kMaxRise) * arc;
+    CameraPose result;
+    result.east = _from.east + east * progress;
+    result.north = _from.north + north * progress;
+    result.up = _from.up + up * progress + rise;
+    result.yaw = _from.yaw + std::remainder(to.yaw - _from.yaw, 360.0) * progress;
+    const double lookDown = qRadiansToDegrees(std::atan2(rise, distance / 2));
+    result.pitch = std::clamp(_from.pitch + (to.pitch - _from.pitch) * progress - lookDown, -89.0, 89.0);
+    result.roll = _from.roll + std::remainder(to.roll - _from.roll, 360.0) * progress;
+    result.zone = to.zone;
+    return result;
 }
 
 }  // namespace Map3D

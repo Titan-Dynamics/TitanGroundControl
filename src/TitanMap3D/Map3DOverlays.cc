@@ -75,14 +75,11 @@ void addTurnArc(LineList& lines, const VehicleTracker& vehicle, double radius, d
     lines.addStrip(points, kPink, width);
 }
 
-void addBillboardCircle(LineList& lines, const QVector3D& center, double radius, double viewX, double viewY,
-                        double viewZ, const Rgba& color, float width)
+void billboardAxes(double viewX, double viewY, double viewZ, QVector3D& right, QVector3D& up)
 {
-    constexpr int kSegments = 24;
     // Right = view x world-up; up = right x view
     double rightX = viewY;
     double rightY = -viewX;
-    const double rightZ = 0;
     const double rightLength = std::sqrt(rightX * rightX + rightY * rightY);
     if (rightLength > 0.001) {
         rightX /= rightLength;
@@ -91,15 +88,21 @@ void addBillboardCircle(LineList& lines, const QVector3D& center, double radius,
         rightX = 1;
         rightY = 0;
     }
-    const double upX = rightY * viewZ - rightZ * viewY;
-    const double upY = rightZ * viewX - rightX * viewZ;
-    const double upZ = rightX * viewY - rightY * viewX;
+    right = QVector3D(static_cast<float>(rightX), static_cast<float>(rightY), 0);
+    up = QVector3D(static_cast<float>(rightY * viewZ), static_cast<float>(-rightX * viewZ),
+                   static_cast<float>(rightX * viewY - rightY * viewX));
+}
 
+void addBillboardCircle(LineList& lines, const QVector3D& center, double radius, double viewX, double viewY,
+                        double viewZ, const Rgba& color, float width)
+{
+    constexpr int kSegments = 24;
+    QVector3D right;
+    QVector3D up;
+    billboardAxes(viewX, viewY, viewZ, right, up);
     const auto point = [&](double angle) {
-        const double c = std::cos(angle);
-        const double s = std::sin(angle);
-        return QVector3D(center.x() + radius * (c * rightX + s * upX), center.y() + radius * (c * rightY + s * upY),
-                         center.z() + radius * (c * rightZ + s * upZ));
+        return center + static_cast<float>(radius * std::cos(angle)) * right +
+               static_cast<float>(radius * std::sin(angle)) * up;
     };
     for (int i = 0; i < kSegments; i++) {
         lines.addSegment(point(2 * M_PI * i / kSegments), point(2 * M_PI * (i + 1) / kSegments), color, width);

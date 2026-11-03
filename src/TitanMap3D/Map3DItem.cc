@@ -16,6 +16,7 @@
 #include "Map3DTileLoader.h"
 #include "MissionItem.h"
 #include "MissionManager.h"
+#include "MultiVehicleManager.h"
 #include "ParameterManager.h"
 #include "QGCMapUrlEngine.h"
 #include "QmlObjectListModel.h"
@@ -45,6 +46,37 @@ double factValue(Fact* fact, double fallback = 0)
 double rounded2(double value)
 {
     return std::round(value * 100.0) / 100.0;
+}
+
+/// A vehicle's position and NED velocity (m/s), stamped with when it arrived: the base the renderer dead-reckons from
+Fix fixFor(Vehicle* vehicle, double timeSeconds)
+{
+    Fix fix;
+    const QGeoCoordinate coordinate = vehicle->coordinate();
+    fix.lat = coordinate.latitude();
+    fix.lng = coordinate.longitude();
+    fix.timeSeconds = timeSeconds;
+
+    VehicleLocalPositionFactGroup* const local =
+        qobject_cast<VehicleLocalPositionFactGroup*>(vehicle->localPositionFactGroup());
+    double north = local ? factValue(local->vx(), qQNaN()) : qQNaN();
+    double east = local ? factValue(local->vy(), qQNaN()) : qQNaN();
+    double down = local ? factValue(local->vz(), qQNaN()) : qQNaN();
+    if (std::isnan(north) || std::isnan(east)) {
+        // No local position: from ground speed and course over ground
+        const double speed = factValue(vehicle->groundSpeed());
+        const double course = qDegreesToRadians(factValue(
+            vehicle->gpsFactGroup()->getFact(QStringLiteral("courseOverGround")), factValue(vehicle->heading())));
+        north = speed * std::cos(course);
+        east = speed * std::sin(course);
+    }
+    if (std::isnan(down)) {
+        down = -factValue(vehicle->climbRate());
+    }
+    fix.velocityNorth = north;
+    fix.velocityEast = east;
+    fix.velocityDown = down;
+    return fix;
 }
 
 QColor lightened(const QColor& color)
@@ -118,6 +150,8 @@ void Map3DItem::setVehicle(Vehicle* vehicle)
     }
     _vehicle = vehicle;
     _hudData->setVehicle(vehicle);
+    // Tells the renderer to fly the camera over to it and start the trail afresh
+    ++_input.vehicleGeneration;
     if (_vehicle) {
         (void) connect(_vehicle, &Vehicle::coordinateChanged, this, &Map3DItem::_onCoordinateChanged);
         _onCoordinateChanged();
@@ -205,34 +239,9 @@ void Map3DItem::markActive()
 
 void Map3DItem::_onCoordinateChanged()
 {
-    if (!_vehicle) {
-        return;
+    if (_vehicle) {
+        _input.fix = fixFor(_vehicle, nowSeconds());
     }
-    // A fix and its time, the base the renderer dead-reckons from
-    const QGeoCoordinate coordinate = _vehicle->coordinate();
-    _input.fix.lat = coordinate.latitude();
-    _input.fix.lng = coordinate.longitude();
-    _input.fix.timeSeconds = nowSeconds();
-
-    VehicleLocalPositionFactGroup* const local =
-        qobject_cast<VehicleLocalPositionFactGroup*>(_vehicle->localPositionFactGroup());
-    double north = local ? factValue(local->vx(), qQNaN()) : qQNaN();
-    double east = local ? factValue(local->vy(), qQNaN()) : qQNaN();
-    double down = local ? factValue(local->vz(), qQNaN()) : qQNaN();
-    if (std::isnan(north) || std::isnan(east)) {
-        // No local position: from ground speed and course over ground
-        const double speed = factValue(_vehicle->groundSpeed());
-        const double course = qDegreesToRadians(factValue(
-            _vehicle->gpsFactGroup()->getFact(QStringLiteral("courseOverGround")), factValue(_vehicle->heading())));
-        north = speed * std::cos(course);
-        east = speed * std::sin(course);
-    }
-    if (std::isnan(down)) {
-        down = -factValue(_vehicle->climbRate());
-    }
-    _input.fix.velocityNorth = north;
-    _input.fix.velocityEast = east;
-    _input.fix.velocityDown = down;
 }
 
 void Map3DItem::_tick()
@@ -256,8 +265,8 @@ bool Map3DItem::_needsFrame() const
     // Full frame rate while anything changes: a connected vehicle, terrain streaming, spinning markers, ADS-B, the
     // stats panel or recent input. Otherwise one frame a second, which still picks up arriving data.
     const double now = nowSeconds();
-    const bool animating = _input.connected || _input.statsForNerds || _output.terrainBusy ||
-                           (_output.markersDrawn > 0) || !_output.adsb.isEmpty();
+    const bool animating = _input.connected || !_input.otherVehicles.isEmpty() || _input.statsForNerds ||
+                           _output.terrainBusy || (_output.markersDrawn > 0) || !_output.adsb.isEmpty();
     return animating || (now - _lastActivity < kActiveLingerSeconds) || (now - _lastFrame >= kIdleIntervalSeconds);
 }
 
@@ -278,19 +287,19 @@ QString Map3DItem::_imageryMapType() const
     return QStringLiteral("Google Satellite");
 }
 
-QString Map3DItem::_modelPath() const
+QString Map3DItem::_modelPath(Vehicle* vehicle) const
 {
     const QString custom = SettingsManager::instance()->map3DSettings()->stlPath()->rawValue().toString();
     if (!custom.isEmpty() && QFileInfo::exists(custom)) {
         return custom;
     }
-    if (!_vehicle) {
+    if (!vehicle) {
         return Model::defaultModelPath(MAV_TYPE_FIXED_WING, false);
     }
     bool quadPlane = false;
-    if (_vehicle->apmFirmware() && (_vehicle->vehicleType() == MAV_TYPE_FIXED_WING)) {
+    if (vehicle->apmFirmware() && (vehicle->vehicleType() == MAV_TYPE_FIXED_WING)) {
         // Some QuadPlanes report as fixed wing; Mission Planner checks Q_ENABLE
-        ParameterManager* const parameters = _vehicle->parameterManager();
+        ParameterManager* const parameters = vehicle->parameterManager();
         if (parameters &&
             parameters->parameterExists(ParameterManager::defaultComponentId, QStringLiteral("Q_ENABLE"))) {
             quadPlane = parameters->getParameter(ParameterManager::defaultComponentId, QStringLiteral("Q_ENABLE"))
@@ -298,7 +307,7 @@ QString Map3DItem::_modelPath() const
                             .toInt() == 1;
         }
     }
-    return Model::defaultModelPath(_vehicle->vehicleType(), quadPlane);
+    return Model::defaultModelPath(vehicle->vehicleType(), quadPlane);
 }
 
 void Map3DItem::_refreshInput()
@@ -321,7 +330,7 @@ void Map3DItem::_refreshInput()
     _input.fpvMode = settings->fpvMode()->rawValue().toBool();
     _input.smoothMovement = settings->smoothMovement()->rawValue().toBool();
     _input.statsForNerds = settings->statsForNerds()->rawValue().toBool();
-    _input.modelPath = _modelPath();
+    _input.modelPath = _modelPath(_vehicle);
     _input.devicePixelRatio = window() ? window()->effectiveDevicePixelRatio() : 1.0;
     _input.freeLookYaw = _freeLookYaw;
     _input.freeLookPitch = _freeLookPitch;
@@ -363,6 +372,44 @@ void Map3DItem::_refreshInput()
 
     _refreshMission();
     _refreshAdsb();
+    _refreshOtherVehicles();
+}
+
+void Map3DItem::_refreshOtherVehicles()
+{
+    // Each fix keeps the time its position arrived, the base the renderer dead-reckons from
+    _input.otherVehicles.clear();
+    const double now = nowSeconds();
+    QSet<int> present;
+    QmlObjectListModel* const vehicles = MultiVehicleManager::instance()->vehicles();
+    for (int i = 0; i < vehicles->count(); ++i) {
+        Vehicle* const vehicle = qobject_cast<Vehicle*>(vehicles->get(i));
+        if (!vehicle || (vehicle == _vehicle)) {
+            continue;
+        }
+        const QGeoCoordinate coordinate = vehicle->coordinate();
+        if (!coordinate.isValid() || ((coordinate.latitude() == 0) && (coordinate.longitude() == 0))) {
+            continue;
+        }
+
+        OtherVehicle other;
+        other.id = vehicle->id();
+        Fix& fix = _otherFixes[other.id];
+        if ((fix.timeSeconds == 0) || (fix.lat != coordinate.latitude()) || (fix.lng != coordinate.longitude())) {
+            fix = fixFor(vehicle, now);
+        }
+        other.fix = fix;
+        other.relativeAltitude = factValue(vehicle->altitudeRelative());
+        other.roll = rounded2(factValue(vehicle->roll()));
+        other.pitch = rounded2(factValue(vehicle->pitch()));
+        other.yaw = rounded2(factValue(vehicle->heading()));
+        other.armed = vehicle->armed();
+        other.modelPath = _modelPath(vehicle);
+        other.label = tr("Vehicle %1").arg(other.id);
+        _input.otherVehicles.append(other);
+        present.insert(other.id);
+    }
+    _otherFixes.removeIf([&present](QHash<int, Fix>::iterator it) { return !present.contains(it.key()); });
 }
 
 void Map3DItem::_refreshMission()
@@ -554,7 +601,8 @@ QString Map3DItem::_tooltipFor(quint32 icao, double distance) const
     lines << tr("Squawk: %1").arg(aircraft->squawk, 4, 10, QLatin1Char('0'));
     lines << tr("Altitude: %1 %2").arg(altitude, 0, 'f', 0).arg(altitudeUnits);
     lines << tr("Speed: %1 %2").arg(speed, 0, 'f', 0).arg(speedUnits);
-    lines << tr("Heading: %1°").arg(aircraft->heading, 0, 'f', 0) + (aircraft->onGround ? tr(" (On Ground)") : QString());
+    lines << tr("Heading: %1°").arg(aircraft->heading, 0, 'f', 0) +
+                 (aircraft->onGround ? tr(" (On Ground)") : QString());
     lines << (distance > 1000
                   ? tr("Distance: %1 km").arg(distance / 1000, 0, 'f', 1)
                   : tr("Distance: %1 %2")

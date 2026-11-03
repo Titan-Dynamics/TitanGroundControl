@@ -102,6 +102,18 @@ private:
     int _zoneVersion = -1;
 };
 
+/// Where the camera is, in absolute UTM metres so a move of the scene origin leaves it alone, and which way it looks.
+struct CameraPose
+{
+    double east = 0;
+    double north = 0;
+    double up = 0;
+    double yaw = 0;    ///< degrees clockwise from north
+    double pitch = 0;  ///< degrees, positive up
+    double roll = 0;   ///< degrees
+    int zone = 0;      ///< the UTM zone east and north are in
+};
+
 /// Where the camera sits and looks: orbiting behind the vehicle, from the cockpit (FPV), or free-look from a
 /// fixed point when no vehicle is connected.
 class CameraRig
@@ -126,6 +138,41 @@ public:
     QMatrix4x4 viewMatrix() const;
     /// Unit view direction.
     void forward(double& fx, double& fy, double& fz) const;
+
+    /// Where it is and which way it looks, in absolute coordinates.
+    CameraPose pose(const WorldFrame& frame) const;
+    /// Looks from a pose given in absolute coordinates.
+    void setPose(const WorldFrame& frame, const CameraPose& target);
+};
+
+/// The camera's flight to another vehicle (the fork's own, not Mission Planner's): from where it was to where it would
+/// now be, which moves with the vehicle. It eases in and out, takes longer the farther it goes, and rises on the way by
+/// part of the distance, so it clears the hills between and shows the ground it crosses, looking down as it climbs.
+class CameraFlight
+{
+public:
+    static constexpr double kMinSeconds = 1.0;
+    static constexpr double kMaxSeconds = 2.5;
+    static constexpr double kBaseSeconds = 0.8;
+    static constexpr double kMetresPerSecond = 1500;  ///< a second longer for each 1.5 km
+    static constexpr double kRise = 0.3;              ///< of the distance, at the top
+    static constexpr double kMaxRise = 1500;
+
+    bool active() const { return _active; }
+
+    void start(const CameraPose& from, double timeSeconds);
+
+    void stop() { _active = false; }
+
+    /// The camera's pose at timeSeconds on its way to `to`. arc is how far up its climb it is: 0 at either end, 1 at
+    /// the top. Once there, or when `to` is in another UTM zone, the flight is over and it returns `to`.
+    CameraPose update(const CameraPose& to, double timeSeconds, double& arc);
+
+private:
+    CameraPose _from;
+    double _startSeconds = 0;
+    double _durationSeconds = 0;  ///< from the distance, on the first update
+    bool _active = false;
 };
 
 }  // namespace Map3D
