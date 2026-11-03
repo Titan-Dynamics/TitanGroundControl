@@ -371,19 +371,36 @@ jobs:
           compression-level: 0
 
   # ─────────────────────────────────────────────────────────────────────
-  # Job 4: Build Linux AppImage (x86_64)
+  # Job 4: Build Linux AppImages (x86_64 + aarch64 matrix)
   # ─────────────────────────────────────────────────────────────────────
   build-linux:
-    name: Build Linux
-    runs-on: ubuntu-24.04
+    name: Build Linux ${{ matrix.arch_label }}
+    runs-on: ${{ matrix.runs_on }}
     timeout-minutes: 120
+
+    strategy:
+      matrix:
+        include:
+          - arch_label: x86_64
+            runs_on: ubuntu-24.04
+            host: linux
+            arch: linux_gcc_64
+            preset: ''
+          # Raspberry Pi 5 and other 64-bit ARM Linux, on GitHub's ARM runner as upstream's linux.yml builds it
+          - arch_label: aarch64
+            runs_on: ubuntu-24.04-arm
+            host: linux_arm64
+            arch: linux_gcc_arm64
+            preset: Linux-arm64
 
     defaults:
       run:
         shell: bash
 
     steps:
+      # harden-runner is x86_64 Linux only
       - name: Harden Runner
+        if: runner.arch != 'ARM64'
         uses: step-security/harden-runner@v2
         with:
           egress-policy: audit
@@ -398,8 +415,8 @@ jobs:
       - name: Build Setup
         uses: ./.github/actions/build-setup
         with:
-          qt-host: linux
-          qt-arch: linux_gcc_64
+          qt-host: ${{ matrix.host }}
+          qt-arch: ${{ matrix.arch }}
           build-type: Release
 
       - name: Install Dependencies
@@ -411,6 +428,7 @@ jobs:
           build-dir: ${{ runner.temp }}/build
           build-type: Release
           stable: 'false'
+          preset: ${{ matrix.preset }}
 
       - name: Build
         uses: ./.github/actions/cmake-build
@@ -430,18 +448,20 @@ jobs:
       - name: Verify AppImage
         uses: ./.github/actions/verify-executable
         with:
-          binary-path: ${{ runner.temp }}/build/TitanGroundControl-x86_64.AppImage
+          binary-path: ${{ runner.temp }}/build/TitanGroundControl-${{ matrix.arch_label }}.AppImage
           type: appimage
 
       - name: Package AppImage as zip
         working-directory: ${{ runner.temp }}/build
-        run: zip -j TitanGroundControl-Linux-x86_64.zip TitanGroundControl-x86_64.AppImage
+        env:
+          ARCH: ${{ matrix.arch_label }}
+        run: zip -j "TitanGroundControl-Linux-${ARCH}.zip" "TitanGroundControl-${ARCH}.AppImage"
 
       - name: Upload Linux AppImage
         uses: actions/upload-artifact@v7
         with:
-          name: TitanGroundControl-Linux-x86_64
-          path: ${{ runner.temp }}/build/TitanGroundControl-Linux-x86_64.zip
+          name: TitanGroundControl-Linux-${{ matrix.arch_label }}
+          path: ${{ runner.temp }}/build/TitanGroundControl-Linux-${{ matrix.arch_label }}.zip
           retention-days: 7
           compression-level: 0
 
@@ -528,6 +548,12 @@ jobs:
           name: TitanGroundControl-Linux-x86_64
           path: release-assets
 
+      - name: Download Linux ARM64 AppImage
+        uses: actions/download-artifact@v8
+        with:
+          name: TitanGroundControl-Linux-aarch64
+          path: release-assets
+
       - name: List release assets
         run: ls -lhR release-assets/
 
@@ -559,4 +585,5 @@ jobs:
             release-assets/TitanGroundControl-installer-AMD64.exe
             release-assets/TitanGroundControl-installer-ARM64.exe
             release-assets/TitanGroundControl-Linux-x86_64.zip
+            release-assets/TitanGroundControl-Linux-aarch64.zip
           fail_on_unmatched_files: true
