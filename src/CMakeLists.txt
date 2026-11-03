@@ -79,6 +79,7 @@ add_subdirectory(TitanHud)
 add_subdirectory(TitanMap3D)
 add_subdirectory(TitanTelemetry)
 add_subdirectory(TitanUpdater)
+add_subdirectory(TitanUsbCamera)
 
 # Platform-specific
 add_subdirectory(Android)

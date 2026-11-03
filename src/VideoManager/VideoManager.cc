@@ -180,6 +180,8 @@ void VideoManager::init(QQuickWindow *mainWindow)
     VideoBackend::onMainWindowReady(mainWindow);
 
     (void) connect(_videoSettings->videoSource(), &Fact::rawValueChanged, this, &VideoManager::_videoSourceChanged);
+    // Titan: and when the sources are listed again, so a camera already chosen opens once it is plugged in
+    (void) connect(_videoSettings->videoSource(), &Fact::enumsChanged, this, &VideoManager::_videoSourceChanged);
     (void) connect(_videoSettings->udpUrl(), &Fact::rawValueChanged, this, &VideoManager::_videoSourceChanged);
     (void) connect(_videoSettings->rtspUrl(), &Fact::rawValueChanged, this, &VideoManager::_videoSourceChanged);
     (void) connect(_videoSettings->tcpUrl(), &Fact::rawValueChanged, this, &VideoManager::_videoSourceChanged);

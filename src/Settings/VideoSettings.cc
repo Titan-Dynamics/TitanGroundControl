@@ -16,6 +16,7 @@ static constexpr bool kGstEnabled = true;
 static constexpr bool kGstEnabled = false;
 #endif
 #include "UVCReceiver.h"
+#include "UsbCameraDevices.h"
 
 DECLARE_SETTINGGROUP(Video, "Video")
 {
@@ -24,6 +25,7 @@ DECLARE_SETTINGGROUP(Video, "Video")
 
     _mediaDevices = new QMediaDevices(this);
     (void) connect(_mediaDevices, &QMediaDevices::videoInputsChanged, this, &VideoSettings::refreshVideoSources);
+    (void) connect(UsbCameraDevices::instance(), &UsbCameraDevices::changed, this, &VideoSettings::refreshVideoSources);
 
     _setForceVideoDecodeList();
 

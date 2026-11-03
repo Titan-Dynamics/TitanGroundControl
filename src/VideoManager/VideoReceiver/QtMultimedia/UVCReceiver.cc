@@ -3,6 +3,7 @@
 #include "QGCApplication.h"
 #include "QGCLoggingCategory.h"
 #include "SettingsManager.h"
+#include "UsbCameraDevices.h"
 #include "VideoSettings.h"
 
 #include <QtCore/QCoreApplication>
@@ -43,7 +44,8 @@ UVCReceiver::~UVCReceiver()
 
 bool UVCReceiver::enabled()
 {
-    return !QMediaDevices::videoInputs().isEmpty();
+    // Titan: or a USB camera that Android's camera service does not list
+    return !QMediaDevices::videoInputs().isEmpty() || !UsbCameraDevices::instance()->names().isEmpty();
 }
 
 void UVCReceiver::adjustAspectRatio()
@@ -94,6 +96,9 @@ void UVCReceiver::checkPermission()
 QString UVCReceiver::getSourceId()
 {
     const QString videoSource = SettingsManager::instance()->videoSettings()->videoSource()->rawValue().toString();
+    if (UsbCameraDevices::instance()->contains(videoSource)) {
+        return videoSource;  // Titan: shown by TitanUsbCamera
+    }
     const QCameraDevice cameraDevice = findCameraDevice(videoSource);
     if (cameraDevice.isNull()) {
         return QString();
@@ -106,7 +111,7 @@ QString UVCReceiver::getSourceId()
 
 bool UVCReceiver::deviceExists(const QString &device)
 {
-    return !findCameraDevice(device).isNull();
+    return !findCameraDevice(device).isNull() || UsbCameraDevices::instance()->contains(device);  // Titan
 }
 
 QStringList UVCReceiver::getDeviceNameList()
@@ -117,6 +122,7 @@ QStringList UVCReceiver::getDeviceNameList()
     for (const QCameraDevice &cameraDevice : videoInputs) {
         deviceNameList.append(cameraDevice.description());
     }
+    deviceNameList.append(UsbCameraDevices::instance()->names());  // Titan
 
     return deviceNameList;
 }

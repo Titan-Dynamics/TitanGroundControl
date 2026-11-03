@@ -25,6 +25,8 @@
 -keep class org.mavlink.qgroundcontrol.QGCFtdiSerialDriver$QGCFtdiSerialPort { *; }
 -keep class org.mavlink.qgroundcontrol.QGCFtdiDriver { *; }
 -keep class org.mavlink.qgroundcontrol.QGCSDLManager { *; }
+# Titan: called from C++ (src/TitanUsbCamera)
+-keep class org.mavlink.qgroundcontrol.TitanUsbCameraManager { *; }
 
 # SDL - native method stubs required for JNI registration
 -keep class org.libsdl.app.** { *; }
