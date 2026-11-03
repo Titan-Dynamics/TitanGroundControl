@@ -235,10 +235,12 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
 ## CI and Releases
 
 - **`td-dev.yml`** runs on pushes to `development` (and manually). It builds Android (on Windows), macOS
-  (universal), Windows AMD64/ARM64 (NSIS via the `qgc-package` target) and Linux AppImage (Ubuntu 24.04, as upstream),
-  then replaces the `dev` prerelease.
+  (universal), Windows AMD64/ARM64 (NSIS via the `qgc-package` target) and Linux AppImages for x86_64 (Ubuntu 24.04,
+  as upstream) and aarch64 (the Raspberry Pi 5 and other 64-bit ARM, on GitHub's `ubuntu-24.04-arm` runner with the
+  `Linux-arm64` preset, as upstream's `linux.yml` builds it), then replaces the `dev` prerelease.
 - **`td-release.yml`** is manual. It increments the patch of the latest `v*` tag reachable from `HEAD`,
-  pushes the new tag and publishes a release with the same artifacts.
+  pushes the new tag and publishes a release with the same artifacts, except the aarch64 AppImage, which only the
+  development build has for now.
 - **Every upstream workflow is `workflow_dispatch`-only**, including ones upstream adds later. Repo-maintenance
   bots (stale, welcome, pr-checks, dependency-review, cache-cleanup-pr, build-results, lupdate, px4-metadata,
   doxygen schedule) are left as upstream has them.

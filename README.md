@@ -10,7 +10,7 @@
 
 **Titan Ground Control** is [Titan Dynamics'](https://github.com/Titan-Dynamics) fork of [QGroundControl](https://github.com/mavlink/qgroundcontrol), the open-source ground control station for MAVLink-enabled drones. It keeps everything QGC offers, including flight control, mission planning and vehicle setup for PX4 and ArduPilot, and adds an AI flight assistant, Mission Planner's 3D map, a head-up display, internet ADS-B traffic with avoidance, and a reworked Fly View.
 
-**Download** the [latest release](https://github.com/Titan-Dynamics/TitanGroundControl/releases/latest) (installers for Windows x64 and ARM, a macOS disk image, a Linux AppImage and an Android APK) or the [development build](https://github.com/Titan-Dynamics/TitanGroundControl/releases/tag/dev). It installs alongside QGroundControl and fetches its own updates from the Help page.
+**Download** the [latest release](https://github.com/Titan-Dynamics/TitanGroundControl/releases/latest) (installers for Windows x64 and ARM, a macOS disk image, a Linux AppImage and an Android APK) or the [development build](https://github.com/Titan-Dynamics/TitanGroundControl/releases/tag/dev), which also has a Linux AppImage for 64-bit ARM such as the Raspberry Pi 5 (64-bit Raspberry Pi OS based on Debian 13). It installs alongside QGroundControl and fetches its own updates from the Help page.
 
 This page covers what's new in the fork. For general QGC usage and building, see [Upstream Resources](#upstream-resources).
 
