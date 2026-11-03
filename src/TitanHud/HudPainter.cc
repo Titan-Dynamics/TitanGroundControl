@@ -21,7 +21,6 @@
 QGC_LOGGING_CATEGORY(HudPainterLog, "TitanHud.HudPainter")
 
 namespace {
-const QColor kSymbolLost(0x9A, 0xA6, 0x9F);
 const QColor kCaution(0xFF, 0xC2, 0x3D);
 const QColor kWarning(0xFF, 0x50, 0x46);
 const QColor kHalo(0, 0, 0, 150);
@@ -278,7 +277,8 @@ void HudPainter::_layout(const HudFrame& f)
 
 QColor HudPainter::_symbolColor(const HudFrame& f) const
 {
-    return f.connected ? f.symbolColor : kSymbolLost;
+    // Without a live link the symbology keeps its color at half opacity, so stale values do not read as live
+    return f.connected ? f.symbolColor : withAlpha(f.symbolColor, 0.5);
 }
 
 // ---------------------------------------------------------------------------
@@ -1404,7 +1404,7 @@ void HudPainter::_drawAlerts(QPainter& p, const HudFrame& f)
 
     QList<Callout> callouts;
     if (!f.hasVehicle) {
-        callouts.append({QStringLiteral("NO VEHICLE"), kSymbolLost, false});
+        callouts.append({QStringLiteral("NO VEHICLE"), _symbolColor(f), false});
     } else if (!f.connected) {
         callouts.append({QStringLiteral("LINK LOST"), kWarning, true});
     }
