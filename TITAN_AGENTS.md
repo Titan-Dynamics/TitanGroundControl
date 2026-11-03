@@ -246,6 +246,11 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   the DMG and AppImage are boot-tested, and the Windows installer goes through install, upgrade into a new
   directory, in-place upgrade, launch and uninstall (`deploy/windows/verify-installer.ps1` with
   `QGC_APP_NAME=TitanGroundControl`). A failing check blocks the release.
+- Android builds are signed with Titan's release key (alias `titangroundcontrol`), written out from the
+  `ANDROID_KEYSTORE_BASE64` and `ANDROID_KEYSTORE_PASSWORD` secrets by the Decode Release Keystore step, so each
+  APK installs over the last. Upstream's `deploy/android/android_release.keystore` is not used. Without the secrets
+  a throwaway debug key signs each build, and Android then refuses to install one over another, as it did up to
+  v1.0.8. The key's owner keeps its backup; losing it would mean every user uninstalling to update.
 - Binary and package names are `TitanGroundControl*`. Keep the renames when upstream touches a workflow.
 - The td workflows reuse upstream's composite actions (`build-setup`, `cmake-configure`, `cmake-build`,
   `install-dependencies`). After each sync, check their inputs and outputs still match what the td

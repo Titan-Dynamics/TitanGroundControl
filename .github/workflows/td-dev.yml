@@ -31,8 +31,9 @@ jobs:
 
     env:
       PACKAGE: TitanGroundControl
-      QT_ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/deploy/android/android_release.keystore
-      QT_ANDROID_KEYSTORE_ALIAS: QGCAndroidKeyStore
+      # Titan's release key, written out from the ANDROID_KEYSTORE_BASE64 secret by Decode Release Keystore, so every
+      # build signs alike and installs over the last. Without the secrets a throwaway debug key signs instead.
+      QT_ANDROID_KEYSTORE_ALIAS: titangroundcontrol
       QT_ANDROID_KEYSTORE_STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       QT_ANDROID_KEYSTORE_KEY_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       QT_ANDROID_ABIS: arm64-v8a
@@ -64,6 +65,15 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
+
+      - name: Decode Release Keystore
+        if: ${{ env.QT_ANDROID_KEYSTORE_STORE_PASS != '' }}
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          printf '%s' "${ANDROID_KEYSTORE_BASE64}" | base64 --decode > "${RUNNER_TEMP}/release.keystore"
+          echo "QT_ANDROID_KEYSTORE_PATH=${RUNNER_TEMP}/release.keystore" >> "$GITHUB_ENV"
 
       - name: Create Debug Keystore
         if: ${{ env.QT_ANDROID_KEYSTORE_STORE_PASS == '' }}
