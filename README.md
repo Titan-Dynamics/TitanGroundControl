@@ -41,6 +41,7 @@ Set it up under **Application Settings → Titan AI** (Claude API key required; 
 - **Picture-in-picture** you can drag, resize, swap into the main view, or hide into a small button; widgets in its corner move out of its way.
 - **Aspect ratio** right under the video source, where Auto takes the stream's own.
 - **USB cameras** plugged in while the app runs join the source list, which a **Refresh** button also updates.
+- **USB cameras and capture cards on Android**, through the app's own driver, on devices where Android doesn't offer them to apps.
 - **Old-TV static** while there's no picture.
 
 ### 3D map

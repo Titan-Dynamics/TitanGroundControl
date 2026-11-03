@@ -45,6 +45,7 @@ rather than in `AGENTS.md` / `CLAUDE.md`, which are upstream files.
 | Internet ADS-B traffic (a port of TitanPlanner's adsb.cs), traffic sent to the autopilot for avoidance, the autopilot's collision threat levels, and an icon for each aircraft category on the Fly View map | `src/TitanAdsb/` (`AdsbInternetSource.*`, `AdsbTrafficSender.*`, `AdsbCategory.*`, `AdsbIconProvider.*`, `TitanAdsbMapItem.qml`), `adsbInternetEnabled`, `adsbInternetServer`, `adsbInternetRadius`, `adsbInternetMaxAircraft` and `adsbSendToVehicle` in `src/Settings/ADSBVehicleManager.SettingsGroup.json` and `ADSBVehicleManagerSettings.*`, the ADSB Server page in `src/AppSettings/pages/ADSBVehicleManager.SettingsUI.json`; hooks in `src/ADSB/` (`ADSB.h` category, type and ground fields, `ADSBVehicle.*` properties, `ADSBVehicleManager.*` sources, echo filter and COLLISION), `MAVLINK_MSG_ID_COLLISION` routed in `src/Vehicle/Vehicle.cc`, the `TitanAdsbMapItem` delegate in `src/FlyView/FlyViewMap.qml`, `AdsbIconProvider` registered in `src/QGCApplication.cc`, and grounded traffic and the tooltip in `src/TitanMap3D/`; tests in `test/TitanAdsb/` |
 | Help page: source code and release links, and an updater from the GitHub releases (stable or development) | `src/TitanUpdater/` (`TitanUpdater.*`, a QML singleton with its channel in INI group `TitanUpdater`; `TitanHelpSection.qml`), above upstream's links in `src/AppSettings/HelpSettings.qml`; tests in `test/TitanUpdater/` |
 | Video sources listed again when a camera is plugged in or out, and a Refresh button by the source | `refreshVideoSources` and `QMediaDevices::videoInputsChanged` in `src/Settings/VideoSettings.*`, `src/QmlControls/VideoSourceSelector.qml` (the source dropdown and Refresh), used as a component control in `src/AppSettings/pages/Video.SettingsUI.json` |
+| USB cameras and capture cards on Android through the app's own UVC driver, where Android's camera service does not list them | `src/TitanUsbCamera/` (`UsbCameraDevices.*`, the sources named "USB Camera: <product>"; `TitanUsbCamera.*`, a QML element feeding a VideoOutput's sink; `UvcStream.*`, libuvc on libusb, both built from CPM sources for Android only), `android/src/org/mavlink/qgroundcontrol/TitanUsbCameraManager.java` (USB permission, file descriptors, plugging in and out) and its keep rule in `android/proguard-rules.pro`; hooks in `UVCReceiver.cc`, `VideoSettings.cc`, `VideoManager.cc` and `FlightDisplayViewUVC.qml` |
 | Fork defaults | `src/Settings/*.SettingsGroup.json` (audio muted, 10 km guided max altitude, no go-to distance limit, the compass's additional heading indicators, camera controls hidden, Google maps, aspect-ratio dropdown, the Titan HUD over video), indoor palette on mobile in `QGCCorePlugin.cc` |
 | MSVC build flags | `/bigobj` in `CMakeLists.txt`, `/Zc:preprocessor` in `cmake/Toolchain.cmake` |
 
@@ -174,7 +175,8 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   not keep them. `HudItem` gathers a `HudFrame` on the GUI thread and `HudPainter` paints it with QPainter on the
   item's own thread, shown as a texture when done: a QQuickPaintedItem paints during the scene graph sync and held
   the whole window to ~9 fps. A 1080p frame takes ~12 ms in a Debug build. The symbology is one color (`hudColor`,
-  white by default, the 3D map model color's choices but black and gray), with a dark halo over video and a glow on
+  white by default, the 3D map model color's choices but black and gray, at half opacity while no vehicle is
+  connected or its link is lost), with a dark halo over video and a glow on
   the synthetic sky; amber and red only mark cautions and warnings (ARMED is red), and nominal system rows recede.
   The layout scales with the HUD's size, and small HUDs leave out secondary text instead of shrinking it past
   reading (`Detail`: full, compact for the instrument panel, minimal for the PiP); the overlay's `hudScale` setting
@@ -212,6 +214,19 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   on the ground, large 1.25 and heavy 1.5 times; its details show on hover or a tap. Upstream's
   `ADSBVehicleMapItem` stays, for its unit test, but the Fly View map no longer uses it; the GeoMap engine keeps
   upstream's traffic item.
+- **USB cameras on Android go through the app's own UVC driver** (`src/TitanUsbCamera/`), as other USB camera apps
+  do: Android's camera service, which Qt's `Camera` uses, lists a USB camera only on devices whose camera HAL
+  supports external cameras. `TitanUsbCameraManager.java` lists USB video class devices, asks for USB permission
+  (Android grants it for video devices only once the app has the camera permission, which `TitanUsbCamera` asks for
+  first) and hands the device's file descriptor to libuvc on libusb (`uvc_wrap`, with
+  `LIBUSB_OPTION_NO_DEVICE_DISCOVERY`, since an app may not scan `/dev/bus/usb`). `UvcStream` picks the best mode
+  up to 1080p, 25 fps or more where it can, uncompressed (YUYV, NV12 and the like) over MJPEG at the same size,
+  MJPEG held to 30 fps and decoded with Qt's libjpeg-turbo, which supplies the Huffman tables MJPEG frames leave
+  out. libuvc is built with 4 isochronous packets per transfer (`LIBUVC_PACKETS_PER_TRANSFER_MAX`), as some Android
+  USB controllers reject more. Only the latest frame waits for the GUI thread, so a busy one skips frames rather
+  than queueing them. The sources sit beside Qt's cameras as "USB Camera: <product>"; one chosen before it is
+  plugged in opens when it is, as `VideoManager` re-reads the source whenever the list changes (`enumsChanged`),
+  and the Qt `Camera` stays off for these (`hasCameraDevice`), as it would otherwise open the default camera.
 - The vehicle models are TitanPlanner's STLs decimated to 8000 triangles, kept in Mission Planner's frame
   (millimetres): `Map3DModel` rotates them -90 deg about Z and the model matrix scales to metres, exactly as
   for a custom STL. Regenerate them with `tools/titan/convert_vehicle_models.py` (needs a TitanPlanner checkout,
@@ -288,7 +303,10 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
    the tool strip and bottom-right row corner states), `MainStatusIndicator.qml` (messages buttons on the left),
    `FlyViewToolBar.qml` (`_indicators` in place of upstream's `FlyViewToolBarIndicators.qml`: carry over upstream's
    changes to that file), `HelpSettings.qml` (`TitanHelpSection`),
-   `VideoSettings.*` (`refreshVideoSources`, `_setVideoSourceList`), `FlyViewTopRightColumnLayout.qml` and
+   `VideoSettings.*` (`refreshVideoSources`, `_setVideoSourceList`, `UsbCameraDevices::changed`), `UVCReceiver.cc`
+   (`UsbCameraDevices` in the device list), `VideoManager.cc` (`enumsChanged`), `FlightDisplayViewUVC.qml`
+   (`TitanUsbCamera`, `hasCameraDevice`), `proguard-rules.pro` (`TitanUsbCameraManager`),
+   `FlyViewTopRightColumnLayout.qml` and
    `FlyViewTopRightPanel.qml` (`showCameraControls`), `ADSB.h`, `ADSBVehicle.*` and `ADSBVehicleManager.*`
    (category, ground and threat fields, the internet source, the sender, the echo filter and COLLISION),
    `Vehicle.cc` (COLLISION routed to `ADSBVehicleManager`), `FlyViewMap.qml` (the `TitanAdsbMapItem` delegate),
@@ -321,6 +339,7 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
 - Only internet traffic says whether it is on the ground, so the 3D map draws only that traffic as Mission Planner
   draws grounded aircraft (small, grey, kept above the terrain already loaded); SBS and vehicle traffic always
   counts as airborne.
+- Video recording does not cover the USB cameras read by the app's own UVC driver on Android.
 
 ## Documentation
 
