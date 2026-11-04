@@ -119,9 +119,13 @@ QString TitanUpdater::assetNameForPlatform()
 #elif defined(Q_OS_ANDROID)
     return QStringLiteral("TitanGroundControl.apk");
 #elif defined(Q_OS_LINUX)
-    return (QSysInfo::currentCpuArchitecture() == QLatin1String("x86_64"))
-               ? QStringLiteral("TitanGroundControl-Linux-x86_64.zip")
-               : QString();
+    const QString architecture = QSysInfo::currentCpuArchitecture();
+    if (architecture == QLatin1String("x86_64")) {
+        return QStringLiteral("TitanGroundControl-Linux-x86_64.zip");
+    }
+    // 64-bit ARM, such as a Raspberry Pi 5
+    return (architecture == QLatin1String("arm64")) ? QStringLiteral("TitanGroundControl-Linux-aarch64.zip")
+                                                    : QString();
 #else
     return QString();
 #endif
