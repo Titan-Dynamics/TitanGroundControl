@@ -266,8 +266,8 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   dated 00:00 UTC the next day, keeping the latest development build on top. The release still shows when it was
   published.
 - **`td-release.yml`** is manual. It increments the patch of the latest `v*` tag reachable from `HEAD`,
-  pushes the new tag and publishes a release with the same artifacts, except the aarch64 AppImage, which only the
-  development build has for now.
+  pushes the new tag and publishes a release with the same artifacts. The Help page's updater picks the AppImage for
+  the machine's architecture (`assetNameForPlatform`), so a Raspberry Pi updates itself too.
 - **Every upstream workflow is `workflow_dispatch`-only**, including ones upstream adds later. Repo-maintenance
   bots (stale, welcome, pr-checks, dependency-review, cache-cleanup-pr, build-results, lupdate, px4-metadata,
   doxygen schedule) are left as upstream has them.
