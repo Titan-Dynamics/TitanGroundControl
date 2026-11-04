@@ -512,9 +512,19 @@ jobs:
           git push origin :refs/tags/dev 2>/dev/null || true
 
       - name: Create dev tag
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # GitHub lists releases by the UTC day of their tag's date, and a version release tagged the same day sorts
+          # above dev. So on the day of a version release the dev tag is dated the next day, to stay on top.
+          export TZ=UTC
+          version_day=$(git for-each-ref --sort=-creatordate --count=1 --format='%(creatordate:format-local:%F)' 'refs/tags/v[0-9]*')
+          if [ -n "$version_day" ] && [[ ! "$version_day" < "$(date +%F)" ]]; then
+            GIT_COMMITTER_DATE=$(date -d "$version_day + 1 day" +%FT%TZ)
+            export GIT_COMMITTER_DATE
+            echo "Dated $GIT_COMMITTER_DATE to list above the version release tagged $version_day"
+          fi
           git tag -fa dev -m "Development build"
           git push origin dev --force
 

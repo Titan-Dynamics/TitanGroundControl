@@ -260,7 +260,11 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
 - **`td-dev.yml`** runs on pushes to `development` (and manually). It builds Android (on Windows), macOS
   (universal), Windows AMD64/ARM64 (NSIS via the `qgc-package` target) and Linux AppImages for x86_64 (Ubuntu 24.04,
   as upstream) and aarch64 (the Raspberry Pi 5 and other 64-bit ARM, on GitHub's `ubuntu-24.04-arm` runner with the
-  `Linux-arm64` preset, as upstream's `linux.yml` builds it), then replaces the `dev` prerelease.
+  `Linux-arm64` preset, as upstream's `linux.yml` builds it), then replaces the `dev` prerelease. GitHub lists releases
+  by the UTC day of their tag's date (an annotated tag's own date, not its commit's), not by when they were published,
+  and on a shared day a version release sorts above `dev`. So when a version was tagged the same day, the `dev` tag is
+  dated 00:00 UTC the next day, keeping the latest development build on top. The release still shows when it was
+  published.
 - **`td-release.yml`** is manual. It increments the patch of the latest `v*` tag reachable from `HEAD`,
   pushes the new tag and publishes a release with the same artifacts, except the aarch64 AppImage, which only the
   development build has for now.
