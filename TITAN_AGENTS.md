@@ -265,8 +265,8 @@ These differ from upstream on purpose. Do not "fix" them back when merging:
   and on a shared day a version release sorts above `dev`. So when a version was tagged the same day, the `dev` tag is
   dated 00:00 UTC the next day, keeping the latest development build on top. The release still shows when it was
   published.
-- **`td-release.yml`** is manual. It increments the patch of the latest `v*` tag reachable from `HEAD`,
-  pushes the new tag and publishes a release with the same artifacts. The Help page's updater picks the AppImage for
+- **`td-release.yml`** is manual. It counts on from the latest `v*` tag reachable from `HEAD`, each part from 0 to 9
+  carrying into the one before it (1.0.9 to 1.1.0, 1.1.9 to 1.2.0, 1.9.9 to 2.0.0), pushes the new tag and publishes a release with the same artifacts. The Help page's updater picks the AppImage for
   the machine's architecture (`assetNameForPlatform`), so a Raspberry Pi updates itself too.
 - **Every upstream workflow is `workflow_dispatch`-only**, including ones upstream adds later. Repo-maintenance
   bots (stale, welcome, pr-checks, dependency-review, cache-cleanup-pr, build-results, lupdate, px4-metadata,
