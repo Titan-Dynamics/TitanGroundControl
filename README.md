@@ -18,6 +18,11 @@ This page covers what's new in the fork. For general QGC usage and building, see
 
 ## What's New in This Fork
 
+### Situational awareness
+
+- **Settings and configuration pages open split-screen** by default on desktop, so you never lose sight of the map or video feed while you change parameters or other settings.
+- **Move the video box** freely around the screen.
+
 ### Titan AI
 
 - **Fly and configure the vehicle in plain English**, powered by Anthropic's Claude: arm, take off, go to a point, change altitude, heading or speed, orbit, switch modes, run missions, or read and write parameters.
